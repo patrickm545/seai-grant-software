@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  NEW
+  NEEDS_REVIEW
+  READY_TO_APPLY
+  HOMEOWNER_REVIEW_PENDING
+  SUBMITTED
+  INSTALLATION_PENDING
+  PAYMENT_DOCS_PENDING
+  COMPLETED
+}
+
+enum DwellingType {
+  DETACHED
+  SEMI_DETACHED
+  TERRACED
+  MID_TERRACE
+  END_TERRACE
+  APARTMENT
+  BUNGALOW
+  OTHER
+}
+
+model Installer {
+  id             String   @id @default(cuid())
+  name           String
+  seaiCompanyId  String
+  websiteDomain  String?
+  county         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  leads          Lead[]
+}
+
+model Lead {
+  id                    String        @id @default(cuid())
+  installerId           String
+  installer             Installer     @relation(fields: [installerId], references: [id])
+  fullName              String
+  email                 String
+  phone                 String?
+  addressLine1          String
+  addressLine2          String?
+  county                String
+  eircode               String?
+  propertyOwner         Boolean
+  privateLandlord       Boolean       @default(false)
+  dwellingType          DwellingType
+  yearBuilt             Int
+  yearOccupied          Int?
+  mprn                  String
+  worksStarted          Boolean
+  priorSolarGrantAtMprn Boolean       @default(false)
+  consentToProcess      Boolean
+  consentToGrantAssist  Boolean
+  consentToContact      Boolean       @default(false)
+  notes                 String?
+  status                LeadStatus    @default(NEW)
+  aiSummary             String?
+  likelyEligible        Boolean?
+  eligibilityConfidence Float?
+  risksJson             Json?
+  missingItemsJson      Json?
+  structuredExportJson  Json?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  documents             LeadDocument[]
+}
+
+model LeadDocument {
+  id            String   @id @default(cuid())
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fileName      String
+  mimeType      String
+  storageUrl    String?
+  extractedText String?
+  aiFieldsJson  Json?
+  createdAt     DateTime @default(now())
+}

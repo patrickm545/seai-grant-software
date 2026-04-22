@@ -1,0 +1,13 @@
+{
+  "event": "lead.created",
+  "source": "seai-solar-grant-assistant",
+  "lead": {
+    "id": "demo-lead-1",
+    "fullName": "John Murphy",
+    "email": "john@example.com",
+    "phone": "+353871234567",
+    "county": "Dublin",
+    "likelyEligible": true,
+    "status": "READY_TO_APPLY"
+  }
+}

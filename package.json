@@ -2,7 +2,7 @@
   "name": "seai-solar-grant-assistant",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@10.9.2",
+  "packageManager": "pnpm@10.11.0",
   "engines": {
     "node": "22.x"
   },

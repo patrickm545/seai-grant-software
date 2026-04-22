@@ -10,3 +10,6 @@ prisma/dev.db-journal
 .codex-dev.log
 .codex-dev.err
 .tools
+
+.vercel
+.env*.local

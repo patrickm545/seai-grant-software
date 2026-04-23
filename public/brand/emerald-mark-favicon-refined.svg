@@ -1,0 +1,23 @@
+<svg width="64" height="64" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hexGradient" x1="134" y1="210" x2="378" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15803D"/>
+      <stop offset="1" stop-color="#34C759"/>
+    </linearGradient>
+    <linearGradient id="letterGradient" x1="182" y1="208.5" x2="334" y2="208.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15803D"/>
+      <stop offset="1" stop-color="#34C759"/>
+    </linearGradient>
+    <clipPath id="panelClip">
+      <path d="M244 337L280 283H373L337 337H244Z"/>
+    </clipPath>
+  </defs>
+  <path d="M256 69L378 139.5V280.5L256 351L134 280.5V139.5L256 69Z" stroke="url(#hexGradient)" stroke-width="24"/>
+  <path d="M182 136H334L307 170H223V193H302L275 227H223V248H284L257 281H182V136Z" fill="url(#letterGradient)"/>
+  <path d="M244 337L280 283H373L337 337H244Z" fill="#1E3A5F" stroke="#2D4E7A" stroke-width="10" stroke-linejoin="round"/>
+  <g clip-path="url(#panelClip)" stroke="#6E8FB6" stroke-width="10" stroke-linecap="round">
+    <path d="M316 276L262 347"/>
+    <path d="M353 276L299 347"/>
+    <path d="M234 310H388"/>
+  </g>
+</svg>

@@ -14,7 +14,7 @@ export default function HomePage() {
       <section className="application-hero">
         <div className="application-copy">
           <div className="badge">SEAI solar grant checker</div>
-          <h1>Check if you may qualify for up to €1,800 off solar</h1>
+          <h1>Check if you qualify for up to €1,800 off solar</h1>
           <p className="hero-text">A quick check for Irish homeowners.</p>
           <div className="benefit-list compact-benefits">
             {benefits.map((item) => (

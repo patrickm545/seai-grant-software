@@ -289,6 +289,36 @@ button.secondary {
   margin: 12px 0 8px;
 }
 .admin-shell { gap: 24px; }
+.admin-sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  padding-top: 8px;
+}
+.admin-sticky-nav-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(11, 16, 32, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+.admin-sticky-title {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.admin-sticky-link {
+  white-space: nowrap;
+}
 .hero-panel {
   display: flex;
   justify-content: space-between;
@@ -682,6 +712,10 @@ button.secondary {
     grid-template-columns: 1fr;
   }
   .admin-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-sticky-nav-inner {
     align-items: flex-start;
     flex-direction: column;
   }

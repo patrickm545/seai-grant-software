@@ -1,0 +1,27 @@
+<svg width="860" height="180" viewBox="0 0 860 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hexGradient" x1="23.5" y1="104.5" x2="146.5" y2="104.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15803D"/>
+      <stop offset="1" stop-color="#34C759"/>
+    </linearGradient>
+    <linearGradient id="letterGradient" x1="48" y1="102.5" x2="125" y2="102.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15803D"/>
+      <stop offset="1" stop-color="#34C759"/>
+    </linearGradient>
+    <clipPath id="panelClip">
+      <path d="M76 163L95 134H142L123 163H76Z"/>
+    </clipPath>
+  </defs>
+  <path d="M85 33.5L146.5 69V140L85 175.5L23.5 140V69L85 33.5Z" stroke="url(#hexGradient)" stroke-width="10"/>
+  <path d="M48 67H125L111.5 84H68.5V95H109L95.5 112H68.5V121H101L88 138H48V67Z" fill="url(#letterGradient)"/>
+  <path d="M76 163L95 134H142L123 163H76Z" fill="#1E3A5F" stroke="#2D4E7A" stroke-width="4" stroke-linejoin="round"/>
+  <g clip-path="url(#panelClip)" stroke="#6E8FB6" stroke-width="3.6" stroke-linecap="round">
+    <path d="M106 131L79 169"/>
+    <path d="M123 131L96 169"/>
+    <path d="M140 131L113 169"/>
+    <path d="M70 148H148"/>
+  </g>
+  <path d="M218 44V136" stroke="#F4F6F7" stroke-width="2" stroke-opacity="0.75"/>
+  <text x="260" y="82" fill="#F4F6F7" font-family="Montserrat, Arial, sans-serif" font-size="64" letter-spacing="0.26em">EMERALD</text>
+  <text x="264" y="126" fill="#16A34A" font-family="Montserrat, Arial, sans-serif" font-size="28" letter-spacing="0.34em">SOLAR SOLUTIONS</text>
+</svg>

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { StatCard } from '@/components/StatCard';
 import { getDefaultInstallerSeedData } from '@/lib/default-installer';
 
-const ADMIN_BASE_PATH = '/admin/dashboard';
+const ADMIN_LEAD_BASE_PATH = '/admin/leads';
 export const dynamic = 'force-dynamic';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -74,6 +74,16 @@ export default async function HiddenAdminPage() {
 
   return (
     <main className="container grid admin-shell">
+      <header className="admin-sticky-nav">
+        <div className="admin-sticky-nav-inner">
+          <div>
+            <div className="badge">Installer dashboard</div>
+            <div className="admin-sticky-title">SEAI grant lead review</div>
+          </div>
+          <Link href="/admin/logout" className="small admin-sticky-link">Log out</Link>
+        </div>
+      </header>
+
       <section className="hero-panel">
         <div className="hero-copy">
           <div className="admin-topbar"><div className="badge">Installer dashboard</div><Link href="/admin/logout" className="small">Log out</Link></div>
@@ -139,7 +149,7 @@ export default async function HiddenAdminPage() {
               const installTimeline = typeof salesSignal?.installTimeline === 'string' ? salesSignal.installTimeline : 'Timeline unknown';
 
               return (
-                <Link key={lead.id} href={`${ADMIN_BASE_PATH}/leads/${lead.id}`} className="priority-item">
+                <Link key={lead.id} href={`${ADMIN_LEAD_BASE_PATH}/${lead.id}`} className="priority-item">
                   <div>
                     <strong>{lead.fullName}</strong>
                     <div className="small">{lead.county} • {lead.email}</div>
@@ -212,7 +222,7 @@ export default async function HiddenAdminPage() {
                       <div className="small">{lead.documents.length} upload{lead.documents.length === 1 ? '' : 's'}</div>
                     </td>
                     <td>
-                      <Link href={`${ADMIN_BASE_PATH}/leads/${lead.id}`} className="table-link">Open</Link>
+                      <Link href={`${ADMIN_LEAD_BASE_PATH}/${lead.id}`} className="table-link">Open</Link>
                     </td>
                   </tr>
                 );

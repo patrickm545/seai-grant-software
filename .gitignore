@@ -9,6 +9,9 @@ prisma/dev.db
 prisma/dev.db-journal
 .codex-dev.log
 .codex-dev.err
+.codex-live.log
+.next-dev-*.log
+tsconfig.tsbuildinfo
 .tools
 
 .vercel

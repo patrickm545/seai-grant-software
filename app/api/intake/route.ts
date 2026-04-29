@@ -70,7 +70,12 @@ function buildStoredAnalysis(lead: {
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[intake] POST /api/intake received');
     const body = await request.json();
+    console.info('[intake] Request body parsed', {
+      email: typeof body?.email === 'string' ? body.email : undefined,
+      hasMprn: typeof body?.mprn === 'string' && body.mprn.length > 0
+    });
     const parsed = leadFormSchema.parse(body) as LeadFormInput & {
       applicantDocuments?: Array<{
         kind: 'electricity_bill' | 'meter_photo' | 'roof_photo';
@@ -82,6 +87,10 @@ export async function POST(request: NextRequest) {
     const applicantDocuments = parsed.applicantDocuments ?? [];
     const { applicantDocuments: _ignoredApplicantDocuments, ...rawLeadInput } = parsed;
     const leadInput = normalizeLeadInput(rawLeadInput);
+    console.info('[intake] Submission validated', {
+      email: leadInput.email,
+      applicantDocuments: applicantDocuments.length
+    });
 
     const installer =
       leadInput.installerId === DEFAULT_INSTALLER_ID
@@ -93,6 +102,7 @@ export async function POST(request: NextRequest) {
         : await prisma.installer.findUnique({ where: { id: leadInput.installerId } });
 
     if (!installer) {
+      console.warn('[intake] Installer not found', { installerId: leadInput.installerId });
       return NextResponse.json({ error: 'Installer not found' }, { status: 404 });
     }
 
@@ -116,6 +126,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingLead) {
+      console.info('[intake] Duplicate submission returned existing lead', { leadId: existingLead.id });
       return NextResponse.json({
         leadId: existingLead.id,
         analysis: buildStoredAnalysis(existingLead),
@@ -128,7 +139,7 @@ export async function POST(request: NextRequest) {
     const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
 
     const submissionResult = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${submissionKey}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${submissionKey}))`;
 
       const duplicateLead = await tx.lead.findFirst({
         where: getDuplicateLeadWhere(leadInput),
@@ -155,6 +166,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (duplicateLead) {
+        console.info('[intake] Duplicate submission found after transaction lock', { leadId: duplicateLead.id });
         return {
           lead: duplicateLead,
           analysis: buildStoredAnalysis(duplicateLead),
@@ -230,6 +242,7 @@ export async function POST(request: NextRequest) {
             : undefined
         }
       });
+      console.info('[intake] Lead created', { leadId: createdLead.id, email: createdLead.email });
 
       return {
         lead: createdLead,
@@ -258,13 +271,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.info('[intake] Submission completed', {
+      leadId: submissionResult.lead.id,
+      isDuplicate: submissionResult.isDuplicate
+    });
     return NextResponse.json({
       leadId: submissionResult.lead.id,
       analysis: submissionResult.analysis,
       uploadedDocuments: submissionResult.uploadedDocuments
     });
   } catch (error) {
-    console.error(error);
+    console.error('[intake] Submission failed', error);
     if (error instanceof ZodError) {
       const firstIssue = error.issues[0];
       return NextResponse.json({ error: firstIssue?.message || 'Invalid submission' }, { status: 400 });

@@ -273,6 +273,11 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     };
 
     try {
+      console.info('[lead-form] Submitting lead form', {
+        email: form.email,
+        hasMprn: form.mprn.length > 0,
+        applicantDocuments: applicantDocuments.length
+      });
       const response = await fetch('/api/intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,6 +285,11 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       });
 
       const data = await parseJsonSafely(response);
+      console.info('[lead-form] Submit response received', {
+        ok: response.ok,
+        status: response.status,
+        leadId: typeof data?.leadId === 'string' ? data.leadId : undefined
+      });
       if (!response.ok) {
         setSubmitError(
           typeof data?.error === 'string'
@@ -296,7 +306,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
       setResult(data);
     } catch (error) {
-      console.error('Lead form submission failed', error);
+      console.error('[lead-form] Lead form submission failed', error);
       setSubmitError('We could not submit your application right now. Please check your connection and try again.');
     } finally {
       setLoading(false);

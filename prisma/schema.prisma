@@ -63,6 +63,10 @@ model Lead {
   consentToGrantAssist  Boolean
   consentToContact      Boolean       @default(false)
   notes                 String?
+  internalNotes         String?
+  followUpDate          DateTime?
+  assignedAdmin         String?
+  assignedInstaller     String?
   status                LeadStatus    @default(NEW)
   aiSummary             String?
   likelyEligible        Boolean?

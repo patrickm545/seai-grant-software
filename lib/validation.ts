@@ -2,6 +2,16 @@ import { z } from 'zod';
 import { billRanges, callbackWindows, counties, dwellingTypes, installTimelines, roofTypes } from './types';
 
 const currentYear = new Date().getFullYear();
+const leadStatuses = [
+  'NEW',
+  'NEEDS_REVIEW',
+  'READY_TO_APPLY',
+  'HOMEOWNER_REVIEW_PENDING',
+  'SUBMITTED',
+  'INSTALLATION_PENDING',
+  'PAYMENT_DOCS_PENDING',
+  'COMPLETED'
+] as const;
 
 function yearField(requiredMessage: string, optional = false) {
   return z.preprocess((value) => {
@@ -59,3 +69,13 @@ export const leadFormSchema = z.object({
 });
 
 export type LeadFormSchema = z.infer<typeof leadFormSchema>;
+
+export const adminWorkflowSchema = z.object({
+  status: z.enum(leadStatuses),
+  internalNotes: z.string().max(5000).optional().nullable(),
+  followUpDate: z.date().optional().nullable(),
+  assignedAdmin: z.string().max(120).optional().nullable(),
+  assignedInstaller: z.string().max(120).optional().nullable()
+});
+
+export type AdminWorkflowSchema = z.infer<typeof adminWorkflowSchema>;

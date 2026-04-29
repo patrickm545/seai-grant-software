@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { adminWorkflowSchema } from '@/lib/validation';
 
 const ADMIN_BASE_PATH = '/admin/dashboard';
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,61 @@ const STATUS_LABELS: Record<string, string> = {
   PAYMENT_DOCS_PENDING: 'Payment docs pending',
   COMPLETED: 'Completed'
 };
+const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
+
+function optionalText(value: FormDataEntryValue | null) {
+  const text = String(value || '').trim();
+  return text || null;
+}
+
+function parseFollowUpDate(value: FormDataEntryValue | null) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+
+  const date = new Date(`${text}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid follow-up date');
+  }
+
+  return date;
+}
+
+function formatDateInput(value: Date | string | null | undefined) {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+async function updateLeadWorkflow(formData: FormData) {
+  'use server';
+
+  const leadId = String(formData.get('leadId') || '');
+  const action = String(formData.get('workflowAction') || 'save');
+  const selectedStatus = String(formData.get('status') || 'NEEDS_REVIEW');
+  const status = action === 'mark-ready' ? 'READY_TO_APPLY' : action === 'mark-needs-review' ? 'NEEDS_REVIEW' : selectedStatus;
+
+  if (!leadId) {
+    throw new Error('Lead id is required');
+  }
+
+  const parsed = adminWorkflowSchema.parse({
+    status,
+    internalNotes: optionalText(formData.get('internalNotes')),
+    followUpDate: parseFollowUpDate(formData.get('followUpDate')),
+    assignedAdmin: optionalText(formData.get('assignedAdmin')),
+    assignedInstaller: optionalText(formData.get('assignedInstaller'))
+  });
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: parsed
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack`);
+  revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack/print`);
+}
 
 function getStatusTone(status: string) {
   if (status === 'READY_TO_APPLY' || status === 'SUBMITTED' || status === 'COMPLETED') return 'success';
@@ -85,7 +142,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           <div className="admin-topbar"><Link href={ADMIN_BASE_PATH} className="small">{'<'} Back to dashboard</Link><Link href="/admin/logout" className="small">Log out</Link></div>
           <h1>{lead.fullName}</h1>
           <p className="hero-text">
-            Review grant fit, sales intent, document evidence, and the final payload before anything moves toward the SEAI workflow.
+            Review grant fit, sales intent, document evidence, and the manual Application Pack before an admin completes SEAI steps by hand.
           </p>
         </div>
         <div className="hero-metrics">
@@ -100,6 +157,50 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <strong>{lead.eligibilityConfidence === null ? 'Not scored' : `${Math.round(lead.eligibilityConfidence * 100)}%`}</strong>
           </div>
         </div>
+      </section>
+
+      <section className="card admin-workflow-card">
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">Admin workflow</div>
+            <h2>Review controls</h2>
+          </div>
+          <Link href={`/admin/dashboard/leads/${lead.id}/application-pack`} className="table-link">Open Application Pack</Link>
+        </div>
+        <form action={updateLeadWorkflow} className="admin-workflow-form">
+          <input type="hidden" name="leadId" value={lead.id} />
+          <div className="grid grid-4">
+            <div>
+              <label>Status</label>
+              <select name="status" defaultValue={lead.status}>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label>Assigned admin</label>
+              <input name="assignedAdmin" defaultValue={lead.assignedAdmin || ''} placeholder="Admin name" />
+            </div>
+            <div>
+              <label>Assigned admin / installer</label>
+              <input name="assignedInstaller" defaultValue={lead.assignedInstaller || ''} placeholder="Installer or crew" />
+            </div>
+            <div>
+              <label>Follow-up date</label>
+              <input name="followUpDate" type="date" defaultValue={formatDateInput(lead.followUpDate)} />
+            </div>
+          </div>
+          <div>
+            <label>Internal notes</label>
+            <textarea name="internalNotes" defaultValue={lead.internalNotes || ''} rows={5} placeholder="Private admin notes for manual SEAI submission prep" />
+          </div>
+          <div className="admin-workflow-actions">
+            <button type="submit" name="workflowAction" value="save">Save review</button>
+            <button type="submit" name="workflowAction" value="mark-ready" className="secondary">Mark ready</button>
+            <button type="submit" name="workflowAction" value="mark-needs-review" className="secondary">Mark needs review</button>
+          </div>
+        </form>
       </section>
 
       <section className="grid grid-3">
@@ -231,13 +332,21 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             </div>
           </div>
           <div className="action-grid">
-            <a className="action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank">
-              <h3>Submission package</h3>
-              <p className="small">Export structured JSON for admin review or downstream automation.</p>
+            <a className="action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack`}>
+              <h3>Application Pack</h3>
+              <p className="small">Open the copy-friendly manual SEAI submission prep view.</p>
             </a>
-            <a className="action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank">
+            <a className="action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack/print`} target="_blank" rel="noreferrer">
+              <h3>Print summary</h3>
+              <p className="small">Open the PDF-friendly manual prep summary.</p>
+            </a>
+            <a className="action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
+              <h3>Application pack JSON</h3>
+              <p className="small">Export structured data for human admin review.</p>
+            </a>
+            <a className="action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
               <h3>Portal fill preview</h3>
-              <p className="small">Generate a safe payload for manual portal entry.</p>
+              <p className="small">Generate a safe reference payload for manual portal entry.</p>
             </a>
           </div>
           <div className="export-box">

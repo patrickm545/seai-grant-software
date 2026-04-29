@@ -45,6 +45,25 @@ type UploadItem = {
   sizeBytes: number;
 };
 
+type SystemSizeOption = 'small' | 'medium' | 'large';
+
+const SOLAR_GRANT_AMOUNT = 1800;
+
+const systemEstimateOptions: Record<
+  SystemSizeOption,
+  { label: string; systemSize: string; estimatedCost: number }
+> = {
+  small: { label: 'Small', systemSize: '4kW', estimatedCost: 7000 },
+  medium: { label: 'Medium', systemSize: '5kW', estimatedCost: 8000 },
+  large: { label: 'Large', systemSize: '6kW', estimatedCost: 9500 }
+};
+
+const euroFormatter = new Intl.NumberFormat('en-IE', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0
+});
+
 const validationChecks: Array<{
   key: FormFieldKey;
   isInvalid: (form: FormState) => boolean;
@@ -107,6 +126,10 @@ function toOptionalNumber(value: string) {
   return Number(value);
 }
 
+function formatEuro(value: number) {
+  return euroFormatter.format(value);
+}
+
 function requiredLabel(text: string) {
   return (
     <>
@@ -138,6 +161,7 @@ async function parseJsonSafely(response: Response) {
 
 export function LeadForm({ installerId = fallbackInitialState.installerId }: { installerId?: string }) {
   const [form, setForm] = useState<FormState>(() => createInitialState(installerId));
+  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeOption>('medium');
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [meterPhotoFiles, setMeterPhotoFiles] = useState<File[]>([]);
   const [roofPhotoFiles, setRoofPhotoFiles] = useState<File[]>([]);
@@ -151,6 +175,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const roofInputRef = useRef<HTMLInputElement | null>(null);
   const successRef = useRef<HTMLDivElement | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const submitLockRef = useRef(false);
 
   const uploadSummary = useMemo(() => {
     return [
@@ -159,6 +184,17 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       ...roofPhotoFiles.map((file) => ({ file, kind: 'roof_photo' as const }))
     ];
   }, [billFiles, meterPhotoFiles, roofPhotoFiles]);
+
+  const estimate = useMemo(() => {
+    const selectedOption = systemEstimateOptions[selectedSystemSize];
+    const finalEstimatedCost = selectedOption.estimatedCost - SOLAR_GRANT_AMOUNT;
+
+    return {
+      ...selectedOption,
+      grantApplied: SOLAR_GRANT_AMOUNT,
+      finalEstimatedCost
+    };
+  }, [selectedSystemSize]);
 
   const update = (key: keyof FormState, value: string | boolean) =>
     setForm((prev) => {
@@ -184,6 +220,9 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading || submitLockRef.current) return;
+
+    submitLockRef.current = true;
     const nextInvalidFields = getInvalidFields(form);
     const validationError = getValidationError(form);
     if (validationError) {
@@ -191,6 +230,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       setSubmitError(validationError);
       setResult(null);
       setLoading(false);
+      submitLockRef.current = false;
       requestAnimationFrame(() => {
         const firstInvalidElement = document.querySelector<HTMLElement>(`[data-field="${nextInvalidFields[0]}"] input, [data-field="${nextInvalidFields[0]}"] select`);
         firstInvalidElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -246,27 +286,27 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             ? data.error
             : 'We could not submit your application right now. Please try again.'
         );
-        setLoading(false);
         return;
       }
 
       if (!data || typeof data !== 'object') {
         setSubmitError('We could not confirm your submission. Please try again.');
-        setLoading(false);
         return;
       }
 
       setResult(data);
-      setLoading(false);
     } catch (error) {
       console.error('Lead form submission failed', error);
       setSubmitError('We could not submit your application right now. Please check your connection and try again.');
+    } finally {
       setLoading(false);
+      submitLockRef.current = false;
     }
   }
 
   function resetForm() {
     setForm(createInitialState(installerId));
+    setSelectedSystemSize('medium');
     setBillFiles([]);
     setMeterPhotoFiles([]);
     setRoofPhotoFiles([]);
@@ -284,6 +324,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   useEffect(() => {
     setForm(createInitialState(installerId));
+    setSelectedSystemSize('medium');
   }, [installerId]);
 
   if (result) {
@@ -432,6 +473,57 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           <div className="section-heading compact-heading">
             <div>
               <div className="eyebrow">Step 3</div>
+              <h2>Solar estimate</h2>
+            </div>
+          </div>
+          <div className="estimate-calculator">
+            <div className="estimate-options" role="group" aria-label="Select a solar system size">
+              {(Object.entries(systemEstimateOptions) as Array<[SystemSizeOption, (typeof systemEstimateOptions)[SystemSizeOption]]>).map(
+                ([key, option]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`estimate-option ${selectedSystemSize === key ? 'estimate-option-active' : ''}`}
+                    onClick={() => setSelectedSystemSize(key)}
+                    aria-pressed={selectedSystemSize === key}
+                  >
+                    <span className="estimate-option-title">{option.label}</span>
+                    <span className="estimate-option-meta">{option.systemSize} system</span>
+                    <span className="estimate-option-price">{formatEuro(option.estimatedCost)}</span>
+                  </button>
+                )
+              )}
+            </div>
+            <div className="estimate-summary">
+              <div className="estimate-total-label">Estimated cost (final quote after survey)</div>
+              <div className="estimate-total">{formatEuro(estimate.finalEstimatedCost)}</div>
+              <p className="estimate-note">Includes up to {formatEuro(estimate.grantApplied)} SEAI grant deduction.</p>
+              <div className="estimate-rows">
+                <div>
+                  <span>System size</span>
+                  <strong>{estimate.label} ({estimate.systemSize})</strong>
+                </div>
+                <div>
+                  <span>Estimated cost range</span>
+                  <strong>{formatEuro(estimate.estimatedCost)}</strong>
+                </div>
+                <div>
+                  <span>Grant applied</span>
+                  <strong>-{formatEuro(estimate.grantApplied)}</strong>
+                </div>
+                <div>
+                  <span>Final estimated cost after grant</span>
+                  <strong>{formatEuro(estimate.finalEstimatedCost)}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="form-section">
+          <div className="section-heading compact-heading">
+            <div>
+              <div className="eyebrow">Step 4</div>
               <h2>Optional uploads</h2>
             </div>
           </div>
@@ -472,7 +564,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
         <section className="form-section">
           <div className="section-heading compact-heading">
             <div>
-              <div className="eyebrow">Step 4</div>
+              <div className="eyebrow">Step 5</div>
               <h2>Consent</h2>
             </div>
           </div>

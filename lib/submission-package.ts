@@ -1,4 +1,5 @@
-import { Lead, Installer } from '@prisma/client';
+import { Lead, Installer, LeadDocument } from '@prisma/client';
+import { buildApplicationPack } from './application-pack';
 
 type SalesSignal = {
   leadTemperature?: string;
@@ -30,7 +31,7 @@ function getSalesSignal(lead: Lead): SalesSignal {
   return signal as SalesSignal;
 }
 
-export function buildSubmissionPackage(lead: Lead, installer: Installer) {
+export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[] }, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
 
   return {
@@ -82,6 +83,12 @@ export function buildSubmissionPackage(lead: Lead, installer: Installer) {
       risks: parseJsonValue(lead.risksJson) ?? lead.risksJson ?? []
     },
     manualReviewRequired: true,
+    manualAssistNotice: 'Manual-assist pack only. This software does not integrate with SEAI, automate the SEAI website, or submit grant applications automatically.',
+    applicationPack: buildApplicationPack({
+      ...lead,
+      installer,
+      documents: lead.documents ?? []
+    }),
     notes: lead.notes
   };
 }
@@ -90,7 +97,7 @@ export function buildPortalFillPreview(lead: Lead, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
 
   return {
-    disclaimer: 'Use for human-reviewed portal entry only. Do not submit without homeowner review and consent.',
+    disclaimer: 'Manual reference only. This software does not connect to SEAI, automate the SEAI website, or submit grant applications. Do not proceed without homeowner review and consent.',
     fields: {
       homeowner_name: lead.fullName,
       homeowner_email: lead.email,

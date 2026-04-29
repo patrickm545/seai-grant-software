@@ -224,6 +224,97 @@ button.secondary {
   display: grid;
   gap: 16px;
 }
+.estimate-calculator {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.48);
+}
+.estimate-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.estimate-option {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  text-align: left;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0;
+  box-shadow: none;
+}
+.estimate-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.34);
+}
+.estimate-option-active {
+  border-color: rgba(74, 222, 128, 0.48);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.2), rgba(15, 23, 42, 0.82));
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.12);
+}
+.estimate-option-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.estimate-option-meta {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+.estimate-option-price {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #86efac;
+}
+.estimate-summary {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  background:
+    linear-gradient(135deg, rgba(20, 32, 60, 0.94), rgba(11, 16, 32, 0.98)),
+    rgba(17, 23, 42, 0.92);
+}
+.estimate-total-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #86efac;
+}
+.estimate-total {
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1;
+}
+.estimate-note {
+  margin: 0;
+  color: #cbd5e1;
+}
+.estimate-rows {
+  display: grid;
+  gap: 10px;
+}
+.estimate-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+.estimate-rows span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.estimate-rows strong {
+  text-align: right;
+}
 .toggle-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -372,7 +463,7 @@ button.secondary {
 .section-heading {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: flex-end;
   gap: 16px;
   margin-bottom: 18px;
 }
@@ -584,8 +675,224 @@ button.secondary {
   font-size: 12px;
   color: #bfdbfe;
 }
+.admin-workflow-card {
+  display: grid;
+  gap: 12px;
+}
+.admin-workflow-form {
+  display: grid;
+  gap: 16px;
+}
+.admin-workflow-actions,
+.application-pack-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.admin-workflow-actions button,
+.copy-section-button,
+.pack-action-link {
+  width: auto;
+  min-width: 140px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+.pack-action-link {
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  color: #dbeafe;
+  background: rgba(15, 23, 42, 0.72);
+  font-weight: 700;
+}
+.application-pack-shell {
+  display: grid;
+  gap: 18px;
+}
+.application-readiness {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(17, 23, 42, 0.92);
+}
+.application-readiness-ready {
+  border-color: rgba(74, 222, 128, 0.34);
+  box-shadow: 0 18px 40px rgba(34, 197, 94, 0.1);
+}
+.application-readiness-needs-info {
+  border-color: rgba(251, 191, 36, 0.34);
+  box-shadow: 0 18px 40px rgba(245, 158, 11, 0.1);
+}
+.application-readiness h1 {
+  margin-bottom: 8px;
+}
+.readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.readiness-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.58);
+}
+.readiness-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+.readiness-item-complete .readiness-icon {
+  color: #052e16;
+  background: #86efac;
+}
+.readiness-item-missing {
+  border-color: rgba(251, 191, 36, 0.32);
+}
+.readiness-item-missing .readiness-icon {
+  color: #422006;
+  background: #fde68a;
+}
+.document-pack-grid,
+.application-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.document-pack-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.58);
+}
+.document-pack-item dl,
+.copy-fields {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.document-pack-item dl div,
+.copy-field {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+.document-pack-item dt,
+.copy-field dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.document-pack-item dd,
+.copy-field dd {
+  margin: 0;
+  color: #f8fafc;
+  word-break: break-word;
+}
+.copy-field-missing dd {
+  color: #fde68a;
+}
+.application-pack-section {
+  display: grid;
+  gap: 10px;
+}
+.application-pack-section-heading {
+  align-items: center;
+  margin-bottom: 0;
+}
+.print-pack-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #ffffff;
+  color: #111827;
+  font-family: Arial, sans-serif;
+}
+.print-pack-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #111827;
+}
+.print-pack-header h1 {
+  margin: 4px 0;
+  font-size: 30px;
+}
+.print-pack-header p,
+.print-pack-notice p {
+  margin: 4px 0 0;
+}
+.print-pack-kicker {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+.print-pack-notice {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+.print-pack-section {
+  break-inside: avoid;
+  margin-top: 18px;
+}
+.print-pack-section h2 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+.print-pack-section table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.print-pack-section th,
+.print-pack-section td {
+  padding: 7px 8px;
+  border: 1px solid #d1d5db;
+  text-align: left;
+  vertical-align: top;
+  font-size: 12px;
+}
+.print-pack-section th {
+  width: 32%;
+  background: #f3f4f6;
+}
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+  .admin-sticky-nav,
+  .application-pack-actions,
+  .copy-section-button,
+  .no-print {
+    display: none !important;
+  }
+  .print-pack-page {
+    padding: 0;
+  }
+}
 @media (max-width: 800px) {
-  .grid-2, .grid-3, .grid-4, .dashboard-grid, .insight-grid, .hero-mini-stats, .toggle-grid, .upload-grid, .application-layout, .marketing-hero, .application-hero { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4, .dashboard-grid, .insight-grid, .hero-mini-stats, .toggle-grid, .upload-grid, .application-layout, .marketing-hero, .application-hero, .readiness-grid, .document-pack-grid, .application-pack-grid { grid-template-columns: 1fr; }
   .hero-panel,
   .hero-metrics,
   .section-heading,
@@ -593,7 +900,10 @@ button.secondary {
   .priority-item,
   .detail-list > div,
   .document-head,
-  .public-band {
+  .public-band,
+  .application-readiness,
+  .document-pack-item dl div,
+  .copy-field {
     display: grid;
   }
   .hero-metrics {
@@ -684,7 +994,7 @@ button.secondary {
   font-size: 14px;
 }
 .compact-heading {
-  align-items: end;
+  align-items: flex-end;
 }
 .upload-grid-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -795,6 +1105,8 @@ select.field-input-error {
   color: var(--text);
 }
 @media (max-width: 900px) {
+  .estimate-calculator,
+  .estimate-options,
   .success-grid,
   .application-layout,
   .application-hero,

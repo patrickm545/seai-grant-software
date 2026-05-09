@@ -120,6 +120,16 @@ function getSalesSignal(value: unknown) {
   return asRecord(root?.salesSignal);
 }
 
+function formatRange(value: unknown, prefix = '') {
+  const range = asRecord(value);
+  const min = range?.min;
+  const max = range?.max;
+
+  if (typeof min !== 'number' || typeof max !== 'number') return 'Not supplied';
+
+  return `${prefix}${min.toLocaleString('en-IE')}-${prefix}${max.toLocaleString('en-IE')}`;
+}
+
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const lead: any = await prisma.lead.findUnique({
@@ -133,6 +143,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const risks = asStringArray(lead.risksJson);
   const exportData = asRecord(lead.structuredExportJson);
   const salesSignal = getSalesSignal(lead.structuredExportJson);
+  const quoteEstimate = asRecord(exportData?.quoteEstimate);
   const leadTemperature = typeof salesSignal?.leadTemperature === 'string' ? salesSignal.leadTemperature : 'WARM';
 
   return (
@@ -220,8 +231,12 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <div><span>MPRN</span><strong>{lead.mprn}</strong></div>
             <div><span>Dwelling</span><strong>{lead.dwellingType.replaceAll('_', ' ')}</strong></div>
             <div><span>Roof type</span><strong>{typeof salesSignal?.roofType === 'string' ? salesSignal.roofType.replaceAll('_', ' ') : 'Unknown'}</strong></div>
+            <div><span>Roof direction</span><strong>{typeof salesSignal?.roofDirection === 'string' ? salesSignal.roofDirection.replaceAll('_', ' ') : 'Unknown'}</strong></div>
+            <div><span>Shading</span><strong>{typeof salesSignal?.shadingLevel === 'string' ? salesSignal.shadingLevel.replaceAll('_', ' ') : 'Unknown'}</strong></div>
             <div><span>Built</span><strong>{lead.yearBuilt}</strong></div>
             <div><span>Occupied</span><strong>{lead.yearOccupied || 'Unknown'}</strong></div>
+            <div><span>Occupants</span><strong>{typeof salesSignal?.numberOfOccupants === 'number' ? salesSignal.numberOfOccupants : 'Not supplied'}</strong></div>
+            <div><span>Daytime usage</span><strong>{typeof salesSignal?.daytimeUsage === 'string' ? salesSignal.daytimeUsage.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
           </div>
         </div>
 
@@ -264,7 +279,12 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <div><span>Lead temperature</span><strong>{leadTemperature}</strong></div>
             <div><span>Install timeline</span><strong>{typeof salesSignal?.installTimeline === 'string' ? salesSignal.installTimeline.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
             <div><span>Monthly bill range</span><strong>{typeof salesSignal?.monthlyElectricityBillRange === 'string' ? salesSignal.monthlyElectricityBillRange.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
-            <div><span>Battery interest</span><strong>{salesSignal?.batteryInterest ? 'Yes' : 'No'}</strong></div>
+            <div><span>Battery interest</span><strong>{(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery) ? 'Yes' : 'No'}</strong></div>
+            <div><span>EV charger interest</span><strong>{salesSignal?.evChargerInterest ? 'Yes' : 'No'}</strong></div>
+            <div><span>Hot water diverter</span><strong>{salesSignal?.hotWaterDiverterInterest ? 'Yes' : 'No'}</strong></div>
+            <div><span>Recommended next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
+            <div><span>Recommended system</span><strong>{typeof quoteEstimate?.recommendedSystemSizeKwp === 'number' ? `${quoteEstimate.recommendedSystemSizeKwp} kWp` : 'Not supplied'}</strong></div>
+            <div><span>Net cost estimate</span><strong>{formatRange(quoteEstimate?.netCostRangeAfterGrant, 'EUR ')}</strong></div>
           </div>
         </div>
       </section>

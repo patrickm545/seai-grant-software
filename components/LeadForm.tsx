@@ -1,7 +1,26 @@
 'use client';
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { billRanges, callbackWindows, counties, dwellingTypes, installTimelines, roofTypes } from '@/lib/types';
+import {
+  billRanges,
+  callbackWindows,
+  counties,
+  daytimeUsages,
+  dwellingTypes,
+  installTimelines,
+  roofDirections,
+  roofTypes,
+  shadingLevels,
+  type EligibilityAnalysis
+} from '@/lib/types';
+import {
+  buildSolarQuoteEstimate,
+  getSystemSizeOptions,
+  quoteAssumptions,
+  type SolarQuoteEstimate,
+  type SolarQuoteInput,
+  type SystemSizeVariant
+} from '@/lib/quote-estimate';
 
 function createInitialState(installerId: string) {
   return {
@@ -19,11 +38,17 @@ function createInitialState(installerId: string) {
     yearBuilt: '',
     yearOccupied: '',
     roofType: '',
+    roofDirection: 'UNSURE',
+    shadingLevel: 'UNSURE',
     mprn: '',
     worksStarted: false,
     priorSolarGrantAtMprn: false,
     monthlyElectricityBillRange: '',
     wantsBattery: false,
+    evChargerInterest: false,
+    hotWaterDiverterInterest: false,
+    numberOfOccupants: '',
+    daytimeUsage: 'MEDIUM',
     installTimeline: '',
     preferredCallbackWindow: '',
     consentToProcess: true,
@@ -45,17 +70,11 @@ type UploadItem = {
   sizeBytes: number;
 };
 
-type SystemSizeOption = 'small' | 'medium' | 'large';
-
-const SOLAR_GRANT_AMOUNT = 1800;
-
-const systemEstimateOptions: Record<
-  SystemSizeOption,
-  { label: string; systemSize: string; estimatedCost: number }
-> = {
-  small: { label: 'Small', systemSize: '4kW', estimatedCost: 7000 },
-  medium: { label: 'Medium', systemSize: '5kW', estimatedCost: 8000 },
-  large: { label: 'Large', systemSize: '6kW', estimatedCost: 9500 }
+type IntakeResult = {
+  leadId: string;
+  analysis?: EligibilityAnalysis;
+  quoteEstimate?: SolarQuoteEstimate;
+  uploadedDocuments?: number;
 };
 
 const euroFormatter = new Intl.NumberFormat('en-IE', {
@@ -130,12 +149,37 @@ function formatEuro(value: number) {
   return euroFormatter.format(value);
 }
 
+function formatEuroRange(range: { min: number; max: number }) {
+  return `${formatEuro(range.min)}-${formatEuro(range.max)}`;
+}
+
+function formatKwhRange(range: { min: number; max: number }) {
+  return `${range.min.toLocaleString('en-IE')}-${range.max.toLocaleString('en-IE')} kWh`;
+}
+
+function formatYearsRange(range: { min: number; max: number }) {
+  return `${range.min}-${range.max} years`;
+}
+
+function formatKwp(value: number) {
+  return `${value.toFixed(1)} kWp`;
+}
+
 function requiredLabel(text: string) {
   return (
     <>
       {text} <span aria-hidden="true">*</span>
     </>
   );
+}
+
+function optionalLabel(text: string) {
+  return `${text} (optional)`;
+}
+
+function eligibilityLabel(analysis?: EligibilityAnalysis) {
+  if (!analysis) return 'Application received';
+  return analysis.likelyEligible ? 'Likely eligible, subject to SEAI approval' : 'Needs manual grant review';
 }
 
 function getInvalidFields(form: FormState) {
@@ -161,11 +205,11 @@ async function parseJsonSafely(response: Response) {
 
 export function LeadForm({ installerId = fallbackInitialState.installerId }: { installerId?: string }) {
   const [form, setForm] = useState<FormState>(() => createInitialState(installerId));
-  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeOption>('medium');
+  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>('recommended');
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [meterPhotoFiles, setMeterPhotoFiles] = useState<File[]>([]);
   const [roofPhotoFiles, setRoofPhotoFiles] = useState<File[]>([]);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<IntakeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [invalidFields, setInvalidFields] = useState<FormFieldKey[]>([]);
@@ -185,16 +229,12 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     ];
   }, [billFiles, meterPhotoFiles, roofPhotoFiles]);
 
-  const estimate = useMemo(() => {
-    const selectedOption = systemEstimateOptions[selectedSystemSize];
-    const finalEstimatedCost = selectedOption.estimatedCost - SOLAR_GRANT_AMOUNT;
+  const systemSizeOptions = useMemo(() => getSystemSizeOptions(form as SolarQuoteInput), [form]);
 
-    return {
-      ...selectedOption,
-      grantApplied: SOLAR_GRANT_AMOUNT,
-      finalEstimatedCost
-    };
-  }, [selectedSystemSize]);
+  const estimate = useMemo(
+    () => buildSolarQuoteEstimate(form as SolarQuoteInput, selectedSystemSize),
+    [form, selectedSystemSize]
+  );
 
   const update = (key: keyof FormState, value: string | boolean) =>
     setForm((prev) => {
@@ -269,6 +309,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       ...form,
       yearBuilt: toOptionalNumber(form.yearBuilt),
       yearOccupied: toOptionalNumber(form.yearOccupied),
+      numberOfOccupants: toOptionalNumber(form.numberOfOccupants),
+      selectedSystemSizeVariant: selectedSystemSize,
       applicantDocuments
     };
 
@@ -316,7 +358,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function resetForm() {
     setForm(createInitialState(installerId));
-    setSelectedSystemSize('medium');
+    setSelectedSystemSize('recommended');
     setBillFiles([]);
     setMeterPhotoFiles([]);
     setRoofPhotoFiles([]);
@@ -334,10 +376,12 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   useEffect(() => {
     setForm(createInitialState(installerId));
-    setSelectedSystemSize('medium');
+    setSelectedSystemSize('recommended');
   }, [installerId]);
 
   if (result) {
+    const quote = result.quoteEstimate;
+
     return (
       <div ref={successRef} tabIndex={-1} className="application-layout success-layout">
         <aside className="card application-sidebar compact-sidebar">
@@ -358,13 +402,35 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           <p className="thank-you-copy">Thank you for applying. We will email you when we hear back.</p>
           <p className="small">Your details have been sent for review. If anything else is needed, the installer team will contact you using the details you provided.</p>
 
+          {quote ? (
+            <div className="homeowner-result-summary">
+              <div className="result-hero-metric">
+                <span>Estimated net cost after grant</span>
+                <strong>{formatEuroRange(quote.netCostRangeAfterGrant)}</strong>
+                <small>Indicative only, subject to survey and SEAI approval.</small>
+              </div>
+              <div className="result-metric-grid">
+                <div><span>Eligibility status</span><strong>{eligibilityLabel(result.analysis)}</strong></div>
+                <div><span>Recommended size</span><strong>{formatKwp(quote.recommendedSystemSizeKwp)}</strong></div>
+                <div><span>Estimated panels</span><strong>{quote.estimatedPanelCount}</strong></div>
+                <div><span>Gross cost range</span><strong>{formatEuroRange(quote.grossCostRange)}</strong></div>
+                <div><span>Estimated grant</span><strong>{quote.estimatedSeaiGrantDeduction ? formatEuro(quote.estimatedSeaiGrantDeduction) : 'Review needed'}</strong></div>
+                <div><span>Annual savings</span><strong>{formatEuroRange(quote.estimatedAnnualSavingsRange)}</strong></div>
+                <div><span>Estimated payback</span><strong>{formatYearsRange(quote.estimatedPaybackRangeYears)}</strong></div>
+                <div><span>Recommended extras</span><strong>{quote.recommendedExtras.length ? quote.recommendedExtras.join(', ') : 'Survey first'}</strong></div>
+              </div>
+              <div className="survey-cta">Book a free solar survey</div>
+              <p className="small">Grant eligibility and final grant amount must be confirmed with SEAI. Figures are estimates only.</p>
+            </div>
+          ) : null}
+
           <div className="result-list-wrap success-grid">
             <div className="result-panel">
               <div className="eyebrow">What happens next</div>
               <ul className="plain-list compact-list">
                 <li>Your details are reviewed by the installer team.</li>
                 <li>They check your grant and suitability details.</li>
-                <li>You will be emailed once there is an update.</li>
+                <li>They can use your indicative quote to prepare for the survey call.</li>
               </ul>
             </div>
             <div className="result-panel">
@@ -393,11 +459,21 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           <div className="mini-point">Address and 11-digit MPRN</div>
           <div className="mini-point">A few home details</div>
           <div className="mini-point">Optional photos to speed things up</div>
+          <div className="mini-point">Fields marked * are required</div>
         </div>
         <p className="small">Most people finish this in about a minute.</p>
       </aside>
 
       <form onSubmit={submit} noValidate className="card grid polished-form">
+        <div className="form-progress" aria-label="Application progress">
+          {['Details', 'Home', 'Estimate', 'Uploads', 'Consent'].map((step, index) => (
+            <div key={step} className="progress-step">
+              <span>{index + 1}</span>
+              <strong>{step}</strong>
+            </div>
+          ))}
+        </div>
+
         <section className="form-section">
           <div className="section-heading compact-heading">
             <div>
@@ -406,12 +482,12 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             </div>
           </div>
           <div className="grid grid-2">
-            <div data-field="fullName"><label className={isFieldInvalid('fullName') ? 'field-label-error' : undefined}>{requiredLabel('Full name')}</label><input className={isFieldInvalid('fullName') ? 'field-input-error' : undefined} value={form.fullName} onChange={(e) => update('fullName', e.target.value)} required /></div>
-            <div data-field="email"><label className={isFieldInvalid('email') ? 'field-label-error' : undefined}>{requiredLabel('Email')}</label><input className={isFieldInvalid('email') ? 'field-input-error' : undefined} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></div>
-            <div data-field="phone"><label className={isFieldInvalid('phone') ? 'field-label-error' : undefined}>{requiredLabel('Phone')}</label><input className={isFieldInvalid('phone') ? 'field-input-error' : undefined} value={form.phone} onChange={(e) => update('phone', e.target.value)} required inputMode="tel" placeholder="Best number to call you on" /></div>
+            <div data-field="fullName"><label htmlFor="fullName" className={isFieldInvalid('fullName') ? 'field-label-error' : undefined}>{requiredLabel('Full name')}</label><input id="fullName" className={isFieldInvalid('fullName') ? 'field-input-error' : undefined} value={form.fullName} onChange={(e) => update('fullName', e.target.value)} required /></div>
+            <div data-field="email"><label htmlFor="email" className={isFieldInvalid('email') ? 'field-label-error' : undefined}>{requiredLabel('Email')}</label><input id="email" className={isFieldInvalid('email') ? 'field-input-error' : undefined} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></div>
+            <div data-field="phone"><label htmlFor="phone" className={isFieldInvalid('phone') ? 'field-label-error' : undefined}>{requiredLabel('Phone')}</label><input id="phone" className={isFieldInvalid('phone') ? 'field-input-error' : undefined} value={form.phone} onChange={(e) => update('phone', e.target.value)} required inputMode="tel" placeholder="Best number to call you on" /></div>
             <div data-field="preferredCallbackWindow">
-              <label className={isFieldInvalid('preferredCallbackWindow') ? 'field-label-error' : undefined}>{requiredLabel('Best callback time')}</label>
-              <select className={isFieldInvalid('preferredCallbackWindow') ? 'field-input-error' : undefined} value={form.preferredCallbackWindow} onChange={(e) => update('preferredCallbackWindow', e.target.value)} required>
+              <label htmlFor="preferredCallbackWindow" className={isFieldInvalid('preferredCallbackWindow') ? 'field-label-error' : undefined}>{requiredLabel('Best callback time')}</label>
+              <select id="preferredCallbackWindow" className={isFieldInvalid('preferredCallbackWindow') ? 'field-input-error' : undefined} value={form.preferredCallbackWindow} onChange={(e) => update('preferredCallbackWindow', e.target.value)} required>
                 <option value="">Select one</option>
                 {callbackWindows.map((item) => <option key={item} value={item}>{labelise(item)}</option>)}
               </select>
@@ -427,48 +503,74 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             </div>
           </div>
           <div className="grid grid-2">
-            <div data-field="addressLine1"><label className={isFieldInvalid('addressLine1') ? 'field-label-error' : undefined}>{requiredLabel('Address line 1')}</label><input className={isFieldInvalid('addressLine1') ? 'field-input-error' : undefined} value={form.addressLine1} onChange={(e) => update('addressLine1', e.target.value)} required /></div>
-            <div><label>Address line 2</label><input value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} /></div>
+            <div data-field="addressLine1"><label htmlFor="addressLine1" className={isFieldInvalid('addressLine1') ? 'field-label-error' : undefined}>{requiredLabel('Address line 1')}</label><input id="addressLine1" className={isFieldInvalid('addressLine1') ? 'field-input-error' : undefined} value={form.addressLine1} onChange={(e) => update('addressLine1', e.target.value)} required /></div>
+            <div><label htmlFor="addressLine2">{optionalLabel('Address line 2')}</label><input id="addressLine2" value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} /></div>
             <div data-field="county">
-              <label className={isFieldInvalid('county') ? 'field-label-error' : undefined}>{requiredLabel('County')}</label>
-              <select className={isFieldInvalid('county') ? 'field-input-error' : undefined} value={form.county} onChange={(e) => update('county', e.target.value)} required>
+              <label htmlFor="county" className={isFieldInvalid('county') ? 'field-label-error' : undefined}>{requiredLabel('County')}</label>
+              <select id="county" className={isFieldInvalid('county') ? 'field-input-error' : undefined} value={form.county} onChange={(e) => update('county', e.target.value)} required>
                 <option value="">Select county</option>
                 {counties.map((county) => <option key={county} value={county}>{county}</option>)}
               </select>
             </div>
-            <div><label>Eircode</label><input value={form.eircode} onChange={(e) => update('eircode', e.target.value.toUpperCase())} placeholder="Optional" /></div>
-            <div data-field="mprn"><label className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>{requiredLabel('MPRN')}</label><input className={isFieldInvalid('mprn') ? 'field-input-error' : undefined} value={form.mprn} onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))} required inputMode="numeric" pattern="[0-9]*" maxLength={11} placeholder="11-digit meter number" /></div>
+            <div><label htmlFor="eircode">{optionalLabel('Eircode')}</label><input id="eircode" value={form.eircode} onChange={(e) => update('eircode', e.target.value.toUpperCase())} placeholder="Optional" /></div>
+            <div data-field="mprn"><label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>{requiredLabel('MPRN')}</label><input id="mprn" className={isFieldInvalid('mprn') ? 'field-input-error' : undefined} value={form.mprn} onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))} required inputMode="numeric" pattern="[0-9]*" maxLength={11} placeholder="11-digit meter number" /></div>
             <div data-field="dwellingType">
-              <label className={isFieldInvalid('dwellingType') ? 'field-label-error' : undefined}>{requiredLabel('Dwelling type')}</label>
-              <select className={isFieldInvalid('dwellingType') ? 'field-input-error' : undefined} value={form.dwellingType} onChange={(e) => update('dwellingType', e.target.value)} required>
+              <label htmlFor="dwellingType" className={isFieldInvalid('dwellingType') ? 'field-label-error' : undefined}>{requiredLabel('Dwelling type')}</label>
+              <select id="dwellingType" className={isFieldInvalid('dwellingType') ? 'field-input-error' : undefined} value={form.dwellingType} onChange={(e) => update('dwellingType', e.target.value)} required>
                 <option value="">Select one</option>
                 {dwellingTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
               </select>
             </div>
-            <div data-field="yearBuilt"><label className={isFieldInvalid('yearBuilt') ? 'field-label-error' : undefined}>{requiredLabel('Year built')}</label><input className={isFieldInvalid('yearBuilt') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearBuilt} onChange={(e) => update('yearBuilt', e.target.value)} required /></div>
-            <div data-field="yearOccupied"><label className={isFieldInvalid('yearOccupied') ? 'field-label-error' : undefined}>{requiredLabel('Year occupied')}</label><input className={isFieldInvalid('yearOccupied') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearOccupied} onChange={(e) => update('yearOccupied', e.target.value)} required /></div>
+            <div data-field="yearBuilt"><label htmlFor="yearBuilt" className={isFieldInvalid('yearBuilt') ? 'field-label-error' : undefined}>{requiredLabel('Year built')}</label><input id="yearBuilt" className={isFieldInvalid('yearBuilt') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearBuilt} onChange={(e) => update('yearBuilt', e.target.value)} required /></div>
+            <div data-field="yearOccupied"><label htmlFor="yearOccupied" className={isFieldInvalid('yearOccupied') ? 'field-label-error' : undefined}>{requiredLabel('Year occupied')}</label><input id="yearOccupied" className={isFieldInvalid('yearOccupied') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearOccupied} onChange={(e) => update('yearOccupied', e.target.value)} required /></div>
             <div data-field="roofType">
-              <label className={isFieldInvalid('roofType') ? 'field-label-error' : undefined}>{requiredLabel('Roof type')}</label>
-              <select className={isFieldInvalid('roofType') ? 'field-input-error' : undefined} value={form.roofType} onChange={(e) => update('roofType', e.target.value)} required>
+              <label htmlFor="roofType" className={isFieldInvalid('roofType') ? 'field-label-error' : undefined}>{requiredLabel('Roof type')}</label>
+              <select id="roofType" className={isFieldInvalid('roofType') ? 'field-input-error' : undefined} value={form.roofType} onChange={(e) => update('roofType', e.target.value)} required>
                 <option value="">Select one</option>
                 {roofTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
               </select>
             </div>
+            <div>
+              <label htmlFor="roofDirection">{optionalLabel('Roof direction')}</label>
+              <select id="roofDirection" value={form.roofDirection} onChange={(e) => update('roofDirection', e.target.value)}>
+                {roofDirections.map((direction) => (
+                  <option key={direction} value={direction}>
+                    {labelise(direction).replace('East West', 'East/West')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="shadingLevel">{optionalLabel('Shading level')}</label>
+              <select id="shadingLevel" value={form.shadingLevel} onChange={(e) => update('shadingLevel', e.target.value)}>
+                {shadingLevels.map((level) => <option key={level} value={level}>{labelise(level)}</option>)}
+              </select>
+            </div>
             <div data-field="monthlyElectricityBillRange">
-              <label className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-label-error' : undefined}>{requiredLabel('Monthly electricity bill')}</label>
-              <select className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-input-error' : undefined} value={form.monthlyElectricityBillRange} onChange={(e) => update('monthlyElectricityBillRange', e.target.value)} required>
+              <label htmlFor="monthlyElectricityBillRange" className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-label-error' : undefined}>{requiredLabel('Monthly electricity bill')}</label>
+              <select id="monthlyElectricityBillRange" className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-input-error' : undefined} value={form.monthlyElectricityBillRange} onChange={(e) => update('monthlyElectricityBillRange', e.target.value)} required>
                 <option value="">Select one</option>
                 {billRanges.map((item) => <option key={item} value={item}>{billRangeLabel(item)}</option>)}
               </select>
             </div>
+            <div>
+              <label htmlFor="numberOfOccupants">{optionalLabel('Number of occupants')}</label>
+              <input id="numberOfOccupants" type="number" min="1" max="12" value={form.numberOfOccupants} onChange={(e) => update('numberOfOccupants', e.target.value)} placeholder="Optional" />
+            </div>
+            <div>
+              <label htmlFor="daytimeUsage">{optionalLabel('Daytime usage')}</label>
+              <select id="daytimeUsage" value={form.daytimeUsage} onChange={(e) => update('daytimeUsage', e.target.value)}>
+                {daytimeUsages.map((usage) => <option key={usage} value={usage}>{labelise(usage)}</option>)}
+              </select>
+            </div>
             <div data-field="installTimeline">
-              <label className={isFieldInvalid('installTimeline') ? 'field-label-error' : undefined}>{requiredLabel('Installation timeframe')}</label>
-              <select className={isFieldInvalid('installTimeline') ? 'field-input-error' : undefined} value={form.installTimeline} onChange={(e) => update('installTimeline', e.target.value)} required>
+              <label htmlFor="installTimeline" className={isFieldInvalid('installTimeline') ? 'field-label-error' : undefined}>{requiredLabel('Installation timeframe')}</label>
+              <select id="installTimeline" className={isFieldInvalid('installTimeline') ? 'field-input-error' : undefined} value={form.installTimeline} onChange={(e) => update('installTimeline', e.target.value)} required>
                 <option value="">Select one</option>
                 {installTimelines.map((item) => <option key={item} value={item}>{labelise(item).replace('Asap', 'ASAP')}</option>)}
               </select>
             </div>
-            <div><label>Anything we should know?</label><input value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Optional" /></div>
+            <div><label htmlFor="notes">{optionalLabel('Anything we should know?')}</label><input id="notes" value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Optional" /></div>
           </div>
           <div className="toggle-grid">
             <label className="toggle-card"><input type="checkbox" checked={form.propertyOwner} onChange={(e) => update('propertyOwner', e.target.checked)} /> I own the property</label>
@@ -476,6 +578,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             <label className="toggle-card"><input type="checkbox" checked={form.worksStarted} onChange={(e) => update('worksStarted', e.target.checked)} /> Installation has already started</label>
             <label className="toggle-card"><input type="checkbox" checked={form.priorSolarGrantAtMprn} onChange={(e) => update('priorSolarGrantAtMprn', e.target.checked)} /> This MPRN already got a solar grant</label>
             <label className="toggle-card"><input type="checkbox" checked={form.wantsBattery} onChange={(e) => update('wantsBattery', e.target.checked)} /> I want a battery quote too</label>
+            <label className="toggle-card"><input type="checkbox" checked={form.evChargerInterest} onChange={(e) => update('evChargerInterest', e.target.checked)} /> I may want an EV charger</label>
+            <label className="toggle-card"><input type="checkbox" checked={form.hotWaterDiverterInterest} onChange={(e) => update('hotWaterDiverterInterest', e.target.checked)} /> I may want a hot water diverter</label>
           </div>
         </section>
 
@@ -488,44 +592,78 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           </div>
           <div className="estimate-calculator">
             <div className="estimate-options" role="group" aria-label="Select a solar system size">
-              {(Object.entries(systemEstimateOptions) as Array<[SystemSizeOption, (typeof systemEstimateOptions)[SystemSizeOption]]>).map(
-                ([key, option]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`estimate-option ${selectedSystemSize === key ? 'estimate-option-active' : ''}`}
-                    onClick={() => setSelectedSystemSize(key)}
-                    aria-pressed={selectedSystemSize === key}
-                  >
-                    <span className="estimate-option-title">{option.label}</span>
-                    <span className="estimate-option-meta">{option.systemSize} system</span>
-                    <span className="estimate-option-price">{formatEuro(option.estimatedCost)}</span>
-                  </button>
-                )
-              )}
+              {systemSizeOptions.map((option) => (
+                <button
+                  key={option.variant}
+                  type="button"
+                  className={`estimate-option ${selectedSystemSize === option.variant ? 'estimate-option-active' : ''}`}
+                  onClick={() => setSelectedSystemSize(option.variant)}
+                  aria-pressed={selectedSystemSize === option.variant}
+                >
+                  <span className="estimate-option-title">
+                    {option.label}
+                    {option.isRecommended ? <span className="estimate-choice-badge">Best fit</span> : null}
+                  </span>
+                  <span className="estimate-option-meta">{option.description}</span>
+                  <span className="estimate-option-price">{formatKwp(option.systemSizeKwp)}</span>
+                  <span className="estimate-option-meta">{option.panelCount} panels at {quoteAssumptions.panelSizeWatts}W</span>
+                </button>
+              ))}
             </div>
             <div className="estimate-summary">
-              <div className="estimate-total-label">Estimated cost (final quote after survey)</div>
-              <div className="estimate-total">{formatEuro(estimate.finalEstimatedCost)}</div>
-              <p className="estimate-note">Includes up to {formatEuro(estimate.grantApplied)} SEAI grant deduction.</p>
+              <div className="estimate-total-label">Indicative net cost after grant</div>
+              <div className="estimate-total">{formatEuroRange(estimate.netCostRangeAfterGrant)}</div>
+              <p className="estimate-note">
+                Subject to survey and SEAI approval. Grant eligibility and final grant amount must be confirmed with SEAI. Figures are estimates only.
+              </p>
               <div className="estimate-rows">
                 <div>
-                  <span>System size</span>
-                  <strong>{estimate.label} ({estimate.systemSize})</strong>
+                  <span>Recommended system size</span>
+                  <strong>{formatKwp(estimate.recommendedSystemSizeKwp)}</strong>
                 </div>
                 <div>
-                  <span>Estimated cost range</span>
-                  <strong>{formatEuro(estimate.estimatedCost)}</strong>
+                  <span>Selected estimate</span>
+                  <strong>{formatKwp(estimate.selectedSystemSizeKwp)} / {estimate.estimatedPanelCount} panels</strong>
                 </div>
                 <div>
-                  <span>Grant applied</span>
-                  <strong>-{formatEuro(estimate.grantApplied)}</strong>
+                  <span>Gross cost range</span>
+                  <strong>{formatEuroRange(estimate.grossCostRange)}</strong>
                 </div>
                 <div>
-                  <span>Final estimated cost after grant</span>
-                  <strong>{formatEuro(estimate.finalEstimatedCost)}</strong>
+                  <span>Estimated SEAI grant deduction</span>
+                  <strong>{estimate.estimatedSeaiGrantDeduction ? `-${formatEuro(estimate.estimatedSeaiGrantDeduction)}` : 'Review needed'}</strong>
+                </div>
+                <div>
+                  <span>Annual generation</span>
+                  <strong>{formatKwhRange(estimate.estimatedAnnualGenerationKwh)}</strong>
+                </div>
+                <div>
+                  <span>Estimated annual savings</span>
+                  <strong>{formatEuroRange(estimate.estimatedAnnualSavingsRange)}</strong>
+                </div>
+                <div>
+                  <span>Estimated payback</span>
+                  <strong>{formatYearsRange(estimate.estimatedPaybackRangeYears)}</strong>
+                </div>
+                <div>
+                  <span>Self-consumption assumption</span>
+                  <strong>{Math.round(estimate.selfConsumptionRate * 100)}%</strong>
                 </div>
               </div>
+              <div className={`grant-status ${estimate.grantLikely ? 'grant-status-ok' : 'grant-status-review'}`}>
+                {estimate.grantStatus}
+              </div>
+              {estimate.recommendedExtras.length ? (
+                <div className="estimate-extra-list">
+                  <span>Selected extras</span>
+                  <strong>{estimate.recommendedExtras.join(', ')}</strong>
+                </div>
+              ) : null}
+              {estimate.recommendationNotes.length ? (
+                <ul className="plain-list compact-list estimate-notes">
+                  {estimate.recommendationNotes.map((note) => <li key={note}>{note}</li>)}
+                </ul>
+              ) : null}
             </div>
           </div>
         </section>

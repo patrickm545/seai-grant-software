@@ -1,4 +1,5 @@
 import twilio from 'twilio';
+import type { SolarQuoteEstimate } from './quote-estimate';
 
 type LeadSmsArgs = {
   lead: {
@@ -6,6 +7,8 @@ type LeadSmsArgs = {
     phone: string | null;
     county: string;
   };
+  quoteEstimate?: SolarQuoteEstimate;
+  leadTemperature?: string;
 };
 
 function getTwilioConfig() {
@@ -25,6 +28,9 @@ export async function sendLeadNotificationSms(args: LeadSmsArgs) {
 
   const client = twilio(config.accountSid, config.authToken);
   const fireEmoji = '\u{1F525}';
+  const quoteLine = args.quoteEstimate
+    ? `\nEstimate: ${args.quoteEstimate.selectedSystemSizeKwp} kWp, ${args.quoteEstimate.estimatedPanelCount} panels, net EUR ${args.quoteEstimate.netCostRangeAfterGrant.min}-${args.quoteEstimate.netCostRangeAfterGrant.max}`
+    : '';
 
   try {
     await client.messages.create({
@@ -35,6 +41,7 @@ export async function sendLeadNotificationSms(args: LeadSmsArgs) {
 Name: ${args.lead.fullName}
 Phone: ${args.lead.phone}
 County: ${args.lead.county}
+Priority: ${args.leadTemperature ?? 'WARM'}${quoteLine}
 
 Check dashboard immediately.`
     });

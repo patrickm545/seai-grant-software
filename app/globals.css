@@ -220,6 +220,37 @@ button.secondary {
   gap: 22px;
   padding: 26px;
 }
+.form-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.58);
+  color: #dbeafe;
+  font-size: 12px;
+}
+.progress-step span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.16);
+  color: #86efac;
+  font-weight: 800;
+}
+.progress-step strong {
+  overflow-wrap: anywhere;
+}
 .form-section {
   display: grid;
   gap: 16px;
@@ -260,7 +291,21 @@ button.secondary {
   box-shadow: 0 12px 24px rgba(34, 197, 94, 0.12);
 }
 .estimate-option-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   font-size: 1rem;
+  font-weight: 700;
+}
+.estimate-choice-badge {
+  display: inline-flex;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.14);
+  color: #bae6fd;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  font-size: 11px;
   font-weight: 700;
 }
 .estimate-option-meta {
@@ -314,6 +359,34 @@ button.secondary {
 }
 .estimate-rows strong {
   text-align: right;
+}
+.grant-status,
+.estimate-extra-list {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.6);
+  color: #dbeafe;
+  font-size: 13px;
+}
+.grant-status-ok {
+  border-color: rgba(74, 222, 128, 0.26);
+  color: #bbf7d0;
+}
+.grant-status-review {
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fde68a;
+}
+.estimate-extra-list {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.estimate-extra-list span {
+  color: var(--muted);
+}
+.estimate-notes {
+  color: #cbd5e1;
 }
 .toggle-grid {
   display: grid;
@@ -1075,6 +1148,57 @@ button.secondary {
   color: #f8fafc;
   margin-bottom: 0;
 }
+.homeowner-result-summary {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  background:
+    linear-gradient(135deg, rgba(20, 32, 60, 0.94), rgba(11, 16, 32, 0.98)),
+    rgba(17, 23, 42, 0.92);
+}
+.result-hero-metric {
+  display: grid;
+  gap: 6px;
+}
+.result-hero-metric span,
+.result-metric-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.result-hero-metric strong {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1;
+}
+.result-hero-metric small {
+  color: #cbd5e1;
+}
+.result-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.result-metric-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.survey-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: #052e16;
+  font-weight: 800;
+}
 .success-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 .error-banner {
   padding: 12px 14px;
@@ -1107,6 +1231,8 @@ select.field-input-error {
 @media (max-width: 900px) {
   .estimate-calculator,
   .estimate-options,
+  .form-progress,
+  .result-metric-grid,
   .success-grid,
   .application-layout,
   .application-hero,

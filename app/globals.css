@@ -255,6 +255,169 @@ button.secondary {
   display: grid;
   gap: 16px;
 }
+.stepped-form {
+  align-content: start;
+}
+.step-progress-panel {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.62);
+}
+.step-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+.step-progress-meta span {
+  color: #86efac;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.step-progress-meta strong {
+  color: #f8fafc;
+  text-align: right;
+}
+.step-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+.step-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4ade80, #38bdf8);
+  transition: width 180ms ease;
+}
+.step-progress-panel p,
+.step-helper {
+  margin: 0;
+  color: #cbd5e1;
+}
+.step-sidebar-list {
+  display: grid;
+  gap: 8px;
+}
+.step-sidebar-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.52);
+  color: #dbeafe;
+}
+.step-sidebar-item > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  font-weight: 800;
+  font-size: 13px;
+}
+.step-sidebar-item div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.step-sidebar-item strong {
+  font-size: 14px;
+}
+.step-sidebar-item small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.step-sidebar-item-active {
+  border-color: rgba(74, 222, 128, 0.34);
+  background: rgba(34, 197, 94, 0.12);
+}
+.step-sidebar-item-active > span,
+.step-sidebar-item-complete > span {
+  background: rgba(74, 222, 128, 0.18);
+  color: #86efac;
+}
+.step-sidebar-item-active small,
+.step-sidebar-item-complete small {
+  color: #bbf7d0;
+}
+.field-help {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.step-preview-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  background: rgba(15, 23, 42, 0.58);
+}
+.step-preview-copy h3 {
+  margin-bottom: 6px;
+  font-size: 1.25rem;
+}
+.step-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.step-preview-grid div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.62);
+}
+.step-preview-grid span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.step-preview-grid strong {
+  color: #f8fafc;
+}
+.grant-preview-copy {
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+.step-actions button {
+  width: auto;
+  min-width: 170px;
+}
+.step-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.step-estimate-calculator {
+  grid-template-columns: 1fr;
+}
+.step-estimate-calculator .estimate-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.compact-estimate-summary .estimate-total {
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
 .estimate-calculator {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
@@ -696,6 +859,30 @@ button.secondary {
 .detail-list > div strong {
   text-align: right;
 }
+.quote-review-card {
+  grid-column: 1 / -1;
+}
+.quote-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.quote-detail-grid > div {
+  display: grid;
+  gap: 6px;
+  min-height: 84px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.quote-detail-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.quote-detail-grid strong {
+  overflow-wrap: anywhere;
+}
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0,1fr));
@@ -966,6 +1153,9 @@ button.secondary {
 }
 @media (max-width: 800px) {
   .grid-2, .grid-3, .grid-4, .dashboard-grid, .insight-grid, .hero-mini-stats, .toggle-grid, .upload-grid, .application-layout, .marketing-hero, .application-hero, .readiness-grid, .document-pack-grid, .application-pack-grid { grid-template-columns: 1fr; }
+  .quote-detail-grid {
+    grid-template-columns: 1fr;
+  }
   .hero-panel,
   .hero-metrics,
   .section-heading,
@@ -1231,6 +1421,8 @@ select.field-input-error {
 @media (max-width: 900px) {
   .estimate-calculator,
   .estimate-options,
+  .step-estimate-calculator .estimate-options,
+  .step-preview-grid,
   .form-progress,
   .result-metric-grid,
   .success-grid,
@@ -1243,4 +1435,19 @@ select.field-input-error {
     grid-template-columns: 1fr;
   }
   .application-sidebar { position: static; }
+  .step-progress-meta,
+  .step-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .step-progress-meta strong {
+    text-align: left;
+  }
+  .step-actions button {
+    width: 100%;
+    min-height: 48px;
+  }
+  .quote-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

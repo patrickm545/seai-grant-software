@@ -1,11 +1,16 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 
 const ADMIN_BASE_PATH = '/admin/dashboard';
 export const dynamic = 'force-dynamic';
+
+type LeadDetail = Prisma.LeadGetPayload<{
+  include: { installer: true; documents: true };
+}>;
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: 'New',
@@ -130,9 +135,28 @@ function formatRange(value: unknown, prefix = '') {
   return `${prefix}${min.toLocaleString('en-IE')}-${prefix}${max.toLocaleString('en-IE')}`;
 }
 
+function formatNumber(value: unknown, suffix = '') {
+  return typeof value === 'number' ? `${value.toLocaleString('en-IE')}${suffix}` : 'Not supplied';
+}
+
+function formatGrantEstimate(value: unknown) {
+  if (typeof value !== 'number') return 'Not supplied';
+  return value > 0 ? `EUR ${value.toLocaleString('en-IE')}` : 'Review needed';
+}
+
+function formatPayback(value: unknown) {
+  const range = asRecord(value);
+  const min = range?.min;
+  const max = range?.max;
+
+  if (typeof min !== 'number' || typeof max !== 'number') return 'Not supplied';
+
+  return `${min}-${max} years`;
+}
+
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const lead: any = await prisma.lead.findUnique({
+  const lead: LeadDetail | null = await prisma.lead.findUnique({
     where: { id },
     include: { installer: true, documents: true }
   });
@@ -240,7 +264,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           </div>
         </div>
 
-        <div className="card">
+        <div className="card quote-review-card">
           <div className="section-heading">
             <div>
               <div className="eyebrow">AI review</div>
@@ -275,16 +299,34 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               <h2>Commercial fit</h2>
             </div>
           </div>
-          <div className="detail-list">
+          <div className="quote-detail-grid">
             <div><span>Lead temperature</span><strong>{leadTemperature}</strong></div>
             <div><span>Install timeline</span><strong>{typeof salesSignal?.installTimeline === 'string' ? salesSignal.installTimeline.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
             <div><span>Monthly bill range</span><strong>{typeof salesSignal?.monthlyElectricityBillRange === 'string' ? salesSignal.monthlyElectricityBillRange.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
+            <div><span>Recommended next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">Quote summary</div>
+              <h2>Sales estimate</h2>
+            </div>
+          </div>
+          <div className="detail-list">
+            <div><span>System size</span><strong>{formatNumber(quoteEstimate?.selectedSystemSizeKwp, ' kWp')}</strong></div>
+            <div><span>Panel count</span><strong>{formatNumber(quoteEstimate?.estimatedPanelCount)}</strong></div>
+            <div><span>Gross cost</span><strong>{formatRange(quoteEstimate?.grossCostRange, 'EUR ')}</strong></div>
+            <div><span>Grant estimate</span><strong>{formatGrantEstimate(quoteEstimate?.estimatedSeaiGrantDeduction)}</strong></div>
+            <div><span>Net cost</span><strong>{formatRange(quoteEstimate?.netCostRangeAfterGrant, 'EUR ')}</strong></div>
+            <div><span>Annual savings</span><strong>{formatRange(quoteEstimate?.estimatedAnnualSavingsRange, 'EUR ')}</strong></div>
+            <div><span>Payback</span><strong>{formatPayback(quoteEstimate?.estimatedPaybackRangeYears)}</strong></div>
             <div><span>Battery interest</span><strong>{(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery) ? 'Yes' : 'No'}</strong></div>
             <div><span>EV charger interest</span><strong>{salesSignal?.evChargerInterest ? 'Yes' : 'No'}</strong></div>
             <div><span>Hot water diverter</span><strong>{salesSignal?.hotWaterDiverterInterest ? 'Yes' : 'No'}</strong></div>
-            <div><span>Recommended next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
-            <div><span>Recommended system</span><strong>{typeof quoteEstimate?.recommendedSystemSizeKwp === 'number' ? `${quoteEstimate.recommendedSystemSizeKwp} kWp` : 'Not supplied'}</strong></div>
-            <div><span>Net cost estimate</span><strong>{formatRange(quoteEstimate?.netCostRangeAfterGrant, 'EUR ')}</strong></div>
+            <div><span>Lead temperature</span><strong>{leadTemperature}</strong></div>
+            <div><span>Next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
           </div>
         </div>
       </section>
@@ -319,7 +361,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             </div>
           </div>
           <div className="document-grid">
-            {lead.documents.map((document: any) => {
+            {lead.documents.map((document) => {
               const fields = asRecord(document.aiFieldsJson);
 
               return (

@@ -1,10 +1,15 @@
 import Link from 'next/link';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { StatCard } from '@/components/StatCard';
 import { getDefaultInstallerSeedData } from '@/lib/default-installer';
 
 const ADMIN_LEAD_BASE_PATH = '/admin/leads';
 export const dynamic = 'force-dynamic';
+
+type DashboardLead = Prisma.LeadGetPayload<{
+  include: { installer: true; documents: true };
+}>;
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: 'New',
@@ -53,7 +58,7 @@ function getLeadTempTone(temp: string | null) {
 
 export default async function HiddenAdminPage() {
   const defaultInstaller = getDefaultInstallerSeedData();
-  const leads: any[] = await prisma.lead.findMany({
+  const leads: DashboardLead[] = await prisma.lead.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
     include: { installer: true, documents: true }
@@ -64,7 +69,7 @@ export default async function HiddenAdminPage() {
   const submitted = leads.filter((lead) => lead.status === 'SUBMITTED').length;
   const hotLeads = leads.filter((lead) => getSalesSignal(lead.structuredExportJson)?.leadTemperature === 'HOT').length;
   const highRisk = leads.filter((lead) => lead.worksStarted || lead.likelyEligible === false).length;
-  const statusCounts = leads.reduce<Record<string, number>>((acc: Record<string, number>, lead: any) => {
+  const statusCounts = leads.reduce<Record<string, number>>((acc, lead) => {
     acc[lead.status] = (acc[lead.status] || 0) + 1;
     return acc;
   }, {});

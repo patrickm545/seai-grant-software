@@ -119,7 +119,7 @@ async function main() {
     }
   });
 
-  const lead3 = await prisma.lead.upsert({
+  await prisma.lead.upsert({
     where: { id: 'demo-lead-3' },
     update: {},
     create: {

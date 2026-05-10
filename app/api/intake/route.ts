@@ -106,8 +106,7 @@ export async function POST(request: NextRequest) {
         sizeBytes?: number;
       }>;
     };
-    const applicantDocuments = parsed.applicantDocuments ?? [];
-    const { applicantDocuments: _ignoredApplicantDocuments, ...rawLeadInput } = parsed;
+    const { applicantDocuments = [], ...rawLeadInput } = parsed;
     const leadInput = normalizeLeadInput(rawLeadInput);
     console.info('[intake] Submission validated', {
       email: leadInput.email,

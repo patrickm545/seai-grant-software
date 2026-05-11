@@ -229,7 +229,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       missingMessage: 'Applicant name is missing'
     },
     {
-      id: 'Amie',
+      id: 'email',
       label: 'email present',
       complete: !!clean(lead.email),
       missingMessage: 'Email is missing'

@@ -1,5 +1,6 @@
 import { Lead, Installer, LeadDocument } from '@prisma/client';
 import { buildApplicationPack } from './application-pack';
+import type { SolarQuoteEstimate } from './quote-estimate';
 
 type SalesSignal = {
   leadTemperature?: string;
@@ -10,6 +11,13 @@ type SalesSignal = {
   callbackWindow?: string;
   preferredCallbackWindow?: string;
   roofType?: string;
+  roofDirection?: string;
+  shadingLevel?: string;
+  evChargerInterest?: boolean;
+  hotWaterDiverterInterest?: boolean;
+  numberOfOccupants?: number;
+  daytimeUsage?: string;
+  recommendedNextAction?: string;
 };
 
 function parseJsonValue(value: unknown) {
@@ -31,8 +39,18 @@ function getSalesSignal(lead: Lead): SalesSignal {
   return signal as SalesSignal;
 }
 
+function getQuoteEstimate(lead: Lead): SolarQuoteEstimate | null {
+  const payload = parseJsonValue(lead.structuredExportJson);
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const root = payload as Record<string, unknown>;
+  const quoteEstimate = root.quoteEstimate;
+  if (!quoteEstimate || typeof quoteEstimate !== 'object' || Array.isArray(quoteEstimate)) return null;
+  return quoteEstimate as SolarQuoteEstimate;
+}
+
 export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[] }, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
+  const quoteEstimate = getQuoteEstimate(lead);
 
   return {
     version: '2.0',
@@ -53,9 +71,13 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
       eircode: lead.eircode,
       dwellingType: lead.dwellingType,
       roofType: salesSignal.roofType || null,
+      roofDirection: salesSignal.roofDirection || null,
+      shadingLevel: salesSignal.shadingLevel || null,
       yearBuilt: lead.yearBuilt,
       yearOccupied: lead.yearOccupied,
-      mprn: lead.mprn
+      mprn: lead.mprn,
+      numberOfOccupants: salesSignal.numberOfOccupants || null,
+      daytimeUsage: salesSignal.daytimeUsage || null
     },
     installer: {
       name: installer.name,
@@ -66,8 +88,12 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
       leadTemperature: salesSignal.leadTemperature || 'WARM',
       monthlyElectricityBillRange: salesSignal.monthlyElectricityBillRange || null,
       installTimeline: salesSignal.installTimeline || null,
-      wantsBattery: salesSignal.batteryInterest ?? salesSignal.wantsBattery ?? false
+      wantsBattery: salesSignal.batteryInterest ?? salesSignal.wantsBattery ?? false,
+      evChargerInterest: salesSignal.evChargerInterest ?? false,
+      hotWaterDiverterInterest: salesSignal.hotWaterDiverterInterest ?? false,
+      recommendedNextAction: salesSignal.recommendedNextAction || null
     },
+    quoteEstimate,
     declarations: {
       worksStarted: lead.worksStarted,
       priorSolarGrantAtMprn: lead.priorSolarGrantAtMprn,
@@ -95,6 +121,7 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
 
 export function buildPortalFillPreview(lead: Lead, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
+  const quoteEstimate = getQuoteEstimate(lead);
 
   return {
     disclaimer: 'Manual reference only. This software does not connect to SEAI, automate the SEAI website, or submit grant applications. Do not proceed without homeowner review and consent.',
@@ -109,14 +136,24 @@ export function buildPortalFillPreview(lead: Lead, installer: Installer) {
       eircode: lead.eircode,
       dwelling_type: lead.dwellingType,
       roof_type: salesSignal.roofType || null,
+      roof_direction: salesSignal.roofDirection || null,
+      shading_level: salesSignal.shadingLevel || null,
       year_built: lead.yearBuilt,
       year_occupied: lead.yearOccupied,
       mprn: lead.mprn,
       installer_name: installer.name,
       installer_seai_id: installer.seaiCompanyId,
       wants_battery_quote: salesSignal.batteryInterest ?? salesSignal.wantsBattery ? 'yes' : 'no',
+      ev_charger_interest: salesSignal.evChargerInterest ? 'yes' : 'no',
+      hot_water_diverter_interest: salesSignal.hotWaterDiverterInterest ? 'yes' : 'no',
+      number_of_occupants: salesSignal.numberOfOccupants || null,
+      daytime_usage: salesSignal.daytimeUsage || null,
       install_timeline: salesSignal.installTimeline || null,
-      works_started: lead.worksStarted ? 'yes' : 'no'
+      works_started: lead.worksStarted ? 'yes' : 'no',
+      recommended_system_size_kwp: quoteEstimate?.recommendedSystemSizeKwp ?? null,
+      estimated_panel_count: quoteEstimate?.estimatedPanelCount ?? null,
+      estimated_net_cost_range_after_grant: quoteEstimate?.netCostRangeAfterGrant ?? null,
+      recommended_next_action: salesSignal.recommendedNextAction || quoteEstimate?.recommendedNextAction || null
     }
   };
 }

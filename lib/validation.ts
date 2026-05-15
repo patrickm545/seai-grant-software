@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import { billRanges, callbackWindows, counties, dwellingTypes, installTimelines, roofTypes } from './types';
+import {
+  billRanges,
+  callbackWindows,
+  counties,
+  daytimeUsages,
+  dwellingTypes,
+  installTimelines,
+  roofDirections,
+  roofTypes,
+  shadingLevels
+} from './types';
 
 const currentYear = new Date().getFullYear();
 const leadStatuses = [
@@ -39,6 +49,16 @@ const applicantDocumentSchema = z.object({
   sizeBytes: z.number().int().nonnegative().optional()
 });
 
+const optionalOccupantsField = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+
+  return value;
+}, z.number().int().min(1).max(12).optional());
+
 export const leadFormSchema = z.object({
   installerId: z.string().min(1),
   fullName: z.string().min(2),
@@ -54,11 +74,18 @@ export const leadFormSchema = z.object({
   yearBuilt: yearField(`Year built must be between 1800 and ${currentYear}.`),
   yearOccupied: yearField(`Year occupied must be between 1800 and ${currentYear}.`, true),
   roofType: z.enum(roofTypes),
+  roofDirection: z.enum(roofDirections).optional().default('UNSURE'),
+  shadingLevel: z.enum(shadingLevels).optional().default('UNSURE'),
   mprn: z.string().regex(/^\d{11}$/, 'MPRN must be 11 digits'),
   worksStarted: z.boolean(),
   priorSolarGrantAtMprn: z.boolean().default(false),
   monthlyElectricityBillRange: z.enum(billRanges),
   wantsBattery: z.boolean().default(false),
+  selectedSystemSizeVariant: z.enum(['smaller', 'recommended', 'larger']).optional().default('recommended'),
+  evChargerInterest: z.boolean().default(false),
+  hotWaterDiverterInterest: z.boolean().default(false),
+  numberOfOccupants: optionalOccupantsField,
+  daytimeUsage: z.enum(daytimeUsages).optional().default('MEDIUM'),
   installTimeline: z.enum(installTimelines),
   preferredCallbackWindow: z.enum(callbackWindows),
   consentToProcess: z.literal(true),

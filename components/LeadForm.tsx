@@ -1,7 +1,26 @@
 'use client';
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { billRanges, callbackWindows, counties, dwellingTypes, installTimelines, roofTypes } from '@/lib/types';
+import {
+  billRanges,
+  callbackWindows,
+  counties,
+  daytimeUsages,
+  dwellingTypes,
+  installTimelines,
+  roofDirections,
+  roofTypes,
+  shadingLevels,
+  type EligibilityAnalysis
+} from '@/lib/types';
+import {
+  buildSolarQuoteEstimate,
+  getSystemSizeOptions,
+  quoteAssumptions,
+  type SolarQuoteEstimate,
+  type SolarQuoteInput,
+  type SystemSizeVariant
+} from '@/lib/quote-estimate';
 
 function createInitialState(installerId: string) {
   return {
@@ -19,11 +38,17 @@ function createInitialState(installerId: string) {
     yearBuilt: '',
     yearOccupied: '',
     roofType: '',
+    roofDirection: 'UNSURE',
+    shadingLevel: 'UNSURE',
     mprn: '',
     worksStarted: false,
     priorSolarGrantAtMprn: false,
     monthlyElectricityBillRange: '',
     wantsBattery: false,
+    evChargerInterest: false,
+    hotWaterDiverterInterest: false,
+    numberOfOccupants: '',
+    daytimeUsage: 'MEDIUM',
     installTimeline: '',
     preferredCallbackWindow: '',
     consentToProcess: true,
@@ -45,17 +70,11 @@ type UploadItem = {
   sizeBytes: number;
 };
 
-type SystemSizeOption = 'small' | 'medium' | 'large';
-
-const SOLAR_GRANT_AMOUNT = 1800;
-
-const systemEstimateOptions: Record<
-  SystemSizeOption,
-  { label: string; systemSize: string; estimatedCost: number }
-> = {
-  small: { label: 'Small', systemSize: '4kW', estimatedCost: 7000 },
-  medium: { label: 'Medium', systemSize: '5kW', estimatedCost: 8000 },
-  large: { label: 'Large', systemSize: '6kW', estimatedCost: 9500 }
+type IntakeResult = {
+  leadId: string;
+  analysis?: EligibilityAnalysis;
+  quoteEstimate?: SolarQuoteEstimate;
+  uploadedDocuments?: number;
 };
 
 const euroFormatter = new Intl.NumberFormat('en-IE', {
@@ -103,6 +122,50 @@ const validationChecks: Array<{
   { key: 'consentToContact', isInvalid: (form) => !form.consentToContact, message: 'Please agree to be contacted by phone or email.' }
 ];
 
+const formSteps: Array<{
+  id: string;
+  title: string;
+  helper: string;
+  fields: FormFieldKey[];
+}> = [
+  {
+    id: 'property',
+    title: 'Quick property check',
+    helper: 'A few simple property details help us start the grant and suitability check.',
+    fields: ['county', 'dwellingType']
+  },
+  {
+    id: 'usage',
+    title: 'Electricity usage',
+    helper: 'This helps estimate your likely system size.',
+    fields: ['monthlyElectricityBillRange']
+  },
+  {
+    id: 'roof',
+    title: 'Roof suitability',
+    helper: 'Unsure is fine, we can confirm during survey.',
+    fields: ['roofType']
+  },
+  {
+    id: 'options',
+    title: 'Solar options',
+    helper: 'Choose the extras you may want included in the survey discussion.',
+    fields: ['installTimeline']
+  },
+  {
+    id: 'grant',
+    title: 'SEAI grant checks',
+    helper: 'These answers help estimate grant fit, subject to SEAI approval.',
+    fields: ['yearBuilt', 'yearOccupied', 'mprn']
+  },
+  {
+    id: 'contact',
+    title: 'Contact and consent',
+    helper: 'Last step: where should the installer send your survey follow-up?',
+    fields: ['fullName', 'email', 'phone', 'preferredCallbackWindow', 'addressLine1', 'consentToProcess', 'consentToGrantAssist', 'consentToContact']
+  }
+];
+
 function labelise(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -130,6 +193,22 @@ function formatEuro(value: number) {
   return euroFormatter.format(value);
 }
 
+function formatEuroRange(range: { min: number; max: number }) {
+  return `${formatEuro(range.min)}-${formatEuro(range.max)}`;
+}
+
+function formatKwhRange(range: { min: number; max: number }) {
+  return `${range.min.toLocaleString('en-IE')}-${range.max.toLocaleString('en-IE')} kWh`;
+}
+
+function formatYearsRange(range: { min: number; max: number }) {
+  return `${range.min}-${range.max} years`;
+}
+
+function formatKwp(value: number) {
+  return `${value.toFixed(1)} kWp`;
+}
+
 function requiredLabel(text: string) {
   return (
     <>
@@ -138,13 +217,32 @@ function requiredLabel(text: string) {
   );
 }
 
-function getInvalidFields(form: FormState) {
-  return validationChecks.filter((check) => check.isInvalid(form)).map((check) => check.key);
+function optionalLabel(text: string) {
+  return `${text} (optional)`;
 }
 
-function getValidationError(form: FormState) {
-  const firstInvalid = validationChecks.find((check) => check.isInvalid(form));
+function eligibilityLabel(analysis?: EligibilityAnalysis) {
+  if (!analysis) return 'Application received';
+  return analysis.likelyEligible ? 'Likely eligible, subject to SEAI approval' : 'Needs manual grant review';
+}
+
+function getInvalidFields(form: FormState, fields?: FormFieldKey[]) {
+  return validationChecks
+    .filter((check) => !fields || fields.includes(check.key))
+    .filter((check) => check.isInvalid(form))
+    .map((check) => check.key);
+}
+
+function getValidationError(form: FormState, fields?: FormFieldKey[]) {
+  const firstInvalid = validationChecks
+    .filter((check) => !fields || fields.includes(check.key))
+    .find((check) => check.isInvalid(form));
   return firstInvalid?.message ?? null;
+}
+
+function getStepIndexForField(field: FormFieldKey) {
+  const stepIndex = formSteps.findIndex((step) => step.fields.includes(field));
+  return stepIndex === -1 ? 0 : stepIndex;
 }
 
 async function parseJsonSafely(response: Response) {
@@ -161,15 +259,17 @@ async function parseJsonSafely(response: Response) {
 
 export function LeadForm({ installerId = fallbackInitialState.installerId }: { installerId?: string }) {
   const [form, setForm] = useState<FormState>(() => createInitialState(installerId));
-  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeOption>('medium');
+  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>('recommended');
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [meterPhotoFiles, setMeterPhotoFiles] = useState<File[]>([]);
   const [roofPhotoFiles, setRoofPhotoFiles] = useState<File[]>([]);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<IntakeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [invalidFields, setInvalidFields] = useState<FormFieldKey[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
 
+  const formRef = useRef<HTMLFormElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
   const meterInputRef = useRef<HTMLInputElement | null>(null);
   const roofInputRef = useRef<HTMLInputElement | null>(null);
@@ -185,16 +285,17 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     ];
   }, [billFiles, meterPhotoFiles, roofPhotoFiles]);
 
-  const estimate = useMemo(() => {
-    const selectedOption = systemEstimateOptions[selectedSystemSize];
-    const finalEstimatedCost = selectedOption.estimatedCost - SOLAR_GRANT_AMOUNT;
+  const systemSizeOptions = useMemo(() => getSystemSizeOptions(form as SolarQuoteInput), [form]);
 
-    return {
-      ...selectedOption,
-      grantApplied: SOLAR_GRANT_AMOUNT,
-      finalEstimatedCost
-    };
-  }, [selectedSystemSize]);
+  const estimate = useMemo(
+    () => buildSolarQuoteEstimate(form as SolarQuoteInput, selectedSystemSize),
+    [form, selectedSystemSize]
+  );
+
+  const activeStep = formSteps[currentStep] ?? formSteps[0];
+  const isFirstStep = currentStep === 0;
+  const isFinalStep = currentStep === formSteps.length - 1;
+  const progressPercent = ((currentStep + 1) / formSteps.length) * 100;
 
   const update = (key: keyof FormState, value: string | boolean) =>
     setForm((prev) => {
@@ -205,6 +306,52 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function isFieldInvalid(key: FormFieldKey) {
     return invalidFields.includes(key);
+  }
+
+  function focusFirstInvalidField(field?: FormFieldKey) {
+    if (!field) return;
+
+    requestAnimationFrame(() => {
+      const firstInvalidElement = document.querySelector<HTMLElement>(
+        `[data-field="${field}"] input, [data-field="${field}"] select, [data-field="${field}"] textarea`
+      );
+      firstInvalidElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstInvalidElement?.focus();
+    });
+  }
+
+  function validateStepFields(fields: FormFieldKey[]) {
+    const nextInvalidFields = getInvalidFields(form, fields);
+    const validationError = getValidationError(form, fields);
+
+    if (validationError) {
+      setInvalidFields(nextInvalidFields);
+      setSubmitError(validationError);
+      focusFirstInvalidField(nextInvalidFields[0]);
+      return false;
+    }
+
+    setInvalidFields((current) => current.filter((field) => !fields.includes(field)));
+    setSubmitError(null);
+    return true;
+  }
+
+  function scrollFormToTop() {
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
+  function continueStep() {
+    if (!validateStepFields(activeStep.fields)) return;
+
+    setCurrentStep((step) => Math.min(step + 1, formSteps.length - 1));
+    scrollFormToTop();
+  }
+
+  function backStep() {
+    setSubmitError(null);
+    setInvalidFields([]);
+    setCurrentStep((step) => Math.max(step - 1, 0));
+    scrollFormToTop();
   }
 
   function handleFileSelection(kind: UploadItem['kind'], event: ChangeEvent<HTMLInputElement>) {
@@ -231,11 +378,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       setResult(null);
       setLoading(false);
       submitLockRef.current = false;
-      requestAnimationFrame(() => {
-        const firstInvalidElement = document.querySelector<HTMLElement>(`[data-field="${nextInvalidFields[0]}"] input, [data-field="${nextInvalidFields[0]}"] select`);
-        firstInvalidElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        firstInvalidElement?.focus();
-      });
+      setCurrentStep(getStepIndexForField(nextInvalidFields[0]));
+      focusFirstInvalidField(nextInvalidFields[0]);
       return;
     }
 
@@ -269,6 +413,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       ...form,
       yearBuilt: toOptionalNumber(form.yearBuilt),
       yearOccupied: toOptionalNumber(form.yearOccupied),
+      numberOfOccupants: toOptionalNumber(form.numberOfOccupants),
+      selectedSystemSizeVariant: selectedSystemSize,
       applicantDocuments
     };
 
@@ -316,13 +462,14 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function resetForm() {
     setForm(createInitialState(installerId));
-    setSelectedSystemSize('medium');
+    setSelectedSystemSize('recommended');
     setBillFiles([]);
     setMeterPhotoFiles([]);
     setRoofPhotoFiles([]);
     setResult(null);
     setSubmitError(null);
     setInvalidFields([]);
+    setCurrentStep(0);
   }
 
   useEffect(() => {
@@ -334,16 +481,544 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   useEffect(() => {
     setForm(createInitialState(installerId));
-    setSelectedSystemSize('medium');
+    setSelectedSystemSize('recommended');
+    setCurrentStep(0);
   }, [installerId]);
 
+  function renderEstimatePreview(includeGrant = false) {
+    const grantCopy = estimate.grantLikely
+      ? `You may be eligible for up to ${formatEuro(estimate.potentialSeaiGrant)} in SEAI support, subject to SEAI approval.`
+      : 'SEAI support needs manual review before a grant deduction is treated as likely.';
+
+    return (
+      <div className="step-preview-panel" aria-live="polite">
+        <div className="step-preview-copy">
+          <div className="eyebrow">Indicative preview</div>
+          <h3>Based on your answers, you may be suited to around {formatKwp(estimate.recommendedSystemSizeKwp)}.</h3>
+          <p className="small">Figures are indicative and subject to final survey.</p>
+        </div>
+        <div className="step-preview-grid">
+          <div>
+            <span>Panels</span>
+            <strong>{estimate.recommendedPanelCount}</strong>
+          </div>
+          <div>
+            <span>Net estimate</span>
+            <strong>{formatEuroRange(estimate.netCostRangeAfterGrant)}</strong>
+          </div>
+          <div>
+            <span>Annual savings</span>
+            <strong>{formatEuroRange(estimate.estimatedAnnualSavingsRange)}</strong>
+          </div>
+        </div>
+        {includeGrant ? <p className="small grant-preview-copy">{grantCopy}</p> : null}
+      </div>
+    );
+  }
+
+  function renderStepContent() {
+    switch (activeStep.id) {
+      case 'property':
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">Quick property check</div>
+                <h2>Start with the home</h2>
+              </div>
+            </div>
+            <p className="step-helper">This first check is deliberately short. It helps us understand the property and likely grant route.</p>
+            <div className="grid grid-2">
+              <div data-field="county">
+                <label htmlFor="county" className={isFieldInvalid('county') ? 'field-label-error' : undefined}>
+                  {requiredLabel('County')}
+                </label>
+                <select
+                  id="county"
+                  className={isFieldInvalid('county') ? 'field-input-error' : undefined}
+                  value={form.county}
+                  onChange={(e) => update('county', e.target.value)}
+                  required
+                >
+                  <option value="">Select county</option>
+                  {counties.map((county) => <option key={county} value={county}>{county}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="eircode">{optionalLabel('Eircode')}</label>
+                <input
+                  id="eircode"
+                  value={form.eircode}
+                  onChange={(e) => update('eircode', e.target.value.toUpperCase())}
+                  placeholder="Optional"
+                />
+              </div>
+              <div data-field="dwellingType">
+                <label htmlFor="dwellingType" className={isFieldInvalid('dwellingType') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Dwelling type')}
+                </label>
+                <select
+                  id="dwellingType"
+                  className={isFieldInvalid('dwellingType') ? 'field-input-error' : undefined}
+                  value={form.dwellingType}
+                  onChange={(e) => update('dwellingType', e.target.value)}
+                  required
+                >
+                  <option value="">Select one</option>
+                  {dwellingTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="toggle-grid">
+              <label className="toggle-card">
+                <input type="checkbox" checked={form.propertyOwner} onChange={(e) => update('propertyOwner', e.target.checked)} />
+                I own the property
+              </label>
+              <label className="toggle-card">
+                <input type="checkbox" checked={form.privateLandlord} onChange={(e) => update('privateLandlord', e.target.checked)} />
+                I am a private landlord
+              </label>
+            </div>
+          </section>
+        );
+
+      case 'usage':
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">Electricity usage</div>
+                <h2>Estimate the demand</h2>
+              </div>
+            </div>
+            <p className="step-helper">This helps estimate your likely system size.</p>
+            <div className="grid grid-2">
+              <div data-field="monthlyElectricityBillRange">
+                <label
+                  htmlFor="monthlyElectricityBillRange"
+                  className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-label-error' : undefined}
+                >
+                  {requiredLabel('Monthly electricity bill')}
+                </label>
+                <select
+                  id="monthlyElectricityBillRange"
+                  className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-input-error' : undefined}
+                  value={form.monthlyElectricityBillRange}
+                  onChange={(e) => update('monthlyElectricityBillRange', e.target.value)}
+                  required
+                >
+                  <option value="">Select one</option>
+                  {billRanges.map((item) => <option key={item} value={item}>{billRangeLabel(item)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="numberOfOccupants">{optionalLabel('Number of occupants')}</label>
+                <input
+                  id="numberOfOccupants"
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={form.numberOfOccupants}
+                  onChange={(e) => update('numberOfOccupants', e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label htmlFor="daytimeUsage">{optionalLabel('Daytime usage')}</label>
+                <select id="daytimeUsage" value={form.daytimeUsage} onChange={(e) => update('daytimeUsage', e.target.value)}>
+                  {daytimeUsages.map((usage) => <option key={usage} value={usage}>{labelise(usage)}</option>)}
+                </select>
+                <p className="field-help">Higher daytime use can improve estimated self-consumption.</p>
+              </div>
+            </div>
+          </section>
+        );
+
+      case 'roof':
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">Roof suitability</div>
+                <h2>Tell us what you know</h2>
+              </div>
+            </div>
+            <p className="step-helper">Unsure is fine, we can confirm during survey.</p>
+            <div className="grid grid-2">
+              <div data-field="roofType">
+                <label htmlFor="roofType" className={isFieldInvalid('roofType') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Roof type')}
+                </label>
+                <select
+                  id="roofType"
+                  className={isFieldInvalid('roofType') ? 'field-input-error' : undefined}
+                  value={form.roofType}
+                  onChange={(e) => update('roofType', e.target.value)}
+                  required
+                >
+                  <option value="">Select one</option>
+                  {roofTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="roofDirection">{optionalLabel('Roof direction')}</label>
+                <select id="roofDirection" value={form.roofDirection} onChange={(e) => update('roofDirection', e.target.value)}>
+                  {roofDirections.map((direction) => (
+                    <option key={direction} value={direction}>
+                      {labelise(direction).replace('East West', 'East/West')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="shadingLevel">{optionalLabel('Shading level')}</label>
+                <select id="shadingLevel" value={form.shadingLevel} onChange={(e) => update('shadingLevel', e.target.value)}>
+                  {shadingLevels.map((level) => <option key={level} value={level}>{labelise(level)}</option>)}
+                </select>
+              </div>
+            </div>
+          </section>
+        );
+
+      case 'options':
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">Solar options</div>
+                <h2>Choose the likely package</h2>
+              </div>
+            </div>
+            <p className="step-helper">The selector below is a recommendation guide, not a final design.</p>
+            <div className="toggle-grid">
+              <label className="toggle-card">
+                <input type="checkbox" checked={form.wantsBattery} onChange={(e) => update('wantsBattery', e.target.checked)} />
+                I want a battery quote too
+              </label>
+              <label className="toggle-card">
+                <input type="checkbox" checked={form.evChargerInterest} onChange={(e) => update('evChargerInterest', e.target.checked)} />
+                I may want an EV charger
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={form.hotWaterDiverterInterest}
+                  onChange={(e) => update('hotWaterDiverterInterest', e.target.checked)}
+                />
+                I may want a hot water diverter
+              </label>
+            </div>
+            <div className="grid grid-2">
+              <div data-field="installTimeline">
+                <label htmlFor="installTimeline" className={isFieldInvalid('installTimeline') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Installation timeframe')}
+                </label>
+                <select
+                  id="installTimeline"
+                  className={isFieldInvalid('installTimeline') ? 'field-input-error' : undefined}
+                  value={form.installTimeline}
+                  onChange={(e) => update('installTimeline', e.target.value)}
+                  required
+                >
+                  <option value="">Select one</option>
+                  {installTimelines.map((item) => <option key={item} value={item}>{labelise(item).replace('Asap', 'ASAP')}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="estimate-calculator step-estimate-calculator">
+              <div className="estimate-options" role="group" aria-label="Select a solar system size">
+                {systemSizeOptions.map((option) => (
+                  <button
+                    key={option.variant}
+                    type="button"
+                    className={`estimate-option ${selectedSystemSize === option.variant ? 'estimate-option-active' : ''}`}
+                    onClick={() => setSelectedSystemSize(option.variant)}
+                    aria-pressed={selectedSystemSize === option.variant}
+                  >
+                    <span className="estimate-option-title">
+                      {option.label}
+                      {option.isRecommended ? <span className="estimate-choice-badge">Best fit</span> : null}
+                    </span>
+                    <span className="estimate-option-meta">{option.description}</span>
+                    <span className="estimate-option-price">{formatKwp(option.systemSizeKwp)}</span>
+                    <span className="estimate-option-meta">{option.panelCount} panels at {quoteAssumptions.panelSizeWatts}W</span>
+                  </button>
+                ))}
+              </div>
+              <div className="estimate-summary compact-estimate-summary">
+                <div className="estimate-total-label">Indicative net cost after grant</div>
+                <div className="estimate-total">{formatEuroRange(estimate.netCostRangeAfterGrant)}</div>
+                <p className="estimate-note">Subject to survey and SEAI approval. Figures are estimates only.</p>
+                <div className="estimate-rows">
+                  <div>
+                    <span>Selected estimate</span>
+                    <strong>{formatKwp(estimate.selectedSystemSizeKwp)} / {estimate.estimatedPanelCount} panels</strong>
+                  </div>
+                  <div>
+                    <span>Annual generation</span>
+                    <strong>{formatKwhRange(estimate.estimatedAnnualGenerationKwh)}</strong>
+                  </div>
+                  <div>
+                    <span>Self-consumption</span>
+                    <strong>{Math.round(estimate.selfConsumptionRate * 100)}%</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {renderEstimatePreview()}
+          </section>
+        );
+
+      case 'grant':
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">SEAI grant checks</div>
+                <h2>Check grant fit</h2>
+              </div>
+            </div>
+            <p className="step-helper">Grant eligibility and final grant amount must be confirmed with SEAI.</p>
+            <div className="grid grid-2">
+              <div data-field="yearBuilt">
+                <label htmlFor="yearBuilt" className={isFieldInvalid('yearBuilt') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Year built')}
+                </label>
+                <input
+                  id="yearBuilt"
+                  className={isFieldInvalid('yearBuilt') ? 'field-input-error' : undefined}
+                  type="number"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  value={form.yearBuilt}
+                  onChange={(e) => update('yearBuilt', e.target.value)}
+                  required
+                />
+              </div>
+              <div data-field="yearOccupied">
+                <label htmlFor="yearOccupied" className={isFieldInvalid('yearOccupied') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Year occupied')}
+                </label>
+                <input
+                  id="yearOccupied"
+                  className={isFieldInvalid('yearOccupied') ? 'field-input-error' : undefined}
+                  type="number"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  value={form.yearOccupied}
+                  onChange={(e) => update('yearOccupied', e.target.value)}
+                  required
+                />
+              </div>
+              <div data-field="mprn">
+                <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
+                  {requiredLabel('MPRN')}
+                </label>
+                <input
+                  id="mprn"
+                  className={isFieldInvalid('mprn') ? 'field-input-error' : undefined}
+                  value={form.mprn}
+                  onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  required
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  placeholder="11-digit meter number"
+                />
+                <p className="field-help">Usually on your bill or meter. We use it for grant checks.</p>
+              </div>
+            </div>
+            <div className="toggle-grid">
+              <label className="toggle-card">
+                <input type="checkbox" checked={form.worksStarted} onChange={(e) => update('worksStarted', e.target.checked)} />
+                Installation has already started
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={form.priorSolarGrantAtMprn}
+                  onChange={(e) => update('priorSolarGrantAtMprn', e.target.checked)}
+                />
+                This MPRN already got a solar grant
+              </label>
+            </div>
+            {renderEstimatePreview(true)}
+          </section>
+        );
+
+      case 'contact':
+      default:
+        return (
+          <section className="form-section">
+            <div className="section-heading compact-heading">
+              <div>
+                <div className="eyebrow">Contact and consent</div>
+                <h2>Where should we send it?</h2>
+              </div>
+            </div>
+            <p className="step-helper">Last step. Uploads are optional and help the installer prepare faster.</p>
+            <div className="grid grid-2">
+              <div data-field="fullName">
+                <label htmlFor="fullName" className={isFieldInvalid('fullName') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Full name')}
+                </label>
+                <input
+                  id="fullName"
+                  className={isFieldInvalid('fullName') ? 'field-input-error' : undefined}
+                  value={form.fullName}
+                  onChange={(e) => update('fullName', e.target.value)}
+                  required
+                />
+              </div>
+              <div data-field="email">
+                <label htmlFor="email" className={isFieldInvalid('email') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Email')}
+                </label>
+                <input
+                  id="email"
+                  className={isFieldInvalid('email') ? 'field-input-error' : undefined}
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  required
+                />
+              </div>
+              <div data-field="phone">
+                <label htmlFor="phone" className={isFieldInvalid('phone') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Phone')}
+                </label>
+                <input
+                  id="phone"
+                  className={isFieldInvalid('phone') ? 'field-input-error' : undefined}
+                  value={form.phone}
+                  onChange={(e) => update('phone', e.target.value)}
+                  required
+                  inputMode="tel"
+                  placeholder="Best number to call you on"
+                />
+              </div>
+              <div data-field="preferredCallbackWindow">
+                <label
+                  htmlFor="preferredCallbackWindow"
+                  className={isFieldInvalid('preferredCallbackWindow') ? 'field-label-error' : undefined}
+                >
+                  {requiredLabel('Best callback time')}
+                </label>
+                <select
+                  id="preferredCallbackWindow"
+                  className={isFieldInvalid('preferredCallbackWindow') ? 'field-input-error' : undefined}
+                  value={form.preferredCallbackWindow}
+                  onChange={(e) => update('preferredCallbackWindow', e.target.value)}
+                  required
+                >
+                  <option value="">Select one</option>
+                  {callbackWindows.map((item) => <option key={item} value={item}>{labelise(item)}</option>)}
+                </select>
+              </div>
+              <div data-field="addressLine1">
+                <label htmlFor="addressLine1" className={isFieldInvalid('addressLine1') ? 'field-label-error' : undefined}>
+                  {requiredLabel('Address line 1')}
+                </label>
+                <input
+                  id="addressLine1"
+                  className={isFieldInvalid('addressLine1') ? 'field-input-error' : undefined}
+                  value={form.addressLine1}
+                  onChange={(e) => update('addressLine1', e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="addressLine2">{optionalLabel('Address line 2')}</label>
+                <input id="addressLine2" value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="notes">{optionalLabel('Anything we should know?')}</label>
+                <input id="notes" value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+
+            <div className="upload-grid">
+              <div className="upload-card">
+                <div>
+                  <strong>Electricity bill</strong>
+                  <p className="small">Optional. Helps confirm the property and MPRN faster.</p>
+                </div>
+                <input
+                  ref={billInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  multiple
+                  onChange={(event) => handleFileSelection('electricity_bill', event)}
+                  className="file-input-hidden"
+                />
+                <button type="button" className="upload-button" onClick={() => billInputRef.current?.click()}>Choose file</button>
+                <div className="file-selected-text">{fileLabel(billFiles, 'No file chosen')}</div>
+              </div>
+
+              <div className="upload-card">
+                <div>
+                  <strong>Electricity meter photo</strong>
+                  <p className="small">Optional. Useful if the installer needs to verify the meter details.</p>
+                </div>
+                <input
+                  ref={meterInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => handleFileSelection('meter_photo', event)}
+                  className="file-input-hidden"
+                />
+                <button type="button" className="upload-button" onClick={() => meterInputRef.current?.click()}>Choose file</button>
+                <div className="file-selected-text">{fileLabel(meterPhotoFiles, 'No file chosen')}</div>
+              </div>
+
+              <div className="upload-card upload-card-wide">
+                <div>
+                  <strong>Roof / panel area photo</strong>
+                  <p className="small">Optional. A quick photo of the roof or install area can help with the first review.</p>
+                </div>
+                <input
+                  ref={roofInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => handleFileSelection('roof_photo', event)}
+                  className="file-input-hidden"
+                />
+                <button type="button" className="upload-button" onClick={() => roofInputRef.current?.click()}>Choose file</button>
+                <div className="file-selected-text">{fileLabel(roofPhotoFiles, 'No file chosen')}</div>
+              </div>
+            </div>
+            {!!uploadSummary.length && <div className="small">{uploadSummary.length} upload{uploadSummary.length > 1 ? 's' : ''} ready to submit.</div>}
+
+            <div className="toggle-grid consent-grid">
+              <label className={`toggle-card ${isFieldInvalid('consentToProcess') ? 'toggle-card-error' : ''}`}>
+                <input type="checkbox" checked={form.consentToProcess} onChange={(e) => update('consentToProcess', e.target.checked)} required />
+                {requiredLabel('I agree to my details being used for this application')}
+              </label>
+              <label className={`toggle-card ${isFieldInvalid('consentToGrantAssist') ? 'toggle-card-error' : ''}`}>
+                <input type="checkbox" checked={form.consentToGrantAssist} onChange={(e) => update('consentToGrantAssist', e.target.checked)} required />
+                {requiredLabel('I want help with grant and installer follow-up')}
+              </label>
+              <label className={`toggle-card ${isFieldInvalid('consentToContact') ? 'toggle-card-error' : ''}`}>
+                <input type="checkbox" checked={form.consentToContact} onChange={(e) => update('consentToContact', e.target.checked)} required />
+                {requiredLabel('I agree to be contacted by phone or email')}
+              </label>
+            </div>
+          </section>
+        );
+    }
+  }
+
   if (result) {
+    const quote = result.quoteEstimate;
+
     return (
       <div ref={successRef} tabIndex={-1} className="application-layout success-layout">
         <aside className="card application-sidebar compact-sidebar">
           <div>
             <div className="eyebrow">Application received</div>
-            <h2>You're all set</h2>
+            <h2>You&apos;re all set</h2>
           </div>
           <div className="mini-points">
             <div className="mini-point">Reference: {result.leadId}</div>
@@ -353,10 +1028,33 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
         </aside>
 
         <div className="card thank-you-panel">
-          <div className="success-badge">✓ Submitted</div>
+          <div className="success-badge">Submitted</div>
           <h2>Thank you for applying</h2>
           <p className="thank-you-copy">Thank you for applying. We will email you when we hear back.</p>
           <p className="small">Your details have been sent for review. If anything else is needed, the installer team will contact you using the details you provided.</p>
+
+          {quote ? (
+            <div className="homeowner-result-summary">
+              <div className="result-hero-metric">
+                <span>Estimated net cost after grant</span>
+                <strong>{formatEuroRange(quote.netCostRangeAfterGrant)}</strong>
+                <small>Indicative only, subject to survey and SEAI approval.</small>
+              </div>
+              <div className="result-metric-grid">
+                <div><span>Eligibility status</span><strong>{eligibilityLabel(result.analysis)}</strong></div>
+                <div><span>Recommended size</span><strong>{formatKwp(quote.recommendedSystemSizeKwp)}</strong></div>
+                <div><span>Estimated panels</span><strong>{quote.estimatedPanelCount}</strong></div>
+                <div><span>Gross cost range</span><strong>{formatEuroRange(quote.grossCostRange)}</strong></div>
+                <div><span>Estimated grant</span><strong>{quote.estimatedSeaiGrantDeduction ? formatEuro(quote.estimatedSeaiGrantDeduction) : 'Review needed'}</strong></div>
+                <div><span>Annual savings</span><strong>{formatEuroRange(quote.estimatedAnnualSavingsRange)}</strong></div>
+                <div><span>Estimated payback</span><strong>{formatYearsRange(quote.estimatedPaybackRangeYears)}</strong></div>
+                <div><span>Recommended extras</span><strong>{quote.recommendedExtras.length ? quote.recommendedExtras.join(', ') : 'Survey first'}</strong></div>
+                <div><span>Recommended next action</span><strong>{quote.recommendedNextAction}</strong></div>
+              </div>
+              <div className="survey-cta">Book a free solar survey</div>
+              <p className="small">Grant eligibility and final grant amount must be confirmed with SEAI. Figures are estimates only.</p>
+            </div>
+          ) : null}
 
           <div className="result-list-wrap success-grid">
             <div className="result-panel">
@@ -364,7 +1062,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
               <ul className="plain-list compact-list">
                 <li>Your details are reviewed by the installer team.</li>
                 <li>They check your grant and suitability details.</li>
-                <li>You will be emailed once there is an update.</li>
+                <li>They can use your indicative quote to prepare for the survey call.</li>
               </ul>
             </div>
             <div className="result-panel">
@@ -383,219 +1081,59 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   return (
     <div className="application-layout">
-      <aside className="card application-sidebar compact-sidebar">
+      <aside className="card application-sidebar compact-sidebar step-sidebar">
         <div>
           <div className="eyebrow">Quick check</div>
-          <h2>What we need</h2>
+          <h2>Quote and grant assistant</h2>
         </div>
-        <div className="mini-points">
-          <div className="mini-point">Your contact details</div>
-          <div className="mini-point">Address and 11-digit MPRN</div>
-          <div className="mini-point">A few home details</div>
-          <div className="mini-point">Optional photos to speed things up</div>
+        <div className="step-sidebar-list" aria-label="Application steps">
+          {formSteps.map((step, index) => {
+            const isActive = index === currentStep;
+            const isComplete = index < currentStep;
+
+            return (
+              <div
+                key={step.id}
+                className={`step-sidebar-item ${isActive ? 'step-sidebar-item-active' : ''} ${isComplete ? 'step-sidebar-item-complete' : ''}`}
+              >
+                <span>{index + 1}</span>
+                <div>
+                  <strong>{step.title}</strong>
+                  <small>{isComplete ? 'Complete' : isActive ? 'In progress' : 'Coming up'}</small>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <p className="small">Most people finish this in about a minute.</p>
+        <p className="small">Fields marked * are required. Estimates are indicative and subject to survey.</p>
       </aside>
 
-      <form onSubmit={submit} noValidate className="card grid polished-form">
-        <section className="form-section">
-          <div className="section-heading compact-heading">
-            <div>
-              <div className="eyebrow">Step 1</div>
-              <h2>Your details</h2>
-            </div>
+      <form ref={formRef} onSubmit={submit} noValidate className="card grid polished-form stepped-form">
+        <div className="step-progress-panel" aria-label="Application progress">
+          <div className="step-progress-meta">
+            <span>Step {currentStep + 1} of {formSteps.length}</span>
+            <strong>{activeStep.title}</strong>
           </div>
-          <div className="grid grid-2">
-            <div data-field="fullName"><label className={isFieldInvalid('fullName') ? 'field-label-error' : undefined}>{requiredLabel('Full name')}</label><input className={isFieldInvalid('fullName') ? 'field-input-error' : undefined} value={form.fullName} onChange={(e) => update('fullName', e.target.value)} required /></div>
-            <div data-field="email"><label className={isFieldInvalid('email') ? 'field-label-error' : undefined}>{requiredLabel('Email')}</label><input className={isFieldInvalid('email') ? 'field-input-error' : undefined} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required /></div>
-            <div data-field="phone"><label className={isFieldInvalid('phone') ? 'field-label-error' : undefined}>{requiredLabel('Phone')}</label><input className={isFieldInvalid('phone') ? 'field-input-error' : undefined} value={form.phone} onChange={(e) => update('phone', e.target.value)} required inputMode="tel" placeholder="Best number to call you on" /></div>
-            <div data-field="preferredCallbackWindow">
-              <label className={isFieldInvalid('preferredCallbackWindow') ? 'field-label-error' : undefined}>{requiredLabel('Best callback time')}</label>
-              <select className={isFieldInvalid('preferredCallbackWindow') ? 'field-input-error' : undefined} value={form.preferredCallbackWindow} onChange={(e) => update('preferredCallbackWindow', e.target.value)} required>
-                <option value="">Select one</option>
-                {callbackWindows.map((item) => <option key={item} value={item}>{labelise(item)}</option>)}
-              </select>
-            </div>
+          <div className="step-progress-track" aria-hidden="true">
+            <div className="step-progress-fill" style={{ width: `${progressPercent}%` }} />
           </div>
-        </section>
+          <p>{activeStep.helper}</p>
+        </div>
 
-        <section className="form-section">
-          <div className="section-heading compact-heading">
-            <div>
-              <div className="eyebrow">Step 2</div>
-              <h2>Your home</h2>
-            </div>
-          </div>
-          <div className="grid grid-2">
-            <div data-field="addressLine1"><label className={isFieldInvalid('addressLine1') ? 'field-label-error' : undefined}>{requiredLabel('Address line 1')}</label><input className={isFieldInvalid('addressLine1') ? 'field-input-error' : undefined} value={form.addressLine1} onChange={(e) => update('addressLine1', e.target.value)} required /></div>
-            <div><label>Address line 2</label><input value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} /></div>
-            <div data-field="county">
-              <label className={isFieldInvalid('county') ? 'field-label-error' : undefined}>{requiredLabel('County')}</label>
-              <select className={isFieldInvalid('county') ? 'field-input-error' : undefined} value={form.county} onChange={(e) => update('county', e.target.value)} required>
-                <option value="">Select county</option>
-                {counties.map((county) => <option key={county} value={county}>{county}</option>)}
-              </select>
-            </div>
-            <div><label>Eircode</label><input value={form.eircode} onChange={(e) => update('eircode', e.target.value.toUpperCase())} placeholder="Optional" /></div>
-            <div data-field="mprn"><label className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>{requiredLabel('MPRN')}</label><input className={isFieldInvalid('mprn') ? 'field-input-error' : undefined} value={form.mprn} onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))} required inputMode="numeric" pattern="[0-9]*" maxLength={11} placeholder="11-digit meter number" /></div>
-            <div data-field="dwellingType">
-              <label className={isFieldInvalid('dwellingType') ? 'field-label-error' : undefined}>{requiredLabel('Dwelling type')}</label>
-              <select className={isFieldInvalid('dwellingType') ? 'field-input-error' : undefined} value={form.dwellingType} onChange={(e) => update('dwellingType', e.target.value)} required>
-                <option value="">Select one</option>
-                {dwellingTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
-              </select>
-            </div>
-            <div data-field="yearBuilt"><label className={isFieldInvalid('yearBuilt') ? 'field-label-error' : undefined}>{requiredLabel('Year built')}</label><input className={isFieldInvalid('yearBuilt') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearBuilt} onChange={(e) => update('yearBuilt', e.target.value)} required /></div>
-            <div data-field="yearOccupied"><label className={isFieldInvalid('yearOccupied') ? 'field-label-error' : undefined}>{requiredLabel('Year occupied')}</label><input className={isFieldInvalid('yearOccupied') ? 'field-input-error' : undefined} type="number" min="1800" max={new Date().getFullYear()} value={form.yearOccupied} onChange={(e) => update('yearOccupied', e.target.value)} required /></div>
-            <div data-field="roofType">
-              <label className={isFieldInvalid('roofType') ? 'field-label-error' : undefined}>{requiredLabel('Roof type')}</label>
-              <select className={isFieldInvalid('roofType') ? 'field-input-error' : undefined} value={form.roofType} onChange={(e) => update('roofType', e.target.value)} required>
-                <option value="">Select one</option>
-                {roofTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
-              </select>
-            </div>
-            <div data-field="monthlyElectricityBillRange">
-              <label className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-label-error' : undefined}>{requiredLabel('Monthly electricity bill')}</label>
-              <select className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-input-error' : undefined} value={form.monthlyElectricityBillRange} onChange={(e) => update('monthlyElectricityBillRange', e.target.value)} required>
-                <option value="">Select one</option>
-                {billRanges.map((item) => <option key={item} value={item}>{billRangeLabel(item)}</option>)}
-              </select>
-            </div>
-            <div data-field="installTimeline">
-              <label className={isFieldInvalid('installTimeline') ? 'field-label-error' : undefined}>{requiredLabel('Installation timeframe')}</label>
-              <select className={isFieldInvalid('installTimeline') ? 'field-input-error' : undefined} value={form.installTimeline} onChange={(e) => update('installTimeline', e.target.value)} required>
-                <option value="">Select one</option>
-                {installTimelines.map((item) => <option key={item} value={item}>{labelise(item).replace('Asap', 'ASAP')}</option>)}
-              </select>
-            </div>
-            <div><label>Anything we should know?</label><input value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Optional" /></div>
-          </div>
-          <div className="toggle-grid">
-            <label className="toggle-card"><input type="checkbox" checked={form.propertyOwner} onChange={(e) => update('propertyOwner', e.target.checked)} /> I own the property</label>
-            <label className="toggle-card"><input type="checkbox" checked={form.privateLandlord} onChange={(e) => update('privateLandlord', e.target.checked)} /> I am a private landlord</label>
-            <label className="toggle-card"><input type="checkbox" checked={form.worksStarted} onChange={(e) => update('worksStarted', e.target.checked)} /> Installation has already started</label>
-            <label className="toggle-card"><input type="checkbox" checked={form.priorSolarGrantAtMprn} onChange={(e) => update('priorSolarGrantAtMprn', e.target.checked)} /> This MPRN already got a solar grant</label>
-            <label className="toggle-card"><input type="checkbox" checked={form.wantsBattery} onChange={(e) => update('wantsBattery', e.target.checked)} /> I want a battery quote too</label>
-          </div>
-        </section>
+        {renderStepContent()}
 
-        <section className="form-section">
-          <div className="section-heading compact-heading">
-            <div>
-              <div className="eyebrow">Step 3</div>
-              <h2>Solar estimate</h2>
-            </div>
-          </div>
-          <div className="estimate-calculator">
-            <div className="estimate-options" role="group" aria-label="Select a solar system size">
-              {(Object.entries(systemEstimateOptions) as Array<[SystemSizeOption, (typeof systemEstimateOptions)[SystemSizeOption]]>).map(
-                ([key, option]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`estimate-option ${selectedSystemSize === key ? 'estimate-option-active' : ''}`}
-                    onClick={() => setSelectedSystemSize(key)}
-                    aria-pressed={selectedSystemSize === key}
-                  >
-                    <span className="estimate-option-title">{option.label}</span>
-                    <span className="estimate-option-meta">{option.systemSize} system</span>
-                    <span className="estimate-option-price">{formatEuro(option.estimatedCost)}</span>
-                  </button>
-                )
-              )}
-            </div>
-            <div className="estimate-summary">
-              <div className="estimate-total-label">Estimated cost (final quote after survey)</div>
-              <div className="estimate-total">{formatEuro(estimate.finalEstimatedCost)}</div>
-              <p className="estimate-note">Includes up to {formatEuro(estimate.grantApplied)} SEAI grant deduction.</p>
-              <div className="estimate-rows">
-                <div>
-                  <span>System size</span>
-                  <strong>{estimate.label} ({estimate.systemSize})</strong>
-                </div>
-                <div>
-                  <span>Estimated cost range</span>
-                  <strong>{formatEuro(estimate.estimatedCost)}</strong>
-                </div>
-                <div>
-                  <span>Grant applied</span>
-                  <strong>-{formatEuro(estimate.grantApplied)}</strong>
-                </div>
-                <div>
-                  <span>Final estimated cost after grant</span>
-                  <strong>{formatEuro(estimate.finalEstimatedCost)}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {submitError && <div ref={errorRef} className="error-banner" role="alert">{submitError}</div>}
 
-        <section className="form-section">
-          <div className="section-heading compact-heading">
-            <div>
-              <div className="eyebrow">Step 4</div>
-              <h2>Optional uploads</h2>
-            </div>
-          </div>
-          <div className="upload-grid">
-            <div className="upload-card">
-              <div>
-                <strong>Electricity bill</strong>
-                <p className="small">Optional. Helps confirm the property and MPRN faster.</p>
-              </div>
-              <input ref={billInputRef} type="file" accept="image/*,.pdf" multiple onChange={(event) => handleFileSelection('electricity_bill', event)} className="file-input-hidden" />
-              <button type="button" className="upload-button" onClick={() => billInputRef.current?.click()}>Choose file</button>
-              <div className="file-selected-text">{fileLabel(billFiles, 'No file chosen')}</div>
-            </div>
-
-            <div className="upload-card">
-              <div>
-                <strong>Electricity meter photo</strong>
-                <p className="small">Optional. Useful if the installer needs to verify the meter details.</p>
-              </div>
-              <input ref={meterInputRef} type="file" accept="image/*" multiple onChange={(event) => handleFileSelection('meter_photo', event)} className="file-input-hidden" />
-              <button type="button" className="upload-button" onClick={() => meterInputRef.current?.click()}>Choose file</button>
-              <div className="file-selected-text">{fileLabel(meterPhotoFiles, 'No file chosen')}</div>
-            </div>
-
-            <div className="upload-card upload-card-wide">
-              <div>
-                <strong>Roof / panel area photo</strong>
-                <p className="small">Optional. A quick photo of the roof or install area can help with the first review.</p>
-              </div>
-              <input ref={roofInputRef} type="file" accept="image/*" multiple onChange={(event) => handleFileSelection('roof_photo', event)} className="file-input-hidden" />
-              <button type="button" className="upload-button" onClick={() => roofInputRef.current?.click()}>Choose file</button>
-              <div className="file-selected-text">{fileLabel(roofPhotoFiles, 'No file chosen')}</div>
-            </div>
-          </div>
-          {!!uploadSummary.length && <div className="small">{uploadSummary.length} upload{uploadSummary.length > 1 ? 's' : ''} ready to submit.</div>}
-        </section>
-
-        <section className="form-section">
-          <div className="section-heading compact-heading">
-            <div>
-              <div className="eyebrow">Step 5</div>
-              <h2>Consent</h2>
-            </div>
-          </div>
-          <div className="toggle-grid consent-grid">
-            <label className={`toggle-card ${isFieldInvalid('consentToProcess') ? 'toggle-card-error' : ''}`}>
-              <input type="checkbox" checked={form.consentToProcess} onChange={(e) => update('consentToProcess', e.target.checked)} required />
-              {requiredLabel('I agree to my details being used for this application')}
-            </label>
-            <label className={`toggle-card ${isFieldInvalid('consentToGrantAssist') ? 'toggle-card-error' : ''}`}>
-              <input type="checkbox" checked={form.consentToGrantAssist} onChange={(e) => update('consentToGrantAssist', e.target.checked)} required />
-              {requiredLabel('I want help with grant and installer follow-up')}
-            </label>
-            <label className={`toggle-card ${isFieldInvalid('consentToContact') ? 'toggle-card-error' : ''}`}>
-              <input type="checkbox" checked={form.consentToContact} onChange={(e) => update('consentToContact', e.target.checked)} required />
-              {requiredLabel('I agree to be contacted by phone or email')}
-            </label>
-          </div>
-        </section>
-
-        {submitError && <div ref={errorRef} className="error-banner">{submitError}</div>}
-        <button type="submit" disabled={loading}>{loading ? 'Submitting…' : 'Apply now'}</button>
+        <div className="step-actions">
+          <button type="button" className="secondary" onClick={backStep} disabled={isFirstStep || loading}>
+            Back
+          </button>
+          {isFinalStep ? (
+            <button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit and view estimate'}</button>
+          ) : (
+            <button type="button" onClick={continueStep}>Continue</button>
+          )}
+        </div>
       </form>
     </div>
   );

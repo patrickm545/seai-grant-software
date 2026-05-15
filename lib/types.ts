@@ -10,6 +10,9 @@ export const dwellingTypes = [
 ] as const;
 
 export const roofTypes = ['SLATE', 'TILE', 'METAL', 'FLAT', 'OTHER'] as const;
+export const roofDirections = ['SOUTH', 'EAST_WEST', 'NORTH', 'UNSURE'] as const;
+export const shadingLevels = ['NONE', 'LIGHT', 'HEAVY', 'UNSURE'] as const;
+export const daytimeUsages = ['LOW', 'MEDIUM', 'HIGH'] as const;
 export const installTimelines = ['ASAP', 'ONE_TO_THREE_MONTHS', 'THREE_TO_SIX_MONTHS', 'JUST_RESEARCHING'] as const;
 export const billRanges = ['UNDER_100', 'BETWEEN_100_AND_150', 'BETWEEN_150_AND_200', 'OVER_200'] as const;
 export const callbackWindows = ['MORNING', 'AFTERNOON', 'EVENING', 'ANYTIME'] as const;
@@ -50,6 +53,9 @@ export const counties = [
 
 export type DwellingType = (typeof dwellingTypes)[number];
 export type RoofType = (typeof roofTypes)[number];
+export type RoofDirection = (typeof roofDirections)[number];
+export type ShadingLevel = (typeof shadingLevels)[number];
+export type DaytimeUsage = (typeof daytimeUsages)[number];
 export type InstallTimeline = (typeof installTimelines)[number];
 export type BillRange = (typeof billRanges)[number];
 export type CallbackWindow = (typeof callbackWindows)[number];
@@ -71,11 +77,18 @@ export type LeadFormInput = {
   yearBuilt: number;
   yearOccupied?: number;
   roofType?: RoofType;
+  roofDirection?: RoofDirection;
+  shadingLevel?: ShadingLevel;
   mprn: string;
   worksStarted: boolean;
   priorSolarGrantAtMprn: boolean;
   monthlyElectricityBillRange?: BillRange;
   wantsBattery: boolean;
+  selectedSystemSizeVariant?: 'smaller' | 'recommended' | 'larger';
+  evChargerInterest: boolean;
+  hotWaterDiverterInterest: boolean;
+  numberOfOccupants?: number;
+  daytimeUsage?: DaytimeUsage;
   installTimeline?: InstallTimeline;
   preferredCallbackWindow?: CallbackWindow;
   consentToProcess: boolean;

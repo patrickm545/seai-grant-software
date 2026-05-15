@@ -1,4 +1,5 @@
 import type { Installer, Lead, LeadDocument } from '@prisma/client';
+import type { SolarQuoteEstimate } from './quote-estimate';
 
 type SalesSignal = {
   callbackWindow?: string;
@@ -6,9 +7,16 @@ type SalesSignal = {
   installTimeline?: string;
   monthlyElectricityBillRange?: string;
   roofType?: string;
+  roofDirection?: string;
+  shadingLevel?: string;
   batteryInterest?: boolean;
   wantsBattery?: boolean;
   leadTemperature?: string;
+  evChargerInterest?: boolean;
+  hotWaterDiverterInterest?: boolean;
+  numberOfOccupants?: number;
+  daytimeUsage?: string;
+  recommendedNextAction?: string;
 };
 
 type LeadForApplicationPack = Lead & {
@@ -94,6 +102,12 @@ function getSalesSignal(lead: Lead): SalesSignal {
   const root = asRecord(lead.structuredExportJson);
   const signal = asRecord(root?.salesSignal);
   return signal ? (signal as SalesSignal) : {};
+}
+
+function getQuoteEstimate(lead: Lead): SolarQuoteEstimate | null {
+  const root = asRecord(lead.structuredExportJson);
+  const quoteEstimate = asRecord(root?.quoteEstimate);
+  return quoteEstimate ? (quoteEstimate as SolarQuoteEstimate) : null;
 }
 
 function clean(value: string | null | undefined) {
@@ -201,6 +215,7 @@ function uniqueItems(items: string[]) {
 
 export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationPack {
   const salesSignal = getSalesSignal(lead);
+  const quoteEstimate = getQuoteEstimate(lead);
   const documents = mapDocuments(lead.documents ?? []);
   const documentKinds = new Set(documents.map((document) => document.categoryKey));
   const storedMissingItems = asStringArray(lead.missingItemsJson);
@@ -333,8 +348,12 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
     makeSection('property-details', 'Property Details', [
       makeField('Dwelling Type', formatEnum(lead.dwellingType), !lead.dwellingType),
       makeField('Roof Type', formatEnum(salesSignal.roofType)),
+      makeField('Roof Direction', formatEnum(salesSignal.roofDirection)),
+      makeField('Shading Level', formatEnum(salesSignal.shadingLevel)),
       makeField('Year Built', lead.yearBuilt, !(typeof lead.yearBuilt === 'number' && Number.isFinite(lead.yearBuilt))),
       makeField('Year Occupied', formatValue(lead.yearOccupied, 'Not supplied')),
+      makeField('Number Of Occupants', formatValue(salesSignal.numberOfOccupants)),
+      makeField('Daytime Usage', formatEnum(salesSignal.daytimeUsage)),
       makeField('Property Owner', lead.propertyOwner),
       makeField('Private Landlord', lead.privateLandlord),
       makeField('Roof / Solar Panel Area Photo Uploaded', hasDocument(documents, 'roof_photo'))
@@ -353,7 +372,21 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       makeField('Lead Temperature', formatEnum(salesSignal.leadTemperature || 'WARM')),
       makeField('Install Timeline', formatEnum(salesSignal.installTimeline)),
       makeField('Battery Interest', salesSignal.batteryInterest ?? salesSignal.wantsBattery ?? false),
+      makeField('EV Charger Interest', salesSignal.evChargerInterest ?? false),
+      makeField('Hot Water Diverter Interest', salesSignal.hotWaterDiverterInterest ?? false),
+      makeField('Recommended Next Action', formatOptional(salesSignal.recommendedNextAction)),
       makeField('Manual Assist Note', 'Prepared for manual administrator review and manual SEAI portal entry only')
+    ]),
+    makeSection('quote-estimate', 'Quote Estimate', [
+      makeField('Recommended System Size kWp', quoteEstimate?.recommendedSystemSizeKwp ?? 'Not supplied'),
+      makeField('Selected System Size kWp', quoteEstimate?.selectedSystemSizeKwp ?? 'Not supplied'),
+      makeField('Estimated Panel Count', quoteEstimate?.estimatedPanelCount ?? 'Not supplied'),
+      makeField('Gross Cost Range', quoteEstimate ? `EUR ${quoteEstimate.grossCostRange.min}-${quoteEstimate.grossCostRange.max}` : 'Not supplied'),
+      makeField('Estimated SEAI Grant Deduction', quoteEstimate ? `EUR ${quoteEstimate.estimatedSeaiGrantDeduction}` : 'Not supplied'),
+      makeField('Net Cost Range After Grant', quoteEstimate ? `EUR ${quoteEstimate.netCostRangeAfterGrant.min}-${quoteEstimate.netCostRangeAfterGrant.max}` : 'Not supplied'),
+      makeField('Estimated Annual Savings', quoteEstimate ? `EUR ${quoteEstimate.estimatedAnnualSavingsRange.min}-${quoteEstimate.estimatedAnnualSavingsRange.max}` : 'Not supplied'),
+      makeField('Estimated Payback Range', quoteEstimate ? `${quoteEstimate.estimatedPaybackRangeYears.min}-${quoteEstimate.estimatedPaybackRangeYears.max} years` : 'Not supplied'),
+      makeField('Grant Estimate Status', quoteEstimate?.grantStatus ?? 'Not supplied')
     ]),
     makeSection('uploaded-documents', 'Uploaded Documents', documentFields),
     makeSection('missing-items', 'Missing Items', missingFields),

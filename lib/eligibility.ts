@@ -1,14 +1,8 @@
 import type { LeadFormInput, EligibilityAnalysis, LeadTemperature } from './types';
+import { inferQuoteLeadTemperature } from './quote-estimate';
 
 function inferLeadTemperature(input: LeadFormInput, likelyEligible: boolean): LeadTemperature {
-  if (!likelyEligible) return 'COLD';
-
-  const billScore = input.monthlyElectricityBillRange === 'OVER_200' || input.monthlyElectricityBillRange === 'BETWEEN_150_AND_200';
-  const fastTimeline = input.installTimeline === 'ASAP' || input.installTimeline === 'ONE_TO_THREE_MONTHS';
-
-  if (fastTimeline && billScore && Boolean(input.phone)) return 'HOT';
-  if (input.installTimeline === 'JUST_RESEARCHING') return 'COLD';
-  return 'WARM';
+  return inferQuoteLeadTemperature(input, likelyEligible);
 }
 
 export function runRulesBasedEligibility(input: LeadFormInput): EligibilityAnalysis {

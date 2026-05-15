@@ -7,6 +7,7 @@ import { DEFAULT_INSTALLER_ID, getDefaultInstallerSeedData } from '@/lib/default
 import { sendLeadNotificationEmails } from '@/lib/email';
 import { sendLeadNotificationSms } from '@/lib/sms';
 import type { EligibilityAnalysis, LeadFormInput, LeadTemperature } from '@/lib/types';
+import { buildSolarQuoteEstimate, type SolarQuoteEstimate } from '@/lib/quote-estimate';
 
 export const runtime = 'nodejs';
 
@@ -41,8 +42,29 @@ function getDuplicateLeadWhere(input: LeadFormInput) {
 }
 
 function getLeadTemperature(value: unknown): LeadTemperature {
-  const leadTemperature = (value as { salesSignal?: { leadTemperature?: unknown } } | null)?.salesSignal?.leadTemperature;
+  const root = asRecord(value);
+  const salesSignal = asRecord(root?.salesSignal);
+  const leadTemperature = salesSignal?.leadTemperature;
   return leadTemperature === 'HOT' || leadTemperature === 'WARM' || leadTemperature === 'COLD' ? leadTemperature : 'WARM';
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function getStoredQuoteEstimate(value: unknown): SolarQuoteEstimate | undefined {
+  const root = asRecord(value);
+  const quoteEstimate = asRecord(root?.quoteEstimate);
+  return quoteEstimate ? (quoteEstimate as SolarQuoteEstimate) : undefined;
 }
 
 function getStringArray(value: unknown) {
@@ -84,8 +106,7 @@ export async function POST(request: NextRequest) {
         sizeBytes?: number;
       }>;
     };
-    const applicantDocuments = parsed.applicantDocuments ?? [];
-    const { applicantDocuments: _ignoredApplicantDocuments, ...rawLeadInput } = parsed;
+    const { applicantDocuments = [], ...rawLeadInput } = parsed;
     const leadInput = normalizeLeadInput(rawLeadInput);
     console.info('[intake] Submission validated', {
       email: leadInput.email,
@@ -130,10 +151,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         leadId: existingLead.id,
         analysis: buildStoredAnalysis(existingLead),
+        quoteEstimate: getStoredQuoteEstimate(existingLead.structuredExportJson),
         uploadedDocuments: existingLead.documents.length
       });
     }
 
+    const quoteEstimate = buildSolarQuoteEstimate(leadInput, leadInput.selectedSystemSizeVariant ?? 'recommended');
     const analysis = await generateEligibilityAnalysis(leadInput);
 
     const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
@@ -170,6 +193,7 @@ export async function POST(request: NextRequest) {
         return {
           lead: duplicateLead,
           analysis: buildStoredAnalysis(duplicateLead),
+          quoteEstimate: getStoredQuoteEstimate(duplicateLead.structuredExportJson),
           uploadedDocuments: duplicateLead.documents.length,
           isDuplicate: true
         };
@@ -202,7 +226,15 @@ export async function POST(request: NextRequest) {
             leadInput.installTimeline ? `Install timeline: ${leadInput.installTimeline}` : null,
             leadInput.monthlyElectricityBillRange ? `Bill range: ${leadInput.monthlyElectricityBillRange}` : null,
             leadInput.preferredCallbackWindow ? `Preferred callback: ${leadInput.preferredCallbackWindow}` : null,
-            `Battery interest: ${leadInput.wantsBattery ? 'Yes' : 'No'}`
+            leadInput.roofDirection ? `Roof direction: ${leadInput.roofDirection}` : null,
+            leadInput.shadingLevel ? `Shading: ${leadInput.shadingLevel}` : null,
+            leadInput.daytimeUsage ? `Daytime usage: ${leadInput.daytimeUsage}` : null,
+            leadInput.numberOfOccupants ? `Occupants: ${leadInput.numberOfOccupants}` : null,
+            `Battery interest: ${leadInput.wantsBattery ? 'Yes' : 'No'}`,
+            `EV charger interest: ${leadInput.evChargerInterest ? 'Yes' : 'No'}`,
+            `Hot water diverter interest: ${leadInput.hotWaterDiverterInterest ? 'Yes' : 'No'}`,
+            `Quote estimate: ${quoteEstimate.selectedSystemSizeKwp} kWp / ${quoteEstimate.estimatedPanelCount} panels / net ${quoteEstimate.netCostRangeAfterGrant.min}-${quoteEstimate.netCostRangeAfterGrant.max}`,
+            `Recommended next action: ${quoteEstimate.recommendedNextAction}`
           ].filter(Boolean).join(' | '),
           status: analysis.likelyEligible ? 'READY_TO_APPLY' : 'NEEDS_REVIEW',
           likelyEligible: analysis.likelyEligible,
@@ -211,13 +243,31 @@ export async function POST(request: NextRequest) {
           missingItemsJson: analysis.missingItems,
           risksJson: analysis.risks,
           structuredExportJson: {
+            quoteEstimate,
             salesSignal: {
               leadTemperature: analysis.leadTemperature,
               callbackWindow: leadInput.preferredCallbackWindow,
               installTimeline: leadInput.installTimeline,
               batteryInterest: leadInput.wantsBattery,
+              wantsBattery: leadInput.wantsBattery,
+              selectedSystemSizeVariant: quoteEstimate.selectedVariant,
+              recommendedSystemSizeKwp: quoteEstimate.recommendedSystemSizeKwp,
+              selectedSystemSizeKwp: quoteEstimate.selectedSystemSizeKwp,
+              estimatedPanelCount: quoteEstimate.estimatedPanelCount,
+              estimatedNetCostRangeAfterGrant: quoteEstimate.netCostRangeAfterGrant,
+              estimatedAnnualSavingsRange: quoteEstimate.estimatedAnnualSavingsRange,
+              estimatedPaybackRangeYears: quoteEstimate.estimatedPaybackRangeYears,
+              estimatedSeaiGrantDeduction: quoteEstimate.estimatedSeaiGrantDeduction,
+              grantLikely: quoteEstimate.grantLikely,
+              recommendedNextAction: quoteEstimate.recommendedNextAction,
               monthlyElectricityBillRange: leadInput.monthlyElectricityBillRange,
-              roofType: leadInput.roofType
+              roofType: leadInput.roofType,
+              roofDirection: leadInput.roofDirection,
+              shadingLevel: leadInput.shadingLevel,
+              evChargerInterest: leadInput.evChargerInterest,
+              hotWaterDiverterInterest: leadInput.hotWaterDiverterInterest,
+              numberOfOccupants: leadInput.numberOfOccupants,
+              daytimeUsage: leadInput.daytimeUsage
             }
           },
           documents: applicantDocuments.length
@@ -247,6 +297,7 @@ export async function POST(request: NextRequest) {
       return {
         lead: createdLead,
         analysis,
+        quoteEstimate,
         uploadedDocuments: applicantDocuments.length,
         isDuplicate: false
       };
@@ -256,7 +307,9 @@ export async function POST(request: NextRequest) {
       try {
         await sendLeadNotificationEmails({
           lead: submissionResult.lead,
-          installerName: installer.name
+          installerName: installer.name,
+          quoteEstimate: submissionResult.quoteEstimate,
+          recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
         });
       } catch (error) {
         console.error('Email notification failed during intake submission', error);
@@ -264,7 +317,9 @@ export async function POST(request: NextRequest) {
 
       try {
         await sendLeadNotificationSms({
-          lead: submissionResult.lead
+          lead: submissionResult.lead,
+          quoteEstimate: submissionResult.quoteEstimate,
+          leadTemperature: submissionResult.analysis.leadTemperature
         });
       } catch (error) {
         console.error('SMS notification failed during intake submission', error);
@@ -278,6 +333,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       leadId: submissionResult.lead.id,
       analysis: submissionResult.analysis,
+      quoteEstimate: submissionResult.quoteEstimate,
       uploadedDocuments: submissionResult.uploadedDocuments
     });
   } catch (error) {

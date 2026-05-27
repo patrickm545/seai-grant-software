@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Prisma } from '@prisma/client';
+import type { ReactNode } from 'react';
+import { CopyTextButton } from '@/components/CopyTextButton';
 import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
+import { writeAuditLog } from '@/lib/audit';
 
-const ADMIN_BASE_PATH = '/admin/dashboard';
+const ADMIN_BASE_PATH = '/installer-review-emerald';
 export const dynamic = 'force-dynamic';
 
 type LeadDetail = Prisma.LeadGetPayload<{
@@ -41,11 +44,25 @@ function parseFollowUpDate(value: FormDataEntryValue | null) {
   return date;
 }
 
+function parseCheckbox(value: FormDataEntryValue | null) {
+  return value === 'on' || value === 'true';
+}
+
 function formatDateInput(value: Date | string | null | undefined) {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().slice(0, 10);
+}
+
+function formatDateTime(value: Date | string | null | undefined) {
+  if (!value) return 'Not recorded';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not recorded';
+  return new Intl.DateTimeFormat('en-IE', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
 }
 
 async function updateLeadWorkflow(formData: FormData) {
@@ -54,7 +71,15 @@ async function updateLeadWorkflow(formData: FormData) {
   const leadId = String(formData.get('leadId') || '');
   const action = String(formData.get('workflowAction') || 'save');
   const selectedStatus = String(formData.get('status') || 'NEEDS_REVIEW');
-  const status = action === 'mark-ready' ? 'READY_TO_APPLY' : action === 'mark-needs-review' ? 'NEEDS_REVIEW' : selectedStatus;
+  const workflowStatusByAction: Record<string, string> = {
+    'mark-ready': 'READY_TO_APPLY',
+    'mark-needs-review': 'NEEDS_REVIEW',
+    'mark-contacted': 'HOMEOWNER_REVIEW_PENDING',
+    'mark-quoted': 'READY_TO_APPLY',
+    'mark-won': 'COMPLETED',
+    'mark-lost': 'NEEDS_REVIEW'
+  };
+  const status = workflowStatusByAction[action] ?? selectedStatus;
 
   if (!leadId) {
     throw new Error('Lead id is required');
@@ -65,17 +90,89 @@ async function updateLeadWorkflow(formData: FormData) {
     internalNotes: optionalText(formData.get('internalNotes')),
     followUpDate: parseFollowUpDate(formData.get('followUpDate')),
     assignedAdmin: optionalText(formData.get('assignedAdmin')),
-    assignedInstaller: optionalText(formData.get('assignedInstaller'))
+    assignedInstaller: optionalText(formData.get('assignedInstaller')),
+    currentCrmProcess: optionalText(formData.get('currentCrmProcess')),
+    installerSize: optionalText(formData.get('installerSize')),
+    objections: optionalText(formData.get('objections')),
+    painPoints: optionalText(formData.get('painPoints')),
+    likelihoodToBuy: optionalText(formData.get('likelihoodToBuy')),
+    leadSource: optionalText(formData.get('leadSource')),
+    researchCallCompleted: parseCheckbox(formData.get('researchCallCompleted')),
+    salesCallRequired: parseCheckbox(formData.get('salesCallRequired'))
   });
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: parsed
+  await prisma.$transaction(async (tx) => {
+    const existingLead = await tx.lead.findUnique({
+      where: { id: leadId },
+      select: { status: true }
+    });
+
+    await tx.lead.update({
+      where: { id: leadId },
+      data: parsed
+    });
+
+    await writeAuditLog(tx, {
+      leadId,
+      action: 'lead.workflow_updated',
+      actor: 'admin',
+      metadata: {
+        workflowAction: action,
+        previousStatus: existingLead?.status ?? null,
+        nextStatus: parsed.status,
+        followUpDate: parsed.followUpDate?.toISOString() ?? null,
+        researchCallCompleted: parsed.researchCallCompleted,
+        salesCallRequired: parsed.salesCallRequired
+      }
+    });
   });
 
   revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath(`/installer-review-emerald/leads/${leadId}`);
   revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack`);
   revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack/print`);
+}
+
+async function eraseLeadData(formData: FormData) {
+  'use server';
+
+  const leadId = String(formData.get('leadId') || '');
+  const confirmation = String(formData.get('eraseConfirmation') || '').trim();
+
+  if (!leadId || confirmation !== 'ERASE') {
+    throw new Error('Type ERASE to confirm homeowner record erasure.');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const lead = await tx.lead.findUnique({
+      where: { id: leadId },
+      select: {
+        id: true,
+        status: true,
+        installerId: true,
+        documents: { select: { id: true } }
+      }
+    });
+
+    if (!lead) return;
+
+    await tx.lead.delete({ where: { id: leadId } });
+    await writeAuditLog(tx, {
+      leadId,
+      action: 'lead.erased',
+      actor: 'admin',
+      metadata: {
+        statusAtErasure: lead.status,
+        installerId: lead.installerId,
+        documentCount: lead.documents.length,
+        reason: 'admin_erasure_request'
+      }
+    });
+  });
+
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/installer-review-emerald');
+  redirect('/installer-review-emerald');
 }
 
 function getStatusTone(status: string) {
@@ -154,6 +251,138 @@ function formatPayback(value: unknown) {
   return `${min}-${max} years`;
 }
 
+function formatEnumValue(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return 'Not supplied';
+  return value
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace('Asap', 'ASAP')
+    .replace('Mprn', 'MPRN')
+    .replace('Ev ', 'EV ');
+}
+
+function formatBoolean(value: unknown) {
+  return value ? 'Yes' : 'No';
+}
+
+function formatPercent(value: unknown) {
+  return typeof value === 'number' ? `${Math.round(value * 100)}%` : 'Not supplied';
+}
+
+function formatKwp(value: unknown) {
+  return typeof value === 'number' ? `${value.toFixed(1)} kWp` : 'Not supplied';
+}
+
+function formatEuroValue(value: unknown) {
+  return typeof value === 'number' ? `EUR ${value.toLocaleString('en-IE')}` : 'Not supplied';
+}
+
+function formatEuroRangeValue(value: unknown) {
+  return formatRange(value, 'EUR ');
+}
+
+function formatKwhRangeValue(value: unknown) {
+  const range = asRecord(value);
+  const min = range?.min;
+  const max = range?.max;
+  if (typeof min !== 'number' || typeof max !== 'number') return 'Not supplied';
+  return `${min.toLocaleString('en-IE')}-${max.toLocaleString('en-IE')} kWh`;
+}
+
+function getStringValue(value: unknown, fallback = 'Not supplied') {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function getNoteEntries(notes: string | null | undefined) {
+  if (!notes) return [];
+
+  return notes
+    .split('|')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const separatorIndex = entry.indexOf(':');
+      if (separatorIndex === -1) return { label: 'Note', value: entry };
+      return {
+        label: entry.slice(0, separatorIndex).trim(),
+        value: entry.slice(separatorIndex + 1).trim()
+      };
+    });
+}
+
+function getNoteValue(entries: Array<{ label: string; value: string }>, label: string) {
+  return entries.find((entry) => entry.label.toLowerCase() === label.toLowerCase())?.value;
+}
+
+function formatNoteValue(label: string, value: string) {
+  const enumLikeLabels = ['roof type', 'install timeline', 'bill range', 'roof direction', 'shading', 'daytime usage', 'lead temperature', 'preferred callback'];
+  return enumLikeLabels.some((item) => label.toLowerCase().includes(item)) ? formatEnumValue(value) : value;
+}
+
+function DetailMetric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }) {
+  return (
+    <div className={`structured-metric structured-metric-${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function StructuredField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="structured-field">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function StructuredSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <article className="structured-section-card">
+      <h3>{title}</h3>
+      <dl className="structured-field-grid">{children}</dl>
+    </article>
+  );
+}
+
+function LeadCard({
+  eyebrow,
+  title,
+  actions,
+  children,
+  className = ''
+}: {
+  eyebrow: string;
+  title: string;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`lead-crm-card ${className}`.trim()}>
+      <div className="lead-crm-card-header">
+        <div>
+          <div className="eyebrow">{eyebrow}</div>
+          <h2>{title}</h2>
+        </div>
+        {actions ? <div className="lead-crm-card-actions">{actions}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function LeadField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="lead-crm-field">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const lead: LeadDetail | null = await prisma.lead.findUnique({
@@ -163,270 +392,554 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
 
   if (!lead) return notFound();
 
+  const auditLogs = await prisma.auditLog.findMany({
+    where: { leadId: lead.id },
+    orderBy: { createdAt: 'desc' },
+    take: 8
+  });
+
   const missingItems = asStringArray(lead.missingItemsJson);
   const risks = asStringArray(lead.risksJson);
   const exportData = asRecord(lead.structuredExportJson);
   const salesSignal = getSalesSignal(lead.structuredExportJson);
   const quoteEstimate = asRecord(exportData?.quoteEstimate);
   const leadTemperature = typeof salesSignal?.leadTemperature === 'string' ? salesSignal.leadTemperature : 'WARM';
+  const noteEntries = getNoteEntries(lead.notes);
+  const grantWarnings = asStringArray(quoteEstimate?.grantWarnings);
+  const exportWarnings = [
+    ...grantWarnings,
+    ...missingItems.map((item) => `Missing: ${item}`),
+    ...risks.map((risk) => `Risk: ${risk}`)
+  ];
+  const mprnWarnings = [
+    /^\d{11}$/.test(lead.mprn) ? null : 'MPRN is not an 11-digit value.',
+    lead.worksStarted ? 'Works appear to have started before grant approval.' : null,
+    lead.priorSolarGrantAtMprn ? 'Prior solar grant recorded at this MPRN.' : null
+  ].filter((item): item is string => Boolean(item));
+  const grantLikely = quoteEstimate?.grantLikely === true || lead.likelyEligible === true;
+  const copyQuoteSummary = [
+    `Recommended system: ${formatKwp(quoteEstimate?.recommendedSystemSizeKwp)}`,
+    `Estimated panels: ${formatNumber(quoteEstimate?.estimatedPanelCount)}`,
+    `Net quote range: ${formatEuroRangeValue(quoteEstimate?.netCostRangeAfterGrant)}`,
+    `Annual savings: ${formatEuroRangeValue(quoteEstimate?.estimatedAnnualSavingsRange)}`,
+    `Payback: ${formatPayback(quoteEstimate?.estimatedPaybackRangeYears)}`,
+    `Grant status: ${getStringValue(quoteEstimate?.grantStatus, grantLikely ? 'Likely eligible, subject to SEAI approval.' : 'Review needed')}`
+  ].join('\n');
+  const copyHomeownerSummary = [
+    `Applicant: ${lead.fullName}`,
+    `County: ${lead.county}`,
+    `MPRN: ${lead.mprn}`,
+    `Roof type: ${formatEnumValue(salesSignal?.roofType ?? getNoteValue(noteEntries, 'Roof type'))}`,
+    `Install timeline: ${formatEnumValue(salesSignal?.installTimeline ?? getNoteValue(noteEntries, 'Install timeline'))}`,
+    `Bill range: ${formatEnumValue(salesSignal?.monthlyElectricityBillRange ?? getNoteValue(noteEntries, 'Bill range'))}`,
+    `Battery interest: ${formatBoolean(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery)}`,
+    `Recommended next action: ${getStringValue(salesSignal?.recommendedNextAction ?? quoteEstimate?.recommendedNextAction)}`
+  ].join('\n');
+  const rawExportJson = JSON.stringify(exportData ?? {}, null, 2);
+  const allWarnings = [...mprnWarnings, ...exportWarnings];
+  const addressSummary = [lead.addressLine1, lead.addressLine2, lead.county, lead.eircode].filter(Boolean).join(', ');
+  const eligibilityLabel = lead.likelyEligible === null ? 'Pending review' : lead.likelyEligible ? 'Likely eligible' : 'Needs review';
+  const confidenceLabel = lead.eligibilityConfidence === null ? 'Not scored' : formatPercent(lead.eligibilityConfidence);
+  const consentCaptured = lead.consentToProcess && lead.consentToGrantAssist && lead.consentToContact;
+  const nextRecommendedAction = getStringValue(
+    salesSignal?.recommendedNextAction ?? quoteEstimate?.recommendedNextAction,
+    'Review eligibility, call homeowner, and confirm documents.'
+  );
+  const installTimeline = formatEnumValue(salesSignal?.installTimeline ?? getNoteValue(noteEntries, 'Install timeline'));
+  const callbackWindow = formatEnumValue(
+    salesSignal?.callbackWindow ?? salesSignal?.preferredCallbackWindow ?? getNoteValue(noteEntries, 'Preferred callback')
+  );
+  const roofType = formatEnumValue(salesSignal?.roofType ?? getNoteValue(noteEntries, 'Roof type'));
+  const roofDirection = formatEnumValue(salesSignal?.roofDirection ?? getNoteValue(noteEntries, 'Roof direction'));
+  const shadingLevel = formatEnumValue(salesSignal?.shadingLevel ?? getNoteValue(noteEntries, 'Shading'));
+  const monthlyBillRange = formatEnumValue(salesSignal?.monthlyElectricityBillRange ?? getNoteValue(noteEntries, 'Bill range'));
+  const recommendedSystemSize = formatKwp(quoteEstimate?.recommendedSystemSizeKwp ?? quoteEstimate?.selectedSystemSizeKwp);
+  const netQuoteRange = formatEuroRangeValue(quoteEstimate?.netCostRangeAfterGrant);
+  const grossQuoteRange = formatEuroRangeValue(quoteEstimate?.grossCostRange);
+  const annualSavingsRange = formatEuroRangeValue(quoteEstimate?.estimatedAnnualSavingsRange);
+  const paybackRange = formatPayback(quoteEstimate?.estimatedPaybackRangeYears);
 
   return (
-    <main className="container grid admin-shell">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <div className="admin-topbar"><Link href={ADMIN_BASE_PATH} className="small">{'<'} Back to dashboard</Link><Link href="/admin/logout" className="small">Log out</Link></div>
-          <h1>{lead.fullName}</h1>
-          <p className="hero-text">
-            Review grant fit, sales intent, document evidence, and the manual Application Pack before an admin completes SEAI steps by hand.
-          </p>
+    <main className="container admin-shell lead-crm-shell">
+      <section className="lead-crm-header">
+        <div className="lead-crm-topbar">
+          <Link href={ADMIN_BASE_PATH} className="small">Back to dashboard</Link>
+          <Link href="/admin/logout" className="small">Log out</Link>
         </div>
-        <div className="hero-metrics">
-          <span className={`status-pill status-pill-${getStatusTone(lead.status)}`}>{STATUS_LABELS[lead.status]}</span>
-          <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
-          <div className="metric-chip">
-            <span className="metric-label">Eligibility</span>
-            <strong>{lead.likelyEligible === null ? 'Pending' : lead.likelyEligible ? 'Likely eligible' : 'Needs review'}</strong>
-          </div>
-          <div className="metric-chip">
-            <span className="metric-label">Confidence</span>
-            <strong>{lead.eligibilityConfidence === null ? 'Not scored' : `${Math.round(lead.eligibilityConfidence * 100)}%`}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="card admin-workflow-card">
-        <div className="section-heading">
-          <div>
-            <div className="eyebrow">Admin workflow</div>
-            <h2>Review controls</h2>
-          </div>
-          <Link href={`/admin/dashboard/leads/${lead.id}/application-pack`} className="table-link">Open Application Pack</Link>
-        </div>
-        <form action={updateLeadWorkflow} className="admin-workflow-form">
-          <input type="hidden" name="leadId" value={lead.id} />
-          <div className="grid grid-4">
-            <div>
-              <label>Status</label>
-              <select name="status" defaultValue={lead.status}>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>{STATUS_LABELS[status]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Assigned admin</label>
-              <input name="assignedAdmin" defaultValue={lead.assignedAdmin || ''} placeholder="Admin name" />
-            </div>
-            <div>
-              <label>Assigned admin / installer</label>
-              <input name="assignedInstaller" defaultValue={lead.assignedInstaller || ''} placeholder="Installer or crew" />
-            </div>
-            <div>
-              <label>Follow-up date</label>
-              <input name="followUpDate" type="date" defaultValue={formatDateInput(lead.followUpDate)} />
+        <div className="lead-crm-header-grid">
+          <div className="lead-crm-title-block">
+            <div className="eyebrow">Lead detail</div>
+            <h1>{lead.fullName}</h1>
+            <p>
+              Installer-ready view for grant readiness, sales fit, documents, notes, and next workflow actions.
+            </p>
+            <div className="lead-crm-chip-row">
+              <span className={`status-pill status-pill-${getStatusTone(lead.status)}`}>{STATUS_LABELS[lead.status]}</span>
+              <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
+              <span className={`status-pill status-pill-${grantLikely ? 'success' : 'warning'}`}>
+                {grantLikely ? 'Grant likely' : 'Grant review'}
+              </span>
+              <span className="status-pill status-pill-default">{installTimeline}</span>
             </div>
           </div>
-          <div>
-            <label>Internal notes</label>
-            <textarea name="internalNotes" defaultValue={lead.internalNotes || ''} rows={5} placeholder="Private admin notes for manual SEAI submission prep" />
-          </div>
-          <div className="admin-workflow-actions">
-            <button type="submit" name="workflowAction" value="save">Save review</button>
-            <button type="submit" name="workflowAction" value="mark-ready" className="secondary">Mark ready</button>
-            <button type="submit" name="workflowAction" value="mark-needs-review" className="secondary">Mark needs review</button>
-          </div>
-        </form>
-      </section>
-
-      <section className="grid grid-3">
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Applicant</div>
-              <h2>Contact and property</h2>
-            </div>
-          </div>
-          <div className="detail-list">
-            <div><span>Email</span><strong>{lead.email}</strong></div>
-            <div><span>Phone</span><strong>{lead.phone || 'No phone provided'}</strong></div>
-            <div><span>Preferred callback</span><strong>{typeof salesSignal?.callbackWindow === 'string' ? salesSignal.callbackWindow.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
-            <div><span>Address</span><strong>{`${lead.addressLine1}${lead.addressLine2 ? `, ${lead.addressLine2}` : ''}, ${lead.county}`}</strong></div>
-            <div><span>Eircode</span><strong>{lead.eircode || 'Not supplied'}</strong></div>
-            <div><span>MPRN</span><strong>{lead.mprn}</strong></div>
-            <div><span>Dwelling</span><strong>{lead.dwellingType.replaceAll('_', ' ')}</strong></div>
-            <div><span>Roof type</span><strong>{typeof salesSignal?.roofType === 'string' ? salesSignal.roofType.replaceAll('_', ' ') : 'Unknown'}</strong></div>
-            <div><span>Roof direction</span><strong>{typeof salesSignal?.roofDirection === 'string' ? salesSignal.roofDirection.replaceAll('_', ' ') : 'Unknown'}</strong></div>
-            <div><span>Shading</span><strong>{typeof salesSignal?.shadingLevel === 'string' ? salesSignal.shadingLevel.replaceAll('_', ' ') : 'Unknown'}</strong></div>
-            <div><span>Built</span><strong>{lead.yearBuilt}</strong></div>
-            <div><span>Occupied</span><strong>{lead.yearOccupied || 'Unknown'}</strong></div>
-            <div><span>Occupants</span><strong>{typeof salesSignal?.numberOfOccupants === 'number' ? salesSignal.numberOfOccupants : 'Not supplied'}</strong></div>
-            <div><span>Daytime usage</span><strong>{typeof salesSignal?.daytimeUsage === 'string' ? salesSignal.daytimeUsage.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
-          </div>
-        </div>
-
-        <div className="card quote-review-card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">AI review</div>
-              <h2>Eligibility signal</h2>
-            </div>
-          </div>
-          <p>{lead.aiSummary || 'No AI analysis yet.'}</p>
-          <div className="insight-grid">
-            <div className="insight-box">
-              <span>Property owner</span>
-              <strong>{lead.propertyOwner ? 'Yes' : 'No'}</strong>
-            </div>
-            <div className="insight-box">
-              <span>Works started</span>
-              <strong>{lead.worksStarted ? 'Yes' : 'No'}</strong>
-            </div>
-            <div className="insight-box">
-              <span>Prior grant at MPRN</span>
-              <strong>{lead.priorSolarGrantAtMprn ? 'Yes' : 'No'}</strong>
-            </div>
-            <div className="insight-box">
-              <span>Installer</span>
-              <strong>{lead.installer.name}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Sales signal</div>
-              <h2>Commercial fit</h2>
-            </div>
-          </div>
-          <div className="quote-detail-grid">
-            <div><span>Lead temperature</span><strong>{leadTemperature}</strong></div>
-            <div><span>Install timeline</span><strong>{typeof salesSignal?.installTimeline === 'string' ? salesSignal.installTimeline.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
-            <div><span>Monthly bill range</span><strong>{typeof salesSignal?.monthlyElectricityBillRange === 'string' ? salesSignal.monthlyElectricityBillRange.replaceAll('_', ' ') : 'Not supplied'}</strong></div>
-            <div><span>Recommended next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Quote summary</div>
-              <h2>Sales estimate</h2>
-            </div>
-          </div>
-          <div className="detail-list">
-            <div><span>System size</span><strong>{formatNumber(quoteEstimate?.selectedSystemSizeKwp, ' kWp')}</strong></div>
-            <div><span>Panel count</span><strong>{formatNumber(quoteEstimate?.estimatedPanelCount)}</strong></div>
-            <div><span>Gross cost</span><strong>{formatRange(quoteEstimate?.grossCostRange, 'EUR ')}</strong></div>
-            <div><span>Grant estimate</span><strong>{formatGrantEstimate(quoteEstimate?.estimatedSeaiGrantDeduction)}</strong></div>
-            <div><span>Net cost</span><strong>{formatRange(quoteEstimate?.netCostRangeAfterGrant, 'EUR ')}</strong></div>
-            <div><span>Annual savings</span><strong>{formatRange(quoteEstimate?.estimatedAnnualSavingsRange, 'EUR ')}</strong></div>
-            <div><span>Payback</span><strong>{formatPayback(quoteEstimate?.estimatedPaybackRangeYears)}</strong></div>
-            <div><span>Battery interest</span><strong>{(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery) ? 'Yes' : 'No'}</strong></div>
-            <div><span>EV charger interest</span><strong>{salesSignal?.evChargerInterest ? 'Yes' : 'No'}</strong></div>
-            <div><span>Hot water diverter</span><strong>{salesSignal?.hotWaterDiverterInterest ? 'Yes' : 'No'}</strong></div>
-            <div><span>Lead temperature</span><strong>{leadTemperature}</strong></div>
-            <div><span>Next action</span><strong>{typeof salesSignal?.recommendedNextAction === 'string' ? salesSignal.recommendedNextAction : 'Not supplied'}</strong></div>
+          <div className="lead-crm-header-actions">
+            <CopyTextButton text={copyHomeownerSummary} label="Copy homeowner summary" />
+            <Link href={`/admin/dashboard/leads/${lead.id}/application-pack`} className="lead-crm-button lead-crm-button-primary">Open application pack</Link>
+            <a href={`/admin/dashboard/leads/${lead.id}/application-pack/print`} className="lead-crm-button" target="_blank" rel="noreferrer">Print summary</a>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-2">
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Review checklist</div>
-              <h2>Action items</h2>
-            </div>
-          </div>
-          <div className="checklist-group">
-            <h3>Missing items</h3>
-            <ul className="plain-list">
-              {missingItems.length ? missingItems.map((item) => <li key={item}>{item}</li>) : <li>No missing items recorded.</li>}
-            </ul>
-          </div>
-          <div className="checklist-group">
-            <h3>Risks</h3>
-            <ul className="plain-list">
-              {risks.length ? risks.map((risk) => <li key={risk}>{risk}</li>) : <li>No flagged risks.</li>}
-            </ul>
-          </div>
+      <section className="lead-crm-summary-grid">
+        <div className="lead-crm-kpi lead-crm-kpi-info">
+          <span>Lead status</span>
+          <strong>{STATUS_LABELS[lead.status]}</strong>
+          <small>Updated {formatDateTime(lead.updatedAt)}</small>
         </div>
+        <div className={`lead-crm-kpi lead-crm-kpi-${grantLikely ? 'success' : 'warning'}`}>
+          <span>Eligibility confidence</span>
+          <strong>{confidenceLabel}</strong>
+          <small>{eligibilityLabel}</small>
+        </div>
+        <div className="lead-crm-kpi lead-crm-kpi-success">
+          <span>Recommended system</span>
+          <strong>{recommendedSystemSize}</strong>
+          <small>{formatNumber(quoteEstimate?.estimatedPanelCount)} panels estimated</small>
+        </div>
+        <div className="lead-crm-kpi lead-crm-kpi-info">
+          <span>Estimated quote</span>
+          <strong>{netQuoteRange}</strong>
+          <small>{annualSavingsRange} annual savings</small>
+        </div>
+      </section>
 
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Documents</div>
-              <h2>Uploaded evidence</h2>
-            </div>
-          </div>
-          <div className="document-grid">
-            {lead.documents.map((document) => {
-              const fields = asRecord(document.aiFieldsJson);
-
-              return (
-                <div key={document.id} className="document-card">
-                  <div className="document-head">
-                    <strong>{document.fileName}</strong>
-                    <span className="small">{document.mimeType}</span>
-                  </div>
-                  <p className="small">{document.extractedText || 'No extracted text stored.'}</p>
-                  {fields ? (
-                    <div className="field-chips">
-                      {Object.entries(fields).map(([key, value]) => (
-                        <span key={key} className="field-chip">{key}: {String(value)}</span>
-                      ))}
-                    </div>
-                  ) : null}
+      <div className="lead-crm-layout">
+        <div className="lead-crm-main">
+          <LeadCard eyebrow="Lead overview" title="Operational summary">
+            <div className="lead-crm-overview-row">
+              <div className="lead-crm-ai-summary">
+                <p>{lead.aiSummary || 'No AI analysis yet. Review the homeowner details and Application Pack before submission.'}</p>
+                <div className="lead-crm-next-action">
+                  <span>Next recommended action</span>
+                  <strong>{nextRecommendedAction}</strong>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-2">
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Exports</div>
-              <h2>Submission payloads</h2>
+              </div>
+              <div className="lead-crm-field-grid lead-crm-overview-fields">
+                <LeadField label="Installer" value={lead.installer.name} />
+                <LeadField label="Follow-up date" value={formatDateInput(lead.followUpDate) || 'Not scheduled'} />
+                <LeadField label="Assigned admin" value={lead.assignedAdmin || 'Unassigned'} />
+                <LeadField label="Assigned installer" value={lead.assignedInstaller || 'Unassigned'} />
+              </div>
             </div>
+          </LeadCard>
+
+          <div className="lead-crm-two-column">
+            <LeadCard eyebrow="Contact details" title="Applicant">
+              <div className="lead-crm-field-grid">
+                <LeadField label="Email" value={<a href={`mailto:${lead.email}`} className="lead-crm-link">{lead.email}</a>} />
+                <LeadField label="Phone" value={lead.phone ? <a href={`tel:${lead.phone}`} className="lead-crm-link">{lead.phone}</a> : 'No phone provided'} />
+                <LeadField label="Preferred callback" value={callbackWindow} />
+                <LeadField label="Address" value={addressSummary} />
+                <LeadField label="MPRN" value={lead.mprn} />
+                <LeadField label="Consent" value={consentCaptured ? 'Captured' : 'Check required'} />
+              </div>
+            </LeadCard>
+
+            <LeadCard eyebrow="Property details" title="Home and roof">
+              <div className="lead-crm-field-grid">
+                <LeadField label="Dwelling type" value={formatEnumValue(lead.dwellingType)} />
+                <LeadField label="Year built" value={lead.yearBuilt} />
+                <LeadField label="Year occupied" value={lead.yearOccupied || 'Unknown'} />
+                <LeadField label="Roof type" value={roofType} />
+                <LeadField label="Roof direction" value={roofDirection} />
+                <LeadField label="Shading" value={shadingLevel} />
+              </div>
+            </LeadCard>
           </div>
-          <div className="action-grid">
-            <a className="action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack`}>
-              <h3>Application Pack</h3>
-              <p className="small">Open the copy-friendly manual SEAI submission prep view.</p>
-            </a>
-            <a className="action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack/print`} target="_blank" rel="noreferrer">
-              <h3>Print summary</h3>
-              <p className="small">Open the PDF-friendly manual prep summary.</p>
-            </a>
-            <a className="action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
-              <h3>Application pack JSON</h3>
-              <p className="small">Export structured data for human admin review.</p>
-            </a>
-            <a className="action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
-              <h3>Portal fill preview</h3>
-              <p className="small">Generate a safe reference payload for manual portal entry.</p>
-            </a>
+
+          <div className="lead-crm-two-column">
+            <LeadCard eyebrow="Grant / eligibility" title="SEAI readiness">
+              <div className="lead-crm-field-grid">
+                <LeadField label="Grant eligibility" value={eligibilityLabel} />
+                <LeadField label="Confidence" value={confidenceLabel} />
+                <LeadField label="Property owner" value={formatBoolean(lead.propertyOwner)} />
+                <LeadField label="Private landlord" value={formatBoolean(lead.privateLandlord)} />
+                <LeadField label="Works started" value={formatBoolean(lead.worksStarted)} />
+                <LeadField label="Prior grant at MPRN" value={formatBoolean(lead.priorSolarGrantAtMprn)} />
+              </div>
+              <div className="lead-crm-list-pair">
+                <div>
+                  <h3>Missing items</h3>
+                  <ul className="plain-list">
+                    {missingItems.length ? missingItems.map((item) => <li key={item}>{item}</li>) : <li>No missing items recorded.</li>}
+                  </ul>
+                </div>
+                <div>
+                  <h3>Risks</h3>
+                  <ul className="plain-list">
+                    {risks.length ? risks.map((risk) => <li key={risk}>{risk}</li>) : <li>No flagged risks.</li>}
+                  </ul>
+                </div>
+              </div>
+            </LeadCard>
+
+            <LeadCard
+              eyebrow="Quote estimate"
+              title="Commercial estimate"
+              actions={<CopyTextButton text={copyQuoteSummary} label="Copy quote estimate" />}
+            >
+              <div className="lead-crm-field-grid">
+                <LeadField label="Gross cost" value={grossQuoteRange} />
+                <LeadField label="Grant deduction" value={formatGrantEstimate(quoteEstimate?.estimatedSeaiGrantDeduction)} />
+                <LeadField label="Net cost after grant" value={netQuoteRange} />
+                <LeadField label="Annual savings" value={annualSavingsRange} />
+                <LeadField label="Payback range" value={paybackRange} />
+                <LeadField label="Grant status" value={getStringValue(quoteEstimate?.grantStatus, grantLikely ? 'Likely eligible, subject to SEAI approval.' : 'Manual review needed')} />
+              </div>
+            </LeadCard>
           </div>
-          <div className="export-box">
-            <h3>Structured export snapshot</h3>
-            <pre className="code-block">{JSON.stringify(exportData, null, 2)}</pre>
-          </div>
+
+          <LeadCard eyebrow="Recommended system" title="System sizing and sales signal">
+            <div className="lead-crm-field-grid lead-crm-field-grid-wide">
+              <LeadField label="Recommended size" value={recommendedSystemSize} />
+              <LeadField label="Selected size" value={formatKwp(quoteEstimate?.selectedSystemSizeKwp)} />
+              <LeadField label="Estimated panels" value={formatNumber(quoteEstimate?.estimatedPanelCount)} />
+              <LeadField label="Selected variant" value={formatEnumValue(quoteEstimate?.selectedVariant)} />
+              <LeadField label="Monthly bill range" value={monthlyBillRange} />
+              <LeadField label="Daytime usage" value={formatEnumValue(salesSignal?.daytimeUsage)} />
+              <LeadField label="Battery interest" value={formatBoolean(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery)} />
+              <LeadField label="EV charger interest" value={formatBoolean(salesSignal?.evChargerInterest)} />
+              <LeadField label="Hot water diverter" value={formatBoolean(salesSignal?.hotWaterDiverterInterest)} />
+              <LeadField label="Recommended extras" value={Array.isArray(quoteEstimate?.recommendedExtras) && quoteEstimate.recommendedExtras.length ? quoteEstimate.recommendedExtras.join(', ') : 'Survey first'} />
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Documents / uploads" title="Evidence and files">
+            <div className="lead-crm-doc-grid">
+              {lead.documents.length ? lead.documents.map((document) => {
+                const fields = asRecord(document.aiFieldsJson);
+
+                return (
+                  <article key={document.id} className="lead-crm-document">
+                    <div className="document-head">
+                      <strong>{document.fileName}</strong>
+                      <span className="small">{document.mimeType}</span>
+                    </div>
+                    <p className="small">{document.extractedText || 'No extracted text stored.'}</p>
+                    {fields ? (
+                      <div className="field-chips">
+                        {Object.entries(fields).map(([key, value]) => (
+                          <span key={key} className="field-chip">{key}: {String(value)}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              }) : (
+                <div className="empty-state">
+                  <h3>No uploads yet</h3>
+                  <p className="small">Ask for a bill, meter photo, roof photo, or any document that would unblock review.</p>
+                </div>
+              )}
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Installer notes" title="Homeowner context">
+            <div className="lead-crm-note-layout">
+              <div className="homeowner-context-summary">
+                <div className="homeowner-context-hero">
+                  <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
+                  <span className={`status-pill status-pill-${grantLikely ? 'success' : 'warning'}`}>
+                    {grantLikely ? 'Grant likely' : 'Grant review'}
+                  </span>
+                  <span className="status-pill status-pill-default">{installTimeline}</span>
+                </div>
+                <div className="homeowner-context-grid">
+                  <div><span>Roof Type</span><strong>{roofType}</strong></div>
+                  <div><span>Bill Range</span><strong>{monthlyBillRange}</strong></div>
+                  <div><span>Battery Interest</span><strong>{formatBoolean(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery)}</strong></div>
+                  <div><span>Quote Estimate</span><strong>{netQuoteRange}</strong></div>
+                  <div><span>Annual Savings</span><strong>{annualSavingsRange}</strong></div>
+                  <div><span>Payback</span><strong>{paybackRange}</strong></div>
+                </div>
+                <div className="homeowner-context-block">
+                  <h3>Recommended next action</h3>
+                  <p>{nextRecommendedAction}</p>
+                </div>
+              </div>
+
+              <div className="lead-crm-notes-panel">
+                <h3>Captured homeowner notes</h3>
+                {getNoteValue(noteEntries, 'Homeowner notes') ? <p>{getNoteValue(noteEntries, 'Homeowner notes')}</p> : <p className="small">No free-text homeowner note recorded.</p>}
+                {noteEntries.length ? (
+                  <div className="context-note-list">
+                    {noteEntries
+                      .filter((entry) => entry.label.toLowerCase() !== 'homeowner notes')
+                      .map((entry) => (
+                        <div key={`${entry.label}-${entry.value}`}>
+                          <span>{entry.label}</span>
+                          <strong>{formatNoteValue(entry.label, entry.value)}</strong>
+                        </div>
+                      ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Exports" title="Application pack and structured data">
+            <div className="action-grid export-action-grid">
+              <Link className="action-card export-action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack`}>
+                <h3>Application Pack</h3>
+                <p className="small">Open the copy-friendly manual SEAI submission prep view.</p>
+              </Link>
+              <a className="action-card export-action-card export-action-card-primary" href={`/admin/dashboard/leads/${lead.id}/application-pack/print`} target="_blank" rel="noreferrer">
+                <h3>Print summary</h3>
+                <p className="small">Open the PDF-friendly manual prep summary.</p>
+              </a>
+              <a className="action-card export-action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
+                <h3>Application pack JSON</h3>
+                <p className="small">Export structured data for human admin review.</p>
+              </a>
+              <a className="action-card export-action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
+                <h3>Portal fill preview</h3>
+                <p className="small">Generate a safe reference payload for manual portal entry.</p>
+              </a>
+            </div>
+
+            <div className="structured-snapshot">
+              <div className="structured-snapshot-header">
+                <div>
+                  <div className="eyebrow">Structured export snapshot</div>
+                  <h3>Operational summary</h3>
+                  <p className="small">Readable export view for installer review. Raw payload is hidden below for debugging.</p>
+                </div>
+                <div className="structured-copy-actions">
+                  <CopyTextButton text={copyQuoteSummary} label="Copy quote estimate" />
+                  <CopyTextButton text={copyHomeownerSummary} label="Copy homeowner summary" />
+                </div>
+              </div>
+
+              <div className="structured-highlight-grid">
+                <DetailMetric label="Recommended system" value={recommendedSystemSize} tone="success" />
+                <DetailMetric label="Estimated panels" value={formatNumber(quoteEstimate?.estimatedPanelCount)} tone="info" />
+                <DetailMetric label="Net quote range" value={netQuoteRange} tone="success" />
+                <DetailMetric label="Grant eligibility" value={grantLikely ? 'Likely eligible' : 'Review needed'} tone={grantLikely ? 'success' : 'warning'} />
+              </div>
+
+              <div className="structured-section-grid">
+                <StructuredSection title="Property Information">
+                  <StructuredField label="County" value={lead.county} />
+                  <StructuredField label="Eircode" value={lead.eircode || 'Not supplied'} />
+                  <StructuredField label="MPRN" value={lead.mprn} />
+                  <StructuredField label="Dwelling Type" value={formatEnumValue(lead.dwellingType)} />
+                  <StructuredField label="Year Built" value={String(lead.yearBuilt)} />
+                  <StructuredField label="Year Occupied" value={lead.yearOccupied ? String(lead.yearOccupied) : 'Not supplied'} />
+                </StructuredSection>
+                <StructuredSection title="Roof Details">
+                  <StructuredField label="Roof Type" value={roofType} />
+                  <StructuredField label="Roof Direction" value={roofDirection} />
+                  <StructuredField label="Shading" value={shadingLevel} />
+                </StructuredSection>
+                <StructuredSection title="Electricity Usage">
+                  <StructuredField label="Monthly Bill Range" value={monthlyBillRange} />
+                  <StructuredField label="Daytime Usage" value={formatEnumValue(salesSignal?.daytimeUsage)} />
+                  <StructuredField label="Occupants" value={typeof salesSignal?.numberOfOccupants === 'number' ? String(salesSignal.numberOfOccupants) : 'Not supplied'} />
+                  <StructuredField label="Battery Interest" value={formatBoolean(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery)} />
+                  <StructuredField label="EV Charger Interest" value={formatBoolean(salesSignal?.evChargerInterest)} />
+                  <StructuredField label="Hot Water Diverter" value={formatBoolean(salesSignal?.hotWaterDiverterInterest)} />
+                </StructuredSection>
+                <StructuredSection title="Recommended System">
+                  <StructuredField label="Recommended Size" value={recommendedSystemSize} />
+                  <StructuredField label="Selected Size" value={formatKwp(quoteEstimate?.selectedSystemSizeKwp)} />
+                  <StructuredField label="Estimated Panels" value={formatNumber(quoteEstimate?.estimatedPanelCount)} />
+                  <StructuredField label="Selected Variant" value={formatEnumValue(quoteEstimate?.selectedVariant)} />
+                  <StructuredField label="Recommended Extras" value={Array.isArray(quoteEstimate?.recommendedExtras) && quoteEstimate.recommendedExtras.length ? quoteEstimate.recommendedExtras.join(', ') : 'Survey first'} />
+                </StructuredSection>
+                <StructuredSection title="Quote Estimate">
+                  <StructuredField label="Gross Cost" value={grossQuoteRange} />
+                  <StructuredField label="Grant Deduction" value={formatEuroValue(quoteEstimate?.estimatedSeaiGrantDeduction)} />
+                  <StructuredField label="Potential SEAI Grant" value={formatEuroValue(quoteEstimate?.potentialSeaiGrant)} />
+                  <StructuredField label="Net Cost After Grant" value={netQuoteRange} />
+                </StructuredSection>
+                <StructuredSection title="Savings & Payback">
+                  <StructuredField label="Annual Generation" value={formatKwhRangeValue(quoteEstimate?.estimatedAnnualGenerationKwh)} />
+                  <StructuredField label="Annual Savings" value={annualSavingsRange} />
+                  <StructuredField label="Payback Range" value={paybackRange} />
+                  <StructuredField label="Self-consumption" value={formatPercent(quoteEstimate?.selfConsumptionRate)} />
+                </StructuredSection>
+                <StructuredSection title="Grant Status">
+                  <StructuredField label="Grant Likely" value={formatBoolean(grantLikely)} />
+                  <StructuredField label="AI Eligibility" value={eligibilityLabel} />
+                  <StructuredField label="Confidence" value={confidenceLabel} />
+                  <StructuredField label="Works Started" value={formatBoolean(lead.worksStarted)} />
+                  <StructuredField label="Prior Grant At MPRN" value={formatBoolean(lead.priorSolarGrantAtMprn)} />
+                </StructuredSection>
+                <StructuredSection title="Installer Notes">
+                  <StructuredField label="Lead Temperature" value={leadTemperature} />
+                  <StructuredField label="Install Timeline" value={installTimeline} />
+                  <StructuredField label="Callback Window" value={callbackWindow} />
+                  <StructuredField label="Recommended Next Action" value={nextRecommendedAction} />
+                </StructuredSection>
+              </div>
+
+              <details className="raw-export-accordion">
+                <summary>View raw data</summary>
+                <pre className="code-block raw-export-code">{rawExportJson}</pre>
+              </details>
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Audit log" title="Recent actions">
+            <div className="audit-list lead-crm-audit-list">
+              {auditLogs.length ? auditLogs.map((entry) => (
+                <div key={entry.id} className="audit-item">
+                  <div>
+                    <strong>{entry.action}</strong>
+                    <div className="small">{formatDateTime(entry.createdAt)} by {entry.actor}</div>
+                  </div>
+                  <details className="raw-export-accordion lead-crm-audit-metadata">
+                    <summary>View audit metadata</summary>
+                    <pre className="code-block raw-export-code">{JSON.stringify(entry.metadataJson ?? {}, null, 2)}</pre>
+                  </details>
+                </div>
+              )) : (
+                <div className="empty-state">
+                  <h3>No audit events yet</h3>
+                  <p className="small">New workflow updates and erasure actions will appear here.</p>
+                </div>
+              )}
+            </div>
+          </LeadCard>
         </div>
 
-        <div className="card">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">Installer notes</div>
-              <h2>Homeowner context</h2>
+        <aside className="lead-crm-sidebar">
+          <LeadCard eyebrow="Actions / next steps" title="Workflow controls" className="lead-crm-sticky-card">
+            <form action={updateLeadWorkflow} className="admin-workflow-form lead-crm-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <div className="lead-crm-form-grid">
+                <div>
+                  <label>Status</label>
+                  <select name="status" defaultValue={lead.status}>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>Follow-up date</label>
+                  <input name="followUpDate" type="date" defaultValue={formatDateInput(lead.followUpDate)} />
+                </div>
+                <div>
+                  <label>Assigned admin</label>
+                  <input name="assignedAdmin" defaultValue={lead.assignedAdmin || ''} placeholder="Admin name" />
+                </div>
+                <div>
+                  <label>Assigned installer</label>
+                  <input name="assignedInstaller" defaultValue={lead.assignedInstaller || ''} placeholder="Installer or crew" />
+                </div>
+              </div>
+
+              <div>
+                <label>Internal notes</label>
+                <textarea name="internalNotes" defaultValue={lead.internalNotes || ''} rows={5} placeholder="Private admin notes for manual SEAI submission prep" />
+              </div>
+
+              <div className="workflow-subsection lead-crm-form-subsection">
+                <h3>Installer outreach</h3>
+                <div className="lead-crm-form-grid">
+                  <div>
+                    <label>Lead source</label>
+                    <input name="leadSource" defaultValue={lead.leadSource || ''} placeholder="Website, referral, call list" />
+                  </div>
+                  <div>
+                    <label>Installer size</label>
+                    <input name="installerSize" defaultValue={lead.installerSize || ''} placeholder="Solo, small team, multi-crew" />
+                  </div>
+                  <div>
+                    <label>Likelihood to buy</label>
+                    <select name="likelihoodToBuy" defaultValue={lead.likelihoodToBuy || ''}>
+                      <option value="">Not scored</option>
+                      <option value="HIGH">High</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="LOW">Low</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label>Current CRM / form process</label>
+                  <textarea name="currentCrmProcess" defaultValue={lead.currentCrmProcess || ''} rows={3} placeholder="How they capture and track grant leads today" />
+                </div>
+                <div>
+                  <label>Pain points</label>
+                  <textarea name="painPoints" defaultValue={lead.painPoints || ''} rows={3} placeholder="Grant admin, follow-up, missing documents" />
+                </div>
+                <div>
+                  <label>Objections</label>
+                  <textarea name="objections" defaultValue={lead.objections || ''} rows={3} placeholder="CRM, data safety, support, price" />
+                </div>
+                <div className="toggle-grid">
+                  <label className="toggle-card">
+                    <input name="researchCallCompleted" type="checkbox" defaultChecked={lead.researchCallCompleted} />
+                    Research call completed
+                  </label>
+                  <label className="toggle-card">
+                    <input name="salesCallRequired" type="checkbox" defaultChecked={lead.salesCallRequired} />
+                    Sales call required
+                  </label>
+                </div>
+              </div>
+
+              <div className="lead-crm-action-buttons">
+                <button type="submit" name="workflowAction" value="save">Save review</button>
+                <button type="submit" name="workflowAction" value="mark-contacted" className="secondary">Mark as contacted</button>
+                <button type="submit" name="workflowAction" value="mark-quoted" className="secondary">Mark as quoted</button>
+                <button type="submit" name="workflowAction" value="mark-won" className="secondary">Mark as won</button>
+                <button type="submit" name="workflowAction" value="mark-lost" className="secondary">Mark as lost</button>
+                <button type="submit" name="workflowAction" value="mark-needs-review" className="secondary">Needs review</button>
+              </div>
+            </form>
+          </LeadCard>
+
+          <LeadCard eyebrow="Warnings / flags" title="Review blockers">
+            <div className="structured-chip-list">
+              {allWarnings.length ? (
+                allWarnings.map((warning) => (
+                  <span key={warning} className="structured-chip structured-chip-warning">{warning}</span>
+                ))
+              ) : (
+                <span className="structured-chip structured-chip-success">No warnings recorded</span>
+              )}
             </div>
-          </div>
-          <p>{lead.notes || 'No extra notes provided by the homeowner.'}</p>
-        </div>
-      </section>
+          </LeadCard>
+
+          <LeadCard eyebrow="Sales research" title="Outreach context">
+            <div className="lead-crm-field-grid">
+              <LeadField label="Source" value={lead.leadSource || 'Not recorded'} />
+              <LeadField label="Installer size" value={lead.installerSize || 'Not recorded'} />
+              <LeadField label="Likelihood" value={lead.likelihoodToBuy || 'Not scored'} />
+              <LeadField label="Research call" value={lead.researchCallCompleted ? 'Completed' : 'Open'} />
+              <LeadField label="Sales call" value={lead.salesCallRequired ? 'Required' : 'Not flagged'} />
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Data protection" title="Erase homeowner record" className="erasure-card">
+            <p className="small">
+              Use only for a confirmed deletion request. This deletes the lead and uploaded document rows, then records a minimal audit event.
+            </p>
+            <form action={eraseLeadData} className="admin-workflow-form lead-crm-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <div>
+                <label>Type ERASE to confirm</label>
+                <input name="eraseConfirmation" placeholder="ERASE" />
+              </div>
+              <div className="admin-workflow-actions">
+                <button type="submit" className="danger-button">Erase lead data</button>
+              </div>
+            </form>
+          </LeadCard>
+        </aside>
+      </div>
     </main>
   );
 }

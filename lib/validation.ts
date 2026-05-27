@@ -102,7 +102,15 @@ export const adminWorkflowSchema = z.object({
   internalNotes: z.string().max(5000).optional().nullable(),
   followUpDate: z.date().optional().nullable(),
   assignedAdmin: z.string().max(120).optional().nullable(),
-  assignedInstaller: z.string().max(120).optional().nullable()
+  assignedInstaller: z.string().max(120).optional().nullable(),
+  currentCrmProcess: z.string().max(1000).optional().nullable(),
+  installerSize: z.string().max(120).optional().nullable(),
+  objections: z.string().max(1000).optional().nullable(),
+  painPoints: z.string().max(1000).optional().nullable(),
+  likelihoodToBuy: z.string().max(120).optional().nullable(),
+  leadSource: z.string().max(120).optional().nullable(),
+  researchCallCompleted: z.boolean().default(false),
+  salesCallRequired: z.boolean().default(false)
 });
 
 export type AdminWorkflowSchema = z.infer<typeof adminWorkflowSchema>;

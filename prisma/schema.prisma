@@ -67,6 +67,14 @@ model Lead {
   followUpDate          DateTime?
   assignedAdmin         String?
   assignedInstaller     String?
+  currentCrmProcess     String?
+  installerSize         String?
+  objections            String?
+  painPoints            String?
+  likelihoodToBuy       String?
+  leadSource            String?
+  researchCallCompleted Boolean       @default(false)
+  salesCallRequired     Boolean       @default(false)
   status                LeadStatus    @default(NEW)
   aiSummary             String?
   likelyEligible        Boolean?
@@ -89,4 +97,16 @@ model LeadDocument {
   extractedText String?
   aiFieldsJson  Json?
   createdAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  leadId       String?
+  action       String
+  actor        String
+  createdAt    DateTime @default(now())
+  metadataJson Json?
+
+  @@index([leadId])
+  @@index([createdAt])
 }

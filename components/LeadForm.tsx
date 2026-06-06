@@ -21,6 +21,7 @@ import {
   type SolarQuoteInput,
   type SystemSizeVariant
 } from '@/lib/quote-estimate';
+import type { GeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
 
 function createInitialState(installerId: string) {
   return {
@@ -51,9 +52,9 @@ function createInitialState(installerId: string) {
     daytimeUsage: 'MEDIUM',
     installTimeline: '',
     preferredCallbackWindow: '',
-    consentToProcess: true,
-    consentToGrantAssist: true,
-    consentToContact: true,
+    consentToProcess: false,
+    consentToGrantAssist: false,
+    consentToContact: false,
     notes: ''
   };
 }
@@ -74,6 +75,7 @@ type IntakeResult = {
   leadId: string;
   analysis?: EligibilityAnalysis;
   quoteEstimate?: SolarQuoteEstimate;
+  generatedQuote?: GeneratedInstallerQuote;
   uploadedDocuments?: number;
 };
 
@@ -240,6 +242,11 @@ function getValidationError(form: FormState, fields?: FormFieldKey[]) {
   return firstInvalid?.message ?? null;
 }
 
+function getFieldValidationMessage(form: FormState, field: FormFieldKey) {
+  const check = validationChecks.find((item) => item.key === field);
+  return check?.isInvalid(form) ? check.message : null;
+}
+
 function getStepIndexForField(field: FormFieldKey) {
   const stepIndex = formSteps.findIndex((step) => step.fields.includes(field));
   return stepIndex === -1 ? 0 : stepIndex;
@@ -306,6 +313,16 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function isFieldInvalid(key: FormFieldKey) {
     return invalidFields.includes(key);
+  }
+
+  function renderFieldError(key: FormFieldKey) {
+    if (!isFieldInvalid(key)) return null;
+    const message = getFieldValidationMessage(form, key);
+    return message ? (
+      <p id={`${key}-error`} className="field-error-message">
+        {message}
+      </p>
+    ) : null;
   }
 
   function focusFirstInvalidField(field?: FormFieldKey) {
@@ -536,6 +553,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="county"
                   className={isFieldInvalid('county') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('county')}
+                  aria-describedby={isFieldInvalid('county') ? 'county-error' : undefined}
                   value={form.county}
                   onChange={(e) => update('county', e.target.value)}
                   required
@@ -543,6 +562,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select county</option>
                   {counties.map((county) => <option key={county} value={county}>{county}</option>)}
                 </select>
+                {renderFieldError('county')}
               </div>
               <div>
                 <label htmlFor="eircode">{optionalLabel('Eircode')}</label>
@@ -560,6 +580,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="dwellingType"
                   className={isFieldInvalid('dwellingType') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('dwellingType')}
+                  aria-describedby={isFieldInvalid('dwellingType') ? 'dwellingType-error' : undefined}
                   value={form.dwellingType}
                   onChange={(e) => update('dwellingType', e.target.value)}
                   required
@@ -567,6 +589,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select one</option>
                   {dwellingTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
                 </select>
+                {renderFieldError('dwellingType')}
               </div>
             </div>
             <div className="toggle-grid">
@@ -603,6 +626,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="monthlyElectricityBillRange"
                   className={isFieldInvalid('monthlyElectricityBillRange') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('monthlyElectricityBillRange')}
+                  aria-describedby={isFieldInvalid('monthlyElectricityBillRange') ? 'monthlyElectricityBillRange-error' : undefined}
                   value={form.monthlyElectricityBillRange}
                   onChange={(e) => update('monthlyElectricityBillRange', e.target.value)}
                   required
@@ -610,6 +635,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select one</option>
                   {billRanges.map((item) => <option key={item} value={item}>{billRangeLabel(item)}</option>)}
                 </select>
+                {renderFieldError('monthlyElectricityBillRange')}
               </div>
               <div>
                 <label htmlFor="numberOfOccupants">{optionalLabel('Number of occupants')}</label>
@@ -652,6 +678,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="roofType"
                   className={isFieldInvalid('roofType') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('roofType')}
+                  aria-describedby={isFieldInvalid('roofType') ? 'roofType-error' : undefined}
                   value={form.roofType}
                   onChange={(e) => update('roofType', e.target.value)}
                   required
@@ -659,6 +687,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select one</option>
                   {roofTypes.map((type) => <option key={type} value={type}>{labelise(type)}</option>)}
                 </select>
+                {renderFieldError('roofType')}
               </div>
               <div>
                 <label htmlFor="roofDirection">{optionalLabel('Roof direction')}</label>
@@ -716,6 +745,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="installTimeline"
                   className={isFieldInvalid('installTimeline') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('installTimeline')}
+                  aria-describedby={isFieldInvalid('installTimeline') ? 'installTimeline-error' : undefined}
                   value={form.installTimeline}
                   onChange={(e) => update('installTimeline', e.target.value)}
                   required
@@ -723,6 +754,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select one</option>
                   {installTimelines.map((item) => <option key={item} value={item}>{labelise(item).replace('Asap', 'ASAP')}</option>)}
                 </select>
+                {renderFieldError('installTimeline')}
               </div>
             </div>
             <div className="estimate-calculator step-estimate-calculator">
@@ -787,6 +819,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="yearBuilt"
                   className={isFieldInvalid('yearBuilt') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('yearBuilt')}
+                  aria-describedby={isFieldInvalid('yearBuilt') ? 'yearBuilt-error' : undefined}
                   type="number"
                   min="1800"
                   max={new Date().getFullYear()}
@@ -794,6 +828,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   onChange={(e) => update('yearBuilt', e.target.value)}
                   required
                 />
+                {renderFieldError('yearBuilt')}
               </div>
               <div data-field="yearOccupied">
                 <label htmlFor="yearOccupied" className={isFieldInvalid('yearOccupied') ? 'field-label-error' : undefined}>
@@ -802,6 +837,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="yearOccupied"
                   className={isFieldInvalid('yearOccupied') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('yearOccupied')}
+                  aria-describedby={isFieldInvalid('yearOccupied') ? 'yearOccupied-error' : undefined}
                   type="number"
                   min="1800"
                   max={new Date().getFullYear()}
@@ -809,6 +846,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   onChange={(e) => update('yearOccupied', e.target.value)}
                   required
                 />
+                {renderFieldError('yearOccupied')}
               </div>
               <div data-field="mprn">
                 <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
@@ -817,6 +855,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="mprn"
                   className={isFieldInvalid('mprn') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('mprn')}
+                  aria-describedby={isFieldInvalid('mprn') ? 'mprn-error mprn-help' : 'mprn-help'}
                   value={form.mprn}
                   onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))}
                   required
@@ -825,7 +865,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   maxLength={11}
                   placeholder="11-digit meter number"
                 />
-                <p className="field-help">Usually on your bill or meter. We use it for grant checks.</p>
+                <p id="mprn-help" className="field-help">Usually on your bill or meter. We use it for grant checks.</p>
+                {renderFieldError('mprn')}
               </div>
             </div>
             <div className="toggle-grid">
@@ -865,10 +906,13 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="fullName"
                   className={isFieldInvalid('fullName') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('fullName')}
+                  aria-describedby={isFieldInvalid('fullName') ? 'fullName-error' : undefined}
                   value={form.fullName}
                   onChange={(e) => update('fullName', e.target.value)}
                   required
                 />
+                {renderFieldError('fullName')}
               </div>
               <div data-field="email">
                 <label htmlFor="email" className={isFieldInvalid('email') ? 'field-label-error' : undefined}>
@@ -877,11 +921,14 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="email"
                   className={isFieldInvalid('email') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('email')}
+                  aria-describedby={isFieldInvalid('email') ? 'email-error' : undefined}
                   type="email"
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
                   required
                 />
+                {renderFieldError('email')}
               </div>
               <div data-field="phone">
                 <label htmlFor="phone" className={isFieldInvalid('phone') ? 'field-label-error' : undefined}>
@@ -890,12 +937,15 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="phone"
                   className={isFieldInvalid('phone') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('phone')}
+                  aria-describedby={isFieldInvalid('phone') ? 'phone-error' : undefined}
                   value={form.phone}
                   onChange={(e) => update('phone', e.target.value)}
                   required
                   inputMode="tel"
                   placeholder="Best number to call you on"
                 />
+                {renderFieldError('phone')}
               </div>
               <div data-field="preferredCallbackWindow">
                 <label
@@ -907,6 +957,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <select
                   id="preferredCallbackWindow"
                   className={isFieldInvalid('preferredCallbackWindow') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('preferredCallbackWindow')}
+                  aria-describedby={isFieldInvalid('preferredCallbackWindow') ? 'preferredCallbackWindow-error' : undefined}
                   value={form.preferredCallbackWindow}
                   onChange={(e) => update('preferredCallbackWindow', e.target.value)}
                   required
@@ -914,6 +966,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   <option value="">Select one</option>
                   {callbackWindows.map((item) => <option key={item} value={item}>{labelise(item)}</option>)}
                 </select>
+                {renderFieldError('preferredCallbackWindow')}
               </div>
               <div data-field="addressLine1">
                 <label htmlFor="addressLine1" className={isFieldInvalid('addressLine1') ? 'field-label-error' : undefined}>
@@ -922,10 +975,13 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input
                   id="addressLine1"
                   className={isFieldInvalid('addressLine1') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('addressLine1')}
+                  aria-describedby={isFieldInvalid('addressLine1') ? 'addressLine1-error' : undefined}
                   value={form.addressLine1}
                   onChange={(e) => update('addressLine1', e.target.value)}
                   required
                 />
+                {renderFieldError('addressLine1')}
               </div>
               <div>
                 <label htmlFor="addressLine2">{optionalLabel('Address line 2')}</label>
@@ -991,18 +1047,62 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             </div>
             {!!uploadSummary.length && <div className="small">{uploadSummary.length} upload{uploadSummary.length > 1 ? 's' : ''} ready to submit.</div>}
 
+            <div className="privacy-notice">
+              <div className="privacy-badge">GDPR-conscious intake</div>
+              <p>
+                We use your details to check solar grant eligibility and arrange installer follow-up. This may include your
+                MPRN, address, contact details, property details, electricity usage, notes, and optional uploads. You can
+                request deletion of your homeowner record.
+              </p>
+              <div className="privacy-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms</a>
+                <a href="/data-protection">Data protection</a>
+              </div>
+            </div>
+
             <div className="toggle-grid consent-grid">
-              <label className={`toggle-card ${isFieldInvalid('consentToProcess') ? 'toggle-card-error' : ''}`}>
-                <input type="checkbox" checked={form.consentToProcess} onChange={(e) => update('consentToProcess', e.target.checked)} required />
-                {requiredLabel('I agree to my details being used for this application')}
+              <label data-field="consentToProcess" className={`toggle-card ${isFieldInvalid('consentToProcess') ? 'toggle-card-error' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={form.consentToProcess}
+                  onChange={(e) => update('consentToProcess', e.target.checked)}
+                  aria-invalid={isFieldInvalid('consentToProcess')}
+                  aria-describedby={isFieldInvalid('consentToProcess') ? 'consentToProcess-error' : undefined}
+                  required
+                />
+                <span>
+                  {requiredLabel('I agree that my data can be used for the solar grant eligibility check')}
+                  {renderFieldError('consentToProcess')}
+                </span>
               </label>
-              <label className={`toggle-card ${isFieldInvalid('consentToGrantAssist') ? 'toggle-card-error' : ''}`}>
-                <input type="checkbox" checked={form.consentToGrantAssist} onChange={(e) => update('consentToGrantAssist', e.target.checked)} required />
-                {requiredLabel('I want help with grant and installer follow-up')}
+              <label data-field="consentToGrantAssist" className={`toggle-card ${isFieldInvalid('consentToGrantAssist') ? 'toggle-card-error' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={form.consentToGrantAssist}
+                  onChange={(e) => update('consentToGrantAssist', e.target.checked)}
+                  aria-invalid={isFieldInvalid('consentToGrantAssist')}
+                  aria-describedby={isFieldInvalid('consentToGrantAssist') ? 'consentToGrantAssist-error' : undefined}
+                  required
+                />
+                <span>
+                  {requiredLabel('I want SOLARgrant and the installer to help with grant readiness and follow-up')}
+                  {renderFieldError('consentToGrantAssist')}
+                </span>
               </label>
-              <label className={`toggle-card ${isFieldInvalid('consentToContact') ? 'toggle-card-error' : ''}`}>
-                <input type="checkbox" checked={form.consentToContact} onChange={(e) => update('consentToContact', e.target.checked)} required />
-                {requiredLabel('I agree to be contacted by phone or email')}
+              <label data-field="consentToContact" className={`toggle-card ${isFieldInvalid('consentToContact') ? 'toggle-card-error' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={form.consentToContact}
+                  onChange={(e) => update('consentToContact', e.target.checked)}
+                  aria-invalid={isFieldInvalid('consentToContact')}
+                  aria-describedby={isFieldInvalid('consentToContact') ? 'consentToContact-error' : undefined}
+                  required
+                />
+                <span>
+                  {requiredLabel('I agree to be contacted by phone or email about this solar grant enquiry')}
+                  {renderFieldError('consentToContact')}
+                </span>
               </label>
             </div>
           </section>
@@ -1012,6 +1112,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   if (result) {
     const quote = result.quoteEstimate;
+    const generatedQuote = result.generatedQuote;
 
     return (
       <div ref={successRef} tabIndex={-1} className="application-layout success-layout">
@@ -1036,14 +1137,19 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           {quote ? (
             <div className="homeowner-result-summary">
               <div className="result-hero-metric">
-                <span>Estimated net cost after grant</span>
-                <strong>{formatEuroRange(quote.netCostRangeAfterGrant)}</strong>
-                <small>Indicative only, subject to survey and SEAI approval.</small>
+                <span>{generatedQuote ? 'Generated quote total' : 'Estimated net cost after grant'}</span>
+                <strong>{generatedQuote ? formatEuro(generatedQuote.finalQuoteTotal) : formatEuroRange(quote.netCostRangeAfterGrant)}</strong>
+                <small>
+                  {generatedQuote
+                    ? 'Generated using the installer pricing settings. Final quote remains subject to survey and SEAI approval.'
+                    : 'Indicative only, subject to survey and SEAI approval.'}
+                </small>
               </div>
               <div className="result-metric-grid">
                 <div><span>Eligibility status</span><strong>{eligibilityLabel(result.analysis)}</strong></div>
                 <div><span>Recommended size</span><strong>{formatKwp(quote.recommendedSystemSizeKwp)}</strong></div>
                 <div><span>Estimated panels</span><strong>{quote.estimatedPanelCount}</strong></div>
+                {generatedQuote ? <div><span>AI net estimate</span><strong>{formatEuroRange(quote.netCostRangeAfterGrant)}</strong></div> : null}
                 <div><span>Gross cost range</span><strong>{formatEuroRange(quote.grossCostRange)}</strong></div>
                 <div><span>Estimated grant</span><strong>{quote.estimatedSeaiGrantDeduction ? formatEuro(quote.estimatedSeaiGrantDeduction) : 'Review needed'}</strong></div>
                 <div><span>Annual savings</span><strong>{formatEuroRange(quote.estimatedAnnualSavingsRange)}</strong></div>
@@ -1105,7 +1211,14 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             );
           })}
         </div>
-        <p className="small">Fields marked * are required. Estimates are indicative and subject to survey.</p>
+        <div className="sidebar-trust-note">
+          <strong>GDPR-conscious controls</strong>
+          <p className="small">Fields marked * are required. Estimates are indicative and subject to survey.</p>
+          <div className="privacy-links">
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </div>
       </aside>
 
       <form ref={formRef} onSubmit={submit} noValidate className="card grid polished-form stepped-form">

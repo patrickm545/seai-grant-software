@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { PrismaClient } from '@prisma/client';
 import { getDefaultInstallerSeedData } from '../lib/default-installer';
+import { defaultInstallerQuotePricing } from '../lib/installer-quote-pricing';
 
 if (!process.env.DATABASE_URL && existsSync('.env')) {
   for (const rawLine of readFileSync('.env', 'utf8').split(/\r?\n/)) {
@@ -28,6 +29,15 @@ async function main() {
     where: { id: defaultInstaller.id },
     update: {},
     create: defaultInstaller
+  });
+
+  await prisma.installerQuotePricing.upsert({
+    where: { installerId: installer.id },
+    update: {},
+    create: {
+      installerId: installer.id,
+      ...defaultInstallerQuotePricing
+    }
   });
 
   const salesSignal = (leadTemperature: string, installTimeline: string, monthlyElectricityBillRange: string, wantsBattery: boolean) => ({

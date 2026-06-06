@@ -27,8 +27,8 @@ export default async function ApplicationPackPage({ params }: { params: Promise<
       <header className="admin-sticky-nav">
         <div className="admin-sticky-nav-inner">
           <div>
-            <div className="badge">Manual Application Pack</div>
-            <div className="admin-sticky-title">{lead.fullName}</div>
+            <div className="admin-sticky-title">Manual Application Pack</div>
+            <p className="small">{lead.fullName}</p>
           </div>
           <div className="admin-topbar">
             <Link href={`/admin/leads/${lead.id}`} className="small admin-sticky-link">Back to lead</Link>

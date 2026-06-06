@@ -7,8 +7,9 @@ import { CopyTextButton } from '@/components/CopyTextButton';
 import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 import { writeAuditLog } from '@/lib/audit';
+import { formatPricingCurrency, parseGeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
 
-const ADMIN_BASE_PATH = '/installer-review-emerald';
+const ADMIN_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
 
 type LeadDetail = Prisma.LeadGetPayload<{
@@ -129,6 +130,8 @@ async function updateLeadWorkflow(formData: FormData) {
 
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath(`/installer-review-emerald/leads/${leadId}`);
+  revalidatePath('/installer-review-emerald/leads');
+  revalidatePath('/admin/dashboard');
   revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack`);
   revalidatePath(`/admin/dashboard/leads/${leadId}/application-pack/print`);
 }
@@ -171,8 +174,8 @@ async function eraseLeadData(formData: FormData) {
   });
 
   revalidatePath('/admin/dashboard');
-  revalidatePath('/installer-review-emerald');
-  redirect('/installer-review-emerald');
+  revalidatePath('/installer-review-emerald/leads');
+  redirect('/installer-review-emerald/leads');
 }
 
 function getStatusTone(status: string) {
@@ -403,6 +406,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const exportData = asRecord(lead.structuredExportJson);
   const salesSignal = getSalesSignal(lead.structuredExportJson);
   const quoteEstimate = asRecord(exportData?.quoteEstimate);
+  const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
   const leadTemperature = typeof salesSignal?.leadTemperature === 'string' ? salesSignal.leadTemperature : 'WARM';
   const noteEntries = getNoteEntries(lead.notes);
   const grantWarnings = asStringArray(quoteEstimate?.grantWarnings);
@@ -463,7 +467,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     <main className="container admin-shell lead-crm-shell">
       <section className="lead-crm-header">
         <div className="lead-crm-topbar">
-          <Link href={ADMIN_BASE_PATH} className="small">Back to dashboard</Link>
+          <Link href={ADMIN_BASE_PATH} className="small">Back to leads</Link>
           <Link href="/admin/logout" className="small">Log out</Link>
         </div>
         <div className="lead-crm-header-grid">
@@ -598,6 +602,37 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               </div>
             </LeadCard>
           </div>
+
+          <LeadCard
+            eyebrow="Generated customer quote"
+            title="Installer-priced quote"
+            actions={<Link href="/admin/dashboard/quote-pricing" className="lead-crm-button">Edit Quote Pricing Settings</Link>}
+          >
+            {generatedQuote ? (
+              <div className="lead-crm-field-grid lead-crm-field-grid-wide">
+                <LeadField label="Final quote total" value={formatPricingCurrency(generatedQuote.finalQuoteTotal)} />
+                <LeadField label="Quote source" value="Quote Pricing settings" />
+                <LeadField label="System size" value={formatKwp(generatedQuote.selectedSystemSizeKwp)} />
+                <LeadField label="Panel count" value={formatNumber(generatedQuote.estimatedPanelCount)} />
+                <LeadField label="Equipment total" value={formatPricingCurrency(generatedQuote.equipmentTotal)} />
+                <LeadField label="Labour total" value={formatPricingCurrency(generatedQuote.labourTotal)} />
+                <LeadField label="Subtotal" value={formatPricingCurrency(generatedQuote.subtotal)} />
+                <LeadField label="Markup" value={formatPricingCurrency(generatedQuote.markupAmount)} />
+                <LeadField label="VAT" value={formatPricingCurrency(generatedQuote.vatAmount)} />
+                <LeadField label="Discount" value={formatPricingCurrency(generatedQuote.discountAmount)} />
+                <LeadField label="Generated at" value={formatDateTime(generatedQuote.generatedAt)} />
+                <LeadField label="Pricing version" value={formatDateTime(generatedQuote.pricingUpdatedAt)} />
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h3>No installer-priced quote stored yet</h3>
+                <p className="small">
+                  New homeowner applications automatically generate a quote using your Quote Pricing settings.
+                  Existing AI and SEAI estimates remain available above.
+                </p>
+              </div>
+            )}
+          </LeadCard>
 
           <LeadCard eyebrow="Recommended system" title="System sizing and sales signal">
             <div className="lead-crm-field-grid lead-crm-field-grid-wide">

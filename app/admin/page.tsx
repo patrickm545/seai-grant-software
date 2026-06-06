@@ -17,7 +17,6 @@ export default async function AdminLoginPage({
   return (
     <main className="container grid admin-login-shell">
       <section className="admin-login-card card">
-        <div className="badge">Installer admin</div>
         <h1>Admin login</h1>
         <p className="hero-text">Enter your admin password to review homeowner leads, documents, and submission-ready grant details.</p>
         <form action="/api/admin/login" method="POST" className="grid admin-login-form">

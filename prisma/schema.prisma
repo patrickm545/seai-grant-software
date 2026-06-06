@@ -30,14 +30,15 @@ enum DwellingType {
 }
 
 model Installer {
-  id             String   @id @default(cuid())
+  id             String                  @id @default(cuid())
   name           String
   seaiCompanyId  String
   websiteDomain  String?
   county         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
   leads          Lead[]
+  quotePricing   InstallerQuotePricing?
 }
 
 model Lead {
@@ -82,9 +83,41 @@ model Lead {
   risksJson             Json?
   missingItemsJson      Json?
   structuredExportJson  Json?
+  generatedQuoteJson    Json?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   documents             LeadDocument[]
+}
+
+model InstallerQuotePricing {
+  id                    String    @id @default(cuid())
+  installerId           String    @unique
+  installer             Installer @relation(fields: [installerId], references: [id], onDelete: Cascade)
+  panelUnitCost         Float     @default(320)
+  panelKwCost           Float     @default(0)
+  batteryUnitCost       Float     @default(3500)
+  batteryKwhCost        Float     @default(0)
+  inverterCost          Float     @default(1200)
+  mountingCost          Float     @default(850)
+  wiringCost            Float     @default(450)
+  safetyEquipmentCost   Float     @default(350)
+  baseLabourCost        Float     @default(1200)
+  labourPerPanel        Float     @default(65)
+  labourPerKw           Float     @default(0)
+  electricalWorkCost    Float     @default(650)
+  surveyAdminCost       Float     @default(250)
+  miscellaneousCost     Float     @default(300)
+  optionalExtrasCost    Float     @default(0)
+  markupPercentage      Float     @default(12)
+  vatPercentage         Float     @default(13.5)
+  discountPercentage    Float     @default(0)
+  discountFixedAmount   Float     @default(0)
+  minimumQuotePrice     Float     @default(0)
+  travelCost            Float     @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([installerId])
 }
 
 model LeadDocument {

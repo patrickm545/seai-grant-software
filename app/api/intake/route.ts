@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { leadFormSchema } from '@/lib/validation';
 import { prisma } from '@/lib/prisma';
 import { generateEligibilityAnalysis } from '@/lib/ai';
@@ -8,6 +9,13 @@ import { sendLeadNotificationEmails } from '@/lib/email';
 import { sendLeadNotificationSms } from '@/lib/sms';
 import type { EligibilityAnalysis, LeadFormInput, LeadTemperature } from '@/lib/types';
 import { buildSolarQuoteEstimate, type SolarQuoteEstimate } from '@/lib/quote-estimate';
+import { writeAuditLog } from '@/lib/audit';
+import {
+  calculateInstallerGeneratedQuote,
+  defaultInstallerQuotePricing,
+  getPricingValuesFromRecord,
+  parseGeneratedInstallerQuote
+} from '@/lib/installer-quote-pricing';
 
 export const runtime = 'nodejs';
 
@@ -65,6 +73,10 @@ function getStoredQuoteEstimate(value: unknown): SolarQuoteEstimate | undefined 
   const root = asRecord(value);
   const quoteEstimate = asRecord(root?.quoteEstimate);
   return quoteEstimate ? (quoteEstimate as SolarQuoteEstimate) : undefined;
+}
+
+function getStoredGeneratedQuote(value: unknown) {
+  return parseGeneratedInstallerQuote(value) ?? undefined;
 }
 
 function getStringArray(value: unknown) {
@@ -138,6 +150,7 @@ export async function POST(request: NextRequest) {
         missingItemsJson: true,
         risksJson: true,
         structuredExportJson: true,
+        generatedQuoteJson: true,
         documents: {
           select: {
             id: true
@@ -152,11 +165,26 @@ export async function POST(request: NextRequest) {
         leadId: existingLead.id,
         analysis: buildStoredAnalysis(existingLead),
         quoteEstimate: getStoredQuoteEstimate(existingLead.structuredExportJson),
+        generatedQuote: getStoredGeneratedQuote(existingLead.generatedQuoteJson),
         uploadedDocuments: existingLead.documents.length
       });
     }
 
     const quoteEstimate = buildSolarQuoteEstimate(leadInput, leadInput.selectedSystemSizeVariant ?? 'recommended');
+    const installerPricing = await prisma.installerQuotePricing.upsert({
+      where: { installerId: installer.id },
+      update: {},
+      create: {
+        installerId: installer.id,
+        ...defaultInstallerQuotePricing
+      }
+    });
+    const generatedQuote = calculateInstallerGeneratedQuote({
+      pricing: getPricingValuesFromRecord(installerPricing),
+      quoteEstimate,
+      leadInput,
+      pricingUpdatedAt: installerPricing.updatedAt.toISOString()
+    });
     const analysis = await generateEligibilityAnalysis(leadInput);
 
     const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
@@ -180,6 +208,7 @@ export async function POST(request: NextRequest) {
           missingItemsJson: true,
           risksJson: true,
           structuredExportJson: true,
+          generatedQuoteJson: true,
           documents: {
             select: {
               id: true
@@ -194,6 +223,7 @@ export async function POST(request: NextRequest) {
           lead: duplicateLead,
           analysis: buildStoredAnalysis(duplicateLead),
           quoteEstimate: getStoredQuoteEstimate(duplicateLead.structuredExportJson),
+          generatedQuote: getStoredGeneratedQuote(duplicateLead.generatedQuoteJson),
           uploadedDocuments: duplicateLead.documents.length,
           isDuplicate: true
         };
@@ -234,6 +264,7 @@ export async function POST(request: NextRequest) {
             `EV charger interest: ${leadInput.evChargerInterest ? 'Yes' : 'No'}`,
             `Hot water diverter interest: ${leadInput.hotWaterDiverterInterest ? 'Yes' : 'No'}`,
             `Quote estimate: ${quoteEstimate.selectedSystemSizeKwp} kWp / ${quoteEstimate.estimatedPanelCount} panels / net ${quoteEstimate.netCostRangeAfterGrant.min}-${quoteEstimate.netCostRangeAfterGrant.max}`,
+            `Generated quote: EUR ${generatedQuote.finalQuoteTotal}`,
             `Recommended next action: ${quoteEstimate.recommendedNextAction}`
           ].filter(Boolean).join(' | '),
           status: analysis.likelyEligible ? 'READY_TO_APPLY' : 'NEEDS_REVIEW',
@@ -242,6 +273,7 @@ export async function POST(request: NextRequest) {
           aiSummary: analysis.summary,
           missingItemsJson: analysis.missingItems,
           risksJson: analysis.risks,
+          generatedQuoteJson: generatedQuote as unknown as Prisma.InputJsonValue,
           structuredExportJson: {
             quoteEstimate,
             salesSignal: {
@@ -294,10 +326,24 @@ export async function POST(request: NextRequest) {
       });
       console.info('[intake] Lead created', { leadId: createdLead.id, email: createdLead.email });
 
+      await writeAuditLog(tx, {
+        leadId: createdLead.id,
+        action: 'lead.created',
+        actor: 'homeowner',
+        metadata: {
+          source: 'public_intake',
+          installerId: leadInput.installerId,
+          status: createdLead.status,
+          likelyEligible: createdLead.likelyEligible,
+          uploadedDocuments: applicantDocuments.length
+        }
+      });
+
       return {
         lead: createdLead,
         analysis,
         quoteEstimate,
+        generatedQuote,
         uploadedDocuments: applicantDocuments.length,
         isDuplicate: false
       };
@@ -334,6 +380,7 @@ export async function POST(request: NextRequest) {
       leadId: submissionResult.lead.id,
       analysis: submissionResult.analysis,
       quoteEstimate: submissionResult.quoteEstimate,
+      generatedQuote: submissionResult.generatedQuote,
       uploadedDocuments: submissionResult.uploadedDocuments
     });
   } catch (error) {

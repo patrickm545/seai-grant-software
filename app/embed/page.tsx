@@ -7,7 +7,6 @@ export default function EmbedPage() {
     <main className="container grid public-shell">
       <section className="application-hero">
         <div className="application-copy">
-          <div className="badge">Homeowner check</div>
           <h1>See if your home may qualify for the SEAI Solar Grant</h1>
           <p className="hero-text">A short form. No obligation.</p>
         </div>

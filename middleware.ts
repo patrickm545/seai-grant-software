@@ -3,7 +3,12 @@ import { ADMIN_COOKIE_NAME, verifyAdminSessionValue } from '@/lib/admin-auth';
 
 function needsAdmin(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  return pathname.startsWith('/admin/dashboard') || pathname.startsWith('/admin/leads') || pathname.startsWith('/installer-review-emerald');
+  return (
+    pathname.startsWith('/admin/dashboard') ||
+    pathname.startsWith('/admin/leads') ||
+    pathname.startsWith('/admin/sales-playbook') ||
+    pathname.startsWith('/installer-review-emerald')
+  );
 }
 
 export async function middleware(request: NextRequest) {

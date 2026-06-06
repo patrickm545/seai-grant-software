@@ -1,5 +1,6 @@
 import type { Installer, Lead, LeadDocument } from '@prisma/client';
 import type { SolarQuoteEstimate } from './quote-estimate';
+import { formatPricingCurrency, parseGeneratedInstallerQuote } from './installer-quote-pricing';
 
 type SalesSignal = {
   callbackWindow?: string;
@@ -216,6 +217,7 @@ function uniqueItems(items: string[]) {
 export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationPack {
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
+  const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
   const documents = mapDocuments(lead.documents ?? []);
   const documentKinds = new Set(documents.map((document) => document.categoryKey));
   const storedMissingItems = asStringArray(lead.missingItemsJson);
@@ -388,6 +390,25 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       makeField('Estimated Payback Range', quoteEstimate ? `${quoteEstimate.estimatedPaybackRangeYears.min}-${quoteEstimate.estimatedPaybackRangeYears.max} years` : 'Not supplied'),
       makeField('Grant Estimate Status', quoteEstimate?.grantStatus ?? 'Not supplied')
     ]),
+    ...(generatedQuote
+      ? [
+          makeSection('generated-customer-quote', 'Generated Customer Quote', [
+            makeField('Quote Source', 'Installer Quote Pricing settings'),
+            makeField('Final Quote Total', formatPricingCurrency(generatedQuote.finalQuoteTotal)),
+            makeField('System Size kWp', generatedQuote.selectedSystemSizeKwp),
+            makeField('Panel Count', generatedQuote.estimatedPanelCount),
+            makeField('Battery Units', generatedQuote.batteryUnits),
+            makeField('Equipment Total', formatPricingCurrency(generatedQuote.equipmentTotal)),
+            makeField('Labour Total', formatPricingCurrency(generatedQuote.labourTotal)),
+            makeField('Subtotal', formatPricingCurrency(generatedQuote.subtotal)),
+            makeField('Markup Amount', formatPricingCurrency(generatedQuote.markupAmount)),
+            makeField('VAT Amount', formatPricingCurrency(generatedQuote.vatAmount)),
+            makeField('Discount Amount', formatPricingCurrency(generatedQuote.discountAmount)),
+            makeField('Generated At', formatDate(generatedQuote.generatedAt)),
+            makeField('Pricing Settings Date', formatDate(generatedQuote.pricingUpdatedAt))
+          ])
+        ]
+      : []),
     makeSection('uploaded-documents', 'Uploaded Documents', documentFields),
     makeSection('missing-items', 'Missing Items', missingFields),
     makeSection('internal-review-notes', 'Internal Review Notes', [

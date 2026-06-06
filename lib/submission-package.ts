@@ -1,6 +1,7 @@
 import { Lead, Installer, LeadDocument } from '@prisma/client';
 import { buildApplicationPack } from './application-pack';
 import type { SolarQuoteEstimate } from './quote-estimate';
+import { parseGeneratedInstallerQuote } from './installer-quote-pricing';
 
 type SalesSignal = {
   leadTemperature?: string;
@@ -51,6 +52,7 @@ function getQuoteEstimate(lead: Lead): SolarQuoteEstimate | null {
 export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[] }, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
+  const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
 
   return {
     version: '2.0',
@@ -94,6 +96,19 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
       recommendedNextAction: salesSignal.recommendedNextAction || null
     },
     quoteEstimate,
+    generatedQuote,
+    finalCustomerQuote: generatedQuote
+      ? {
+          source: 'installer_quote_pricing',
+          finalQuoteTotal: generatedQuote.finalQuoteTotal,
+          subtotal: generatedQuote.subtotal,
+          markupAmount: generatedQuote.markupAmount,
+          vatAmount: generatedQuote.vatAmount,
+          discountAmount: generatedQuote.discountAmount,
+          generatedAt: generatedQuote.generatedAt,
+          pricingUpdatedAt: generatedQuote.pricingUpdatedAt
+        }
+      : null,
     declarations: {
       worksStarted: lead.worksStarted,
       priorSolarGrantAtMprn: lead.priorSolarGrantAtMprn,
@@ -122,6 +137,7 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
 export function buildPortalFillPreview(lead: Lead, installer: Installer) {
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
+  const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
 
   return {
     disclaimer: 'Manual reference only. This software does not connect to SEAI, automate the SEAI website, or submit grant applications. Do not proceed without homeowner review and consent.',
@@ -153,6 +169,9 @@ export function buildPortalFillPreview(lead: Lead, installer: Installer) {
       recommended_system_size_kwp: quoteEstimate?.recommendedSystemSizeKwp ?? null,
       estimated_panel_count: quoteEstimate?.estimatedPanelCount ?? null,
       estimated_net_cost_range_after_grant: quoteEstimate?.netCostRangeAfterGrant ?? null,
+      generated_quote_final_total: generatedQuote?.finalQuoteTotal ?? null,
+      generated_quote_source: generatedQuote ? 'installer_quote_pricing' : null,
+      generated_quote_pricing_updated_at: generatedQuote?.pricingUpdatedAt ?? null,
       recommended_next_action: salesSignal.recommendedNextAction || quoteEstimate?.recommendedNextAction || null
     }
   };

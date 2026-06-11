@@ -134,7 +134,7 @@ const formSteps: Array<{
     id: 'property',
     title: 'Quick property check',
     helper: 'A few simple property details help us start the grant and suitability check.',
-    fields: ['county', 'dwellingType']
+    fields: ['county', 'mprn', 'dwellingType']
   },
   {
     id: 'usage',
@@ -158,7 +158,7 @@ const formSteps: Array<{
     id: 'grant',
     title: 'SEAI grant checks',
     helper: 'These answers help estimate grant fit, subject to SEAI approval.',
-    fields: ['yearBuilt', 'yearOccupied', 'mprn']
+    fields: ['yearBuilt', 'yearOccupied']
   },
   {
     id: 'contact',
@@ -167,6 +167,8 @@ const formSteps: Array<{
     fields: ['fullName', 'email', 'phone', 'preferredCallbackWindow', 'addressLine1', 'consentToProcess', 'consentToGrantAssist', 'consentToContact']
   }
 ];
+
+const earlyBrowsingOptionalFields = new Set<FormFieldKey>(['mprn']);
 
 function labelise(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -250,6 +252,10 @@ function getFieldValidationMessage(form: FormState, field: FormFieldKey) {
 function getStepIndexForField(field: FormFieldKey) {
   const stepIndex = formSteps.findIndex((step) => step.fields.includes(field));
   return stepIndex === -1 ? 0 : stepIndex;
+}
+
+function getStepNavigationFields(fields: FormFieldKey[]) {
+  return fields.filter((field) => !earlyBrowsingOptionalFields.has(field));
 }
 
 async function parseJsonSafely(response: Response) {
@@ -358,7 +364,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }
 
   function continueStep() {
-    if (!validateStepFields(activeStep.fields)) return;
+    if (!validateStepFields(getStepNavigationFields(activeStep.fields))) return;
 
     setCurrentStep((step) => Math.min(step + 1, formSteps.length - 1));
     scrollFormToTop();
@@ -572,6 +578,28 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   onChange={(e) => update('eircode', e.target.value.toUpperCase())}
                   placeholder="Optional"
                 />
+              </div>
+              <div data-field="mprn">
+                <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
+                  MPRN Number
+                </label>
+                <input
+                  id="mprn"
+                  className={isFieldInvalid('mprn') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('mprn')}
+                  aria-required="true"
+                  aria-describedby={isFieldInvalid('mprn') ? 'mprn-error mprn-help' : 'mprn-help'}
+                  value={form.mprn}
+                  onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  placeholder="11-digit meter number"
+                />
+                <p id="mprn-help" className="field-help">
+                  Your MPRN is required for the SEAI Solar PV grant and can usually be found on your electricity bill.
+                </p>
+                {renderFieldError('mprn')}
               </div>
               <div data-field="dwellingType">
                 <label htmlFor="dwellingType" className={isFieldInvalid('dwellingType') ? 'field-label-error' : undefined}>
@@ -847,26 +875,6 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   required
                 />
                 {renderFieldError('yearOccupied')}
-              </div>
-              <div data-field="mprn">
-                <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
-                  {requiredLabel('MPRN')}
-                </label>
-                <input
-                  id="mprn"
-                  className={isFieldInvalid('mprn') ? 'field-input-error' : undefined}
-                  aria-invalid={isFieldInvalid('mprn')}
-                  aria-describedby={isFieldInvalid('mprn') ? 'mprn-error mprn-help' : 'mprn-help'}
-                  value={form.mprn}
-                  onChange={(e) => update('mprn', e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  required
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={11}
-                  placeholder="11-digit meter number"
-                />
-                <p id="mprn-help" className="field-help">Usually on your bill or meter. We use it for grant checks.</p>
-                {renderFieldError('mprn')}
               </div>
             </div>
             <div className="toggle-grid">
@@ -1147,6 +1155,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
               </div>
               <div className="result-metric-grid">
                 <div><span>Eligibility status</span><strong>{eligibilityLabel(result.analysis)}</strong></div>
+                <div><span>MPRN Number</span><strong>{form.mprn}</strong></div>
                 <div><span>Recommended size</span><strong>{formatKwp(quote.recommendedSystemSizeKwp)}</strong></div>
                 <div><span>Estimated panels</span><strong>{quote.estimatedPanelCount}</strong></div>
                 {generatedQuote ? <div><span>AI net estimate</span><strong>{formatEuroRange(quote.netCostRangeAfterGrant)}</strong></div> : null}

@@ -2,23 +2,40 @@ import Link from 'next/link';
 import { LeadForm } from '@/components/LeadForm';
 import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
 
+const benefits = [
+  'Free, no-obligation assessment',
+  'Takes less than 2 minutes',
+  'Includes SEAI grant eligibility',
+  'Get a clear solar quote estimate'
+];
+
 export default function EmbedPage() {
   return (
-    <main className="container grid public-shell">
-      <section className="application-hero">
-        <div className="application-copy">
-          <h1>See if your home may qualify for the SEAI Solar Grant</h1>
-          <p className="hero-text">A short form. No obligation.</p>
+    <main className="container grid public-shell home-public-shell">
+      <section className="assessment-intro" aria-labelledby="embed-assessment-title">
+        <div className="assessment-copy">
+          <div className="eyebrow">SOLARgrant Pro</div>
+          <h1 id="embed-assessment-title">Check Your Solar Savings &amp; Grant Eligibility</h1>
+          <p>
+            Complete this short form to get an estimated solar quote, SEAI grant check, and recommended system size.
+          </p>
+          <ul className="assessment-benefits" aria-label="Assessment benefits">
+            {benefits.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </div>
-        <div className="application-notes compact-notes">
-          <div className="note-card">
-            <strong>Best to have ready</strong>
-            <p className="small">MPRN, address, and a bill or meter photo if you have one.</p>
-          </div>
-          <Link href="/" className="small">Return to overview</Link>
+        <div className="assessment-action">
+          <a href="#lead-form" className="cta-primary">Start Your Solar Assessment</a>
+          <span>Free, quick, and no obligation.</span>
         </div>
       </section>
-      <LeadForm installerId={DEFAULT_INSTALLER_ID} />
+      <div id="lead-form" className="lead-form-anchor">
+        <LeadForm installerId={DEFAULT_INSTALLER_ID} />
+      </div>
+      <div className="support-links">
+        <Link href="/">Return to overview</Link>
+      </div>
     </main>
   );
 }

@@ -275,6 +275,23 @@ export async function POST(request: NextRequest) {
           risksJson: analysis.risks,
           generatedQuoteJson: generatedQuote as unknown as Prisma.InputJsonValue,
           structuredExportJson: {
+            property: {
+              addressLine1: leadInput.addressLine1,
+              addressLine2: leadInput.addressLine2 ?? null,
+              county: leadInput.county,
+              eircode: leadInput.eircode ?? null,
+              dwellingType: leadInput.dwellingType,
+              mprn: leadInput.mprn,
+              propertyOwner: leadInput.propertyOwner,
+              privateLandlord: leadInput.privateLandlord,
+              yearBuilt: leadInput.yearBuilt,
+              yearOccupied: leadInput.yearOccupied ?? null
+            },
+            grantDetails: {
+              mprn: leadInput.mprn,
+              worksStarted: leadInput.worksStarted,
+              priorSolarGrantAtMprn: leadInput.priorSolarGrantAtMprn
+            },
             quoteEstimate,
             salesSignal: {
               leadTemperature: analysis.leadTemperature,

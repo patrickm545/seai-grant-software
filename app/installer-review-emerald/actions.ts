@@ -1,13 +1,19 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { LeadPipelineStage, Prisma } from '@prisma/client';
+import type { LeadActivityType, LeadDocumentStatus, LeadPipelineStage, Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/lib/audit';
 import {
   getPipelineStageLabel,
   isLeadPipelineStage,
   shouldSetLastContactedAt
 } from '@/lib/crm';
+import {
+  getDocumentStatusLabel,
+  getDocumentTypeLabel,
+  isLeadDocumentStatus
+} from '@/lib/documents';
+import { regenerateLeadPortalToken } from '@/lib/portal';
 import { prisma } from '@/lib/prisma';
 
 function getRequiredLeadId(formData: FormData) {
@@ -28,13 +34,27 @@ function parseOptionalDate(value: FormDataEntryValue | null) {
   return date;
 }
 
-function revalidateLeadCrmPaths(leadId: string) {
+function revalidateLeadCrmPaths(leadId: string, portalToken?: string | null) {
   revalidatePath('/admin/dashboard');
   revalidatePath('/installer-review-emerald');
   revalidatePath('/installer-review-emerald/leads');
   revalidatePath(`/installer-review-emerald/leads/${leadId}`);
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath(`/admin/dashboard/leads/${leadId}`);
+  if (portalToken) revalidatePath(`/portal/${portalToken}`);
+}
+
+function getRequiredDocumentId(formData: FormData) {
+  const documentId = String(formData.get('documentId') || '').trim();
+  if (!documentId) throw new Error('Document id is required');
+  return documentId;
+}
+
+function getDocumentActivityType(status: LeadDocumentStatus): LeadActivityType {
+  if (status === 'APPROVED') return 'DOCUMENT_APPROVED';
+  if (status === 'REJECTED') return 'DOCUMENT_REJECTED';
+  if (status === 'NEEDS_REPLACEMENT') return 'DOCUMENT_NEEDS_REPLACEMENT';
+  return 'SYSTEM_EVENT';
 }
 
 export async function updateLeadPipelineStage(formData: FormData) {
@@ -216,4 +236,84 @@ export async function addLeadNote(formData: FormData) {
   });
 
   revalidateLeadCrmPaths(leadId);
+}
+
+export async function updateLeadDocumentStatus(formData: FormData) {
+  const leadId = getRequiredLeadId(formData);
+  const documentId = getRequiredDocumentId(formData);
+  const nextStatus = String(formData.get('status') || '').trim();
+
+  if (!isLeadDocumentStatus(nextStatus)) {
+    throw new Error('Invalid document status');
+  }
+
+  const portalToken = await prisma.$transaction(async (tx) => {
+    const existingDocument = await tx.leadDocument.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        leadId: true,
+        type: true,
+        fileName: true,
+        originalFilename: true,
+        status: true,
+        lead: {
+          select: {
+            portalToken: true
+          }
+        }
+      }
+    });
+
+    if (!existingDocument || existingDocument.leadId !== leadId) {
+      throw new Error('Document not found for this lead');
+    }
+
+    await tx.leadDocument.update({
+      where: { id: documentId },
+      data: {
+        status: nextStatus
+      }
+    });
+
+    await tx.leadActivity.create({
+      data: {
+        leadId,
+        type: getDocumentActivityType(nextStatus as LeadDocumentStatus),
+        title: `Document ${getDocumentStatusLabel(nextStatus).toLowerCase()}`,
+        description: `${getDocumentTypeLabel(existingDocument.type)}: ${existingDocument.originalFilename || existingDocument.fileName}`,
+        metadata: {
+          documentId,
+          documentType: existingDocument.type,
+          previousStatus: existingDocument.status,
+          nextStatus
+        },
+        createdBy: 'Installer dashboard',
+        createdByRole: 'INSTALLER'
+      }
+    });
+
+    await writeAuditLog(tx, {
+      leadId,
+      action: 'lead_document.status_updated',
+      actor: 'admin',
+      metadata: {
+        documentId,
+        documentType: existingDocument.type,
+        previousStatus: existingDocument.status,
+        nextStatus
+      }
+    });
+
+    return existingDocument.lead.portalToken;
+  });
+
+  revalidateLeadCrmPaths(leadId, portalToken);
+}
+
+export async function regenerateLeadPortalTokenAction(formData: FormData) {
+  const leadId = getRequiredLeadId(formData);
+  const updatedLead = await regenerateLeadPortalToken(leadId);
+
+  revalidateLeadCrmPaths(leadId, updatedLead.portalToken);
 }

@@ -317,7 +317,7 @@ export default async function HiddenAdminPage() {
       <div className="installer-dashboard-heading">
         <div>
           <div className="eyebrow">Clada OS</div>
-          <h1>Solar Installer CRM Dashboard</h1>
+          <h1>Installer operations dashboard</h1>
           <p className="small">Pipeline, follow-up, lead quality, grant readiness, and recent sales activity.</p>
         </div>
         <a href="/embed" className="installer-add-button">Open intake</a>
@@ -329,13 +329,13 @@ export default async function HiddenAdminPage() {
 
       <div className="crm-dashboard-grid">
         <LeadMiniList
-          title="Hot Leads"
+          title="Hot leads"
           subtitle="Highest-priority active opportunities"
           leads={hotLeads}
           emptyText="No hot active leads right now."
         />
         <LeadMiniList
-          title="Follow-Up Needed"
+          title="Follow-up needed"
           subtitle="Due follow-ups or leads without recent contact"
           leads={followUpLeads}
           emptyText="No overdue follow-ups right now."

@@ -145,6 +145,10 @@ function isUsableLink(value: string | null | undefined) {
 }
 
 function getDocumentKind(document: LeadDocument) {
+  if (document.type === 'ELECTRICITY_BILL') return 'electricity_bill';
+  if (document.type === 'ADDRESS_CONFIRMATION') return 'meter_photo';
+  if (document.type === 'PROPERTY_PHOTO') return 'roof_photo';
+
   const fields = asRecord(document.aiFieldsJson);
   const storedKind = typeof fields?.documentKind === 'string' ? fields.documentKind : null;
 

@@ -10,7 +10,7 @@ export function PipelineWorkflow({ stages }: { stages: PipelineStage[] }) {
     <section className="installer-panel installer-pipeline-panel">
       <div className="installer-panel-header">
         <div>
-          <h2>CRM Pipeline</h2>
+          <h2>CRM pipeline</h2>
           <p className="small">Sales workflow</p>
         </div>
       </div>

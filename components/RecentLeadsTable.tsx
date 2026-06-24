@@ -24,7 +24,7 @@ export type RecentDashboardLead = {
 };
 
 const filterOptions = [
-  { label: 'All Leads', value: 'ALL' },
+  { label: 'All leads', value: 'ALL' },
   { label: 'Hot', value: 'HOT' },
   { label: 'New Lead', value: 'NEW_LEAD' },
   { label: 'Contacted', value: 'CONTACTED' },
@@ -55,7 +55,7 @@ export function RecentLeadsTable({
   leads,
   basePath,
   updateStageAction,
-  title = 'Recent Leads',
+  title = 'Recent leads',
   subtitle = 'Homeowner pipeline'
 }: {
   leads: RecentDashboardLead[];

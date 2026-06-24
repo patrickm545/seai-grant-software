@@ -4,11 +4,25 @@ import { notFound, redirect } from 'next/navigation';
 import type { Prisma } from '@prisma/client';
 import type { ReactNode } from 'react';
 import { CopyTextButton } from '@/components/CopyTextButton';
-import { addLeadNote, setLeadFollowUp, updateLeadPipelineStage } from '@/app/installer-review-emerald/actions';
+import {
+  addLeadNote,
+  regenerateLeadPortalTokenAction,
+  setLeadFollowUp,
+  updateLeadDocumentStatus,
+  updateLeadPipelineStage
+} from '@/app/installer-review-emerald/actions';
 import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 import { writeAuditLog } from '@/lib/audit';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
+import {
+  buildDocumentChecklist,
+  formatDocumentSize,
+  getDocumentStatusLabel,
+  getDocumentStatusTone,
+  getUploadedByLabel
+} from '@/lib/documents';
+import { buildPortalUrl, ensureLeadPortalToken } from '@/lib/portal';
 import {
   getActivityTone,
   getActivityTypeLabel,
@@ -436,10 +450,21 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const { id } = await params;
   const lead: LeadDetail | null = await prisma.lead.findUnique({
     where: { id },
-    include: { installer: true, documents: true }
+    include: {
+      installer: true,
+      documents: {
+        orderBy: { createdAt: 'desc' }
+      }
+    }
   });
 
   if (!lead) return notFound();
+
+  const portalAccess = await ensureLeadPortalToken(lead.id);
+  const portalToken = portalAccess.portalToken;
+  if (!portalToken) {
+    throw new Error('Portal token could not be created');
+  }
 
   const auditLogs = await prisma.auditLog.findMany({
     where: { leadId: lead.id },
@@ -516,6 +541,8 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const lastActivity = activities[0] ?? null;
   const lastActivityLabel = lastActivity ? formatDateTime(lastActivity.createdAt) : formatDateTime(lead.updatedAt);
   const nextFollowUpDate = lead.nextFollowUpAt ?? lead.followUpDate;
+  const documentChecklist = buildDocumentChecklist(lead.documents);
+  const portalUrl = buildPortalUrl(portalToken);
 
   return (
     <main className="container admin-shell lead-crm-shell">
@@ -709,33 +736,76 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             </div>
           </LeadCard>
 
-          <LeadCard eyebrow="Documents / uploads" title="Evidence and files">
-            <div className="lead-crm-doc-grid">
-              {lead.documents.length ? lead.documents.map((document) => {
-                const fields = asRecord(document.aiFieldsJson);
+          <LeadCard eyebrow="Documents" title="Customer document checklist">
+            <div className="lead-document-checklist">
+              {documentChecklist.map((item) => {
+                const document = item.latestDocument;
+                const fields = document ? asRecord(document.aiFieldsJson) : null;
 
                 return (
-                  <article key={document.id} className="lead-crm-document">
-                    <div className="document-head">
-                      <strong>{document.fileName}</strong>
-                      <span className="small">{document.mimeType}</span>
-                    </div>
-                    <p className="small">{document.extractedText || 'No extracted text stored.'}</p>
-                    {fields ? (
-                      <div className="field-chips">
-                        {Object.entries(fields).map(([key, value]) => (
-                          <span key={key} className="field-chip">{key}: {String(value)}</span>
-                        ))}
+                  <article key={item.type} className={`lead-document-checklist-item ${document ? '' : 'lead-document-checklist-missing'}`.trim()}>
+                    <div className="lead-document-checklist-head">
+                      <div>
+                        <strong>{item.label}</strong>
+                        <span>{item.description}</span>
                       </div>
-                    ) : null}
+                      <span className={`status-pill status-pill-${document ? getDocumentStatusTone(document.status) : 'default'}`}>
+                        {document ? getDocumentStatusLabel(document.status) : item.required ? 'Missing' : 'Optional'}
+                      </span>
+                    </div>
+
+                    {document ? (
+                      <>
+                        <div className="lead-document-meta-grid">
+                          <div>
+                            <span>Latest file</span>
+                            <strong>{document.originalFilename || document.fileName}</strong>
+                          </div>
+                          <div>
+                            <span>Uploaded</span>
+                            <strong>{formatDateTime(document.createdAt)}</strong>
+                          </div>
+                          <div>
+                            <span>Source</span>
+                            <strong>{getUploadedByLabel(document.uploadedByRole)}</strong>
+                          </div>
+                          <div>
+                            <span>File</span>
+                            <strong>{formatDocumentSize(document.sizeBytes)}</strong>
+                          </div>
+                        </div>
+
+                        <div className="lead-document-actions">
+                          <a href={`/portal/${portalToken}/documents/${document.id}`} target="_blank" rel="noreferrer" className="lead-crm-button">
+                            Download
+                          </a>
+                          <form action={updateLeadDocumentStatus} className="lead-document-review-actions">
+                            <input type="hidden" name="leadId" value={lead.id} />
+                            <input type="hidden" name="documentId" value={document.id} />
+                            <button type="submit" name="status" value="APPROVED" className="secondary">Approve</button>
+                            <button type="submit" name="status" value="NEEDS_REPLACEMENT" className="secondary">Needs replacement</button>
+                            <button type="submit" name="status" value="REJECTED" className="secondary lead-crm-danger-action">Reject</button>
+                          </form>
+                        </div>
+
+                        {item.documents.length > 1 ? (
+                          <p className="small">{item.documents.length} uploads recorded for this document type.</p>
+                        ) : null}
+
+                        {fields ? (
+                          <div className="field-chips">
+                            {Object.entries(fields).map(([key, value]) => (
+                              <span key={key} className="field-chip">{key}: {String(value)}</span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="small">Waiting for the customer or installer to upload this document.</p>
+                    )}
                   </article>
                 );
-              }) : (
-                <div className="empty-state">
-                  <h3>No uploads yet</h3>
-                  <p className="small">Ask for a bill, meter photo, roof photo, or any document that would unblock review.</p>
-                </div>
-              )}
+              })}
             </div>
           </LeadCard>
 
@@ -1000,6 +1070,32 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               </div>
               <div className="lead-crm-action-buttons">
                 <button type="submit" className="secondary">Save follow-up</button>
+              </div>
+            </form>
+          </LeadCard>
+
+          <LeadCard eyebrow="Customer portal" title="Secure portal link">
+            <p className="small">
+              Share this link with the homeowner so they can track project status and upload required documents.
+            </p>
+            <div className="lead-portal-link-box">
+              <span>Portal URL</span>
+              <code>{portalUrl}</code>
+            </div>
+            <div className="lead-crm-action-buttons">
+              <CopyTextButton text={portalUrl} label="Copy portal link" />
+              <a href={`/portal/${portalToken}`} target="_blank" rel="noreferrer" className="lead-crm-button">
+                Open portal
+              </a>
+            </div>
+            <div className="lead-crm-field-grid">
+              <LeadField label="Token created" value={formatDateTime(portalAccess.portalTokenCreatedAt)} />
+              <LeadField label="Last accessed" value={formatDateTime(portalAccess.portalLastAccessedAt)} />
+            </div>
+            <form action={regenerateLeadPortalTokenAction} className="lead-crm-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <div className="lead-crm-action-buttons">
+                <button type="submit" className="secondary">Regenerate portal link</button>
               </div>
             </form>
           </LeadCard>

@@ -35,9 +35,9 @@ const pipelineStageMeta: Record<LeadPipelineStageValue, StageMeta> = {
 };
 
 const leadScoreMeta: Record<LeadScoreValue, { label: string; plainLabel: string; tone: 'success' | 'warning' | 'default' }> = {
-  HOT: { label: '\u{1F525} Hot', plainLabel: 'Hot', tone: 'success' },
-  WARM: { label: '\u{1F7E1} Warm', plainLabel: 'Warm', tone: 'warning' },
-  COLD: { label: '\u{26AA} Cold', plainLabel: 'Cold', tone: 'default' }
+  HOT: { label: 'Hot', plainLabel: 'Hot', tone: 'success' },
+  WARM: { label: 'Warm', plainLabel: 'Warm', tone: 'warning' },
+  COLD: { label: 'Cold', plainLabel: 'Cold', tone: 'default' }
 };
 
 const activityTypeLabels: Record<string, string> = {
@@ -48,6 +48,12 @@ const activityTypeLabels: Record<string, string> = {
   EMAIL_SENT: 'Email sent',
   SMS_SENT: 'SMS sent',
   DOCUMENT_UPLOADED: 'Document uploaded',
+  DOCUMENT_APPROVED: 'Document approved',
+  DOCUMENT_REJECTED: 'Document rejected',
+  DOCUMENT_NEEDS_REPLACEMENT: 'Replacement needed',
+  PORTAL_TOKEN_CREATED: 'Portal link created',
+  PORTAL_TOKEN_REGENERATED: 'Portal link regenerated',
+  PORTAL_ACCESSED: 'Portal accessed',
   PROPOSAL_VIEWED: 'Proposal viewed',
   QUOTE_SENT: 'Quote sent',
   FOLLOW_UP_SET: 'Follow-up set',
@@ -129,9 +135,18 @@ export function getActivityTypeLabel(type: string | null | undefined) {
 }
 
 export function getActivityTone(type: LeadActivityType | string) {
-  if (type === 'LEAD_CREATED' || type === 'STAGE_CHANGED' || type === 'SCORE_UPDATED' || type === 'QUOTE_SENT') return 'success';
-  if (type === 'NOTE_ADDED' || type === 'FOLLOW_UP_SET') return 'warning';
-  if (type === 'EMAIL_SENT' || type === 'SMS_SENT' || type === 'DOCUMENT_UPLOADED' || type === 'PROPOSAL_VIEWED') return 'info';
+  if (type === 'LEAD_CREATED' || type === 'STAGE_CHANGED' || type === 'SCORE_UPDATED' || type === 'QUOTE_SENT' || type === 'DOCUMENT_APPROVED') return 'success';
+  if (type === 'NOTE_ADDED' || type === 'FOLLOW_UP_SET' || type === 'DOCUMENT_NEEDS_REPLACEMENT') return 'warning';
+  if (type === 'DOCUMENT_REJECTED') return 'danger';
+  if (
+    type === 'EMAIL_SENT' ||
+    type === 'SMS_SENT' ||
+    type === 'DOCUMENT_UPLOADED' ||
+    type === 'PROPOSAL_VIEWED' ||
+    type === 'PORTAL_TOKEN_CREATED' ||
+    type === 'PORTAL_TOKEN_REGENERATED' ||
+    type === 'PORTAL_ACCESSED'
+  ) return 'info';
   return 'default';
 }
 

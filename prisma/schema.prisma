@@ -43,10 +43,32 @@ enum LeadActivityType {
   EMAIL_SENT
   SMS_SENT
   DOCUMENT_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  DOCUMENT_NEEDS_REPLACEMENT
+  PORTAL_TOKEN_CREATED
+  PORTAL_TOKEN_REGENERATED
+  PORTAL_ACCESSED
   PROPOSAL_VIEWED
   QUOTE_SENT
   FOLLOW_UP_SET
   SYSTEM_EVENT
+}
+
+enum LeadDocumentType {
+  ELECTRICITY_BILL
+  BER_CERTIFICATE
+  PROPERTY_PHOTO
+  ADDRESS_CONFIRMATION
+  SIGNED_CONTRACT
+  OTHER
+}
+
+enum LeadDocumentStatus {
+  UPLOADED
+  APPROVED
+  REJECTED
+  NEEDS_REPLACEMENT
 }
 
 enum DwellingType {
@@ -105,6 +127,9 @@ model Lead {
   painPoints            String?
   likelihoodToBuy       String?
   leadSource            String?
+  portalToken           String?       @unique
+  portalTokenCreatedAt  DateTime?
+  portalLastAccessedAt  DateTime?
   pipelineStage         LeadPipelineStage @default(NEW_LEAD)
   leadScore             LeadScore         @default(WARM)
   lastContactedAt       DateTime?
@@ -158,15 +183,28 @@ model InstallerQuotePricing {
 }
 
 model LeadDocument {
-  id            String   @id @default(cuid())
-  leadId        String
-  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  fileName      String
-  mimeType      String
-  storageUrl    String?
-  extractedText String?
-  aiFieldsJson  Json?
-  createdAt     DateTime @default(now())
+  id               String             @id @default(cuid())
+  leadId           String
+  lead             Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type             LeadDocumentType   @default(OTHER)
+  fileName         String
+  originalFilename String?
+  mimeType         String
+  sizeBytes        Int?
+  storagePath      String?
+  storageUrl       String?
+  contentBytes     Bytes?
+  uploadedBy       String?
+  uploadedByRole   String?
+  status           LeadDocumentStatus @default(UPLOADED)
+  extractedText    String?
+  aiFieldsJson     Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([leadId, type])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model LeadActivity {

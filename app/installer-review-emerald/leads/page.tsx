@@ -92,7 +92,7 @@ export default async function InstallerLeadsPage() {
         leads={leads.map(toRecentLead)}
         basePath={ADMIN_LEAD_BASE_PATH}
         updateStageAction={updateLeadPipelineStage}
-        title="All Leads"
+        title="All leads"
         subtitle={`Showing ${leads.length} homeowner record${leads.length === 1 ? '' : 's'}`}
       />
     </DashboardShell>

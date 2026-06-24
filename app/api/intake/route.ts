@@ -11,6 +11,8 @@ import type { EligibilityAnalysis, LeadFormInput, LeadTemperature } from '@/lib/
 import { buildSolarQuoteEstimate, type SolarQuoteEstimate } from '@/lib/quote-estimate';
 import { writeAuditLog } from '@/lib/audit';
 import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
+import { getDocumentTypeFromLegacyKind } from '@/lib/documents';
+import { createPortalToken } from '@/lib/portal';
 import {
   calculateInstallerGeneratedQuote,
   defaultInstallerQuotePricing,
@@ -243,6 +245,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     });
     const scoreUpdatedAt = new Date();
+    const portalToken = createPortalToken();
 
     const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
 
@@ -327,6 +330,8 @@ export async function POST(request: NextRequest) {
           pipelineStage: 'NEW_LEAD',
           leadScore,
           scoreUpdatedAt,
+          portalToken,
+          portalTokenCreatedAt: scoreUpdatedAt,
           status: analysis.likelyEligible ? 'READY_TO_APPLY' : 'NEEDS_REVIEW',
           likelyEligible: analysis.likelyEligible,
           eligibilityConfidence: analysis.confidence,
@@ -337,22 +342,33 @@ export async function POST(request: NextRequest) {
           structuredExportJson: structuredExportJson as unknown as Prisma.InputJsonValue,
           documents: applicantDocuments.length
             ? {
-                create: applicantDocuments.map((document, index) => ({
-                  fileName: document.fileName,
-                  mimeType: document.mimeType,
-                  storageUrl: `uploaded://${leadInput.email}/${Date.now()}-${index}-${document.fileName}`,
-                  extractedText:
-                    document.kind === 'electricity_bill'
-                      ? 'Applicant uploaded an electricity bill for installer review.'
-                      : document.kind === 'meter_photo'
-                      ? 'Applicant uploaded a meter photo for MPRN verification.'
-                      : 'Applicant uploaded a roof or panel area photo for installer review.',
-                  aiFieldsJson: {
-                    source: 'applicant_upload',
-                    documentKind: document.kind,
-                    sizeBytes: document.sizeBytes ?? null
-                  }
-                }))
+                create: applicantDocuments.map((document, index) => {
+                  const storagePath = `uploaded://${leadInput.email}/${Date.now()}-${index}-${document.fileName}`;
+
+                  return {
+                    type: getDocumentTypeFromLegacyKind(document.kind),
+                    fileName: document.fileName,
+                    originalFilename: document.fileName,
+                    mimeType: document.mimeType,
+                    sizeBytes: document.sizeBytes ?? null,
+                    storagePath,
+                    storageUrl: storagePath,
+                    uploadedBy: 'Public intake',
+                    uploadedByRole: 'HOMEOWNER',
+                    status: 'UPLOADED',
+                    extractedText:
+                      document.kind === 'electricity_bill'
+                        ? 'Applicant uploaded an electricity bill for installer review.'
+                        : document.kind === 'meter_photo'
+                        ? 'Applicant uploaded a meter photo for MPRN verification.'
+                        : 'Applicant uploaded a roof or panel area photo for installer review.',
+                    aiFieldsJson: {
+                      source: 'applicant_upload',
+                      documentKind: document.kind,
+                      sizeBytes: document.sizeBytes ?? null
+                    }
+                  };
+                })
               }
             : undefined
         }
@@ -385,6 +401,20 @@ export async function POST(request: NextRequest) {
             leadScore,
             eligibilityConfidence: analysis.confidence,
             leadTemperature: analysis.leadTemperature
+          },
+          createdBy: 'Clada OS',
+          createdByRole: 'SYSTEM'
+        }
+      });
+
+      await tx.leadActivity.create({
+        data: {
+          leadId: createdLead.id,
+          type: 'PORTAL_TOKEN_CREATED',
+          title: 'Customer portal link created',
+          description: 'A secure customer portal link was created for this homeowner.',
+          metadata: {
+            source: 'public_intake'
           },
           createdBy: 'Clada OS',
           createdByRole: 'SYSTEM'

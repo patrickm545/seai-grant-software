@@ -10,6 +10,7 @@ import { sendLeadNotificationSms } from '@/lib/sms';
 import type { EligibilityAnalysis, LeadFormInput, LeadTemperature } from '@/lib/types';
 import { buildSolarQuoteEstimate, type SolarQuoteEstimate } from '@/lib/quote-estimate';
 import { writeAuditLog } from '@/lib/audit';
+import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
 import {
   calculateInstallerGeneratedQuote,
   defaultInstallerQuotePricing,
@@ -186,6 +187,62 @@ export async function POST(request: NextRequest) {
       pricingUpdatedAt: installerPricing.updatedAt.toISOString()
     });
     const analysis = await generateEligibilityAnalysis(leadInput);
+    const structuredExportJson = {
+      property: {
+        addressLine1: leadInput.addressLine1,
+        addressLine2: leadInput.addressLine2 ?? null,
+        county: leadInput.county,
+        eircode: leadInput.eircode ?? null,
+        dwellingType: leadInput.dwellingType,
+        mprn: leadInput.mprn,
+        propertyOwner: leadInput.propertyOwner,
+        privateLandlord: leadInput.privateLandlord,
+        yearBuilt: leadInput.yearBuilt,
+        yearOccupied: leadInput.yearOccupied ?? null
+      },
+      grantDetails: {
+        mprn: leadInput.mprn,
+        worksStarted: leadInput.worksStarted,
+        priorSolarGrantAtMprn: leadInput.priorSolarGrantAtMprn
+      },
+      quoteEstimate,
+      salesSignal: {
+        leadTemperature: analysis.leadTemperature,
+        callbackWindow: leadInput.preferredCallbackWindow ?? null,
+        installTimeline: leadInput.installTimeline ?? null,
+        batteryInterest: leadInput.wantsBattery,
+        wantsBattery: leadInput.wantsBattery,
+        selectedSystemSizeVariant: quoteEstimate.selectedVariant,
+        recommendedSystemSizeKwp: quoteEstimate.recommendedSystemSizeKwp,
+        selectedSystemSizeKwp: quoteEstimate.selectedSystemSizeKwp,
+        estimatedPanelCount: quoteEstimate.estimatedPanelCount,
+        estimatedNetCostRangeAfterGrant: quoteEstimate.netCostRangeAfterGrant,
+        estimatedAnnualSavingsRange: quoteEstimate.estimatedAnnualSavingsRange,
+        estimatedPaybackRangeYears: quoteEstimate.estimatedPaybackRangeYears,
+        estimatedSeaiGrantDeduction: quoteEstimate.estimatedSeaiGrantDeduction,
+        grantLikely: quoteEstimate.grantLikely,
+        recommendedNextAction: quoteEstimate.recommendedNextAction,
+        monthlyElectricityBillRange: leadInput.monthlyElectricityBillRange ?? null,
+        roofType: leadInput.roofType ?? null,
+        roofDirection: leadInput.roofDirection ?? null,
+        shadingLevel: leadInput.shadingLevel ?? null,
+        evChargerInterest: leadInput.evChargerInterest,
+        hotWaterDiverterInterest: leadInput.hotWaterDiverterInterest,
+        numberOfOccupants: leadInput.numberOfOccupants ?? null,
+        daytimeUsage: leadInput.daytimeUsage ?? null
+      }
+    };
+    const leadScore = calculateLeadScore({
+      ...leadInput,
+      likelyEligible: analysis.likelyEligible,
+      eligibilityConfidence: analysis.confidence,
+      applicantDocuments,
+      generatedQuoteJson: generatedQuote,
+      structuredExportJson,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    const scoreUpdatedAt = new Date();
 
     const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
 
@@ -267,6 +324,9 @@ export async function POST(request: NextRequest) {
             `Generated quote: EUR ${generatedQuote.finalQuoteTotal}`,
             `Recommended next action: ${quoteEstimate.recommendedNextAction}`
           ].filter(Boolean).join(' | '),
+          pipelineStage: 'NEW_LEAD',
+          leadScore,
+          scoreUpdatedAt,
           status: analysis.likelyEligible ? 'READY_TO_APPLY' : 'NEEDS_REVIEW',
           likelyEligible: analysis.likelyEligible,
           eligibilityConfidence: analysis.confidence,
@@ -274,51 +334,7 @@ export async function POST(request: NextRequest) {
           missingItemsJson: analysis.missingItems,
           risksJson: analysis.risks,
           generatedQuoteJson: generatedQuote as unknown as Prisma.InputJsonValue,
-          structuredExportJson: {
-            property: {
-              addressLine1: leadInput.addressLine1,
-              addressLine2: leadInput.addressLine2 ?? null,
-              county: leadInput.county,
-              eircode: leadInput.eircode ?? null,
-              dwellingType: leadInput.dwellingType,
-              mprn: leadInput.mprn,
-              propertyOwner: leadInput.propertyOwner,
-              privateLandlord: leadInput.privateLandlord,
-              yearBuilt: leadInput.yearBuilt,
-              yearOccupied: leadInput.yearOccupied ?? null
-            },
-            grantDetails: {
-              mprn: leadInput.mprn,
-              worksStarted: leadInput.worksStarted,
-              priorSolarGrantAtMprn: leadInput.priorSolarGrantAtMprn
-            },
-            quoteEstimate,
-            salesSignal: {
-              leadTemperature: analysis.leadTemperature,
-              callbackWindow: leadInput.preferredCallbackWindow,
-              installTimeline: leadInput.installTimeline,
-              batteryInterest: leadInput.wantsBattery,
-              wantsBattery: leadInput.wantsBattery,
-              selectedSystemSizeVariant: quoteEstimate.selectedVariant,
-              recommendedSystemSizeKwp: quoteEstimate.recommendedSystemSizeKwp,
-              selectedSystemSizeKwp: quoteEstimate.selectedSystemSizeKwp,
-              estimatedPanelCount: quoteEstimate.estimatedPanelCount,
-              estimatedNetCostRangeAfterGrant: quoteEstimate.netCostRangeAfterGrant,
-              estimatedAnnualSavingsRange: quoteEstimate.estimatedAnnualSavingsRange,
-              estimatedPaybackRangeYears: quoteEstimate.estimatedPaybackRangeYears,
-              estimatedSeaiGrantDeduction: quoteEstimate.estimatedSeaiGrantDeduction,
-              grantLikely: quoteEstimate.grantLikely,
-              recommendedNextAction: quoteEstimate.recommendedNextAction,
-              monthlyElectricityBillRange: leadInput.monthlyElectricityBillRange,
-              roofType: leadInput.roofType,
-              roofDirection: leadInput.roofDirection,
-              shadingLevel: leadInput.shadingLevel,
-              evChargerInterest: leadInput.evChargerInterest,
-              hotWaterDiverterInterest: leadInput.hotWaterDiverterInterest,
-              numberOfOccupants: leadInput.numberOfOccupants,
-              daytimeUsage: leadInput.daytimeUsage
-            }
-          },
+          structuredExportJson: structuredExportJson as unknown as Prisma.InputJsonValue,
           documents: applicantDocuments.length
             ? {
                 create: applicantDocuments.map((document, index) => ({
@@ -343,6 +359,55 @@ export async function POST(request: NextRequest) {
       });
       console.info('[intake] Lead created', { leadId: createdLead.id, email: createdLead.email });
 
+      await tx.leadActivity.create({
+        data: {
+          leadId: createdLead.id,
+          type: 'LEAD_CREATED',
+          title: 'Lead created',
+          description: 'Homeowner submitted the solar enquiry and grant-readiness form.',
+          metadata: {
+            source: 'public_intake',
+            installerId: leadInput.installerId,
+            uploadedDocuments: applicantDocuments.length
+          },
+          createdBy: 'Public intake',
+          createdByRole: 'HOMEOWNER'
+        }
+      });
+
+      await tx.leadActivity.create({
+        data: {
+          leadId: createdLead.id,
+          type: 'SCORE_UPDATED',
+          title: 'Lead score calculated',
+          description: `Lead score set to ${getLeadScorePlainLabel(leadScore)} from intake details.`,
+          metadata: {
+            leadScore,
+            eligibilityConfidence: analysis.confidence,
+            leadTemperature: analysis.leadTemperature
+          },
+          createdBy: 'Clada OS',
+          createdByRole: 'SYSTEM'
+        }
+      });
+
+      if (applicantDocuments.length) {
+        await tx.leadActivity.create({
+          data: {
+            leadId: createdLead.id,
+            type: 'DOCUMENT_UPLOADED',
+            title: 'Documents uploaded',
+            description: `${applicantDocuments.length} document${applicantDocuments.length === 1 ? '' : 's'} attached during intake.`,
+            metadata: {
+              documentCount: applicantDocuments.length,
+              documentKinds: applicantDocuments.map((document) => document.kind)
+            },
+            createdBy: 'Public intake',
+            createdByRole: 'HOMEOWNER'
+          }
+        });
+      }
+
       await writeAuditLog(tx, {
         leadId: createdLead.id,
         action: 'lead.created',
@@ -351,6 +416,8 @@ export async function POST(request: NextRequest) {
           source: 'public_intake',
           installerId: leadInput.installerId,
           status: createdLead.status,
+          pipelineStage: createdLead.pipelineStage,
+          leadScore: createdLead.leadScore,
           likelyEligible: createdLead.likelyEligible,
           uploadedDocuments: applicantDocuments.length
         }

@@ -1,7 +1,9 @@
 import type { Prisma } from '@prisma/client';
+import { updateLeadPipelineStage } from '@/app/installer-review-emerald/actions';
 import { DashboardShell } from '@/components/DashboardShell';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
+import type { LeadPipelineStageValue, LeadScoreValue } from '@/lib/crm';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -9,31 +11,8 @@ export const dynamic = 'force-dynamic';
 const ADMIN_LEAD_BASE_PATH = '/installer-review-emerald/leads';
 
 type LeadsPageLead = Prisma.LeadGetPayload<{
-  include: { documents: true };
+  include: { documents: true; activities: true };
 }>;
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function getSalesSignal(value: unknown) {
-  const root = asRecord(value);
-  return asRecord(root?.salesSignal);
-}
-
-function getLeadTemperature(lead: LeadsPageLead): RecentDashboardLead['salesSignal'] {
-  const value = getSalesSignal(lead.structuredExportJson)?.leadTemperature;
-  return value === 'HOT' || value === 'WARM' || value === 'COLD' ? value : 'WARM';
-}
 
 function isNeedsAction(lead: LeadsPageLead) {
   return (
@@ -48,16 +27,12 @@ function isLiabilityLead(lead: LeadsPageLead) {
   return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
 }
 
-function toRecentStatus(lead: LeadsPageLead): Pick<RecentDashboardLead, 'status' | 'statusLabel'> {
-  if (lead.status === 'READY_TO_APPLY') {
-    return { status: 'READY_TO_APPLY', statusLabel: 'Ready to Apply' };
-  }
+function getLastActivityAt(lead: LeadsPageLead) {
+  return lead.activities[0]?.createdAt ?? lead.updatedAt ?? lead.createdAt;
+}
 
-  if (lead.status === 'NEEDS_REVIEW' || lead.status === 'HOMEOWNER_REVIEW_PENDING' || lead.status === 'PAYMENT_DOCS_PENDING') {
-    return { status: 'NEEDS_INFO', statusLabel: 'Needs Info' };
-  }
-
-  return { status: 'UNDER_REVIEW', statusLabel: 'Under Review' };
+function getLeadLocation(lead: Pick<LeadsPageLead, 'county' | 'eircode'>) {
+  return [lead.county, lead.eircode || 'No Eircode'].filter(Boolean).join(' / ');
 }
 
 function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
@@ -66,9 +41,11 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
     applicant: lead.fullName,
     email: lead.email,
     phone: lead.phone,
+    location: getLeadLocation(lead),
     confidence: lead.eligibilityConfidence,
-    salesSignal: getLeadTemperature(lead),
-    ...toRecentStatus(lead)
+    leadScore: lead.leadScore as LeadScoreValue,
+    pipelineStage: lead.pipelineStage as LeadPipelineStageValue,
+    lastActivityAt: getLastActivityAt(lead).toISOString()
   };
 }
 
@@ -76,7 +53,13 @@ export default async function InstallerLeadsPage() {
   const leads: LeadsPageLead[] = await prisma.lead.findMany({
     orderBy: { createdAt: 'desc' },
     take: 200,
-    include: { documents: true }
+    include: {
+      documents: true,
+      activities: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
+    }
   });
 
   const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
@@ -98,8 +81,9 @@ export default async function InstallerLeadsPage() {
     >
       <div className="installer-dashboard-heading">
         <div>
+          <div className="eyebrow">Clada OS CRM</div>
           <h1>Leads</h1>
-          <p className="small">Open homeowner records, review documents, and manage the grant-readiness workflow.</p>
+          <p className="small">Open homeowner records, update sales stages, review scores, and manage grant-readiness workflow.</p>
         </div>
         <a href="/embed" className="installer-add-button">Open intake</a>
       </div>
@@ -107,6 +91,7 @@ export default async function InstallerLeadsPage() {
       <RecentLeadsTable
         leads={leads.map(toRecentLead)}
         basePath={ADMIN_LEAD_BASE_PATH}
+        updateStageAction={updateLeadPipelineStage}
         title="All Leads"
         subtitle={`Showing ${leads.length} homeowner record${leads.length === 1 ? '' : 's'}`}
       />

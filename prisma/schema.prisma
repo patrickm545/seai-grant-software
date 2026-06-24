@@ -18,6 +18,37 @@ enum LeadStatus {
   COMPLETED
 }
 
+enum LeadPipelineStage {
+  NEW_LEAD
+  CONTACTED
+  QUALIFIED
+  SURVEY_BOOKED
+  SURVEY_COMPLETED
+  QUOTE_SENT
+  WON
+  LOST
+}
+
+enum LeadScore {
+  HOT
+  WARM
+  COLD
+}
+
+enum LeadActivityType {
+  LEAD_CREATED
+  STAGE_CHANGED
+  SCORE_UPDATED
+  NOTE_ADDED
+  EMAIL_SENT
+  SMS_SENT
+  DOCUMENT_UPLOADED
+  PROPOSAL_VIEWED
+  QUOTE_SENT
+  FOLLOW_UP_SET
+  SYSTEM_EVENT
+}
+
 enum DwellingType {
   DETACHED
   SEMI_DETACHED
@@ -74,6 +105,11 @@ model Lead {
   painPoints            String?
   likelihoodToBuy       String?
   leadSource            String?
+  pipelineStage         LeadPipelineStage @default(NEW_LEAD)
+  leadScore             LeadScore         @default(WARM)
+  lastContactedAt       DateTime?
+  nextFollowUpAt        DateTime?
+  scoreUpdatedAt        DateTime?
   researchCallCompleted Boolean       @default(false)
   salesCallRequired     Boolean       @default(false)
   status                LeadStatus    @default(NEW)
@@ -87,6 +123,7 @@ model Lead {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   documents             LeadDocument[]
+  activities            LeadActivity[]
 }
 
 model InstallerQuotePricing {
@@ -130,6 +167,23 @@ model LeadDocument {
   extractedText String?
   aiFieldsJson  Json?
   createdAt     DateTime @default(now())
+}
+
+model LeadActivity {
+  id            String           @id @default(cuid())
+  leadId        String
+  lead          Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type          LeadActivityType
+  title         String
+  description   String?
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+  createdBy     String?
+  createdByRole String?
+
+  @@index([leadId, createdAt])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model AuditLog {

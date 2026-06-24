@@ -10,15 +10,9 @@ export function PipelineWorkflow({ stages }: { stages: PipelineStage[] }) {
     <section className="installer-panel installer-pipeline-panel">
       <div className="installer-panel-header">
         <div>
-          <h2>Lead Management Pipeline</h2>
-          <p className="small">Simple installer workflow</p>
+          <h2>CRM Pipeline</h2>
+          <p className="small">Sales workflow</p>
         </div>
-        <select aria-label="Next workflow" defaultValue="next-workflow" className="installer-small-select">
-          <option value="next-workflow">Next workflow</option>
-          <option value="admin-review">Admin review</option>
-          <option value="grant-submitted">Grant submitted</option>
-          <option value="follow-up">Follow-up</option>
-        </select>
       </div>
 
       <div className="installer-pipeline-scroll">

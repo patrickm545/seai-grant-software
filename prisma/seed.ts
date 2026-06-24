@@ -24,6 +24,7 @@ if (!process.env.DATABASE_URL && existsSync('.env')) {
 const prisma = new PrismaClient();
 
 async function main() {
+  const now = new Date();
   const defaultInstaller = getDefaultInstallerSeedData();
   const installer = await prisma.installer.upsert({
     where: { id: defaultInstaller.id },
@@ -53,7 +54,11 @@ async function main() {
 
   const lead1 = await prisma.lead.upsert({
     where: { id: 'demo-lead-1' },
-    update: {},
+    update: {
+      pipelineStage: 'QUALIFIED',
+      leadScore: 'HOT',
+      scoreUpdatedAt: now
+    },
     create: {
       id: 'demo-lead-1',
       installerId: installer.id,
@@ -74,6 +79,9 @@ async function main() {
       consentToProcess: true,
       consentToGrantAssist: true,
       consentToContact: true,
+      pipelineStage: 'QUALIFIED',
+      leadScore: 'HOT',
+      scoreUpdatedAt: now,
       status: 'READY_TO_APPLY',
       likelyEligible: true,
       eligibilityConfidence: 0.92,
@@ -92,7 +100,11 @@ async function main() {
 
   const lead2 = await prisma.lead.upsert({
     where: { id: 'demo-lead-2' },
-    update: {},
+    update: {
+      pipelineStage: 'CONTACTED',
+      leadScore: 'WARM',
+      scoreUpdatedAt: now
+    },
     create: {
       id: 'demo-lead-2',
       installerId: installer.id,
@@ -113,6 +125,10 @@ async function main() {
       consentToProcess: true,
       consentToGrantAssist: true,
       consentToContact: true,
+      pipelineStage: 'CONTACTED',
+      leadScore: 'WARM',
+      lastContactedAt: now,
+      scoreUpdatedAt: now,
       status: 'NEEDS_REVIEW',
       likelyEligible: true,
       eligibilityConfidence: 0.81,
@@ -129,9 +145,14 @@ async function main() {
     }
   });
 
-  await prisma.lead.upsert({
+  const lead3 = await prisma.lead.upsert({
     where: { id: 'demo-lead-3' },
-    update: {},
+    update: {
+      pipelineStage: 'SURVEY_BOOKED',
+      leadScore: 'WARM',
+      nextFollowUpAt: now,
+      scoreUpdatedAt: now
+    },
     create: {
       id: 'demo-lead-3',
       installerId: installer.id,
@@ -152,6 +173,11 @@ async function main() {
       consentToProcess: true,
       consentToGrantAssist: true,
       consentToContact: true,
+      pipelineStage: 'SURVEY_BOOKED',
+      leadScore: 'WARM',
+      lastContactedAt: now,
+      nextFollowUpAt: now,
+      scoreUpdatedAt: now,
       status: 'HOMEOWNER_REVIEW_PENDING',
       likelyEligible: true,
       eligibilityConfidence: 0.88,
@@ -168,9 +194,13 @@ async function main() {
     }
   });
 
-  await prisma.lead.upsert({
+  const lead4 = await prisma.lead.upsert({
     where: { id: 'demo-lead-4' },
-    update: {},
+    update: {
+      pipelineStage: 'QUOTE_SENT',
+      leadScore: 'HOT',
+      scoreUpdatedAt: now
+    },
     create: {
       id: 'demo-lead-4',
       installerId: installer.id,
@@ -191,6 +221,10 @@ async function main() {
       consentToProcess: true,
       consentToGrantAssist: true,
       consentToContact: false,
+      pipelineStage: 'QUOTE_SENT',
+      leadScore: 'HOT',
+      lastContactedAt: now,
+      scoreUpdatedAt: now,
       status: 'SUBMITTED',
       likelyEligible: true,
       eligibilityConfidence: 0.95,
@@ -207,9 +241,13 @@ async function main() {
     }
   });
 
-  await prisma.lead.upsert({
+  const lead5 = await prisma.lead.upsert({
     where: { id: 'demo-lead-5' },
-    update: {},
+    update: {
+      pipelineStage: 'LOST',
+      leadScore: 'COLD',
+      scoreUpdatedAt: now
+    },
     create: {
       id: 'demo-lead-5',
       installerId: installer.id,
@@ -230,6 +268,9 @@ async function main() {
       consentToProcess: true,
       consentToGrantAssist: true,
       consentToContact: true,
+      pipelineStage: 'LOST',
+      leadScore: 'COLD',
+      scoreUpdatedAt: now,
       status: 'NEEDS_REVIEW',
       likelyEligible: false,
       eligibilityConfidence: 0.69,
@@ -281,6 +322,82 @@ async function main() {
       }
     }
   });
+
+  const activitySeeds = [
+    {
+      id: 'demo-activity-1-created',
+      leadId: lead1.id,
+      type: 'LEAD_CREATED' as const,
+      title: 'Lead created',
+      description: 'Demo homeowner lead submitted through the public intake flow.',
+      createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-1-stage',
+      leadId: lead1.id,
+      type: 'STAGE_CHANGED' as const,
+      title: 'Pipeline stage changed',
+      description: 'New Lead to Qualified',
+      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-2-created',
+      leadId: lead2.id,
+      type: 'LEAD_CREATED' as const,
+      title: 'Lead created',
+      description: 'Demo homeowner lead submitted through the public intake flow.',
+      createdAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-2-note',
+      leadId: lead2.id,
+      type: 'NOTE_ADDED' as const,
+      title: 'Internal note added',
+      description: 'Call back after roof photos are received.',
+      createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-3-follow-up',
+      leadId: lead3.id,
+      type: 'FOLLOW_UP_SET' as const,
+      title: 'Follow-up date set',
+      description: 'Next follow-up scheduled for survey confirmation.',
+      createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-4-stage',
+      leadId: lead4.id,
+      type: 'STAGE_CHANGED' as const,
+      title: 'Pipeline stage changed',
+      description: 'Survey Completed to Quote Sent',
+      createdAt: new Date(now.getTime() - 12 * 60 * 60 * 1000)
+    },
+    {
+      id: 'demo-activity-5-stage',
+      leadId: lead5.id,
+      type: 'STAGE_CHANGED' as const,
+      title: 'Pipeline stage changed',
+      description: 'New Lead to Lost',
+      createdAt: new Date(now.getTime() - 8 * 60 * 60 * 1000)
+    }
+  ];
+
+  for (const activity of activitySeeds) {
+    await prisma.leadActivity.upsert({
+      where: { id: activity.id },
+      update: {
+        title: activity.title,
+        description: activity.description,
+        createdAt: activity.createdAt
+      },
+      create: {
+        ...activity,
+        metadata: { source: 'seed' },
+        createdBy: 'Seed data',
+        createdByRole: 'SYSTEM'
+      }
+    });
+  }
 }
 
 main().finally(async () => {

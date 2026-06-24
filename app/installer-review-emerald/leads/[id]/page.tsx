@@ -4,10 +4,20 @@ import { notFound, redirect } from 'next/navigation';
 import type { Prisma } from '@prisma/client';
 import type { ReactNode } from 'react';
 import { CopyTextButton } from '@/components/CopyTextButton';
+import { addLeadNote, setLeadFollowUp, updateLeadPipelineStage } from '@/app/installer-review-emerald/actions';
 import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 import { writeAuditLog } from '@/lib/audit';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
+import {
+  getActivityTone,
+  getActivityTypeLabel,
+  getLeadScoreLabel,
+  getLeadScoreTone,
+  getPipelineStageLabel,
+  getPipelineStageTone,
+  leadPipelineStages
+} from '@/lib/crm';
 
 const ADMIN_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
@@ -27,6 +37,15 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Completed'
 };
 const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
+const quickStageActions = [
+  { stage: 'CONTACTED', label: 'Mark Contacted' },
+  { stage: 'QUALIFIED', label: 'Mark Qualified' },
+  { stage: 'SURVEY_BOOKED', label: 'Book Survey' },
+  { stage: 'SURVEY_COMPLETED', label: 'Mark Survey Completed' },
+  { stage: 'QUOTE_SENT', label: 'Mark Quote Sent' },
+  { stage: 'WON', label: 'Mark Won' },
+  { stage: 'LOST', label: 'Mark Lost' }
+] as const;
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value || '').trim();
@@ -105,13 +124,40 @@ async function updateLeadWorkflow(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const existingLead = await tx.lead.findUnique({
       where: { id: leadId },
-      select: { status: true }
+      select: { status: true, followUpDate: true, nextFollowUpAt: true }
     });
 
     await tx.lead.update({
       where: { id: leadId },
-      data: parsed
+      data: {
+        ...parsed,
+        nextFollowUpAt: parsed.followUpDate
+      }
     });
+
+    const previousFollowUpAt = existingLead?.nextFollowUpAt ?? existingLead?.followUpDate ?? null;
+    const nextFollowUpAt = parsed.followUpDate ?? null;
+    const previousFollowUpTime = previousFollowUpAt?.getTime() ?? null;
+    const nextFollowUpTime = nextFollowUpAt?.getTime() ?? null;
+
+    if (previousFollowUpTime !== nextFollowUpTime) {
+      await tx.leadActivity.create({
+        data: {
+          leadId,
+          type: 'FOLLOW_UP_SET',
+          title: nextFollowUpAt ? 'Follow-up date set' : 'Follow-up date cleared',
+          description: nextFollowUpAt
+            ? `Next follow-up scheduled for ${nextFollowUpAt.toISOString().slice(0, 10)}`
+            : 'No follow-up date is currently scheduled.',
+          metadata: {
+            previousFollowUpAt: previousFollowUpAt?.toISOString() ?? null,
+            nextFollowUpAt: nextFollowUpAt?.toISOString() ?? null
+          },
+          createdBy: 'Installer dashboard',
+          createdByRole: 'INSTALLER'
+        }
+      });
+    }
 
     await writeAuditLog(tx, {
       leadId,
@@ -400,6 +446,11 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     orderBy: { createdAt: 'desc' },
     take: 8
   });
+  const activities = await prisma.leadActivity.findMany({
+    where: { leadId: lead.id },
+    orderBy: { createdAt: 'desc' },
+    take: 30
+  });
 
   const missingItems = asStringArray(lead.missingItemsJson);
   const risks = asStringArray(lead.risksJson);
@@ -462,6 +513,9 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const grossQuoteRange = formatEuroRangeValue(quoteEstimate?.grossCostRange);
   const annualSavingsRange = formatEuroRangeValue(quoteEstimate?.estimatedAnnualSavingsRange);
   const paybackRange = formatPayback(quoteEstimate?.estimatedPaybackRangeYears);
+  const lastActivity = activities[0] ?? null;
+  const lastActivityLabel = lastActivity ? formatDateTime(lastActivity.createdAt) : formatDateTime(lead.updatedAt);
+  const nextFollowUpDate = lead.nextFollowUpAt ?? lead.followUpDate;
 
   return (
     <main className="container admin-shell lead-crm-shell">
@@ -475,9 +529,11 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <div className="eyebrow">Lead detail</div>
             <h1>{lead.fullName}</h1>
             <p>
-              Installer-ready view for grant readiness, sales fit, documents, notes, and next workflow actions.
+              CRM view for pipeline stage, sales fit, grant readiness, documents, notes, and next workflow actions.
             </p>
             <div className="lead-crm-chip-row">
+              <span className={`status-pill status-pill-${getPipelineStageTone(lead.pipelineStage)}`}>{getPipelineStageLabel(lead.pipelineStage)}</span>
+              <span className={`status-pill status-pill-${getLeadScoreTone(lead.leadScore)}`}>{getLeadScoreLabel(lead.leadScore)}</span>
               <span className={`status-pill status-pill-${getStatusTone(lead.status)}`}>{STATUS_LABELS[lead.status]}</span>
               <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
               <span className={`status-pill status-pill-${grantLikely ? 'success' : 'warning'}`}>
@@ -496,14 +552,14 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
 
       <section className="lead-crm-summary-grid">
         <div className="lead-crm-kpi lead-crm-kpi-info">
-          <span>Lead status</span>
-          <strong>{STATUS_LABELS[lead.status]}</strong>
-          <small>Updated {formatDateTime(lead.updatedAt)}</small>
+          <span>Pipeline stage</span>
+          <strong>{getPipelineStageLabel(lead.pipelineStage)}</strong>
+          <small>Last activity {lastActivityLabel}</small>
         </div>
-        <div className={`lead-crm-kpi lead-crm-kpi-${grantLikely ? 'success' : 'warning'}`}>
-          <span>Eligibility confidence</span>
-          <strong>{confidenceLabel}</strong>
-          <small>{eligibilityLabel}</small>
+        <div className={`lead-crm-kpi lead-crm-kpi-${getLeadScoreTone(lead.leadScore)}`}>
+          <span>Lead score</span>
+          <strong>{getLeadScoreLabel(lead.leadScore)}</strong>
+          <small>Updated {formatDateTime(lead.scoreUpdatedAt ?? lead.createdAt)}</small>
         </div>
         <div className="lead-crm-kpi lead-crm-kpi-success">
           <span>Recommended system</span>
@@ -530,7 +586,11 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               </div>
               <div className="lead-crm-field-grid lead-crm-overview-fields">
                 <LeadField label="Installer" value={lead.installer.name} />
-                <LeadField label="Follow-up date" value={formatDateInput(lead.followUpDate) || 'Not scheduled'} />
+                <LeadField label="Pipeline stage" value={getPipelineStageLabel(lead.pipelineStage)} />
+                <LeadField label="Lead score" value={getLeadScoreLabel(lead.leadScore)} />
+                <LeadField label="Grant workflow" value={STATUS_LABELS[lead.status]} />
+                <LeadField label="Follow-up date" value={formatDateInput(nextFollowUpDate) || 'Not scheduled'} />
+                <LeadField label="Last contacted" value={formatDateTime(lead.lastContactedAt)} />
                 <LeadField label="Assigned admin" value={lead.assignedAdmin || 'Unassigned'} />
                 <LeadField label="Assigned installer" value={lead.assignedInstaller || 'Unassigned'} />
               </div>
@@ -722,6 +782,52 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             </div>
           </LeadCard>
 
+          <LeadCard eyebrow="CRM timeline" title="Activity feed">
+            <div className="lead-activity-timeline">
+              {activities.length ? activities.map((activity) => (
+                <article key={activity.id} className="lead-activity-item">
+                  <div className={`lead-activity-icon lead-activity-icon-${getActivityTone(activity.type)}`} aria-hidden="true">
+                    {getActivityTypeLabel(activity.type).slice(0, 1)}
+                  </div>
+                  <div className="lead-activity-body">
+                    <div className="lead-activity-header">
+                      <div>
+                        <strong>{activity.title}</strong>
+                        <span className={`status-pill status-pill-${getActivityTone(activity.type)}`}>
+                          {getActivityTypeLabel(activity.type)}
+                        </span>
+                      </div>
+                      <time dateTime={activity.createdAt.toISOString()}>{formatDateTime(activity.createdAt)}</time>
+                    </div>
+                    {activity.description ? <p>{activity.description}</p> : null}
+                    {activity.createdBy ? (
+                      <div className="small">
+                        {activity.createdByRole ? `${activity.createdByRole.toLowerCase()} / ` : ''}
+                        {activity.createdBy}
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              )) : (
+                <div className="empty-state">
+                  <h3>No CRM activity yet</h3>
+                  <p className="small">Stage changes, internal notes, follow-ups, emails, SMS, documents, and proposal events will appear here.</p>
+                </div>
+              )}
+            </div>
+          </LeadCard>
+
+          <LeadCard eyebrow="Internal notes" title="Add a private note">
+            <form action={addLeadNote} className="lead-note-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <label htmlFor="lead-note">Note</label>
+              <textarea id="lead-note" name="note" rows={4} placeholder="Add a private note for the installer/admin team. Homeowners cannot see this." />
+              <div className="lead-crm-action-buttons">
+                <button type="submit">Add Note</button>
+              </div>
+            </form>
+          </LeadCard>
+
           <LeadCard eyebrow="Exports" title="Application pack and structured data">
             <div className="action-grid export-action-grid">
               <Link className="action-card export-action-card" href={`/admin/dashboard/leads/${lead.id}/application-pack`}>
@@ -849,7 +955,56 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
         </div>
 
         <aside className="lead-crm-sidebar">
-          <LeadCard eyebrow="Actions / next steps" title="Workflow controls" className="lead-crm-sticky-card">
+          <LeadCard eyebrow="CRM pipeline" title="Sales stage" className="lead-crm-sticky-card">
+            <div className="lead-crm-current-stage">
+              <span>Current stage</span>
+              <strong>{getPipelineStageLabel(lead.pipelineStage)}</strong>
+              <small>Last activity {lastActivityLabel}</small>
+            </div>
+
+            <form action={updateLeadPipelineStage} className="lead-crm-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <div>
+                <label>Pipeline stage</label>
+                <select name="pipelineStage" defaultValue={lead.pipelineStage}>
+                  {leadPipelineStages.map((stage) => (
+                    <option key={stage} value={stage}>{getPipelineStageLabel(stage)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="lead-crm-action-buttons">
+                <button type="submit">Update stage</button>
+              </div>
+            </form>
+
+            <form action={updateLeadPipelineStage} className="lead-crm-quick-stage-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              {quickStageActions.map((action) => (
+                <button
+                  key={action.stage}
+                  type="submit"
+                  name="pipelineStage"
+                  value={action.stage}
+                  className={action.stage === 'LOST' ? 'secondary lead-crm-danger-action' : 'secondary'}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </form>
+
+            <form action={setLeadFollowUp} className="lead-crm-form lead-follow-up-form">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <div>
+                <label>Next follow-up</label>
+                <input name="nextFollowUpAt" type="date" defaultValue={formatDateInput(nextFollowUpDate)} />
+              </div>
+              <div className="lead-crm-action-buttons">
+                <button type="submit" className="secondary">Save follow-up</button>
+              </div>
+            </form>
+          </LeadCard>
+
+          <LeadCard eyebrow="Grant/admin workflow" title="Review controls">
             <form action={updateLeadWorkflow} className="admin-workflow-form lead-crm-form">
               <input type="hidden" name="leadId" value={lead.id} />
               <div className="lead-crm-form-grid">

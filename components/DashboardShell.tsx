@@ -20,11 +20,11 @@ export function DashboardShell({ children, sidebar, userName, activeNavItem = 'D
   return (
     <div className="installer-pro-shell">
       <header className="installer-pro-topbar">
-        <Link href="/admin/dashboard" className="installer-pro-brand" aria-label="SOLARgrant dashboard">
-          <span className="installer-pro-mark" aria-hidden="true">SG</span>
+        <Link href="/admin/dashboard" className="installer-pro-brand" aria-label="Clada OS dashboard">
+          <span className="installer-pro-mark" aria-hidden="true">CO</span>
           <span>
-            <strong>SOLARgrant</strong>
-            <em>PRO</em>
+            <strong>Clada</strong>
+            <em>OS</em>
           </span>
         </Link>
 

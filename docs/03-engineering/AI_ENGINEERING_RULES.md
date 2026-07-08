@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 These rules apply to AI coding agents and humans using AI assistance.
 
@@ -17,10 +17,11 @@ Before changing code, AI agents must read:
 1. `docs/README.md`
 2. `docs/CONSTITUTION.md`
 3. `docs/THE_CLADA_WAY.md`
-4. `docs/06-sprints/ACTIVE_SPRINT.md`
-5. relevant feature specs
-6. relevant ADRs
-7. nearby source code
+4. `docs/01-platform/README.md` for platform or module-boundary changes
+5. `docs/06-sprints/ACTIVE_SPRINT.md`
+6. relevant feature specs
+7. relevant ADRs
+8. nearby source code
 
 ## Change Rules
 

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 This section defines the product model for Clada OS and the first product module, SolarGRANT Pro.
 
@@ -14,10 +14,13 @@ This section defines the product model for Clada OS and the first product module
 
 Clada OS is the platform. Product modules sit on top of shared platform capabilities. SolarGRANT Pro is the first module and should teach the platform which capabilities deserve to become reusable.
 
+The canonical platform architecture and capability ownership model lives in [../01-platform/README.md](../01-platform/README.md).
+
 ## Documents
 
 - [CLADA_OS_PRODUCT_MODEL.md](CLADA_OS_PRODUCT_MODEL.md): platform and module model.
 - [SOLARGRANT_PRO_MODULE.md](SOLARGRANT_PRO_MODULE.md): first product module context and boundaries.
+- [../01-platform/PRODUCT_COMPOSITION.md](../01-platform/PRODUCT_COMPOSITION.md): how products compose Clada OS capabilities.
 
 ## Product Decision Rule
 

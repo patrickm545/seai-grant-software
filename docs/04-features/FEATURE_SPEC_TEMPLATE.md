@@ -33,7 +33,7 @@ Choose one:
 - module feature with platform extraction candidate
 - experiment
 
-Explain why.
+Explain why, and classify the work using [../01-platform/CAPABILITY_TAXONOMY.md](../01-platform/CAPABILITY_TAXONOMY.md) when the feature affects capability ownership.
 
 ## User Workflow
 

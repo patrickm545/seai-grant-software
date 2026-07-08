@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 Sprint documents connect strategy to execution. They should be specific enough for engineers and AI agents to understand what is active, what is out of scope, and what definition of done applies.
 
@@ -18,6 +18,7 @@ Sprint documents connect strategy to execution. They should be specific enough f
 
 - [FOUNDATION_RELEASE_1_MILESTONE_1.md](FOUNDATION_RELEASE_1_MILESTONE_1.md)
 - [FOUNDATION_RELEASE_1_MILESTONE_2.md](FOUNDATION_RELEASE_1_MILESTONE_2.md)
+- [FOUNDATION_RELEASE_1_MILESTONE_3.md](FOUNDATION_RELEASE_1_MILESTONE_3.md)
 
 ## Sprint Rule
 

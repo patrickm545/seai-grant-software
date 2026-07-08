@@ -6,9 +6,11 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 This section defines engineering standards, architecture context, and AI-assisted development rules for Clada OS.
+
+Platform capability ownership and dependency rules are defined in [../01-platform/README.md](../01-platform/README.md).
 
 ## Documents
 

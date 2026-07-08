@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 The Clada Operating Manual (COM) is the permanent source of truth for Clada Systems. It governs how Clada OS is planned, designed, built, reviewed, released, and maintained.
 
@@ -43,6 +43,7 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [DOCUMENT_LIFECYCLE.md](DOCUMENT_LIFECYCLE.md): how documents are proposed, reviewed, activated, maintained, and archived.
 - [OPERATING_PRINCIPLES.md](OPERATING_PRINCIPLES.md): daily operating rules for engineering and product work.
 - [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
+- [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, and evolution policy.
 - [01-product](01-product/README.md): platform and module strategy.
 - [02-design](02-design/README.md): product design standards.
 - [03-engineering](03-engineering/README.md): architecture, engineering standards, and AI engineering rules.
@@ -75,10 +76,11 @@ Before changing application code, read:
 1. This document.
 2. [CONSTITUTION.md](CONSTITUTION.md).
 3. [THE_CLADA_WAY.md](THE_CLADA_WAY.md).
-4. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
-5. Any linked feature specification.
-6. Any linked ADR.
-7. The relevant engineering or design standard.
+4. [01-platform/README.md](01-platform/README.md) for platform or module-boundary changes.
+5. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
+6. Any linked feature specification.
+7. Any linked ADR.
+8. The relevant engineering or design standard.
 
 Small maintenance changes may be lighter, but no change may violate constitutional principles, documented decisions, or security and privacy expectations.
 

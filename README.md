@@ -23,9 +23,10 @@ Every significant implementation change should be grounded in the documentation 
 1. [Constitution](docs/CONSTITUTION.md)
 2. [The Clada Way](docs/THE_CLADA_WAY.md)
 3. [Operating Manual](docs/README.md)
-4. [Feature specifications](docs/04-features/README.md)
-5. [Sprint documents](docs/06-sprints/README.md)
-6. Implementation
+4. [Platform architecture](docs/01-platform/README.md)
+5. [Feature specifications](docs/04-features/README.md)
+6. [Sprint documents](docs/06-sprints/README.md)
+7. Implementation
 
 Code does not override documented architectural decisions. If implementation needs to diverge, update the relevant documentation first or record the decision in an ADR.
 

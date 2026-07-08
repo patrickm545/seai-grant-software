@@ -6,9 +6,11 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 Clada OS is the long-term platform for contractor-led businesses. It should support repeatable operational workflows across multiple industries while staying grounded in the first market: Irish solar.
+
+For the canonical platform capability taxonomy, ownership model, and dependency rules, use [../01-platform/README.md](../01-platform/README.md).
 
 ## Platform Capabilities
 

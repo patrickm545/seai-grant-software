@@ -6,7 +6,7 @@ Create the product and engineering foundation for Clada OS before major feature 
 
 ## Business reason
 
-Clada OS is moving from a grant checker into a broader business platform. The repository needs shared documents that Codex and future developers can read before making changes.
+The repository is moving from a SolarGRANT Pro grant checker toward Clada OS, a broader business platform. The repository needs shared documents that Codex and future developers can read before making changes.
 
 ## Scope
 

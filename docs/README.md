@@ -42,7 +42,7 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [DOCUMENTATION_STANDARD.md](DOCUMENTATION_STANDARD.md): metadata, IDs, naming, ownership, status, and writing rules.
 - [DOCUMENT_LIFECYCLE.md](DOCUMENT_LIFECYCLE.md): how documents are proposed, reviewed, activated, maintained, and archived.
 - [OPERATING_PRINCIPLES.md](OPERATING_PRINCIPLES.md): daily operating rules for engineering and product work.
-- [00-company](00-company/README.md): company context and strategy.
+- [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
 - [01-product](01-product/README.md): platform and module strategy.
 - [02-design](02-design/README.md): product design standards.
 - [03-engineering](03-engineering/README.md): architecture, engineering standards, and AI engineering rules.
@@ -54,7 +54,7 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 
 ## Supporting Foundation References
 
-The remote repository also contains earlier foundation documents. They are retained as supporting context and should be reconciled into the COM hierarchy over time rather than deleted silently.
+The repository also contains earlier foundation documents. They are retained as supporting context and should be reconciled into the COM hierarchy over time rather than deleted silently. Canonical company guidance now lives in [00-company](00-company/README.md).
 
 - [company/vision.md](company/vision.md)
 - [company/positioning.md](company/positioning.md)

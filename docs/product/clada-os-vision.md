@@ -6,9 +6,9 @@ Clada OS is the operating system for contractor-led businesses.
 
 It brings the daily workflows of a service company into one connected platform.
 
-## First product
+## First product module
 
-SolarGRANT Pro is the first vertical product built on Clada OS.
+SolarGRANT Pro is the first product module built on Clada OS.
 
 It focuses on Irish solar installers and the SEAI-driven solar sales and admin workflow.
 
@@ -17,13 +17,13 @@ It focuses on Irish solar installers and the SEAI-driven solar sales and admin w
 The platform should be built in layers:
 
 1. Core Clada OS platform
-2. Shared business modules
+2. Shared platform capabilities
 3. Solar-specific workflows
 4. Future vertical-specific workflows
 
 This prevents the software from becoming a one-off solar-only tool.
 
-## Core modules
+## Core capabilities
 
 - CRM
 - Lead intake

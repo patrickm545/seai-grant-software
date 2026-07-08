@@ -17,6 +17,7 @@ Sprint documents connect strategy to execution. They should be specific enough f
 ## Milestones
 
 - [FOUNDATION_RELEASE_1_MILESTONE_1.md](FOUNDATION_RELEASE_1_MILESTONE_1.md)
+- [FOUNDATION_RELEASE_1_MILESTONE_2.md](FOUNDATION_RELEASE_1_MILESTONE_2.md)
 
 ## Sprint Rule
 

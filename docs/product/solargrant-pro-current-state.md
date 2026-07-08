@@ -37,7 +37,7 @@ Do not turn the product into a generic CRM before the solar workflow is strong.
 
 ## Upgrade direction
 
-The current product should evolve from a grant checker into a full installer workflow platform.
+The current product should evolve from a grant checker into a full SolarGRANT Pro installer workflow module on Clada OS.
 
 The next upgrades should focus on:
 

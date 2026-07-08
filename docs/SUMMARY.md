@@ -21,6 +21,14 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 ## Company
 
 - [00-company/README.md](00-company/README.md)
+- [00-company/vision.md](00-company/vision.md)
+- [00-company/mission.md](00-company/mission.md)
+- [00-company/values.md](00-company/values.md)
+- [00-company/strategy.md](00-company/strategy.md)
+- [00-company/positioning.md](00-company/positioning.md)
+- [00-company/target-customers.md](00-company/target-customers.md)
+- [00-company/competitors.md](00-company/competitors.md)
+- [00-company/glossary.md](00-company/glossary.md)
 
 ## Product
 
@@ -56,6 +64,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/README.md](06-sprints/README.md)
 - [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md)
+- [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md)
 
 ## Research
 

@@ -17,7 +17,7 @@ Before building a feature, answer:
 5. Does this support the long-term Clada OS platform vision?
 6. Is this needed for the current sprint or can it wait?
 7. Does this create unnecessary complexity?
-8. Can this be built as a reusable Clada OS module rather than a solar-only one-off?
+8. Can this be built as a reusable Clada OS capability rather than a solar-only one-off?
 9. Does this protect trust, reliability, and GDPR expectations?
 10. Can the feature be explained simply to a non-technical installer?
 

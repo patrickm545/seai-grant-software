@@ -10,6 +10,48 @@ Clada OS is documentation-first. Before changing product behaviour, architecture
 4. [docs/06-sprints/ACTIVE_SPRINT.md](docs/06-sprints/ACTIVE_SPRINT.md)
 5. Relevant feature specs and ADRs
 
+## Developer Setup
+
+Supported runtime:
+
+- Node.js `22.x`, pinned by `.nvmrc`.
+- Package manager: `pnpm@10.11.0`, as declared in `package.json`.
+
+Setup:
+
+```bash
+nvm use
+corepack enable
+corepack prepare pnpm@10.11.0 --activate
+pnpm install
+cp .env.example .env
+pnpm prisma:migrate:deploy
+pnpm seed
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+Environment:
+
+- Use `.env.example` as the template.
+- Do not commit `.env`, secrets, database credentials, API keys, or production data.
+- Set `DATABASE_URL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` for local admin workflows.
+- Optional email, Twilio, and OpenAI values may remain empty unless the workflow being tested needs them.
+
+Common commands:
+
+```bash
+pnpm dev
+pnpm lint
+pnpm build
+pnpm prisma:generate
+pnpm prisma:migrate:deploy
+pnpm seed
+```
+
+There is no dedicated test script yet. Until one exists, verify changes with the most relevant lint, build, manual workflow, or documentation check.
+
 ## Contribution Rules
 
 - Keep changes small and focused.

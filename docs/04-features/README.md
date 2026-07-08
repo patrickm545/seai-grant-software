@@ -1,0 +1,31 @@
+# Feature Specifications
+
+| Field | Value |
+| --- | --- |
+| Document ID | FEAT-INDEX-001 |
+| Status | Active |
+| Owner | Clada Systems Product and Engineering |
+| Review cycle | Monthly during Foundation Release 1.0, then quarterly |
+| Last reviewed | 2026-07-08 |
+
+Feature specifications define the problem, evidence, scope, design, architecture, risks, and verification plan before major implementation.
+
+## When A Feature Spec Is Required
+
+Create or update a feature spec when work changes:
+
+- user-facing behaviour
+- workflow state or business logic
+- data model
+- integrations
+- AI or automation behaviour
+- security, privacy, compliance, or audit posture
+- reusable Clada OS capability boundaries
+
+## Template
+
+Use [FEATURE_SPEC_TEMPLATE.md](FEATURE_SPEC_TEMPLATE.md) for new feature specs.
+
+## Feature Spec Rule
+
+Implementation should not start until the feature spec is good enough for a future engineer to understand why the work exists, what is in scope, what is out of scope, and how success will be verified.

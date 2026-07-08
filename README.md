@@ -1,52 +1,47 @@
 # Clada OS
 
-Clada OS is the operating system for contractor-led service businesses, starting with Irish solar installers through SolarGRANT Pro.
+Clada OS is the long-term operating platform for contractor-led service businesses built by Clada Systems. It starts with Irish solar installers through SolarGRANT Pro, the first product module focused on SEAI grant workflows, lead intake, installer operations, document preparation, and human-reviewed submission support.
 
-The product began as a homeowner-facing SEAI solar grant funnel and installer dashboard. It is now being evolved into a broader business platform covering lead capture, CRM, quoting, grant workflows, customer communication, installation tracking, reporting, and future AI-assisted operations.
+The product began as a homeowner-facing SEAI solar grant funnel and installer dashboard. It is now evolving into a broader business platform for lead capture, CRM, quoting, grant workflows, customer communication, installation tracking, reporting, and future AI-assisted operations.
 
-## Product structure
+## Product Structure
 
-Clada Systems is the company.
+- Company: Clada Systems
+- Platform: Clada OS
+- First product module: SolarGRANT Pro
+- Entry market: Irish solar industry
+- Future markets: electrical, HVAC, plumbing, roofing, construction, landscaping, renewable energy, and other contractor-led services
 
-Clada OS is the core platform.
+SolarGRANT Pro remains valid where the repository refers specifically to the Irish solar grant module. New platform-level language should use Clada OS terminology.
 
-SolarGRANT Pro is the first industry-specific product/module built on top of Clada OS for Irish solar companies.
+## Documentation First
 
-## Current product scope
+Start with [docs/README.md](docs/README.md). The Clada Operating Manual (COM) is the source of truth for company direction, product strategy, engineering standards, architecture decisions, feature specifications, sprint planning, and research.
+
+Every significant implementation change should be grounded in the documentation hierarchy:
+
+1. [Constitution](docs/CONSTITUTION.md)
+2. [The Clada Way](docs/THE_CLADA_WAY.md)
+3. [Operating Manual](docs/README.md)
+4. [Feature specifications](docs/04-features/README.md)
+5. [Sprint documents](docs/06-sprints/README.md)
+6. Implementation
+
+Code does not override documented architectural decisions. If implementation needs to diverge, update the relevant documentation first or record the decision in an ADR.
+
+## Current Product Scope
 
 - Homeowner-facing solar grant and lead capture funnel
 - Lead qualification fields for installer sales teams
 - Lead temperature scoring: hot, warm, cold
 - Installer admin dashboard
 - Lead detail view
-- Result / thank-you flow after submission
+- Result and thank-you flow after submission
 - Basic email notification support
 - Prisma/Postgres data layer
 - Vercel deployment target
 
-## Documentation system
-
-This repository uses `/docs` as the source of truth for product, design, engineering, and sprint decisions.
-
-Before any Codex implementation sprint, read the relevant foundation documents:
-
-```txt
-/docs/company/vision.md
-/docs/company/positioning.md
-/docs/product/clada-os-vision.md
-/docs/product/solargrant-pro-current-state.md
-/docs/product/roadmap.md
-/docs/product/feature-decision-framework.md
-/docs/design/design-system.md
-/docs/design/ui-ux-principles.md
-/docs/engineering/architecture.md
-/docs/engineering/security-and-gdpr.md
-/docs/sprints/sprint-0-foundation.md
-```
-
-Codex must not make broad product changes without checking these documents first.
-
-## Local quick start
+## Local Quick Start
 
 ```bash
 npm install
@@ -55,22 +50,44 @@ npm run seed
 npm run dev
 ```
 
-Open the local development server in your browser after `npm run dev` starts.
+Open `http://localhost:3000`.
 
 ## Environment
 
-Use `.env.example` as your template. Do not commit your real `.env` file.
+Use `.env.example` as your template. Do not commit real `.env` files.
 
-The app expects a Postgres database connection for local and production environments. Optional email notification variables may also be configured if the email notification feature is enabled.
+Use a Postgres database URL locally and on Vercel. The easiest setup is to create the database through the Vercel Marketplace and then pull matching values locally with `vercel env pull`.
 
-## Admin login
+```env
+DATABASE_URL="postgres://USER:PASSWORD@HOST:5432/seai_solar_grants?sslmode=require"
+```
+
+Optional email notifications use:
+
+```env
+EMAIL_USER=""
+EMAIL_PASS=""
+```
+
+## Admin Login
 
 Open `/admin` in the browser.
 
-Set the admin password and session secret in your local `.env` and in Vercel before using production admin routes. Do not commit real credentials or secrets.
+Set these in `.env`:
 
-## Vercel deploy notes
+```env
+ADMIN_PASSWORD=admin123
+ADMIN_SESSION_SECRET=replace-this-session-secret
+```
 
-- Prisma Client is generated automatically during `npm install` via the `postinstall` script.
+If `ADMIN_PASSWORD` is not set, the local development fallback password is `admin123`.
+
+## Vercel Deploy Notes
+
+- Prisma Client is generated automatically during `npm install` through the `postinstall` script.
 - Run `npx prisma migrate deploy` against the production database before or during the first live rollout.
-- Configure production environment variables in Vercel before using `/admin`.
+- Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel before using `/admin`.
+
+## Contributor Workflow
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the repository. Documentation updates are expected whenever behaviour, architecture, feature scope, or operational practice changes.

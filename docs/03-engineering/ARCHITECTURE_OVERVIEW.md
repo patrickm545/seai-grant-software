@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 This document summarises the current architecture and the direction for evolving SolarGRANT Pro into a module on Clada OS.
 
@@ -50,6 +50,8 @@ As Clada OS matures, shared concerns should become explicit platform capabilitie
 - reporting and operational metrics
 
 Do not prematurely split the application into services. Extract reusable boundaries when there is a clear maintenance, reliability, or product reason.
+
+The canonical platform architecture, capability taxonomy, dependency map, and evolution policy are maintained in [../01-platform/README.md](../01-platform/README.md).
 
 ## Safe Automation Stance
 

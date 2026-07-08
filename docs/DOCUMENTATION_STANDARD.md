@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 This standard defines how Clada Systems documentation is written, reviewed, referenced, and maintained.
 
@@ -31,6 +31,7 @@ Use concise prefixes:
 - `GOV`: governance
 - `COM`: operating manual index and navigation
 - `COMP`: company
+- `PLAT`: platform architecture and capability model
 - `PROD`: product
 - `DES`: design
 - `ENG`: engineering

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-09 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -29,6 +29,26 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [00-company/target-customers.md](00-company/target-customers.md)
 - [00-company/competitors.md](00-company/competitors.md)
 - [00-company/glossary.md](00-company/glossary.md)
+
+## Platform
+
+- [01-platform/README.md](01-platform/README.md)
+- [01-platform/PLATFORM_VISION.md](01-platform/PLATFORM_VISION.md)
+- [01-platform/PLATFORM_PRINCIPLES.md](01-platform/PLATFORM_PRINCIPLES.md)
+- [01-platform/PLATFORM_CAPABILITY_MAP.md](01-platform/PLATFORM_CAPABILITY_MAP.md)
+- [01-platform/BUSINESS_DOMAINS.md](01-platform/BUSINESS_DOMAINS.md)
+- [01-platform/PLATFORM_LAYERS.md](01-platform/PLATFORM_LAYERS.md)
+- [01-platform/MODULE_ARCHITECTURE.md](01-platform/MODULE_ARCHITECTURE.md)
+- [01-platform/SHARED_SERVICES.md](01-platform/SHARED_SERVICES.md)
+- [01-platform/PLATFORM_API_PHILOSOPHY.md](01-platform/PLATFORM_API_PHILOSOPHY.md)
+- [01-platform/CROSS_CUTTING_CONCERNS.md](01-platform/CROSS_CUTTING_CONCERNS.md)
+- [01-platform/PRODUCT_COMPOSITION.md](01-platform/PRODUCT_COMPOSITION.md)
+- [01-platform/CAPABILITY_TAXONOMY.md](01-platform/CAPABILITY_TAXONOMY.md)
+- [01-platform/CAPABILITY_DECISION_FRAMEWORK.md](01-platform/CAPABILITY_DECISION_FRAMEWORK.md)
+- [01-platform/PLATFORM_DEPENDENCY_MAP.md](01-platform/PLATFORM_DEPENDENCY_MAP.md)
+- [01-platform/MODULE_LIFECYCLE.md](01-platform/MODULE_LIFECYCLE.md)
+- [01-platform/PLATFORM_EVOLUTION_POLICY.md](01-platform/PLATFORM_EVOLUTION_POLICY.md)
+- [01-platform/PLATFORM_ADR_INDEX.md](01-platform/PLATFORM_ADR_INDEX.md)
 
 ## Product
 
@@ -65,6 +85,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md)
+- [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md)
 
 ## Research
 

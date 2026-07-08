@@ -7,8 +7,9 @@ Clada OS is documentation-first. Before changing product behaviour, architecture
 1. [docs/README.md](docs/README.md)
 2. [docs/CONSTITUTION.md](docs/CONSTITUTION.md)
 3. [docs/THE_CLADA_WAY.md](docs/THE_CLADA_WAY.md)
-4. [docs/06-sprints/ACTIVE_SPRINT.md](docs/06-sprints/ACTIVE_SPRINT.md)
-5. Relevant feature specs and ADRs
+4. [docs/01-platform/README.md](docs/01-platform/README.md) for platform or module-boundary work
+5. [docs/06-sprints/ACTIVE_SPRINT.md](docs/06-sprints/ACTIVE_SPRINT.md)
+6. Relevant feature specs and ADRs
 
 ## Developer Setup
 

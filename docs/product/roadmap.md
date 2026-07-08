@@ -1,5 +1,15 @@
 # Clada OS Roadmap
 
+| Field | Value |
+| --- | --- |
+| Document ID | PROD-ROADMAP-001 |
+| Status | Proposed |
+| Owner | Clada Systems Product |
+| Review cycle | Quarterly |
+| Last reviewed | 2026-07-08 |
+
+This roadmap is a supporting planning reference. It does not override the [Company Strategy](../00-company/strategy.md), [Clada OS Product Model](../01-product/CLADA_OS_PRODUCT_MODEL.md), or active sprint documents.
+
 ## Phase 0: Foundation
 
 Goal: make the repository safe and consistent for future Codex sprints.

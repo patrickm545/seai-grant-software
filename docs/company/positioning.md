@@ -1,35 +1,23 @@
 # Positioning
 
-## Company positioning
+| Field | Value |
+| --- | --- |
+| Document ID | COMP-LEGACY-POSITIONING-001 |
+| Status | Superseded |
+| Owner | Clada Systems Leadership |
+| Review cycle | Review when canonical company positioning changes |
+| Last reviewed | 2026-07-08 |
 
-Clada Systems is an Irish software company building practical operating software for contractor-led businesses.
+This legacy positioning document has been superseded by the canonical Company Handbook.
 
-The company should be positioned as trusted, grounded, and operationally serious. Avoid language that sounds like a hype-led AI startup.
+Use [../00-company/positioning.md](../00-company/positioning.md) for active positioning guidance.
 
-## Product positioning
+## Historical Note
 
-Clada OS is the operating system for contractor-led service businesses.
+This file is retained because earlier foundation documents linked to `docs/company/positioning.md`. The substance of the original document has been reconciled into the Company Handbook with COM metadata, clearer tone guidance, controlled terminology, and stronger cross references.
 
-SolarGRANT Pro is the first Clada OS product module for Irish solar installers.
+The active positioning remains:
 
-## Simple explanation
-
-Clada OS helps solar installers capture leads, qualify customers, manage quotes, track grants, organise jobs, and communicate with homeowners from one place.
-
-## New Frontiers narrative
-
-Clada Systems is entering the market through Irish solar installers because the niche is focused, underserved, and has urgent workflow problems around lead management, quotes, documentation, grants, and customer communication.
-
-Once the platform is proven in solar, the same workflow engine can be adapted for other contractor-led industries.
-
-## What we are not
-
-- Not a generic CRM.
-- Not only a grant checker.
-- Not only a website lead form.
-- Not a marketplace for installers.
-- Not a flashy AI demo.
-
-## What we are building towards
-
-A practical business operating system that connects sales, admin, operations, customers, documents, reporting, and AI assistance.
+- Clada Systems is a professional Irish software company building operational software for contractor-led businesses.
+- Clada OS is the platform.
+- SolarGRANT Pro is the first product module on Clada OS.

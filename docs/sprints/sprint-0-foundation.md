@@ -1,12 +1,22 @@
 # Sprint 0: Foundation
 
+| Field | Value |
+| --- | --- |
+| Document ID | SPRINT-LEGACY-FOUNDATION-000 |
+| Status | Superseded |
+| Owner | Clada Systems Product and Engineering |
+| Review cycle | Historical reference only |
+| Last reviewed | 2026-07-08 |
+
+This legacy sprint note has been superseded by the canonical [Sprint Framework](../06-sprints/README.md). It remains as historical context for the foundation work that preceded Project Atlas.
+
 ## Objective
 
 Create the product and engineering foundation for Clada OS before major feature development continues.
 
 ## Business reason
 
-Clada OS is moving from a grant checker into a broader business platform. The repository needs shared documents that Codex and future developers can read before making changes.
+The repository is moving from a SolarGRANT Pro grant checker toward Clada OS, a broader business platform. The repository needs shared documents that Codex and future developers can read before making changes.
 
 ## Scope
 

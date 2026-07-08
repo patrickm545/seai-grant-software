@@ -44,10 +44,12 @@ Code does not override documented architectural decisions. If implementation nee
 ## Local Quick Start
 
 ```bash
-npm install
-npx prisma migrate deploy
-npm run seed
-npm run dev
+nvm use
+corepack enable
+pnpm install
+pnpm prisma:migrate:deploy
+pnpm seed
+pnpm dev
 ```
 
 Open `http://localhost:3000`.
@@ -84,8 +86,8 @@ If `ADMIN_PASSWORD` is not set, the local development fallback password is `admi
 
 ## Vercel Deploy Notes
 
-- Prisma Client is generated automatically during `npm install` through the `postinstall` script.
-- Run `npx prisma migrate deploy` against the production database before or during the first live rollout.
+- Prisma Client is generated automatically during dependency installation through the `postinstall` script.
+- Run `pnpm prisma:migrate:deploy` against the production database before or during the first live rollout.
 - Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel before using `/admin`.
 
 ## Contributor Workflow

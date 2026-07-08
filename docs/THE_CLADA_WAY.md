@@ -60,7 +60,7 @@ Leave the repository clearer, safer, and more maintainable than it was found. Im
 
 ## Reusable Systems
 
-Prefer reusable Clada OS modules over one-off SolarGRANT Pro implementations when reuse is justified.
+Prefer reusable Clada OS capabilities over one-off SolarGRANT Pro implementations when reuse is justified.
 
 The first module should teach the platform. Reuse should emerge from real workflow patterns, not speculative abstraction.
 

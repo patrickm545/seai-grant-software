@@ -1,5 +1,13 @@
 # Security and GDPR
 
+| Field | Value |
+| --- | --- |
+| Document ID | ENG-SECURITY-GDPR-001 |
+| Status | Active |
+| Owner | Clada Systems Engineering |
+| Review cycle | Quarterly |
+| Last reviewed | 2026-07-08 |
+
 ## Purpose
 
 Clada OS handles business and customer information, so trust must be treated as a core product requirement.

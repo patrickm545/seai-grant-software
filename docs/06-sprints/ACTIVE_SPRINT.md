@@ -10,30 +10,29 @@
 
 ## Sprint
 
-Project Atlas: Foundation Release 1.0, Milestone 1.
+Project Atlas: Foundation Release 1.0, Milestone 2.
 
 ## Objective
 
-Transform the repository into a professional engineering repository with a documentation-first foundation for Clada OS.
+Create the Company Handbook for Clada Systems as a constitutional-level guide to why the company exists, how it thinks, who it serves, and how long-term decisions should be made.
 
 ## In Scope
 
-- create the Clada Operating Manual structure
-- establish governance documents
-- define documentation standards and lifecycle
-- establish Clada OS terminology
-- position SolarGRANT Pro as the first product module
-- add AI and contributor guidance
-- prepare the repository for Milestone 2
+- create canonical Company Handbook documents in `docs/00-company`
+- define company vision, mission, values, strategy, and positioning
+- define target customers, competitor categories, and controlled vocabulary
+- preserve the distinction between Clada Systems, Clada OS, and SolarGRANT Pro
+- connect company guidance to the Constitution, The Clada Way, Product Handbook, Engineering Handbook, and Sprint Framework
 
 ## Out Of Scope
 
 - product feature development
 - application redesign
 - application behaviour changes
-- unsafe global terminology replacements
+- UI changes
+- future industry implementation before SolarGRANT Pro product-market fit
 - premature codebase renaming
 
 ## Definition Of Done
 
-Milestone 1 is complete when the repository has a navigable documentation foundation, clear governance, Clada OS terminology, a documented module boundary for SolarGRANT Pro, and contributor guidance for future work.
+Milestone 2 is complete when `docs/00-company` contains a navigable Company Handbook with meaningful, cross-referenced documents for vision, mission, values, strategy, positioning, target customers, competitors, and glossary, and when terminology consistently treats Clada OS as the platform and SolarGRANT Pro as the first product module.

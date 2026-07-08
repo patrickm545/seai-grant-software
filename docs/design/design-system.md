@@ -1,5 +1,15 @@
 # Clada OS Design System
 
+| Field | Value |
+| --- | --- |
+| Document ID | DES-LEGACY-SYSTEM-001 |
+| Status | Superseded |
+| Owner | Clada Systems Design |
+| Review cycle | Review when design principles change |
+| Last reviewed | 2026-07-08 |
+
+This legacy design reference has been superseded by the canonical [Design Principles](../02-design/DESIGN_PRINCIPLES.md). It remains as supporting context until all design guidance is reconciled into the Clada Operating Manual.
+
 ## Design direction
 
 Clada OS should feel like trusted Irish business software: calm, clear, reliable, and operationally useful.

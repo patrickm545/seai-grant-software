@@ -1,5 +1,13 @@
 # SolarGRANT Pro Current State
 
+| Field | Value |
+| --- | --- |
+| Document ID | PROD-SGP-CURRENT-001 |
+| Status | Active |
+| Owner | Clada Systems Product |
+| Review cycle | Monthly during Foundation Release 1.0, then quarterly |
+| Last reviewed | 2026-07-08 |
+
 ## Purpose
 
 This document records what currently exists so future sprints do not accidentally break working functionality.

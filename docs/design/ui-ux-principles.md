@@ -1,5 +1,15 @@
 # UI and UX Principles
 
+| Field | Value |
+| --- | --- |
+| Document ID | DES-LEGACY-UX-001 |
+| Status | Superseded |
+| Owner | Clada Systems Design |
+| Review cycle | Review when design principles change |
+| Last reviewed | 2026-07-08 |
+
+This legacy UX reference has been superseded by the canonical [Design Principles](../02-design/DESIGN_PRINCIPLES.md). It remains as supporting context until all design guidance is reconciled into the Clada Operating Manual.
+
 ## Main UX goal
 
 Users should always know what needs attention, what has changed, what the next action is, and where each record stands.

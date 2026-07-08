@@ -1,5 +1,15 @@
 # Clada OS Product Vision
 
+| Field | Value |
+| --- | --- |
+| Document ID | PROD-LEGACY-CLADA-OS-VISION-001 |
+| Status | Superseded |
+| Owner | Clada Systems Product |
+| Review cycle | Review when product model changes |
+| Last reviewed | 2026-07-08 |
+
+This legacy product vision has been superseded by the canonical [Clada OS Product Model](../01-product/CLADA_OS_PRODUCT_MODEL.md). It remains as supporting context until all product guidance is reconciled into the Clada Operating Manual.
+
 ## Core idea
 
 Clada OS is the operating system for contractor-led businesses.

@@ -1,5 +1,13 @@
 # Feature Decision Framework
 
+| Field | Value |
+| --- | --- |
+| Document ID | PROD-FEATURE-DECISION-001 |
+| Status | Active |
+| Owner | Clada Systems Product |
+| Review cycle | Quarterly |
+| Last reviewed | 2026-07-08 |
+
 ## Purpose
 
 This document decides whether a feature should be added to Clada OS or delayed.

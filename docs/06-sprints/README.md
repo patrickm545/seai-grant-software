@@ -14,6 +14,10 @@ Sprint documents connect strategy to execution. They should be specific enough f
 
 - [ACTIVE_SPRINT.md](ACTIVE_SPRINT.md)
 
+## Platform Releases
+
+- [PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)
+
 ## Milestones
 
 - [FOUNDATION_RELEASE_1_MILESTONE_1.md](FOUNDATION_RELEASE_1_MILESTONE_1.md)

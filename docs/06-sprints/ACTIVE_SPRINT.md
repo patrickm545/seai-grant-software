@@ -10,19 +10,24 @@
 
 ## Sprint
 
-Project Atlas: Foundation Release 1.0, Milestone 3.
+Project Atlas: Platform Release 1.0 - Platform Execution Model and Roadmap.
 
 ## Objective
 
-Define Clada OS as a reusable business operating platform and establish the platform architecture and capability model inside the Clada Operating Manual.
+Create the execution model for moving Clada OS from approved architecture into sequenced platform implementation milestones.
 
 ## In Scope
 
-- create canonical platform architecture documents in `docs/01-platform`
-- define platform vision, principles, layers, capabilities, domains, shared services, APIs, dependencies, module lifecycle, and evolution policy
-- distinguish platform capabilities, shared services, business domains, product modules, infrastructure, integrations, and developer tooling
-- preserve the distinction between Clada Systems, Clada OS, SolarGRANT Pro, and future customer solutions
-- integrate the platform section into COM navigation, sprint records, product documents, engineering documents, and ADR navigation
+- define the minimum viable Clada OS platform
+- separate MVP, post-MVP, and deferred capabilities
+- define capability maturity tracking
+- define capability prioritisation criteria
+- document Platform Release 1.x build order
+- document the platform dependency graph
+- map SolarGRANT Pro consumption of platform capabilities
+- define the Platform Release 1.x roadmap
+- document risks and decision gates
+- update COM and sprint navigation
 
 ## Out Of Scope
 
@@ -31,10 +36,16 @@ Define Clada OS as a reusable business operating platform and establish the plat
 - application redesign
 - application behaviour changes
 - UI changes
-- future industry implementation before SolarGRANT Pro product-market fit
-- premature codebase renaming
+- database migrations
+- authentication implementation
+- workflow implementation
+- document implementation
+- notification implementation
+- AI implementation
+- reporting implementation
+- integrations, billing, marketplace, partner, or SDK implementation
 - unrelated repository restructuring
 
 ## Definition Of Done
 
-Milestone 3 is complete when `docs/01-platform` contains a navigable Clada OS platform architecture and capability model, the COM navigation points to it, capability categories have explicit ownership rules, SolarGRANT Pro is documented as the first product module rather than the platform, and validation confirms metadata, links, and repository consistency.
+Platform Release 1.0 is complete when `docs/01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md` and `docs/06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md` define the execution model, COM navigation points to them, required metadata and links are valid, and validation confirms that no application code or product functionality changed.

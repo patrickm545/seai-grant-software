@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -73,12 +73,21 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 - [04-features/README.md](04-features/README.md)
 - [04-features/FEATURE_SPEC_TEMPLATE.md](04-features/FEATURE_SPEC_TEMPLATE.md)
+- [04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md](04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md)
+- [04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md](04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md)
+- [04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md](04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md)
+- [04-features/FEAT-PLATFORM-1-1-SOLARGRANT-PRO-IDENTITY-PROVING-SLICE.md](04-features/FEAT-PLATFORM-1-1-SOLARGRANT-PRO-IDENTITY-PROVING-SLICE.md)
 
 ## Decisions
 
 - [05-decisions/README.md](05-decisions/README.md)
 - [05-decisions/ADR_TEMPLATE.md](05-decisions/ADR_TEMPLATE.md)
 - [05-decisions/ADR-0001-clada-os-terminology.md](05-decisions/ADR-0001-clada-os-terminology.md)
+- [05-decisions/ADR-0002-organisation-tenant-model.md](05-decisions/ADR-0002-organisation-tenant-model.md)
+- [05-decisions/ADR-0003-actor-and-membership-model.md](05-decisions/ADR-0003-actor-and-membership-model.md)
+- [05-decisions/ADR-0004-existing-authentication-integration.md](05-decisions/ADR-0004-existing-authentication-integration.md)
+- [05-decisions/ADR-0005-tenant-aware-data-access.md](05-decisions/ADR-0005-tenant-aware-data-access.md)
+- [05-decisions/ADR-0006-existing-data-migration.md](05-decisions/ADR-0006-existing-data-migration.md)
 
 ## Sprints
 
@@ -88,6 +97,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md)
 - [06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)
+- [06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md](06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md)
 
 ## Research
 

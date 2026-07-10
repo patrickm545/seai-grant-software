@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 SolarGRANT Pro is the first product module built on Clada OS. It focuses on Irish solar grant workflows and the operational needs of solar installers.
 
@@ -21,6 +21,7 @@ The current repository supports:
 - submission package support
 - admin and installer dashboards
 - optional AI assistance for summaries and document extraction
+- organisation-owned lead records through the Clada OS identity foundation
 
 ## Module Boundary
 
@@ -31,6 +32,16 @@ Canonical module boundary rules are defined in [../01-platform/MODULE_ARCHITECTU
 ## Platform Learning
 
 SolarGRANT Pro should teach Clada OS which capabilities need to become reusable. Examples include intake workflows, customer portals, audit logs, document review, and dashboard patterns.
+
+## Platform Release 1.1 Consumption
+
+SolarGRANT Pro consumes the Clada OS Identity and Organisation Foundation through the lead workflow:
+
+- installers remain the SolarGRANT Pro business entity;
+- installer organisations become the platform tenant owner;
+- lead records keep `installerId` and gain organisation ownership;
+- lead reads, exports, and workflow mutations resolve organisation context server side;
+- homeowner portal token access remains a customer-facing secret-link flow for this release.
 
 ## What Next
 

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Architecture |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 ## Purpose
 
@@ -275,9 +275,9 @@ Each Platform Release 1.x must include a small SolarGRANT Pro proving slice. Pro
 | Field | Value |
 | --- | --- |
 | Objective | Define and implement the foundation for organisations, account ownership, actor identity, and tenant-aware boundaries, validated through a first SolarGRANT Pro identity slice. |
-| Key deliverables | Feature specification; ADRs for identity and tenancy decisions if needed; organisation and actor model; basic platform identity APIs; SolarGRANT Pro proving slice; documentation updates. |
-| SolarGRANT Pro proving slice | Installer organisations, internal Clada users, organisation ownership, and basic account identity. |
-| Success criteria | SolarGRANT Pro can associate users, customers, and operational data with the correct organisation and actor context in production or production-like use. |
+| Key deliverables | Feature specifications; ADRs for identity, tenancy, current auth integration, tenant-aware data access, and migration; organisation/user/membership model; identity context service; tenant-aware lead access; migration; documentation updates. |
+| SolarGRANT Pro proving slice | Installer organisations, internal Clada user context, lead organisation ownership, and tenant-scoped lead access. |
+| Success criteria | SolarGRANT Pro leads are owned by organisations, server-side membership validation resolves active organisation context, and tests prove cross-organisation lead access is rejected. |
 | Dependencies | Platform Release 1.0; security and privacy review. |
 | Non-goals | Full SSO suite, billing, partner self-service, marketplace tenancy, advanced customer portal. |
 

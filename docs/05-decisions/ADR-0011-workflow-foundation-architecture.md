@@ -18,6 +18,8 @@ Introduce a small persisted workflow foundation made of `WorkflowDefinition`, `W
 
 The workflow service remains an in-process platform service. It is not a standalone service or BPMN engine.
 
+Workflow referential consistency is enforced by PostgreSQL, not only by application validation. Composite unique keys on workflow stages, transitions, and instances allow composite foreign keys to prove that transitions, instance current stages, and history references belong to the same workflow definition and owning organisation.
+
 ## Rationale
 
 This model is large enough to prove reusable workflow state and transition execution while staying smaller than a general workflow automation system.
@@ -31,12 +33,14 @@ Improves:
 - workflow mechanics become reusable across future modules;
 - transition validation can be tested independently;
 - workflow state and history are no longer only product fields;
+- contradictory workflow-definition, stage, transition, instance, and history records are rejected by the database;
 - SolarGRANT Pro can consume platform workflow contracts.
 
 Becomes harder:
 
 - product projections such as `Lead.pipelineStage` must stay in sync during the compatibility period;
 - seed and migration data must keep definition keys aligned with product adapters;
+- schema changes must preserve composite keys used for workflow integrity;
 - future workflow features must resist pressure to become automation scripting too early.
 
 ## Alternatives Considered
@@ -51,3 +55,4 @@ Becomes harder:
 - Implement additive Prisma models and migration.
 - Backfill workflow instances for existing leads.
 - Keep advanced workflow automation out of scope until later ADRs approve it.
+- Reassess any intentionally denormalised history fields before stage keys become customer-editable.

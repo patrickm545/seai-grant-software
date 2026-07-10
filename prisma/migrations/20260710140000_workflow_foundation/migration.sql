@@ -91,15 +91,18 @@ CREATE INDEX "WorkflowDefinition_key_isActive_idx" ON "WorkflowDefinition"("key"
 
 CREATE UNIQUE INDEX "WorkflowStage_workflowDefinitionId_key_key" ON "WorkflowStage"("workflowDefinitionId", "key");
 CREATE UNIQUE INDEX "WorkflowStage_workflowDefinitionId_position_key" ON "WorkflowStage"("workflowDefinitionId", "position");
+CREATE UNIQUE INDEX "WorkflowStage_id_workflowDefinitionId_key" ON "WorkflowStage"("id", "workflowDefinitionId");
 CREATE INDEX "WorkflowStage_workflowDefinitionId_isInitial_idx" ON "WorkflowStage"("workflowDefinitionId", "isInitial");
 CREATE INDEX "WorkflowStage_workflowDefinitionId_isTerminal_idx" ON "WorkflowStage"("workflowDefinitionId", "isTerminal");
 
 CREATE UNIQUE INDEX "WorkflowTransition_workflowDefinitionId_fromStageId_toStageId_key" ON "WorkflowTransition"("workflowDefinitionId", "fromStageId", "toStageId");
+CREATE UNIQUE INDEX "WorkflowTransition_id_workflowDefinitionId_key" ON "WorkflowTransition"("id", "workflowDefinitionId");
 CREATE INDEX "WorkflowTransition_workflowDefinitionId_isActive_idx" ON "WorkflowTransition"("workflowDefinitionId", "isActive");
 CREATE INDEX "WorkflowTransition_fromStageId_idx" ON "WorkflowTransition"("fromStageId");
 CREATE INDEX "WorkflowTransition_toStageId_idx" ON "WorkflowTransition"("toStageId");
 
 CREATE UNIQUE INDEX "WorkflowInstance_workflowDefinitionId_resourceType_resourceId_key" ON "WorkflowInstance"("workflowDefinitionId", "resourceType", "resourceId");
+CREATE UNIQUE INDEX "WorkflowInstance_id_workflowDefinitionId_organisationId_key" ON "WorkflowInstance"("id", "workflowDefinitionId", "organisationId");
 CREATE INDEX "WorkflowInstance_organisationId_currentStageId_idx" ON "WorkflowInstance"("organisationId", "currentStageId");
 CREATE INDEX "WorkflowInstance_resourceType_resourceId_idx" ON "WorkflowInstance"("resourceType", "resourceId");
 CREATE INDEX "WorkflowInstance_workflowDefinitionId_currentStageId_idx" ON "WorkflowInstance"("workflowDefinitionId", "currentStageId");
@@ -116,18 +119,18 @@ CREATE INDEX "WorkflowHistory_transitionId_idx" ON "WorkflowHistory"("transition
 ALTER TABLE "WorkflowStage" ADD CONSTRAINT "WorkflowStage_workflowDefinitionId_fkey" FOREIGN KEY ("workflowDefinitionId") REFERENCES "WorkflowDefinition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "WorkflowTransition" ADD CONSTRAINT "WorkflowTransition_workflowDefinitionId_fkey" FOREIGN KEY ("workflowDefinitionId") REFERENCES "WorkflowDefinition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "WorkflowTransition" ADD CONSTRAINT "WorkflowTransition_fromStageId_fkey" FOREIGN KEY ("fromStageId") REFERENCES "WorkflowStage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "WorkflowTransition" ADD CONSTRAINT "WorkflowTransition_toStageId_fkey" FOREIGN KEY ("toStageId") REFERENCES "WorkflowStage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkflowTransition" ADD CONSTRAINT "WorkflowTransition_fromStageId_workflowDefinitionId_fkey" FOREIGN KEY ("fromStageId", "workflowDefinitionId") REFERENCES "WorkflowStage"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkflowTransition" ADD CONSTRAINT "WorkflowTransition_toStageId_workflowDefinitionId_fkey" FOREIGN KEY ("toStageId", "workflowDefinitionId") REFERENCES "WorkflowStage"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_workflowDefinitionId_fkey" FOREIGN KEY ("workflowDefinitionId") REFERENCES "WorkflowDefinition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_currentStageId_fkey" FOREIGN KEY ("currentStageId") REFERENCES "WorkflowStage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_currentStageId_workflowDefinitionId_fkey" FOREIGN KEY ("currentStageId", "workflowDefinitionId") REFERENCES "WorkflowStage"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_workflowInstanceId_fkey" FOREIGN KEY ("workflowInstanceId") REFERENCES "WorkflowInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_workflowInstanceId_workflowDefinitionId_organisationId_fkey" FOREIGN KEY ("workflowInstanceId", "workflowDefinitionId", "organisationId") REFERENCES "WorkflowInstance"("id", "workflowDefinitionId", "organisationId") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_workflowDefinitionId_fkey" FOREIGN KEY ("workflowDefinitionId") REFERENCES "WorkflowDefinition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_transitionId_fkey" FOREIGN KEY ("transitionId") REFERENCES "WorkflowTransition"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_previousStageId_fkey" FOREIGN KEY ("previousStageId") REFERENCES "WorkflowStage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_nextStageId_fkey" FOREIGN KEY ("nextStageId") REFERENCES "WorkflowStage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_transitionId_workflowDefinitionId_fkey" FOREIGN KEY ("transitionId", "workflowDefinitionId") REFERENCES "WorkflowTransition"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_previousStageId_workflowDefinitionId_fkey" FOREIGN KEY ("previousStageId", "workflowDefinitionId") REFERENCES "WorkflowStage"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_nextStageId_workflowDefinitionId_fkey" FOREIGN KEY ("nextStageId", "workflowDefinitionId") REFERENCES "WorkflowStage"("id", "workflowDefinitionId") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "WorkflowHistory" ADD CONSTRAINT "WorkflowHistory_auditLogId_fkey" FOREIGN KEY ("auditLogId") REFERENCES "AuditLog"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

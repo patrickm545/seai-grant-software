@@ -17,6 +17,7 @@ import {
 } from './permissions';
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
+type TransactionClient = Prisma.TransactionClient;
 type MutableJsonObject = Record<string, Prisma.InputJsonValue | null>;
 
 export type WorkflowDefinitionSpec = {
@@ -55,7 +56,8 @@ export type WorkflowExecutionErrorCode =
   | 'WORKFLOW_INSTANCE_NOT_FOUND'
   | 'WORKFLOW_STAGE_NOT_FOUND'
   | 'WORKFLOW_TRANSITION_NOT_ALLOWED'
-  | 'WORKFLOW_PERMISSION_UNKNOWN';
+  | 'WORKFLOW_PERMISSION_UNKNOWN'
+  | 'WORKFLOW_TRANSITION_STALE';
 
 export class WorkflowExecutionError extends Error {
   constructor(
@@ -73,7 +75,7 @@ type WorkflowInstanceWithContext = WorkflowInstance & {
 };
 
 export type WorkflowTransitionHookArgs = {
-  db: DbClient;
+  tx: TransactionClient;
   workflowInstance: WorkflowInstanceWithContext;
   previousStage: WorkflowStage;
   nextStage: WorkflowStage;
@@ -118,6 +120,12 @@ export function validateWorkflowDefinitionSpec(spec: WorkflowDefinitionSpec) {
 function requireOrganisationContext(context: OrganisationContext | null | undefined): asserts context is OrganisationContext {
   if (!context) {
     throw new AuthorizationError('MISSING_CONTEXT');
+  }
+}
+
+function requireTransactionClient(tx: TransactionClient) {
+  if ('$transaction' in (tx as Record<string, unknown>)) {
+    throw new Error('executeWorkflowTransition requires a Prisma.TransactionClient from an active transaction.');
   }
 }
 
@@ -233,7 +241,7 @@ export async function ensureWorkflowInstanceForResource(args: {
 }
 
 export async function executeWorkflowTransition(args: {
-  db: DbClient;
+  tx: TransactionClient;
   context: OrganisationContext | null | undefined;
   workflowDefinitionKey: string;
   resourceType: string;
@@ -247,7 +255,7 @@ export async function executeWorkflowTransition(args: {
   onTransition?: (hookArgs: WorkflowTransitionHookArgs) => Promise<void>;
 }) {
   const {
-    db,
+    tx,
     workflowDefinitionKey,
     resourceType,
     resourceId,
@@ -260,10 +268,11 @@ export async function executeWorkflowTransition(args: {
     onTransition
   } = args;
 
+  requireTransactionClient(tx);
   requireOrganisationContext(args.context);
   const context = args.context;
 
-  const workflowInstance = await db.workflowInstance.findFirst({
+  const workflowInstance = await tx.workflowInstance.findFirst({
     where: {
       organisationId: context.organisationId,
       resourceType,
@@ -283,7 +292,7 @@ export async function executeWorkflowTransition(args: {
     throw new WorkflowExecutionError('WORKFLOW_INSTANCE_NOT_FOUND');
   }
 
-  const nextStage = await db.workflowStage.findFirst({
+  const nextStage = await tx.workflowStage.findFirst({
     where: {
       workflowDefinitionId: workflowInstance.workflowDefinitionId,
       key: nextStageKey
@@ -304,7 +313,7 @@ export async function executeWorkflowTransition(args: {
       previousStage: workflowInstance.currentStage,
       nextStage
     });
-    const auditLog = await writeAuditEvent(db, {
+    const auditLog = await writeAuditEvent(tx, {
       leadId: auditLeadId,
       context,
       action: auditAction,
@@ -329,7 +338,7 @@ export async function executeWorkflowTransition(args: {
     };
   }
 
-  const transition = await db.workflowTransition.findFirst({
+  const transition = await tx.workflowTransition.findFirst({
     where: {
       workflowDefinitionId: workflowInstance.workflowDefinitionId,
       fromStageId: workflowInstance.currentStageId,
@@ -352,8 +361,25 @@ export async function executeWorkflowTransition(args: {
     nextStage
   });
 
+  const updateResult = await tx.workflowInstance.updateMany({
+    where: {
+      id: workflowInstance.id,
+      workflowDefinitionId: workflowInstance.workflowDefinitionId,
+      organisationId: context.organisationId,
+      currentStageId: workflowInstance.currentStageId
+    },
+    data: {
+      currentStageId: nextStage.id,
+      completedAt: nextStage.isTerminal ? now : null
+    }
+  });
+
+  if (updateResult.count !== 1) {
+    throw new WorkflowExecutionError('WORKFLOW_TRANSITION_STALE');
+  }
+
   await onTransition?.({
-    db,
+    tx,
     workflowInstance,
     previousStage: workflowInstance.currentStage,
     nextStage,
@@ -362,13 +388,9 @@ export async function executeWorkflowTransition(args: {
     now
   });
 
-  const updatedInstance = await db.workflowInstance.update({
+  const updatedInstance = await tx.workflowInstance.findUniqueOrThrow({
     where: {
       id: workflowInstance.id
-    },
-    data: {
-      currentStageId: nextStage.id,
-      completedAt: nextStage.isTerminal ? now : null
     },
     include: {
       workflowDefinition: true,
@@ -376,7 +398,7 @@ export async function executeWorkflowTransition(args: {
     }
   });
 
-  const auditLog = await writeAuditEvent(db, {
+  const auditLog = await writeAuditEvent(tx, {
     leadId: auditLeadId,
     context,
     action: auditAction,
@@ -390,7 +412,7 @@ export async function executeWorkflowTransition(args: {
     }
   });
 
-  const history = await db.workflowHistory.create({
+  const history = await tx.workflowHistory.create({
     data: {
       workflowInstanceId: workflowInstance.id,
       workflowDefinitionId: workflowInstance.workflowDefinitionId,

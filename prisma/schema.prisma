@@ -395,6 +395,7 @@ model WorkflowStage {
 
   @@unique([workflowDefinitionId, key])
   @@unique([workflowDefinitionId, position])
+  @@unique([id, workflowDefinitionId])
   @@index([workflowDefinitionId, isInitial])
   @@index([workflowDefinitionId, isTerminal])
 }
@@ -404,9 +405,9 @@ model WorkflowTransition {
   workflowDefinitionId String
   workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
   fromStageId          String
-  fromStage            WorkflowStage      @relation("WorkflowTransitionFromStage", fields: [fromStageId], references: [id], onDelete: Restrict)
+  fromStage            WorkflowStage      @relation("WorkflowTransitionFromStage", fields: [fromStageId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   toStageId            String
-  toStage              WorkflowStage      @relation("WorkflowTransitionToStage", fields: [toStageId], references: [id], onDelete: Restrict)
+  toStage              WorkflowStage      @relation("WorkflowTransitionToStage", fields: [toStageId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   key                  String?
   label                String?
   requiredPermission   String?
@@ -417,6 +418,7 @@ model WorkflowTransition {
   histories            WorkflowHistory[]
 
   @@unique([workflowDefinitionId, fromStageId, toStageId])
+  @@unique([id, workflowDefinitionId])
   @@index([workflowDefinitionId, isActive])
   @@index([fromStageId])
   @@index([toStageId])
@@ -427,7 +429,7 @@ model WorkflowInstance {
   workflowDefinitionId String
   workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Restrict)
   currentStageId       String
-  currentStage         WorkflowStage      @relation(fields: [currentStageId], references: [id], onDelete: Restrict)
+  currentStage         WorkflowStage      @relation(fields: [currentStageId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   organisationId       String
   organisation         Organisation       @relation(fields: [organisationId], references: [id], onDelete: Restrict)
   resourceType         String
@@ -440,6 +442,7 @@ model WorkflowInstance {
   histories            WorkflowHistory[]
 
   @@unique([workflowDefinitionId, resourceType, resourceId])
+  @@unique([id, workflowDefinitionId, organisationId])
   @@index([organisationId, currentStageId])
   @@index([resourceType, resourceId])
   @@index([workflowDefinitionId, currentStageId])
@@ -448,15 +451,15 @@ model WorkflowInstance {
 model WorkflowHistory {
   id                   String              @id @default(cuid())
   workflowInstanceId   String
-  workflowInstance     WorkflowInstance    @relation(fields: [workflowInstanceId], references: [id], onDelete: Cascade)
+  workflowInstance     WorkflowInstance    @relation(fields: [workflowInstanceId, workflowDefinitionId, organisationId], references: [id, workflowDefinitionId, organisationId], onDelete: Cascade)
   workflowDefinitionId String
   workflowDefinition   WorkflowDefinition  @relation(fields: [workflowDefinitionId], references: [id], onDelete: Restrict)
   transitionId         String?
-  transition           WorkflowTransition? @relation(fields: [transitionId], references: [id], onDelete: SetNull)
+  transition           WorkflowTransition? @relation(fields: [transitionId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   previousStageId      String?
-  previousStage        WorkflowStage?      @relation("WorkflowHistoryPreviousStage", fields: [previousStageId], references: [id], onDelete: SetNull)
+  previousStage        WorkflowStage?      @relation("WorkflowHistoryPreviousStage", fields: [previousStageId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   nextStageId          String?
-  nextStage            WorkflowStage?      @relation("WorkflowHistoryNextStage", fields: [nextStageId], references: [id], onDelete: SetNull)
+  nextStage            WorkflowStage?      @relation("WorkflowHistoryNextStage", fields: [nextStageId, workflowDefinitionId], references: [id, workflowDefinitionId], onDelete: Restrict)
   previousStageKey     String
   nextStageKey         String
   organisationId       String

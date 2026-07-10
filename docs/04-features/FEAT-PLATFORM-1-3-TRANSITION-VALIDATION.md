@@ -31,6 +31,8 @@ In scope:
 - reject inactive or missing transition definitions;
 - evaluate transition-required permission through `requirePermission`;
 - update state only after validation passes;
+- guard the update against concurrent stale transitions;
+- reject stale transitions with typed workflow execution errors;
 - return typed errors for invalid workflow requests;
 - preserve unchanged state when validation fails.
 
@@ -59,10 +61,15 @@ Errors should be safe and operationally useful. Cross-organisation denial should
 - Product adapters may own resource-specific side effects.
 - Permissions remain server-side and role-derived; client-supplied permission values are ignored.
 - Denied transitions must not mutate workflow instance state, lead projection state, history, or product activity.
+- Transition execution requires `Prisma.TransactionClient`; callers must either own an interactive transaction or use an adapter that owns one.
+- The service performs an optimistic conditional update matching workflow instance id, workflow definition id, organisation id, and the current stage observed during validation.
+- The service verifies exactly one workflow instance row was updated before invoking product side effects.
+- A stale transition throws `WORKFLOW_TRANSITION_STALE` before product projection, workflow history, audit, or product activity writes.
 
 ## Risks
 
 - If validation happens after product side effects, denied requests could partially mutate state.
+- If callers bypass the transaction boundary, workflow state and product projection could become inconsistent.
 - If transition definitions are too permissive, the graph proves less operational constraint.
 - If definitions are too restrictive, the release could remove existing workflow behaviour.
 
@@ -70,7 +77,7 @@ Errors should be safe and operationally useful. Cross-organisation denial should
 
 - Unit tests for allowed and rejected transitions.
 - Unit tests for permission validation.
-- PostgreSQL integration tests for valid, invalid, unauthorised, cross-organisation, and unchanged denied transitions.
+- PostgreSQL integration tests for valid, invalid, unauthorised, cross-organisation, unchanged denied, concurrent stale, and rollback transitions.
 
 ## Rollout Plan
 

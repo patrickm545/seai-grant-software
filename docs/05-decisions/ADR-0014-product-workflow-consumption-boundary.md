@@ -18,6 +18,8 @@ Product modules consume workflow foundation through small adapters. The generic 
 
 For Platform Release 1.3, `Lead.pipelineStage` remains a compatibility projection updated only through the lead workflow adapter.
 
+The lead workflow adapter runs projection and `LeadActivity` writes inside the same transaction as workflow instance update, workflow history, and audit event creation. If any later write fails, the projection and workflow instance update roll back together.
+
 ## Rationale
 
 This keeps the platform reusable while allowing SolarGRANT Pro to keep current UI and operational language. It also prevents a large UI/reporting migration from obscuring the workflow foundation release.
@@ -28,7 +30,8 @@ Improves:
 
 - workflow foundation can be proved through real product usage;
 - current SolarGRANT Pro behaviour is preserved;
-- product-specific side effects stay out of the platform service.
+- product-specific side effects stay out of the platform service;
+- the SolarGRANT Pro projection cannot be committed separately from a successful workflow transition through the protected adapter.
 
 Becomes harder:
 

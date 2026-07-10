@@ -18,6 +18,14 @@ Create `WorkflowHistory` as a product-neutral transition history table. It recor
 
 Do not fabricate history for existing lead stages during migration.
 
+History uses composite foreign keys where they carry integrity value:
+
+- `workflowInstanceId`, `workflowDefinitionId`, and `organisationId` must match the owning workflow instance;
+- `transitionId` and `workflowDefinitionId` must match the referenced transition when a transition is present;
+- `previousStageId` and `nextStageId` must reference stages in the recorded workflow definition when stage references are present.
+
+The denormalised `previousStageKey` and `nextStageKey` fields remain service-written immutable context for readability and reporting. The database does not require those strings to match the referenced stage key because they intentionally preserve the key observed at execution time.
+
 ## Rationale
 
 Workflow history is a platform fact useful for workflow review and future reporting. Audit remains the trust and compliance record. Product activity remains a user-facing module timeline.
@@ -28,12 +36,14 @@ Improves:
 
 - workflow transitions can be reported without reading SolarGRANT Pro activity rows;
 - audit and workflow history can be correlated;
-- historical lead pipeline state is preserved without invented transition events.
+- historical lead pipeline state is preserved without invented transition events;
+- contradictory workflow-definition or organisation attribution is rejected where the database can enforce it.
 
 Becomes harder:
 
 - successful transitions write two related records;
 - history and audit metadata must remain aligned;
+- stage-key strings are intentionally denormalised and must be written by the workflow service;
 - product timelines still need their own activity rows for UI language.
 
 ## Alternatives Considered
@@ -47,3 +57,4 @@ Becomes harder:
 - Return created audit rows from the audit writer.
 - Add integration tests for history and audit creation.
 - Document any denied-attempt history limitations.
+- Revisit denied-attempt workflow history and audit semantic constraints when the platform defines a durable failed-attempt policy.

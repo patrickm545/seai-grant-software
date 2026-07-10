@@ -114,6 +114,7 @@ No BPMN, workflow builder, timers, parallel branches, custom scripting, customer
 Planned schema changes:
 
 - add workflow definition, stage, transition, instance, and history tables;
+- add composite keys and foreign keys so transitions, instances, and history cannot reference stages, transitions, definitions, or organisations that contradict each other;
 - relate workflow instances and history to `Organisation`;
 - optionally link workflow history to `AuditLog`;
 - seed the SolarGRANT Pro lead pipeline workflow definition, stages, and transitions;
@@ -183,8 +184,10 @@ Implemented Platform Release 1.3 workflow foundation:
 - migration-seeded `solargrant.lead_pipeline` workflow definition with stage keys matching the existing lead pipeline;
 - migration backfill creating workflow instances from existing `Lead.pipelineStage` values without fabricating history;
 - reusable workflow service in `lib/workflow.ts` for definition integrity checks, instance initialization, transition validation, execution, history, and audit linkage;
+- PostgreSQL-enforced workflow referential consistency through composite stage, transition, instance, and history keys;
+- transaction-bound workflow execution with an optimistic current-stage update guard and typed stale-transition failure;
 - audit writer now returns the created audit row while preserving existing call sites;
-- `changeLeadPipelineStage` now consumes the workflow service and keeps `Lead.pipelineStage` plus `LeadActivity` as SolarGRANT Pro projections;
+- `changeLeadPipelineStage` now owns or participates in a transaction, consumes the workflow service, and keeps `Lead.pipelineStage` plus `LeadActivity` as SolarGRANT Pro projections;
 - public intake and seed paths ensure new leads receive workflow instances.
 
 ## Migration Details
@@ -196,12 +199,22 @@ Migration:
 Strategy:
 
 - create workflow tables additively;
+- create composite unique keys on `WorkflowStage(id, workflowDefinitionId)`, `WorkflowTransition(id, workflowDefinitionId)`, and `WorkflowInstance(id, workflowDefinitionId, organisationId)`;
+- constrain `WorkflowTransition.fromStageId` and `toStageId` to stages in the same workflow definition;
+- constrain `WorkflowInstance.currentStageId` to a stage in the same workflow definition;
+- constrain `WorkflowHistory` instance, transition, previous stage, next stage, and organisation references so they cannot contradict the recorded workflow definition or owning workflow instance;
 - seed one active workflow definition for SolarGRANT Pro lead pipeline progression;
 - seed stages matching existing `LeadPipelineStage` enum values;
 - seed a permissive transition graph for valid distinct stage moves to preserve current operational behaviour;
 - require `lead.change_status` for seeded lead pipeline transitions;
 - backfill workflow instances from current lead stages;
 - record `historyBackfilled = false` in migration metadata to make clear that historical transitions were not invented.
+
+Intentional deferrals:
+
+- `WorkflowHistory.previousStageKey` and `nextStageKey` remain denormalised execution-time strings and are not database-checked against current stage row keys.
+- Denied-attempt workflow history is deferred until the platform defines whether rejected workflow requests are durable workflow facts, audit-only events, or both.
+- The `WorkflowHistory.auditLogId` relation stays an optional link to `AuditLog`; semantic equality between audit metadata and workflow history metadata remains service-owned.
 
 Rollback and recovery:
 
@@ -212,6 +225,7 @@ Rollback and recovery:
 ## Automated Tests Added
 
 - `tests/platform/workflow.test.ts`
+- `tests/integration/workflow-integrity.integration.test.ts`
 
 Expanded tests:
 
@@ -228,6 +242,12 @@ PostgreSQL proving-slice coverage:
 - successful transition writes audit metadata with workflow context;
 - denied transitions leave lead and workflow instance state unchanged;
 - denied transitions do not create extra workflow history.
+- cross-definition transition stage references are rejected by PostgreSQL;
+- workflow instances cannot use a stage from another workflow definition;
+- contradictory workflow history definition, stage, transition, and organisation references are rejected by PostgreSQL;
+- competing transitions from the same original stage cannot both succeed;
+- the stale transition creates no successful workflow history, audit event, or activity row;
+- a later transition write failure rolls back workflow instance, lead projection, history, audit, and activity writes.
 
 ## Capability Maturity Achieved
 
@@ -270,19 +290,19 @@ Validation run on 2026-07-10 under project-local Node `v22.23.1` and pnpm `10.11
 
 PostgreSQL validation target:
 
-`clada_platform_12_test`
+`clada_platform_13_final_test`
 
 | Check | Result | Notes |
 | --- | --- | --- |
 | Node 22 | Passed | `.tools/node-v22/node.exe -v` returned `v22.23.1`. |
-| Prisma format | Passed | `pnpm exec prisma format` completed before implementation validation. |
-| Prisma validate | Passed | Reran with explicit PostgreSQL `DATABASE_URL`. |
+| pnpm | Passed | `.tools/node-v22/corepack.cmd pnpm -v` returned `10.11.0`. |
+| Prisma format | Passed | `.tools/node-v22/corepack.cmd pnpm exec prisma format`. |
+| Prisma validate | Passed | Reran with explicit PostgreSQL `DATABASE_URL` for `clada_platform_13_final_test`. |
 | Prisma generate | Passed | `pnpm exec prisma generate`. |
-| Migration deploy | Passed | `pnpm test:integration:postgres` applied `20260710140000_workflow_foundation` to the test database. |
-| Migration status | Passed | `pnpm exec prisma migrate status` reported schema up to date. |
-| Unit tests | Passed | 33 platform tests passed. |
-| PostgreSQL integration tests | Passed | 3 integration tests passed, including workflow history and audit proving-slice coverage. |
-| Type checking | Passed | `pnpm typecheck` passed after production build regenerated Next type files. |
+| Migration deploy | Passed | `pnpm test:integration:postgres` applied all 10 migrations from scratch, including `20260710140000_workflow_foundation`, to the fresh database. |
+| Unit tests | Passed | 34 platform tests passed. |
+| PostgreSQL integration tests | Passed | 6 integration tests passed, including cross-definition referential integrity, stale transition rejection, and rollback coverage. |
+| Type checking | Passed | `pnpm typecheck`. |
 | Lint | Passed | `pnpm lint`. |
 | Production build | Passed | `pnpm build`. |
 | Document metadata validation | Passed | 102 Markdown files checked. |

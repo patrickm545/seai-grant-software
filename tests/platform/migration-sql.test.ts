@@ -107,6 +107,19 @@ test('platform 1.3 migration creates workflow foundation tables', () => {
   assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowHistory"/);
 });
 
+test('platform 1.3 migration enforces workflow referential consistency with composite keys', () => {
+  assert.match(platform13MigrationSql, /"WorkflowStage_id_workflowDefinitionId_key"/);
+  assert.match(platform13MigrationSql, /"WorkflowTransition_id_workflowDefinitionId_key"/);
+  assert.match(platform13MigrationSql, /"WorkflowInstance_id_workflowDefinitionId_organisationId_key"/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("fromStageId", "workflowDefinitionId"\) REFERENCES "WorkflowStage"\("id", "workflowDefinitionId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("toStageId", "workflowDefinitionId"\) REFERENCES "WorkflowStage"\("id", "workflowDefinitionId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("currentStageId", "workflowDefinitionId"\) REFERENCES "WorkflowStage"\("id", "workflowDefinitionId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("workflowInstanceId", "workflowDefinitionId", "organisationId"\) REFERENCES "WorkflowInstance"\("id", "workflowDefinitionId", "organisationId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("transitionId", "workflowDefinitionId"\) REFERENCES "WorkflowTransition"\("id", "workflowDefinitionId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("previousStageId", "workflowDefinitionId"\) REFERENCES "WorkflowStage"\("id", "workflowDefinitionId"\)/);
+  assert.match(platform13MigrationSql, /FOREIGN KEY \("nextStageId", "workflowDefinitionId"\) REFERENCES "WorkflowStage"\("id", "workflowDefinitionId"\)/);
+});
+
 test('platform 1.3 migration seeds lead pipeline workflow definitions and transition permission', () => {
   assert.match(platform13MigrationSql, /solargrant\.lead_pipeline/);
   assert.match(platform13MigrationSql, /NEW_LEAD/);

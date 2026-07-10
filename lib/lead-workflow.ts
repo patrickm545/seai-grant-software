@@ -13,8 +13,35 @@ type DbClient = PrismaClient | Prisma.TransactionClient;
 
 export const LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY = 'solargrant.lead_pipeline';
 
+function canOwnTransaction(db: DbClient): db is PrismaClient {
+  return '$transaction' in db;
+}
+
 export async function changeLeadPipelineStage(args: {
   db: DbClient;
+  context: OrganisationContext | null | undefined;
+  leadId: string;
+  nextStage: string;
+}) {
+  if (canOwnTransaction(args.db)) {
+    return args.db.$transaction((tx) =>
+      changeLeadPipelineStageInTransaction({
+        ...args,
+        db: tx
+      })
+    );
+  }
+
+  return changeLeadPipelineStageInTransaction(args as {
+    db: Prisma.TransactionClient;
+    context: OrganisationContext | null | undefined;
+    leadId: string;
+    nextStage: string;
+  });
+}
+
+async function changeLeadPipelineStageInTransaction(args: {
+  db: Prisma.TransactionClient;
   context: OrganisationContext | null | undefined;
   leadId: string;
   nextStage: string;
@@ -60,7 +87,7 @@ export async function changeLeadPipelineStage(args: {
   });
 
   await executeWorkflowTransition({
-    db,
+    tx: db,
     context,
     workflowDefinitionKey: LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY,
     resourceType: 'lead',
@@ -74,7 +101,7 @@ export async function changeLeadPipelineStage(args: {
       leadId,
       leadName: existingLead.fullName
     },
-    onTransition: async ({ previousStage, nextStage: workflowNextStage, metadata, now }) => {
+    onTransition: async ({ tx, previousStage, nextStage: workflowNextStage, metadata, now }) => {
       if (!isLeadPipelineStage(workflowNextStage.key)) {
         throw new Error('Workflow stage is not compatible with lead pipeline projection');
       }
@@ -92,13 +119,13 @@ export async function changeLeadPipelineStage(args: {
         updateData.nextFollowUpAt = null;
       }
 
-      await updateLeadInOrganisation(db, context, leadId, updateData);
+      await updateLeadInOrganisation(tx, context, leadId, updateData);
 
       metadata.lastContactedAt = shouldSetLastContactedAt(leadNextStage)
         ? now.toISOString()
         : existingLead.lastContactedAt?.toISOString() ?? null;
 
-      await db.leadActivity.create({
+      await tx.leadActivity.create({
         data: {
           leadId,
           type: 'STAGE_CHANGED',

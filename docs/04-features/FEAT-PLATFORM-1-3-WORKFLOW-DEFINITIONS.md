@@ -30,6 +30,7 @@ In scope:
 - ordered stages;
 - initial and terminal stage markers;
 - allowed transitions between stages;
+- composite database constraints proving transition stages belong to the transition definition;
 - transition-level required permission;
 - metadata fields for future display and migration context.
 
@@ -61,17 +62,21 @@ Definitions should be simple, inspectable, and deterministic in migrations. They
 - Stage keys mirror current `LeadPipelineStage` values for safe migration.
 - Transition permissions use existing platform permission names.
 - The persisted graph is permissive for the first proving slice to preserve current operational behaviour.
+- `WorkflowStage` exposes a composite unique key on `id` and `workflowDefinitionId` so `WorkflowTransition.fromStageId` and `WorkflowTransition.toStageId` can be constrained to the same definition.
+- `WorkflowTransition` exposes a composite unique key on `id` and `workflowDefinitionId` so history rows cannot point at a transition from another definition.
 
 ## Risks
 
 - Definition data can become stale if product enums change without migration.
 - Too many metadata fields would overfit future needs.
 - Too few integrity checks could allow invalid definitions.
+- Dropping composite keys in a future migration would weaken database-level workflow consistency.
 
 ## Verification Plan
 
 - Unit tests for duplicate stages, missing initial stages, missing transition endpoints, and unknown permissions.
 - Migration SQL tests for table creation and initial workflow seed data.
+- PostgreSQL integration tests for rejected cross-definition stage references.
 - Prisma validation and generate.
 
 ## Rollout Plan

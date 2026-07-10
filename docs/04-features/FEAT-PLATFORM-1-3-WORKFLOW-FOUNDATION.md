@@ -31,6 +31,8 @@ In scope:
 
 - reusable workflow model;
 - reusable transition execution service;
+- database-enforced workflow referential consistency;
+- transaction-bound transition execution;
 - workflow instance ownership by organisation;
 - workflow-aware audit metadata;
 - workflow history for executed transitions;
@@ -73,7 +75,9 @@ No broad UI redesign is required for this release. Existing SolarGRANT Pro stage
 ## Architecture Notes
 
 - Workflow definition data is persisted so validation is data-backed, not client-decided.
+- Workflow stage, transition, instance, and history relationships use composite keys where required to prevent cross-definition or cross-organisation contradictions.
 - Workflow execution must require organisation context.
+- Workflow execution must run inside a transaction and use a stale-transition guard before product side effects, history, audit, or activity are written.
 - Permission checks use the existing Platform Release 1.2 permission catalogue.
 - Audit writes use the existing audit writer.
 - Product-specific side effects remain in product workflow adapters.
@@ -81,13 +85,14 @@ No broad UI redesign is required for this release. Existing SolarGRANT Pro stage
 ## Risks
 
 - `Lead.pipelineStage` and workflow instance current stage can drift if future code bypasses the service.
+- Concurrent transition requests can race unless every transition uses the guarded transaction boundary.
 - A transition graph that is too restrictive could remove working SolarGRANT Pro behaviour.
 - A generic workflow model can become too broad if it absorbs automation features too early.
 
 ## Verification Plan
 
 - Unit tests for workflow definition integrity and transition validation.
-- PostgreSQL integration tests for valid, invalid, unauthorised, and cross-organisation transitions.
+- PostgreSQL integration tests for valid, invalid, unauthorised, cross-organisation, cross-definition, stale concurrent, and rollback transitions.
 - Migration tests for additive workflow tables and lead instance backfill.
 - Audit and history assertions in the proving slice.
 

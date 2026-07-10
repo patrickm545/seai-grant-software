@@ -30,6 +30,7 @@ In scope:
 - backfill one workflow instance per existing lead;
 - execute lead stage changes through the generic workflow service;
 - keep lead activity and `Lead.pipelineStage` projection for current UI;
+- keep workflow instance, `Lead.pipelineStage`, workflow history, audit, and activity writes atomic;
 - add transition history assertions.
 
 Out of scope:
@@ -57,6 +58,9 @@ Existing stage controls should continue to work. The platform service must rejec
 - Product labels remain in `lib/crm.ts`.
 - `Lead.pipelineStage` remains a projection until a later release migrates UI and reporting to workflow instances directly.
 - Current broad stage movement behaviour is preserved by seeding a permissive transition graph for valid stage keys.
+- `changeLeadPipelineStage` owns an interactive transaction when called with a root Prisma client and passes the transaction client to the workflow service.
+- The workflow service updates the workflow instance with a current-stage guard before the adapter writes `Lead.pipelineStage` and `LeadActivity`.
+- If a competing transition wins first, the stale request returns `WORKFLOW_TRANSITION_STALE` and creates no successful workflow history, audit event, or activity row.
 
 ## Risks
 
@@ -73,6 +77,8 @@ Existing stage controls should continue to work. The platform service must rejec
 - audit event is written;
 - workflow history is written;
 - denied transition leaves lead and workflow instance state unchanged.
+- concurrent stale transition creates no successful history or audit record.
+- later write failure rolls back lead projection, workflow instance, history, audit, and activity.
 
 ## Rollout Plan
 

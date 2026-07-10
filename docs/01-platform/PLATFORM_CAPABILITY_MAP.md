@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 ## Purpose
 
@@ -28,6 +28,7 @@ Every capability or capability-adjacent concern must belong to exactly one categ
 
 | Item | Category | Architectural owner | Reasoning |
 | --- | --- | --- | --- |
+| Identity and organisation foundation | Platform Capability | Clada OS Platform | Organisations, users, memberships, actors, and tenant boundaries are prerequisites for access, audit, workflow, documents, notifications, AI, reporting, and billing. |
 | Lead intake orchestration | Platform Capability | Clada OS Platform | Multiple modules need structured lead and inquiry capture. |
 | Customer and contact record | Platform Capability | Clada OS Platform | Customer identity and history must be reusable across modules. |
 | Workflow status tracking | Platform Capability | Clada OS Platform | Operational state exists across contractor workflows. |
@@ -52,6 +53,15 @@ Every capability or capability-adjacent concern must belong to exactly one categ
 | Validation schemas | Shared Service | Clada OS Engineering | Reusable validation supports capability contracts. |
 | Documentation standards | Developer Tooling | Clada Systems Engineering | Standards help teams build and review but are not runtime capabilities. |
 | Lint, build, and migration commands | Developer Tooling | Clada Systems Engineering | Tooling supports delivery and verification. |
+
+## Capability Maturity Snapshot
+
+| Capability | Current maturity | Evidence | Maximum maturity this release |
+| --- | --- | --- | --- |
+| Identity and organisation foundation | L3 Implemented; L4 candidate after PR review and production migration validation | Feature specs, ADRs, Prisma models, migration, tenant-scoped lead proving slice, and automated isolation tests. | L4 |
+| Users and roles | L1 Documented | Roadmap and dependency model only. Full roles are deferred to Platform Release 1.2. | L1 |
+| Permissions | L1 Documented | Default-deny tenant context exists as a foundation, but full permission checks are deferred. | L1 |
+| Audit trail | L1 Documented | Existing audit log strings remain; actor/organisation audit ownership is deferred to Platform Release 1.2. | L1 |
 
 ## How
 

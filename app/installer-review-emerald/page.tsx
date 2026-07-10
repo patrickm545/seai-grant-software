@@ -18,6 +18,8 @@ import {
   type LeadPipelineStageValue,
   type LeadScoreValue
 } from '@/lib/crm';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { leadActivityOrganisationWhere, leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
 const ADMIN_LEAD_BASE_PATH = '/installer-review-emerald/leads';
@@ -244,8 +246,10 @@ function RecentActivityPanel({ activities }: { activities: RecentActivity[] }) {
 }
 
 export default async function HiddenAdminPage() {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const [leads, recentActivities] = await Promise.all([
     prisma.lead.findMany({
+      where: leadOrganisationWhere(organisationContext),
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: {
@@ -258,6 +262,7 @@ export default async function HiddenAdminPage() {
       }
     }),
     prisma.leadActivity.findMany({
+      where: leadActivityOrganisationWhere(organisationContext),
       orderBy: { createdAt: 'desc' },
       take: 8,
       include: {

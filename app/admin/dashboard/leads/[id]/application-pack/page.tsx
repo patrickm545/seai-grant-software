@@ -2,14 +2,17 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ApplicationPackView } from '@/components/ApplicationPackView';
 import { buildApplicationPack } from '@/lib/application-pack';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ApplicationPackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const lead = await prisma.lead.findUnique({
-    where: { id },
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const lead = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(organisationContext, { id }),
     include: {
       installer: true,
       documents: {

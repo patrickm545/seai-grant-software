@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-10 |
 
 ## Purpose
 
@@ -36,6 +36,19 @@ Clada OS handles business and customer information, so trust must be treated as 
 Forms should ask for practical sales and workflow information, not excessive personal data.
 
 Customer portals and upload features should be designed with privacy, access control, and clear consent in mind.
+
+## Tenant Boundary Requirements
+
+Platform Release 1.1 treats organisation boundaries as a security requirement:
+
+- organisation-owned records must have an organisation owner;
+- lead records must reference an installer owned by the same organisation, enforced by a PostgreSQL composite foreign key;
+- server-side code must resolve active organisation context before reading or writing organisation-owned records;
+- client-supplied organisation IDs are not trusted without membership validation;
+- missing, inactive, or invalid organisation membership fails closed;
+- cross-organisation access should return safe unavailable or unauthorized responses without revealing whether another organisation's record exists;
+- tenant isolation must be verified with database-backed PostgreSQL integration tests for security-sensitive boundaries;
+- audit actor and organisation ownership remain known hardening work for Platform Release 1.2.
 
 ## Sprint requirement
 

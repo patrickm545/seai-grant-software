@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 This section defines engineering standards, architecture context, and AI-assisted development rules for Clada OS.
 
@@ -17,6 +17,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md): current system shape and platform direction.
 - [ENGINEERING_STANDARDS.md](ENGINEERING_STANDARDS.md): implementation expectations.
 - [AI_ENGINEERING_RULES.md](AI_ENGINEERING_RULES.md): rules for AI coding agents and AI-assisted work.
+- [POSTGRES_INTEGRATION_TESTS.md](POSTGRES_INTEGRATION_TESTS.md): disposable PostgreSQL setup for database-backed integration tests.
 
 ## Engineering Rule
 

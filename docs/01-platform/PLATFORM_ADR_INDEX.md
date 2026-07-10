@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 ## Purpose
 
@@ -29,6 +29,11 @@ Current platform ADRs:
 | ADR | Status | Platform relevance |
 | --- | --- | --- |
 | [ADR-0001: Establish Clada OS Terminology](../05-decisions/ADR-0001-clada-os-terminology.md) | Active | Establishes Clada Systems as company, Clada OS as platform, and SolarGRANT Pro as first product module. |
+| [ADR-0002: Organisation Is The Initial Tenant Boundary](../05-decisions/ADR-0002-organisation-tenant-model.md) | Active | Defines organisation as the first tenant and operational ownership boundary. |
+| [ADR-0003: Minimal Actor And Membership Model](../05-decisions/ADR-0003-actor-and-membership-model.md) | Active | Defines the first user, membership, human actor, service actor, and system actor concepts. |
+| [ADR-0004: Adapt Existing Admin Authentication Into Identity Context](../05-decisions/ADR-0004-existing-authentication-integration.md) | Active | Keeps current authentication while mapping valid sessions into platform user context. |
+| [ADR-0005: Tenant-Aware Data Access Defaults To Denial](../05-decisions/ADR-0005-tenant-aware-data-access.md) | Active | Establishes default-deny tenant scoping for organisation-owned data. |
+| [ADR-0006: Assign Existing SolarGRANT Pro Data To Installer Organisations](../05-decisions/ADR-0006-existing-data-migration.md) | Active | Defines the safe migration rule for existing installer and lead data. |
 
 Recommended future ADR candidates:
 
@@ -36,7 +41,6 @@ Recommended future ADR candidates:
 | --- | --- |
 | Platform API boundary ADR | Required before a major module-facing platform API becomes stable across modules. |
 | AI governance ADR | Required before AI output directly affects customer, compliance, finance, legal, or grant-application decisions beyond current human-reviewed support. |
-| Data tenancy and access ADR | Required before supporting multiple contractors or organizations with stronger tenant boundaries. |
 | Workflow engine ADR | Required before extracting workflow state management into a reusable engine or standalone service. |
 | Integration strategy ADR | Required before adding provider abstraction across email, SMS, CRM, grant portals, or AI providers. |
 

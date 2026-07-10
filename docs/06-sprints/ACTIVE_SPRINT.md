@@ -6,46 +6,40 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 ## Sprint
 
-Project Atlas: Platform Release 1.0 - Platform Execution Model and Roadmap.
+Project Atlas: Platform Release 1.1 - Identity and Organisation Foundation.
 
 ## Objective
 
-Create the execution model for moving Clada OS from approved architecture into sequenced platform implementation milestones.
+Implement the minimum Clada OS identity and organisation foundation, validated through a SolarGRANT Pro lead proving slice.
 
 ## In Scope
 
-- define the minimum viable Clada OS platform
-- separate MVP, post-MVP, and deferred capabilities
-- define capability maturity tracking
-- define capability prioritisation criteria
-- document Platform Release 1.x build order
-- document the platform dependency graph
-- map SolarGRANT Pro consumption of platform capabilities
-- define the Platform Release 1.x roadmap
-- document risks and decision gates
-- update COM and sprint navigation
+- organisation model
+- user and membership model
+- actor context definitions
+- existing admin-auth adapter into identity context
+- tenant-aware access helpers
+- installer and lead organisation ownership
+- migration for existing installer and lead data
+- SolarGRANT Pro lead proving slice
+- tenant isolation tests
+- feature specs, ADRs, and COM updates
 
 ## Out Of Scope
 
-- product feature development
-- application code changes
-- application redesign
-- application behaviour changes
-- UI changes
-- database migrations
-- authentication implementation
-- workflow implementation
-- document implementation
-- notification implementation
-- AI implementation
-- reporting implementation
-- integrations, billing, marketplace, partner, or SDK implementation
+- full authentication replacement
+- enterprise SSO
+- invitations
+- complex roles and permissions
+- billing, subscriptions, marketplace tenancy, partner accounts, or SDK implementation
+- workflow, document, notification, AI, or reporting platform changes
+- broad UI redesign
 - unrelated repository restructuring
 
 ## Definition Of Done
 
-Platform Release 1.0 is complete when `docs/01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md` and `docs/06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md` define the execution model, COM navigation points to them, required metadata and links are valid, and validation confirms that no application code or product functionality changed.
+Platform Release 1.1 is complete when organisation ownership is implemented for the lead proving slice, tenant context is enforced server side, existing data is migrated safely, tenant isolation tests pass, COM navigation points to the release documents, and a pull request is opened to `main` without starting Platform Release 1.2.

@@ -15,6 +15,13 @@ import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 import { writeAuditLog } from '@/lib/audit';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import {
+  deleteLeadInOrganisation,
+  leadActivityOrganisationWhere,
+  leadOrganisationWhere,
+  updateLeadInOrganisation
+} from '@/lib/lead-access';
 import {
   buildDocumentChecklist,
   formatDocumentSize,
@@ -102,6 +109,7 @@ function formatDateTime(value: Date | string | null | undefined) {
 async function updateLeadWorkflow(formData: FormData) {
   'use server';
 
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = String(formData.get('leadId') || '');
   const action = String(formData.get('workflowAction') || 'save');
   const selectedStatus = String(formData.get('status') || 'NEEDS_REVIEW');
@@ -136,17 +144,18 @@ async function updateLeadWorkflow(formData: FormData) {
   });
 
   await prisma.$transaction(async (tx) => {
-    const existingLead = await tx.lead.findUnique({
-      where: { id: leadId },
+    const existingLead = await tx.lead.findFirst({
+      where: leadOrganisationWhere(organisationContext, { id: leadId }),
       select: { status: true, followUpDate: true, nextFollowUpAt: true }
     });
 
-    await tx.lead.update({
-      where: { id: leadId },
-      data: {
-        ...parsed,
-        nextFollowUpAt: parsed.followUpDate
-      }
+    if (!existingLead) {
+      throw new Error('Lead not found');
+    }
+
+    await updateLeadInOrganisation(tx, organisationContext, leadId, {
+      ...parsed,
+      nextFollowUpAt: parsed.followUpDate
     });
 
     const previousFollowUpAt = existingLead?.nextFollowUpAt ?? existingLead?.followUpDate ?? null;
@@ -183,7 +192,8 @@ async function updateLeadWorkflow(formData: FormData) {
         nextStatus: parsed.status,
         followUpDate: parsed.followUpDate?.toISOString() ?? null,
         researchCallCompleted: parsed.researchCallCompleted,
-        salesCallRequired: parsed.salesCallRequired
+        salesCallRequired: parsed.salesCallRequired,
+        organisationId: organisationContext.organisationId
       }
     });
   });
@@ -199,6 +209,7 @@ async function updateLeadWorkflow(formData: FormData) {
 async function eraseLeadData(formData: FormData) {
   'use server';
 
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = String(formData.get('leadId') || '');
   const confirmation = String(formData.get('eraseConfirmation') || '').trim();
 
@@ -207,8 +218,8 @@ async function eraseLeadData(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    const lead = await tx.lead.findUnique({
-      where: { id: leadId },
+    const lead = await tx.lead.findFirst({
+      where: leadOrganisationWhere(organisationContext, { id: leadId }),
       select: {
         id: true,
         status: true,
@@ -219,7 +230,7 @@ async function eraseLeadData(formData: FormData) {
 
     if (!lead) return;
 
-    await tx.lead.delete({ where: { id: leadId } });
+    await deleteLeadInOrganisation(tx, organisationContext, leadId);
     await writeAuditLog(tx, {
       leadId,
       action: 'lead.erased',
@@ -227,6 +238,7 @@ async function eraseLeadData(formData: FormData) {
       metadata: {
         statusAtErasure: lead.status,
         installerId: lead.installerId,
+        organisationId: organisationContext.organisationId,
         documentCount: lead.documents.length,
         reason: 'admin_erasure_request'
       }
@@ -448,8 +460,9 @@ function LeadField({ label, value }: { label: string; value: ReactNode }) {
 
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const lead: LeadDetail | null = await prisma.lead.findUnique({
-    where: { id },
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const lead: LeadDetail | null = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(organisationContext, { id }),
     include: {
       installer: true,
       documents: {
@@ -472,7 +485,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     take: 8
   });
   const activities = await prisma.leadActivity.findMany({
-    where: { leadId: lead.id },
+    where: leadActivityOrganisationWhere(organisationContext, { leadId: lead.id }),
     orderBy: { createdAt: 'desc' },
     take: 30
   });

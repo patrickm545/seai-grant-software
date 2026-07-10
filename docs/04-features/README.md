@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-10 |
 
 Feature specifications define the problem, evidence, scope, design, architecture, risks, and verification plan before major implementation.
 
@@ -25,6 +25,13 @@ Create or update a feature spec when work changes:
 ## Template
 
 Use [FEATURE_SPEC_TEMPLATE.md](FEATURE_SPEC_TEMPLATE.md) for new feature specs.
+
+## Active Feature Specifications
+
+- [FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md](FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md)
+- [FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md](FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md)
+- [FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md](FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md)
+- [FEAT-PLATFORM-1-1-SOLARGRANT-PRO-IDENTITY-PROVING-SLICE.md](FEAT-PLATFORM-1-1-SOLARGRANT-PRO-IDENTITY-PROVING-SLICE.md)
 
 ## Feature Spec Rule
 

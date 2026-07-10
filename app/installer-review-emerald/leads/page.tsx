@@ -4,6 +4,8 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import type { LeadPipelineStageValue, LeadScoreValue } from '@/lib/crm';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -50,7 +52,9 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
 }
 
 export default async function InstallerLeadsPage() {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leads: LeadsPageLead[] = await prisma.lead.findMany({
+    where: leadOrganisationWhere(organisationContext),
     orderBy: { createdAt: 'desc' },
     take: 200,
     include: {

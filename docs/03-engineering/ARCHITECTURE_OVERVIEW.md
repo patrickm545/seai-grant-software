@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-10 |
 
 This document summarises the current architecture and the direction for evolving SolarGRANT Pro into a module on Clada OS.
 
@@ -19,6 +19,7 @@ This document summarises the current architecture and the direction for evolving
 - Server routes under `app/api`
 - Admin and installer review workflows
 - Optional integrations for email, SMS, and OpenAI-assisted analysis
+- Platform identity foundation with organisation, user, membership, and tenant-scoped lead access
 
 ## Current Public Flow
 
@@ -48,6 +49,19 @@ As Clada OS matures, shared concerns should become explicit platform capabilitie
 - module configuration
 - human-reviewed automation boundaries
 - reporting and operational metrics
+
+## Platform Release 1.1 Identity Foundation
+
+The first implemented platform identity slice introduces:
+
+- `Organisation` as the tenant and operational ownership boundary;
+- `User` as the durable human identity record;
+- `OrganisationMembership` as the server-side validation link between users and organisations;
+- runtime actor context for human, system, and future service actors;
+- organisation ownership on installers and leads;
+- lead data access helpers that require active organisation context.
+
+Existing admin authentication remains in place. It is adapted to a default internal user for this release and should not be mistaken for the full users, roles, permissions, and audit foundation planned for Platform Release 1.2.
 
 Do not prematurely split the application into services. Extract reusable boundaries when there is a clear maintenance, reliability, or product reason.
 

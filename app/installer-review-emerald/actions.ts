@@ -13,6 +13,13 @@ import {
   getDocumentTypeLabel,
   isLeadDocumentStatus
 } from '@/lib/documents';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import {
+  leadDocumentOrganisationWhere,
+  leadOrganisationWhere,
+  requireLeadInOrganisation,
+  updateLeadInOrganisation
+} from '@/lib/lead-access';
 import { regenerateLeadPortalToken } from '@/lib/portal';
 import { prisma } from '@/lib/prisma';
 
@@ -58,6 +65,7 @@ function getDocumentActivityType(status: LeadDocumentStatus): LeadActivityType {
 }
 
 export async function updateLeadPipelineStage(formData: FormData) {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = getRequiredLeadId(formData);
   const nextStage = String(formData.get('pipelineStage') || '').trim();
 
@@ -66,8 +74,8 @@ export async function updateLeadPipelineStage(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    const existingLead = await tx.lead.findUnique({
-      where: { id: leadId },
+    const existingLead = await tx.lead.findFirst({
+      where: leadOrganisationWhere(organisationContext, { id: leadId }),
       select: {
         id: true,
         fullName: true,
@@ -81,7 +89,7 @@ export async function updateLeadPipelineStage(formData: FormData) {
     }
 
     const now = new Date();
-    const updateData: Prisma.LeadUpdateInput = {
+    const updateData: Prisma.LeadUpdateManyMutationInput = {
       pipelineStage: nextStage as LeadPipelineStage
     };
 
@@ -93,10 +101,7 @@ export async function updateLeadPipelineStage(formData: FormData) {
       updateData.nextFollowUpAt = null;
     }
 
-    await tx.lead.update({
-      where: { id: leadId },
-      data: updateData
-    });
+    await updateLeadInOrganisation(tx, organisationContext, leadId, updateData);
 
     if (existingLead.pipelineStage !== nextStage) {
       await tx.leadActivity.create({
@@ -124,7 +129,8 @@ export async function updateLeadPipelineStage(formData: FormData) {
       metadata: {
         previousStage: existingLead.pipelineStage,
         nextStage,
-        lastContactedAt: shouldSetLastContactedAt(nextStage) ? now.toISOString() : existingLead.lastContactedAt?.toISOString() ?? null
+        lastContactedAt: shouldSetLastContactedAt(nextStage) ? now.toISOString() : existingLead.lastContactedAt?.toISOString() ?? null,
+        organisationId: organisationContext.organisationId
       }
     });
   });
@@ -133,12 +139,13 @@ export async function updateLeadPipelineStage(formData: FormData) {
 }
 
 export async function setLeadFollowUp(formData: FormData) {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = getRequiredLeadId(formData);
   const nextFollowUpAt = parseOptionalDate(formData.get('nextFollowUpAt'));
 
   await prisma.$transaction(async (tx) => {
-    const existingLead = await tx.lead.findUnique({
-      where: { id: leadId },
+    const existingLead = await tx.lead.findFirst({
+      where: leadOrganisationWhere(organisationContext, { id: leadId }),
       select: {
         id: true,
         nextFollowUpAt: true,
@@ -150,12 +157,9 @@ export async function setLeadFollowUp(formData: FormData) {
       throw new Error('Lead not found');
     }
 
-    await tx.lead.update({
-      where: { id: leadId },
-      data: {
-        nextFollowUpAt,
-        followUpDate: nextFollowUpAt
-      }
+    await updateLeadInOrganisation(tx, organisationContext, leadId, {
+      nextFollowUpAt,
+      followUpDate: nextFollowUpAt
     });
 
     await tx.leadActivity.create({
@@ -181,7 +185,8 @@ export async function setLeadFollowUp(formData: FormData) {
       actor: 'installer',
       metadata: {
         previousFollowUpAt: existingLead.nextFollowUpAt?.toISOString() ?? existingLead.followUpDate?.toISOString() ?? null,
-        nextFollowUpAt: nextFollowUpAt?.toISOString() ?? null
+        nextFollowUpAt: nextFollowUpAt?.toISOString() ?? null,
+        organisationId: organisationContext.organisationId
       }
     });
   });
@@ -190,6 +195,7 @@ export async function setLeadFollowUp(formData: FormData) {
 }
 
 export async function addLeadNote(formData: FormData) {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = getRequiredLeadId(formData);
   const note = String(formData.get('note') || '').trim();
 
@@ -202,8 +208,8 @@ export async function addLeadNote(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    const existingLead = await tx.lead.findUnique({
-      where: { id: leadId },
+    const existingLead = await tx.lead.findFirst({
+      where: leadOrganisationWhere(organisationContext, { id: leadId }),
       select: { id: true }
     });
 
@@ -230,7 +236,8 @@ export async function addLeadNote(formData: FormData) {
       action: 'lead.note_added',
       actor: 'installer',
       metadata: {
-        characterCount: note.length
+        characterCount: note.length,
+        organisationId: organisationContext.organisationId
       }
     });
   });
@@ -239,6 +246,7 @@ export async function addLeadNote(formData: FormData) {
 }
 
 export async function updateLeadDocumentStatus(formData: FormData) {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = getRequiredLeadId(formData);
   const documentId = getRequiredDocumentId(formData);
   const nextStatus = String(formData.get('status') || '').trim();
@@ -248,8 +256,11 @@ export async function updateLeadDocumentStatus(formData: FormData) {
   }
 
   const portalToken = await prisma.$transaction(async (tx) => {
-    const existingDocument = await tx.leadDocument.findUnique({
-      where: { id: documentId },
+    const existingDocument = await tx.leadDocument.findFirst({
+      where: leadDocumentOrganisationWhere(organisationContext, {
+        id: documentId,
+        leadId
+      }),
       select: {
         id: true,
         leadId: true,
@@ -301,7 +312,8 @@ export async function updateLeadDocumentStatus(formData: FormData) {
         documentId,
         documentType: existingDocument.type,
         previousStatus: existingDocument.status,
-        nextStatus
+        nextStatus,
+        organisationId: organisationContext.organisationId
       }
     });
 
@@ -312,7 +324,9 @@ export async function updateLeadDocumentStatus(formData: FormData) {
 }
 
 export async function regenerateLeadPortalTokenAction(formData: FormData) {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leadId = getRequiredLeadId(formData);
+  await requireLeadInOrganisation(prisma, organisationContext, leadId);
   const updatedLead = await regenerateLeadPortalToken(leadId);
 
   revalidateLeadCrmPaths(leadId, updatedLead.portalToken);

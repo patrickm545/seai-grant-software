@@ -4,7 +4,8 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { InstallerQuotePricingForm } from '@/components/InstallerQuotePricingForm';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import { writeAuditLog } from '@/lib/audit';
-import { DEFAULT_INSTALLER_ID, getDefaultInstallerSeedData } from '@/lib/default-installer';
+import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
 import {
   defaultInstallerQuotePricing,
   getPricingValuesFromRecord,
@@ -13,6 +14,7 @@ import {
   type InstallerQuotePricingKey,
   type InstallerQuotePricingValues
 } from '@/lib/installer-quote-pricing';
+import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -52,19 +54,24 @@ function toPricingUpdateData(values: InstallerQuotePricingValues) {
 async function saveInstallerPricingSettings(formData: FormData) {
   'use server';
 
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const requestedInstallerId = String(formData.get('installerId') || DEFAULT_INSTALLER_ID);
   const pricingAction = String(formData.get('pricingAction') || 'save');
-  const installerSeed = getDefaultInstallerSeedData();
-  const installerId = requestedInstallerId || installerSeed.id;
+  const installerId = requestedInstallerId || DEFAULT_INSTALLER_ID;
   const values = pricingAction === 'reset' ? defaultInstallerQuotePricing : parsePricingFormData(formData);
   const data = toPricingUpdateData(values);
 
   await prisma.$transaction(async (tx) => {
-    const installer = await tx.installer.upsert({
-      where: { id: installerId },
-      update: {},
-      create: installerId === installerSeed.id ? installerSeed : { ...installerSeed, id: installerId }
+    const installer = await tx.installer.findFirst({
+      where: {
+        id: installerId,
+        organisationId: organisationContext.organisationId
+      }
     });
+
+    if (!installer) {
+      throw new Error('Installer not found for active organisation');
+    }
 
     await tx.installerQuotePricing.upsert({
       where: { installerId: installer.id },
@@ -81,6 +88,7 @@ async function saveInstallerPricingSettings(formData: FormData) {
       actor: 'admin',
       metadata: {
         installerId: installer.id,
+        organisationId: organisationContext.organisationId,
         finalAction: pricingAction,
         markupPercentage: values.markupPercentage,
         vatPercentage: values.vatPercentage,
@@ -115,12 +123,17 @@ export default async function QuotePricingPage({
   searchParams: Promise<{ saved?: string; reset?: string }>;
 }) {
   const params = await searchParams;
-  const installerSeed = getDefaultInstallerSeedData();
-  const installer = await prisma.installer.upsert({
-    where: { id: DEFAULT_INSTALLER_ID },
-    update: {},
-    create: installerSeed
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const installer = await prisma.installer.findFirst({
+    where: {
+      id: DEFAULT_INSTALLER_ID,
+      organisationId: organisationContext.organisationId
+    }
   });
+
+  if (!installer) {
+    throw new Error('Default installer is not available in the active organisation context.');
+  }
 
   const [pricing, leads] = await Promise.all([
     prisma.installerQuotePricing.upsert({
@@ -132,6 +145,7 @@ export default async function QuotePricingPage({
       }
     }),
     prisma.lead.findMany({
+      where: leadOrganisationWhere(organisationContext),
       select: {
         county: true,
         status: true,

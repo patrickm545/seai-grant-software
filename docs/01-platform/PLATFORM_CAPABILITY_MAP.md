@@ -58,7 +58,7 @@ Every capability or capability-adjacent concern must belong to exactly one categ
 
 | Capability | Current maturity | Evidence | Maximum maturity this release |
 | --- | --- | --- | --- |
-| Identity and organisation foundation | L4 Production Ready after Platform Release 1.1 implementation and validation | Feature specs, ADRs, Prisma models, migration, tenant-scoped lead proving slice, and automated isolation tests. | L4 |
+| Identity and organisation foundation | L3 Implemented; L4 candidate after PR review and production migration validation | Feature specs, ADRs, Prisma models, migration, tenant-scoped lead proving slice, and automated isolation tests. | L4 |
 | Users and roles | L1 Documented | Roadmap and dependency model only. Full roles are deferred to Platform Release 1.2. | L1 |
 | Permissions | L1 Documented | Default-deny tenant context exists as a foundation, but full permission checks are deferred. | L1 |
 | Audit trail | L1 Documented | Existing audit log strings remain; actor/organisation audit ownership is deferred to Platform Release 1.2. | L1 |

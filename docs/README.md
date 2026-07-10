@@ -43,7 +43,7 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [DOCUMENT_LIFECYCLE.md](DOCUMENT_LIFECYCLE.md): how documents are proposed, reviewed, activated, maintained, and archived.
 - [OPERATING_PRINCIPLES.md](OPERATING_PRINCIPLES.md): daily operating rules for engineering and product work.
 - [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
-- [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, and evolution policy.
+- [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, evolution policy, and Platform Release 1.x execution roadmap.
 - [01-product](01-product/README.md): platform and module strategy.
 - [02-design](02-design/README.md): product design standards.
 - [03-engineering](03-engineering/README.md): architecture, engineering standards, and AI engineering rules.
@@ -77,10 +77,11 @@ Before changing application code, read:
 2. [CONSTITUTION.md](CONSTITUTION.md).
 3. [THE_CLADA_WAY.md](THE_CLADA_WAY.md).
 4. [01-platform/README.md](01-platform/README.md) for platform or module-boundary changes.
-5. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
-6. Any linked feature specification.
-7. Any linked ADR.
-8. The relevant engineering or design standard.
+5. [01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md) before Platform Release 1.x implementation work.
+6. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
+7. Any linked feature specification.
+8. Any linked ADR.
+9. The relevant engineering or design standard.
 
 Small maintenance changes may be lighter, but no change may violate constitutional principles, documented decisions, or security and privacy expectations.
 

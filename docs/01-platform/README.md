@@ -74,6 +74,7 @@ The operating sequence is:
 - [PLATFORM_DEPENDENCY_MAP.md](PLATFORM_DEPENDENCY_MAP.md): dependency direction, allowed relationships, and prohibited coupling.
 - [MODULE_LIFECYCLE.md](MODULE_LIFECYCLE.md): lifecycle stages for product modules.
 - [PLATFORM_EVOLUTION_POLICY.md](PLATFORM_EVOLUTION_POLICY.md): how platform capabilities change over time.
+- [PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md): Platform Release 1.x execution model, MVP definition, build order, maturity model, release roadmap, risk register, and decision gates.
 - [PLATFORM_ADR_INDEX.md](PLATFORM_ADR_INDEX.md): platform decision index and recommended ADR candidates.
 
 ## Related Documents
@@ -85,3 +86,4 @@ The operating sequence is:
 - [../03-engineering/ARCHITECTURE_OVERVIEW.md](../03-engineering/ARCHITECTURE_OVERVIEW.md)
 - [../05-decisions/README.md](../05-decisions/README.md)
 - [../06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md](../06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md)
+- [../06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](../06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)

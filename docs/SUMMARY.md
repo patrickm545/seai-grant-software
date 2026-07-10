@@ -48,6 +48,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [01-platform/PLATFORM_DEPENDENCY_MAP.md](01-platform/PLATFORM_DEPENDENCY_MAP.md)
 - [01-platform/MODULE_LIFECYCLE.md](01-platform/MODULE_LIFECYCLE.md)
 - [01-platform/PLATFORM_EVOLUTION_POLICY.md](01-platform/PLATFORM_EVOLUTION_POLICY.md)
+- [01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md)
 - [01-platform/PLATFORM_ADR_INDEX.md](01-platform/PLATFORM_ADR_INDEX.md)
 
 ## Product
@@ -86,6 +87,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_1.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_2.md)
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md)
+- [06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)
 
 ## Research
 

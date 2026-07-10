@@ -50,6 +50,20 @@ Platform Release 1.1 treats organisation boundaries as a security requirement:
 - tenant isolation must be verified with database-backed PostgreSQL integration tests for security-sensitive boundaries;
 - audit actor and organisation ownership remain known hardening work for Platform Release 1.2.
 
+## Authorisation And Audit Requirements
+
+Platform Release 1.2 adds the first reusable authorisation and typed audit foundation:
+
+- organisation membership does not automatically grant every action;
+- protected server-side actions must require an explicit permission;
+- tenant ownership and action permission are separate checks and both must pass;
+- client-supplied roles, permissions, user IDs, membership IDs, and organisation IDs are not authoritative;
+- inactive users, inactive memberships, inactive organisations, missing actors, and missing organisation context fail closed;
+- internal administrative access must be explicit, membership-scoped, permission-controlled, and auditable;
+- successful protected actions should write typed audit events with actor, organisation, membership, user, resource, source, outcome, and timestamp where available;
+- audit metadata must not store passwords, secrets, tokens, full document contents, or excessive personal data;
+- public homeowner portal access remains token-scoped and must not gain organisation permissions.
+
 ## Sprint requirement
 
 Any sprint that changes login, customer data, forms, uploads, business access, or storage must mention security and GDPR impact in the sprint notes.

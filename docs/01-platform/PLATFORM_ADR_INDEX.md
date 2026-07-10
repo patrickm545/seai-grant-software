@@ -34,6 +34,10 @@ Current platform ADRs:
 | [ADR-0004: Adapt Existing Admin Authentication Into Identity Context](../05-decisions/ADR-0004-existing-authentication-integration.md) | Active | Keeps current authentication while mapping valid sessions into platform user context. |
 | [ADR-0005: Tenant-Aware Data Access Defaults To Denial](../05-decisions/ADR-0005-tenant-aware-data-access.md) | Active | Establishes default-deny tenant scoping for organisation-owned data. |
 | [ADR-0006: Assign Existing SolarGRANT Pro Data To Installer Organisations](../05-decisions/ADR-0006-existing-data-migration.md) | Active | Defines the safe migration rule for existing installer and lead data. |
+| [ADR-0007: Platform Role and Permission Model](../05-decisions/ADR-0007-role-and-permission-model.md) | Active | Defines platform roles, permission naming, role-to-permission mapping, and custom-role deferral. |
+| [ADR-0008: Authorisation Enforcement Boundary](../05-decisions/ADR-0008-authorisation-enforcement-boundary.md) | Active | Defines where permission checks, organisation ownership checks, and protected service boundaries live. |
+| [ADR-0009: Actor-Aware Audit Model](../05-decisions/ADR-0009-actor-aware-audit-model.md) | Active | Defines typed audit actor attribution, outcomes, resources, compatibility, and public-token actor treatment. |
+| [ADR-0010: Internal Administrative Access](../05-decisions/ADR-0010-internal-administrative-access.md) | Active | Defines explicit, permission-controlled internal access rather than implicit universal access. |
 
 Recommended future ADR candidates:
 

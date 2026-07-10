@@ -59,9 +59,9 @@ Every capability or capability-adjacent concern must belong to exactly one categ
 | Capability | Current maturity | Evidence | Maximum maturity this release |
 | --- | --- | --- | --- |
 | Identity and organisation foundation | L3 Implemented; L4 candidate after PR review and production migration validation | Feature specs, ADRs, Prisma models, migration, tenant-scoped lead proving slice, and automated isolation tests. | L4 |
-| Users and roles | L1 Documented | Roadmap and dependency model only. Full roles are deferred to Platform Release 1.2. | L1 |
-| Permissions | L1 Documented | Default-deny tenant context exists as a foundation, but full permission checks are deferred. | L1 |
-| Audit trail | L1 Documented | Existing audit log strings remain; actor/organisation audit ownership is deferred to Platform Release 1.2. | L1 |
+| Users and roles | L3 Implemented; L4 candidate after PR review and production migration validation | Platform role enum, membership role assignment, migration backfill, role-to-permission tests, and bootstrap internal/admin role documentation. | L4 |
+| Permissions | L3 Implemented; L4 candidate after PR review and production migration validation | Permission catalogue, role-to-permission mapping, default-deny helper, protected SolarGRANT Pro stage-change service, unit tests, and PostgreSQL integration proving slice. | L4 |
+| Audit trail | L3 Implemented; L4 candidate after PR review and production migration validation | Typed `AuditLog` fields, typed audit writer, metadata sanitisation, compatibility wrapper, proving-slice audit event, migration backfill, and unit/integration tests. | L4 |
 
 ## How
 

@@ -48,7 +48,7 @@ Platform Release 1.2 can proceed after this checkpoint is merged, provided it re
 
 The three highest-value improvements before commercial scale are:
 
-1. Implement a real permission and actor-aware audit foundation in Platform Release 1.2.
+1. Implement the planned permission and actor-aware audit foundations in Platform Release 1.2.
 2. Make validation repeatable in CI, including lint, typecheck, unit tests, migration checks, and documentation link/metadata checks.
 3. Reconcile active security/GDPR and legacy support documents into the numbered COM hierarchy, then archive superseded material deliberately.
 
@@ -116,7 +116,7 @@ Needs attention:
 
 - Current authentication remains an adapted admin-password session, which is acceptable for Platform Release 1.1 but not enough for mature user identity.
 - Audit logs and lead activity attribution still use strings rather than actor, user, membership, organisation, and permission context.
-- Permissions are documented but not implemented beyond organisation context and default-deny tenant scoping.
+- Full roles and permissions are intentionally scheduled for Platform Release 1.2 and are not classified as technical debt merely because they are not yet implemented.
 - Public token flows are intentionally outside authenticated organisation context and need explicit review as permissions and audit mature.
 - Reuse is proven only by the SolarGRANT Pro proving slice. No capability should be treated as L5 reusable across products yet.
 
@@ -160,7 +160,7 @@ Strengths:
 
 Needs attention:
 
-- Roles, permissions, and audit actor ownership are not yet implemented.
+- Roles, permissions, and actor-aware audit ownership are planned Platform Release 1.2 capability gaps.
 - `AuditLog.actor`, `LeadActivity.createdBy`, and `LeadActivity.createdByRole` are string fields.
 - There is no formal row-level security strategy. This is acceptable for the current maturity but should be reassessed after the application context model stabilizes.
 - Formal privacy, terms, DPA, retention, export, deletion, and incident-response documentation remain commercial-scale work.
@@ -174,15 +174,24 @@ Treat Platform Release 1.2 as a security and traceability release. It should har
 
 The durable technical debt register lives at [../03-engineering/TECHNICAL_DEBT_REGISTER.md](../03-engineering/TECHNICAL_DEBT_REGISTER.md).
 
+Planned capability gaps:
+
+| Capability gap | Scheduled release | Classification |
+| --- | --- | --- |
+| Full roles and permissions foundation | Platform Release 1.2 | Planned capability gap, not technical debt. |
+| Actor-aware audit foundation | Platform Release 1.2 | Planned capability gap, not technical debt. |
+
+A missing capability is not technical debt when it has not yet reached its scheduled implementation release. It becomes technical debt only when the current implementation contains a known compromise, workaround, duplication, weakness, or deferred correction.
+
 Highest-priority technical debt:
 
 | Severity | Debt | Recommendation | Blocks Platform Release 1.2? |
 | --- | --- | --- | --- |
-| High | Permission model is not implemented beyond tenant context. | Implement Platform Release 1.2 permission contracts before broadening workflow access. | No to start; yes to complete. |
-| High | Audit attribution remains string-based and not actor/organisation-owned. | Replace or wrap audit writes with actor-aware audit events in Platform Release 1.2. | No to start; yes to complete. |
+| High | Existing audit attribution remains string-based. | Replace or wrap current string-based audit writes as part of the planned actor-aware audit foundation in Platform Release 1.2. | No to start; yes to complete. |
 | High | Validation is not CI-enforced. | Add a GitHub Actions workflow for lint, typecheck, tests, migration checks, and documentation validation. | No. |
 | High | Security/GDPR operating docs are not fully commercial-scale. | Move active security guidance into numbered COM and add formal privacy, DPA, retention, deletion/export, and incident process docs before scale. | No to start; likely before commercial launch. |
 | Medium | Dual lockfiles create package-manager ambiguity. | Standardize on pnpm and remove the unused lockfile in a focused maintenance PR. | No. |
+| Medium | Legacy documentation overlap remains. | Reconcile active content into the numbered COM and archive superseded support docs deliberately. | No. |
 
 No critical technical debt was found that should block the start of Platform Release 1.2.
 
@@ -229,11 +238,11 @@ No documents were deleted, archived, or renamed during this checkpoint.
 | Platform Boundaries | Good | Clada OS boundaries are clear; Platform Release 1.2 must prevent SolarGRANT-specific permissions and audit concepts from becoming generic. |
 | Product Boundaries | Good | SolarGRANT Pro remains a consumer/proving slice of Clada OS. |
 | Engineering Standards | Good | Documentation-first workflow, ADRs, feature specs, and AI rules are active. |
-| Security | Needs Attention | Tenant isolation improved materially, but roles, permissions, audit actor ownership, and commercial GDPR docs are still pending. |
+| Security | Needs Attention | Tenant isolation improved materially; planned Platform Release 1.2 permission and audit capabilities plus commercial GDPR docs remain pending. |
 | Testing | Good | Unit and PostgreSQL integration tests exist for Platform Release 1.1; CI enforcement and docs validation are missing. |
 | Maintainability | Good | Scope discipline is strong; future maintainability depends on reducing legacy doc ambiguity and validation drift. |
 | Scalability | Needs Attention | Architecture can scale, but implementation is still a single proving slice with adapted admin auth. |
-| Technical Debt | Needs Attention | No critical blockers, but permissions, audit, validation, and package-manager hygiene require planned follow-up. |
+| Technical Debt | Needs Attention | No critical blockers; actual debt is concentrated in string-based audit fields, validation automation, documentation overlap, package-manager hygiene, and deferred security hardening. |
 | Readiness for Platform Release 1.2 | Good | Platform Release 1.2 can proceed with narrow scope and release gates focused on permissions and audit. |
 
 ## Platform Release 1.2 Recommendation
@@ -267,3 +276,15 @@ Validation run on 2026-07-10:
 | `pnpm test:integration:postgres` | Not run | `TEST_DATABASE_URL` was not set, so the disposable PostgreSQL integration suite was not executed. |
 
 PostgreSQL integration tests should be run before any Platform Release 1.2 implementation is closed if the release changes tenant-owned data access, permissions, or audit behavior.
+
+Classification amendment validation run on 2026-07-10:
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Document metadata check | Passed | Checked all Markdown files under `docs` for required COM metadata fields. |
+| Internal link check | Passed | Checked local Markdown links under `docs`. |
+| COM summary navigation check | Passed | Checked numbered COM Markdown files are listed in [../SUMMARY.md](../SUMMARY.md). |
+| Placeholder scan | Passed with template caveat | Non-template docs passed. Broad scan found expected placeholders in [../04-features/FEATURE_SPEC_TEMPLATE.md](../04-features/FEATURE_SPEC_TEMPLATE.md) and [../05-decisions/ADR_TEMPLATE.md](../05-decisions/ADR_TEMPLATE.md). |
+| `git diff --check` | Passed | Git reported line-ending warnings for existing CRLF behavior, but no whitespace errors. |
+
+Code validation was not repeated for the classification amendment because the amendment changed documentation only.

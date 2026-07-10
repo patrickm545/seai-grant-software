@@ -48,10 +48,11 @@ The operating sequence is:
 2. Check the dependency graph before changing build order.
 3. Score candidate capabilities with the prioritisation framework.
 4. Confirm each capability's current maturity level and target maturity level.
-5. Create or update feature specifications and ADRs before implementation.
-6. Validate cross-cutting concerns including security, privacy, auditability, human review, AI governance, reliability, and observability.
-7. Update COM navigation and sprint records at release close.
-8. Do not move to the next release until the decision gates are satisfied.
+5. Define the smallest SolarGRANT Pro proving slice that will consume the capability in production or production-like use.
+6. Create or update feature specifications and ADRs before implementation.
+7. Validate cross-cutting concerns including security, privacy, auditability, human review, AI governance, reliability, and observability.
+8. Update COM navigation and sprint records at release close.
+9. Do not move to the next release until the decision gates are satisfied.
 
 ## Platform MVP Definition
 
@@ -111,7 +112,9 @@ Clada OS tracks capability maturity separately from release status. A release ma
 | L2 | Specified | Capability has technical and product specifications. |
 | L3 | Implemented | Capability exists in code. |
 | L4 | Production Ready | Capability is tested, reviewed, and usable in production. |
-| L5 | Reusable Across Products | Capability has been consumed by more than one product/module or is designed and validated for multi-product reuse. |
+| L5 | Reusable Across Products | Capability has been successfully consumed by at least two genuinely separate product modules, or an approved CTO Architecture Decision Record explicitly documents why equivalent evidence exists. |
+
+L4 represents production readiness. L5 represents proven reuse.
 
 ### Movement Between Levels
 
@@ -121,7 +124,7 @@ Clada OS tracks capability maturity separately from release status. A release ma
 | L1 to L2 | Feature specification, API or contract proposal, dependency review, risk review, and ADR where material. |
 | L2 to L3 | Implementation matching the approved specification, with documentation updated for any approved differences. |
 | L3 to L4 | Tests, review, security/privacy/audit checks, operational readiness, migration notes if relevant, and release approval. |
-| L4 to L5 | Consumption by more than one product/module, or explicit validation that the capability is product-neutral and ready for reuse. |
+| L4 to L5 | Successful consumption by at least two genuinely separate product modules, or an approved CTO Architecture Decision Record documenting equivalent evidence. |
 
 Capabilities may move backwards when production evidence shows the API is unstable, the ownership boundary is wrong, the implementation is too product-specific, or risk controls are incomplete.
 
@@ -255,6 +258,8 @@ SolarGRANT Pro may consume platform APIs, configure platform capabilities, and o
 
 This roadmap adds an explicit module configuration release because configuration is required before governed AI and reporting can safely serve SolarGRANT Pro without encoding solar-specific behaviour into Clada OS.
 
+Each Platform Release 1.x must include a small SolarGRANT Pro proving slice. Product Release 2.0 should consolidate and harden the slices into the SolarGRANT Pro MVP integration; it must not be the first meaningful point of product consumption.
+
 ### Platform Release 1.0 - Platform Execution Model and Roadmap
 
 | Field | Value |
@@ -269,9 +274,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Define and implement the foundation for organisations, account ownership, actor identity, and tenant-aware boundaries. |
-| Key deliverables | Feature specification; ADRs for identity and tenancy decisions if needed; organisation and actor model; basic platform identity APIs; documentation updates. |
-| Success criteria | SolarGRANT Pro can associate users, customers, and operational data with the correct organisation and actor context. |
+| Objective | Define and implement the foundation for organisations, account ownership, actor identity, and tenant-aware boundaries, validated through a first SolarGRANT Pro identity slice. |
+| Key deliverables | Feature specification; ADRs for identity and tenancy decisions if needed; organisation and actor model; basic platform identity APIs; SolarGRANT Pro proving slice; documentation updates. |
+| SolarGRANT Pro proving slice | Installer organisations, internal Clada users, organisation ownership, and basic account identity. |
+| Success criteria | SolarGRANT Pro can associate users, customers, and operational data with the correct organisation and actor context in production or production-like use. |
 | Dependencies | Platform Release 1.0; security and privacy review. |
 | Non-goals | Full SSO suite, billing, partner self-service, marketplace tenancy, advanced customer portal. |
 
@@ -279,9 +285,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Provide safe access control and traceability for platform actions. |
-| Key deliverables | User model; role assignment; permission contract; authorization checks for core platform actions; audit event model; activity history; tests. |
-| Success criteria | Material actions can be authorized and audited with actor, organisation, timestamp, subject, and action context. |
+| Objective | Provide safe access control and traceability for platform actions, validated by protecting and auditing one real SolarGRANT Pro workflow. |
+| Key deliverables | User model; role assignment; permission contract; authorization checks for core platform actions; audit event model; activity history; SolarGRANT Pro protected workflow slice; tests. |
+| SolarGRANT Pro proving slice | Protect one real SolarGRANT Pro workflow and record audit events for that workflow. |
+| Success criteria | Material actions in the selected SolarGRANT Pro workflow can be authorized and audited with actor, organisation, timestamp, subject, and action context. |
 | Dependencies | Platform Release 1.1. |
 | Non-goals | Complex ABAC engine, custom role scripting, SIEM replacement, full event-sourcing architecture. |
 
@@ -289,9 +296,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Create reusable workflow state, transition, ownership, and review mechanics. |
-| Key deliverables | Workflow feature specification; workflow state model; transition APIs; audit integration; SolarGRANT Pro workflow configuration proposal. |
-| Success criteria | SolarGRANT Pro can represent lead and grant-readiness state through platform workflow contracts without owning generic workflow mechanics. |
+| Objective | Create reusable workflow state, transition, ownership, and review mechanics, validated by migrating one genuine SolarGRANT Pro lead workflow. |
+| Key deliverables | Workflow feature specification; workflow state model; transition APIs; audit integration; SolarGRANT Pro lead workflow migration slice; workflow configuration proposal. |
+| SolarGRANT Pro proving slice | Migrate one genuine lead workflow to the platform workflow engine. |
+| Success criteria | The selected SolarGRANT Pro lead workflow runs through platform workflow contracts without owning generic workflow mechanics. |
 | Dependencies | Platform Release 1.2. |
 | Non-goals | Visual workflow builder, arbitrary automations, cross-product workflow marketplace. |
 
@@ -299,9 +307,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Create reusable document collection, metadata, review, and pack-preparation foundations. |
-| Key deliverables | Document feature specification; storage and access rules; document metadata model; review state; audit integration; SolarGRANT Pro checklist configuration proposal. |
-| Success criteria | Homeowner uploads and reviewed application-pack preparation can be represented without hard-coding document mechanics inside SolarGRANT Pro. |
+| Objective | Create reusable document collection, metadata, review, and pack-preparation foundations, validated by migrating one homeowner document workflow. |
+| Key deliverables | Document feature specification; storage and access rules; document metadata model; review state; audit integration; SolarGRANT Pro homeowner document workflow slice; checklist configuration proposal. |
+| SolarGRANT Pro proving slice | Migrate one homeowner document workflow to the platform document foundation. |
+| Success criteria | The selected homeowner document workflow can be uploaded, tracked, reviewed, and audited without hard-coding document mechanics inside SolarGRANT Pro. |
 | Dependencies | Platform Release 1.3; privacy/security review. |
 | Non-goals | Autonomous document approval, broad OCR platform, public document API, final AI extraction workflows. |
 
@@ -309,9 +318,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Create reusable notification request, delivery status, communication history, and provider-boundary foundations. |
-| Key deliverables | Notification specification; message event model; email/SMS provider interface; consent and audit expectations; operational notification patterns. |
-| Success criteria | SolarGRANT Pro can request lead follow-ups, missing-document reminders, and operator alerts through a platform boundary. |
+| Objective | Create reusable notification request, delivery status, communication history, and provider-boundary foundations, validated by one real SolarGRANT Pro reminder or follow-up. |
+| Key deliverables | Notification specification; message event model; email/SMS provider interface; consent and audit expectations; SolarGRANT Pro reminder or follow-up slice; operational notification patterns. |
+| SolarGRANT Pro proving slice | Send one real reminder or follow-up through the platform notification service. |
+| Success criteria | SolarGRANT Pro can send the selected reminder or follow-up through a platform boundary with delivery status and audit context. |
 | Dependencies | Platform Release 1.4; integration boundary review. |
 | Non-goals | Marketing automation, bulk campaigns, provider marketplace, autonomous communication journeys. |
 
@@ -319,9 +329,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Create the configuration boundary that lets product modules adapt platform capabilities without changing platform internals. |
-| Key deliverables | Module configuration specification; configuration schema; validation rules; permission and audit controls; SolarGRANT Pro configuration baseline. |
-| Success criteria | SolarGRANT Pro can configure workflow statuses, document checklist values, labels, thresholds, and module toggles through documented contracts. |
+| Objective | Create the configuration boundary that lets product modules adapt platform capabilities without changing platform internals, validated by one SolarGRANT Pro configuration-driven workflow. |
+| Key deliverables | Module configuration specification; configuration schema; validation rules; permission and audit controls; SolarGRANT Pro configuration-driven workflow slice; SolarGRANT Pro configuration baseline. |
+| SolarGRANT Pro proving slice | Configure one SolarGRANT Pro workflow without changing platform code. |
+| Success criteria | The selected SolarGRANT Pro workflow can change approved statuses, labels, checklist values, or thresholds through documented configuration contracts. |
 | Dependencies | Platform Release 1.5. |
 | Non-goals | Low-code builder, customer-authored automation scripts, partner module SDK. |
 
@@ -329,9 +340,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Govern AI assistance across modules with review, traceability, permissions, audit, and provider boundaries. |
-| Key deliverables | AI assistance feature specification; AI review states; prompt/output traceability model; confidence/uncertainty handling; OpenAI provider adapter boundary; human-review rules. |
-| Success criteria | SolarGRANT Pro can use AI for draft summaries and assistance while preserving human review before consequential outputs. |
+| Objective | Govern AI assistance across modules with review, traceability, permissions, audit, and provider boundaries, validated by one SolarGRANT Pro AI-assisted feature. |
+| Key deliverables | AI assistance feature specification; AI review states; prompt/output traceability model; confidence/uncertainty handling; OpenAI provider adapter boundary; SolarGRANT Pro governed AI slice; human-review rules. |
+| SolarGRANT Pro proving slice | Govern one AI-assisted SolarGRANT Pro feature through the platform AI capability. |
+| Success criteria | The selected AI-assisted SolarGRANT Pro feature is traceable, permission-aware, auditable, and human-reviewed before consequential use. |
 | Dependencies | Platform Release 1.6; AI engineering rules; privacy/security review. |
 | Non-goals | Autonomous grant decisions, unreviewed customer-facing AI, AI provider marketplace. |
 
@@ -339,9 +351,10 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Provide reusable operational metrics from workflow, audit, document, notification, and AI events. |
-| Key deliverables | Reporting specification; metric definitions; pipeline visibility; operational dashboards or report APIs; audit-aligned event sources. |
-| Success criteria | SolarGRANT Pro can show installer pipeline visibility and operational bottlenecks from platform events. |
+| Objective | Provide reusable operational metrics from workflow, audit, document, notification, and AI events, validated by one real SolarGRANT Pro operational dashboard. |
+| Key deliverables | Reporting specification; metric definitions; pipeline visibility; SolarGRANT Pro operational dashboard slice; operational dashboards or report APIs; audit-aligned event sources. |
+| SolarGRANT Pro proving slice | Produce one real operational dashboard using platform events. |
+| Success criteria | SolarGRANT Pro can show the selected operational dashboard from platform events with traceable source definitions. |
 | Dependencies | Platform Release 1.7. |
 | Non-goals | BI warehouse, financial forecasting, cross-product benchmarking, commercial billing automation. |
 
@@ -349,9 +362,9 @@ This roadmap adds an explicit module configuration release because configuration
 
 | Field | Value |
 | --- | --- |
-| Objective | Integrate SolarGRANT Pro with the minimum viable Clada OS platform. |
-| Key deliverables | SolarGRANT Pro feature specifications; module configuration; integration plan; migration plan if needed; user-facing release notes; production readiness review. |
-| Success criteria | SolarGRANT Pro consumes platform identity, permissions, audit, workflow, documents, notifications, module configuration, AI governance, and reporting through documented platform contracts. |
+| Objective | Consolidate and harden the Platform Release 1.x SolarGRANT Pro proving slices into the SolarGRANT Pro MVP integration. |
+| Key deliverables | SolarGRANT Pro feature specifications; module configuration; integration plan; migration plan if needed; proving-slice hardening plan; user-facing release notes; production readiness review. |
+| Success criteria | SolarGRANT Pro consumes platform identity, permissions, audit, workflow, documents, notifications, module configuration, AI governance, and reporting through documented platform contracts, with each capability already validated through at least one earlier proving slice. |
 | Dependencies | Platform Releases 1.1 through 1.8. |
 | Non-goals | Second product module, partner marketplace, public SDK, broad codebase renaming. |
 
@@ -387,6 +400,7 @@ Every Platform Release 1.x milestone must satisfy these gates before the next re
 | Scope gate | Release objective, in-scope items, non-goals, and affected capabilities are documented. |
 | Dependency gate | The release does not depend on unavailable lower-level capabilities, or an ADR approves the exception. |
 | Specification gate | Feature specifications exist for implementation work and include cross-cutting concerns. |
+| Product validation gate | Each Platform Release 1.x defines and validates a small SolarGRANT Pro proving slice in production or production-like use. |
 | ADR gate | Material architecture, security, privacy, API, provider, or dependency decisions are recorded. |
 | Implementation gate | Code changes match approved specs and avoid unrelated product behaviour changes. |
 | Validation gate | Relevant tests, lint, build, migration checks, link checks, and manual verification are complete or caveated. |

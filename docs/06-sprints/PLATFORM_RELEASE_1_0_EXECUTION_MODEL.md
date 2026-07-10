@@ -22,6 +22,7 @@ In scope:
 - capability maturity model;
 - capability prioritisation framework;
 - Platform Release 1.x build order;
+- incremental SolarGRANT Pro proving slices for each Platform Release 1.x;
 - dependency graph;
 - SolarGRANT Pro consumption map;
 - release roadmap;
@@ -77,8 +78,10 @@ Platform Release 1.0 is successful when:
 - the minimum viable Clada OS platform is defined;
 - MVP, post-MVP, and deferred capabilities are separated;
 - capability maturity can be tracked from L0 through L5;
+- L4 and L5 are clearly separated as production readiness and proven reuse;
 - capability priority can be scored consistently;
 - Platform Release 1.x has a dependency-led build order;
+- each Platform Release 1.x includes a small SolarGRANT Pro proving slice;
 - SolarGRANT Pro consumption of platform capabilities is mapped;
 - release gates and risks are documented;
 - COM indexes and sprint navigation point to this release;
@@ -87,9 +90,11 @@ Platform Release 1.0 is successful when:
 ## Key Decisions
 
 - Platform implementation should begin with identity and organisation foundations.
+- Every Platform Release 1.x should include a small, real SolarGRANT Pro proving slice in production or production-like use.
 - Users, roles, permissions, and audit must come before workflow, documents, notifications, AI, and reporting.
 - AI assistance governance must wait until permissions, audit, workflow, document, notification, and module configuration boundaries exist.
 - Module configuration deserves an explicit release before AI and reporting because product variation must not be hard-coded into Clada OS.
+- L4 means production ready; L5 means demonstrated reuse across at least two genuinely separate product modules or CTO-approved equivalent evidence.
 - Marketplace, partner extensibility, public SDKs, and low-code workflow building are deferred beyond the SolarGRANT Pro MVP integration path.
 
 ## Handoff To Platform Release 1.1
@@ -102,7 +107,8 @@ Recommended next actions:
 2. Draft a feature specification for identity and organisation foundations.
 3. Decide whether identity, tenancy, account ownership, or data-boundary ADRs are required.
 4. Define the minimum organisation and actor model SolarGRANT Pro needs.
-5. Define validation requirements for tenant boundaries, actor ownership, and privacy.
+5. Define the SolarGRANT Pro proving slice for installer organisations, internal Clada users, organisation ownership, and basic account identity.
+6. Define validation requirements for tenant boundaries, actor ownership, and privacy.
 
 Do not begin workflow, document, notification, AI, reporting, integration, billing, marketplace, or partner SDK implementation in Platform Release 1.1.
 

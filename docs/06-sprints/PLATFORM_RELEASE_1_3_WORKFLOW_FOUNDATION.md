@@ -264,6 +264,33 @@ Required validation:
 
 Do not claim a validation step passed if it was skipped or unavailable.
 
+## Validation Results
+
+Validation run on 2026-07-10 under project-local Node `v22.23.1` and pnpm `10.11.0`.
+
+PostgreSQL validation target:
+
+`clada_platform_12_test`
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Node 22 | Passed | `.tools/node-v22/node.exe -v` returned `v22.23.1`. |
+| Prisma format | Passed | `pnpm exec prisma format` completed before implementation validation. |
+| Prisma validate | Passed | Reran with explicit PostgreSQL `DATABASE_URL`. |
+| Prisma generate | Passed | `pnpm exec prisma generate`. |
+| Migration deploy | Passed | `pnpm test:integration:postgres` applied `20260710140000_workflow_foundation` to the test database. |
+| Migration status | Passed | `pnpm exec prisma migrate status` reported schema up to date. |
+| Unit tests | Passed | 33 platform tests passed. |
+| PostgreSQL integration tests | Passed | 3 integration tests passed, including workflow history and audit proving-slice coverage. |
+| Type checking | Passed | `pnpm typecheck` passed after production build regenerated Next type files. |
+| Lint | Passed | `pnpm lint`. |
+| Production build | Passed | `pnpm build`. |
+| Document metadata validation | Passed | 102 Markdown files checked. |
+| Markdown internal-link validation | Passed | 102 Markdown files checked. |
+| COM navigation validation | Passed | Numbered COM Markdown files are listed from `docs/SUMMARY.md`. |
+| Placeholder scan | Passed | Template and documentation-standard placeholders allowlisted. |
+| `git diff --check` | Passed | No whitespace errors. |
+
 ## Definition Of Done
 
 This release is done when:

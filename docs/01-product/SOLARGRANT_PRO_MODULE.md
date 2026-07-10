@@ -53,6 +53,16 @@ SolarGRANT Pro consumes the Clada OS users, permissions, and audit foundation th
 - successful stage changes write typed audit attribution with organisation, membership, user, resource, source, and outcome fields;
 - public homeowner portal token routes remain token-scoped and do not become organisation memberships.
 
+## Platform Release 1.3 Consumption
+
+SolarGRANT Pro consumes the Clada OS Workflow Foundation through the lead pipeline-stage workflow:
+
+- the lead pipeline has a platform workflow definition, stages, transitions, instances, and history;
+- lead stage changes are validated and executed through the reusable workflow service;
+- successful stage changes write workflow transition history linked to the audit event;
+- `Lead.pipelineStage` remains as a compatibility projection for current UI, portal progress, and reporting surfaces;
+- SolarGRANT Pro retains lead labels, domain language, and product activity entries.
+
 ## What Next
 
 Future SolarGRANT Pro features should include a feature specification and note whether any part of the work should become reusable Clada OS infrastructure.

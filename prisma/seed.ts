@@ -2,6 +2,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { PrismaClient } from '@prisma/client';
 import { ensureDefaultInstallerWithOrganisation } from '../lib/identity';
 import { defaultInstallerQuotePricing } from '../lib/installer-quote-pricing';
+import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from '../lib/lead-workflow';
+import { ensureWorkflowInstanceForResource } from '../lib/workflow';
 
 if (!process.env.DATABASE_URL && existsSync('.env')) {
   for (const rawLine of readFileSync('.env', 'utf8').split(/\r?\n/)) {
@@ -296,6 +298,20 @@ async function main() {
       }
     }
   });
+
+  for (const lead of [lead1, lead2, lead3, lead4, lead5]) {
+    await ensureWorkflowInstanceForResource({
+      db: prisma,
+      workflowDefinitionKey: LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY,
+      organisationId: lead.organisationId,
+      resourceType: 'lead',
+      resourceId: lead.id,
+      stageKey: lead.pipelineStage,
+      metadata: {
+        source: 'seed'
+      }
+    });
+  }
 
   await prisma.leadDocument.upsert({
     where: { id: 'demo-doc-1' },

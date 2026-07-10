@@ -78,6 +78,18 @@ The next implemented platform security slice introduces:
 
 Internal administrative access remains explicit through organisation memberships. Membership in the Clada internal organisation alone does not grant access to installer-owned data.
 
+## Platform Release 1.3 Workflow Foundation
+
+The workflow slice introduces:
+
+- workflow definitions, stages, transitions, instances, and history;
+- data-backed server-side transition validation;
+- workflow execution integrated with organisation context and permission checks;
+- workflow-aware audit metadata and audit-linked transition history;
+- a SolarGRANT Pro proving slice that routes lead pipeline-stage changes through the workflow service.
+
+SolarGRANT Pro keeps lead-specific labels and `Lead.pipelineStage` as a compatibility projection during this release. The generic workflow service must not import SolarGRANT Pro business rules.
+
 Do not prematurely split the application into services. Extract reusable boundaries when there is a clear maintenance, reliability, or product reason.
 
 The canonical platform architecture, capability taxonomy, dependency map, and evolution policy are maintained in [../01-platform/README.md](../01-platform/README.md).

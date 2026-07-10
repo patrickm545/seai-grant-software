@@ -62,6 +62,7 @@ Every capability or capability-adjacent concern must belong to exactly one categ
 | Users and roles | L3 Implemented; L4 candidate after PR review and production migration validation | Platform role enum, membership role assignment, migration backfill, role-to-permission tests, and bootstrap internal/admin role documentation. | L4 |
 | Permissions | L3 Implemented; L4 candidate after PR review and production migration validation | Permission catalogue, role-to-permission mapping, default-deny helper, protected SolarGRANT Pro stage-change service, unit tests, and PostgreSQL integration proving slice. | L4 |
 | Audit trail | L3 Implemented; L4 candidate after PR review and production migration validation | Typed `AuditLog` fields, typed audit writer, metadata sanitisation, compatibility wrapper, proving-slice audit event, migration backfill, and unit/integration tests. | L4 |
+| Workflow Foundation | L3 Implemented; L4 candidate after PR review and production migration validation | Workflow definition, stage, transition, instance, and history models; migration-seeded lead pipeline definition; reusable workflow execution service; SolarGRANT Pro lead pipeline proving slice; unit and PostgreSQL integration tests. | L4 |
 
 ## How
 

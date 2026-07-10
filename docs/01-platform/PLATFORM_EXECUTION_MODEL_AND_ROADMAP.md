@@ -299,11 +299,13 @@ Implementation note for the active release branch: the selected proving slice is
 | Field | Value |
 | --- | --- |
 | Objective | Create reusable workflow state, transition, ownership, and review mechanics, validated by migrating one genuine SolarGRANT Pro lead workflow. |
-| Key deliverables | Workflow feature specification; workflow state model; transition APIs; audit integration; SolarGRANT Pro lead workflow migration slice; workflow configuration proposal. |
+| Key deliverables | Workflow feature specifications; workflow definition, stage, transition, instance, and history model; transition execution service; audit integration; migration-seeded SolarGRANT Pro lead workflow definition; lead workflow proving slice. |
 | SolarGRANT Pro proving slice | Migrate one genuine lead workflow to the platform workflow engine. |
 | Success criteria | The selected SolarGRANT Pro lead workflow runs through platform workflow contracts without owning generic workflow mechanics. |
 | Dependencies | Platform Release 1.2. |
 | Non-goals | Visual workflow builder, arbitrary automations, cross-product workflow marketplace. |
+
+Implementation note for the active release branch: the selected proving slice is SolarGRANT Pro lead pipeline-stage changes. `Lead.pipelineStage` remains a compatibility projection while workflow validation, execution, history, and audit metadata are handled by platform workflow services.
 
 ### Platform Release 1.4 - Document Foundation
 

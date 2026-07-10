@@ -126,15 +126,17 @@ enum AuditOutcome {
 }
 
 model Organisation {
-  id          String                   @id @default(cuid())
-  name        String
-  type        OrganisationType
-  status      OrganisationStatus       @default(ACTIVE)
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-  installers  Installer[]
-  leads       Lead[]
-  memberships OrganisationMembership[]
+  id                String                   @id @default(cuid())
+  name              String
+  type              OrganisationType
+  status            OrganisationStatus       @default(ACTIVE)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  installers        Installer[]
+  leads             Lead[]
+  memberships       OrganisationMembership[]
+  workflowInstances WorkflowInstance[]
+  workflowHistories WorkflowHistory[]
 
   @@index([type, status])
 }
@@ -328,20 +330,21 @@ model LeadActivity {
 }
 
 model AuditLog {
-  id             String          @id @default(cuid())
-  leadId         String?
-  organisationId String?
-  action         String
-  actor          String
-  actorType      AuditActorType?
-  userId         String?
-  membershipId   String?
-  resourceType   String?
-  resourceId     String?
-  source         String?
-  outcome        AuditOutcome    @default(SUCCEEDED)
-  createdAt      DateTime        @default(now())
-  metadataJson   Json?
+  id                String            @id @default(cuid())
+  leadId            String?
+  organisationId    String?
+  action            String
+  actor             String
+  actorType         AuditActorType?
+  userId            String?
+  membershipId      String?
+  resourceType      String?
+  resourceId        String?
+  source            String?
+  outcome           AuditOutcome      @default(SUCCEEDED)
+  createdAt         DateTime          @default(now())
+  metadataJson      Json?
+  workflowHistories WorkflowHistory[]
 
   @@index([leadId])
   @@index([organisationId, createdAt])
@@ -351,4 +354,128 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([outcome])
   @@index([createdAt])
+}
+
+model WorkflowDefinition {
+  id          String               @id @default(cuid())
+  key         String
+  name        String
+  description String?
+  version     Int                  @default(1)
+  isActive    Boolean              @default(true)
+  metadata    Json?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  stages      WorkflowStage[]
+  transitions WorkflowTransition[]
+  instances   WorkflowInstance[]
+  histories   WorkflowHistory[]
+
+  @@unique([key, version])
+  @@index([key, isActive])
+}
+
+model WorkflowStage {
+  id                   String               @id @default(cuid())
+  workflowDefinitionId String
+  workflowDefinition   WorkflowDefinition   @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  key                  String
+  label                String
+  position             Int
+  isInitial            Boolean              @default(false)
+  isTerminal           Boolean              @default(false)
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  outgoingTransitions  WorkflowTransition[] @relation("WorkflowTransitionFromStage")
+  incomingTransitions  WorkflowTransition[] @relation("WorkflowTransitionToStage")
+  currentInstances     WorkflowInstance[]
+  previousHistories    WorkflowHistory[]    @relation("WorkflowHistoryPreviousStage")
+  nextHistories        WorkflowHistory[]    @relation("WorkflowHistoryNextStage")
+
+  @@unique([workflowDefinitionId, key])
+  @@unique([workflowDefinitionId, position])
+  @@index([workflowDefinitionId, isInitial])
+  @@index([workflowDefinitionId, isTerminal])
+}
+
+model WorkflowTransition {
+  id                   String             @id @default(cuid())
+  workflowDefinitionId String
+  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  fromStageId          String
+  fromStage            WorkflowStage      @relation("WorkflowTransitionFromStage", fields: [fromStageId], references: [id], onDelete: Restrict)
+  toStageId            String
+  toStage              WorkflowStage      @relation("WorkflowTransitionToStage", fields: [toStageId], references: [id], onDelete: Restrict)
+  key                  String?
+  label                String?
+  requiredPermission   String?
+  isActive             Boolean            @default(true)
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  histories            WorkflowHistory[]
+
+  @@unique([workflowDefinitionId, fromStageId, toStageId])
+  @@index([workflowDefinitionId, isActive])
+  @@index([fromStageId])
+  @@index([toStageId])
+}
+
+model WorkflowInstance {
+  id                   String             @id @default(cuid())
+  workflowDefinitionId String
+  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Restrict)
+  currentStageId       String
+  currentStage         WorkflowStage      @relation(fields: [currentStageId], references: [id], onDelete: Restrict)
+  organisationId       String
+  organisation         Organisation       @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  resourceType         String
+  resourceId           String
+  startedAt            DateTime           @default(now())
+  completedAt          DateTime?
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  histories            WorkflowHistory[]
+
+  @@unique([workflowDefinitionId, resourceType, resourceId])
+  @@index([organisationId, currentStageId])
+  @@index([resourceType, resourceId])
+  @@index([workflowDefinitionId, currentStageId])
+}
+
+model WorkflowHistory {
+  id                   String              @id @default(cuid())
+  workflowInstanceId   String
+  workflowInstance     WorkflowInstance    @relation(fields: [workflowInstanceId], references: [id], onDelete: Cascade)
+  workflowDefinitionId String
+  workflowDefinition   WorkflowDefinition  @relation(fields: [workflowDefinitionId], references: [id], onDelete: Restrict)
+  transitionId         String?
+  transition           WorkflowTransition? @relation(fields: [transitionId], references: [id], onDelete: SetNull)
+  previousStageId      String?
+  previousStage        WorkflowStage?      @relation("WorkflowHistoryPreviousStage", fields: [previousStageId], references: [id], onDelete: SetNull)
+  nextStageId          String?
+  nextStage            WorkflowStage?      @relation("WorkflowHistoryNextStage", fields: [nextStageId], references: [id], onDelete: SetNull)
+  previousStageKey     String
+  nextStageKey         String
+  organisationId       String
+  organisation         Organisation        @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  actorType            AuditActorType?
+  actorUserId          String?
+  actorMembershipId    String?
+  actorOrganisationId  String?
+  outcome              AuditOutcome        @default(SUCCEEDED)
+  metadata             Json?
+  auditLogId           String?             @unique
+  auditLog             AuditLog?           @relation(fields: [auditLogId], references: [id], onDelete: SetNull)
+  createdAt            DateTime            @default(now())
+
+  @@index([workflowInstanceId, createdAt])
+  @@index([workflowDefinitionId, createdAt])
+  @@index([organisationId, createdAt])
+  @@index([outcome])
+  @@index([actorUserId])
+  @@index([actorMembershipId])
+  @@index([transitionId])
 }

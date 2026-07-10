@@ -13,7 +13,9 @@ import { writeAuditLog } from '@/lib/audit';
 import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
 import { getDocumentTypeFromLegacyKind } from '@/lib/documents';
 import { ensureDefaultInstallerWithOrganisation } from '@/lib/identity';
+import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from '@/lib/lead-workflow';
 import { createPortalToken } from '@/lib/portal';
+import { ensureWorkflowInstanceForResource } from '@/lib/workflow';
 import {
   calculateInstallerGeneratedQuote,
   defaultInstallerQuotePricing,
@@ -376,6 +378,18 @@ export async function POST(request: NextRequest) {
         }
       });
       console.info('[intake] Lead created', { leadId: createdLead.id, email: createdLead.email });
+
+      await ensureWorkflowInstanceForResource({
+        db: tx,
+        workflowDefinitionKey: LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY,
+        organisationId: installer.organisationId,
+        resourceType: 'lead',
+        resourceId: createdLead.id,
+        stageKey: createdLead.pipelineStage,
+        metadata: {
+          source: 'public_intake'
+        }
+      });
 
       await tx.leadActivity.create({
         data: {

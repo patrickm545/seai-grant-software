@@ -22,6 +22,16 @@ const platform12MigrationSql = readFileSync(
   ),
   'utf8'
 );
+const platform13MigrationSql = readFileSync(
+  join(
+    process.cwd(),
+    'prisma',
+    'migrations',
+    '20260710140000_workflow_foundation',
+    'migration.sql'
+  ),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -87,4 +97,27 @@ test('platform 1.2 migration preserves and backfills audit attribution', () => {
   assert.match(platform12MigrationSql, /"AuditLog"\."leadId" = "Lead"\."id"/);
   assert.match(platform12MigrationSql, /'PUBLIC_TOKEN'::"AuditActorType"/);
   assert.match(platform12MigrationSql, /"outcome" "AuditOutcome" NOT NULL DEFAULT 'SUCCEEDED'/);
+});
+
+test('platform 1.3 migration creates workflow foundation tables', () => {
+  assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowDefinition"/);
+  assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowStage"/);
+  assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowTransition"/);
+  assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowInstance"/);
+  assert.match(platform13MigrationSql, /CREATE TABLE "WorkflowHistory"/);
+});
+
+test('platform 1.3 migration seeds lead pipeline workflow definitions and transition permission', () => {
+  assert.match(platform13MigrationSql, /solargrant\.lead_pipeline/);
+  assert.match(platform13MigrationSql, /NEW_LEAD/);
+  assert.match(platform13MigrationSql, /QUOTE_SENT/);
+  assert.match(platform13MigrationSql, /lead\.change_status/);
+  assert.match(platform13MigrationSql, /compatibilityGraph/);
+});
+
+test('platform 1.3 migration backfills workflow instances without fabricated history', () => {
+  assert.match(platform13MigrationSql, /INSERT INTO "WorkflowInstance"/);
+  assert.match(platform13MigrationSql, /"Lead"\."pipelineStage"::TEXT/);
+  assert.match(platform13MigrationSql, /historyBackfilled', false/);
+  assert.doesNotMatch(platform13MigrationSql, /INSERT INTO "WorkflowHistory"/);
 });

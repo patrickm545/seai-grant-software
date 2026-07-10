@@ -175,6 +175,74 @@ Workflow Foundation must not be marked L5 in this release because it is proved t
 9. Update platform, product, engineering, sprint, feature, ADR, and technical debt documentation.
 10. Run required validation and open a pull request to `main`.
 
+## Implementation Summary
+
+Implemented Platform Release 1.3 workflow foundation:
+
+- additive workflow Prisma models for definitions, stages, transitions, instances, and history;
+- migration-seeded `solargrant.lead_pipeline` workflow definition with stage keys matching the existing lead pipeline;
+- migration backfill creating workflow instances from existing `Lead.pipelineStage` values without fabricating history;
+- reusable workflow service in `lib/workflow.ts` for definition integrity checks, instance initialization, transition validation, execution, history, and audit linkage;
+- audit writer now returns the created audit row while preserving existing call sites;
+- `changeLeadPipelineStage` now consumes the workflow service and keeps `Lead.pipelineStage` plus `LeadActivity` as SolarGRANT Pro projections;
+- public intake and seed paths ensure new leads receive workflow instances.
+
+## Migration Details
+
+Migration:
+
+`prisma/migrations/20260710140000_workflow_foundation/migration.sql`
+
+Strategy:
+
+- create workflow tables additively;
+- seed one active workflow definition for SolarGRANT Pro lead pipeline progression;
+- seed stages matching existing `LeadPipelineStage` enum values;
+- seed a permissive transition graph for valid distinct stage moves to preserve current operational behaviour;
+- require `lead.change_status` for seeded lead pipeline transitions;
+- backfill workflow instances from current lead stages;
+- record `historyBackfilled = false` in migration metadata to make clear that historical transitions were not invented.
+
+Rollback and recovery:
+
+- existing lead records and pipeline stages remain untouched;
+- workflow data can be ignored by rolled-back application code because `Lead.pipelineStage` remains;
+- no audit, activity, or lead history is deleted or rewritten.
+
+## Automated Tests Added
+
+- `tests/platform/workflow.test.ts`
+
+Expanded tests:
+
+- `tests/platform/migration-sql.test.ts`
+- `tests/integration/lead-stage-permissions.integration.test.ts`
+
+PostgreSQL proving-slice coverage:
+
+- valid transition succeeds;
+- invalid stage request is rejected server side;
+- same-organisation user without permission is denied;
+- cross-organisation user is denied;
+- successful transition creates workflow history;
+- successful transition writes audit metadata with workflow context;
+- denied transitions leave lead and workflow instance state unchanged;
+- denied transitions do not create extra workflow history.
+
+## Capability Maturity Achieved
+
+| Capability | Achieved maturity | Evidence |
+| --- | --- | --- |
+| Workflow Foundation | L3 implemented; L4 candidate after PR review and production migration validation | Schema, migration, workflow service, lead proving slice, unit tests, migration tests, and PostgreSQL integration coverage. |
+
+L5 is not achieved because reuse has been proved through only one product module.
+
+## Technical Debt Changes
+
+- Added `TD-011` for `Lead.pipelineStage` projection drift risk.
+- Updated `TD-007` to include workflow-aware protected service boundaries.
+- Recorded workflow foundation as implemented planned capability gap `PCG-003`.
+
 ## Validation Plan
 
 Required validation:

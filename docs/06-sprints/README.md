@@ -14,6 +14,10 @@ Sprint documents connect strategy to execution. They should be specific enough f
 
 - [ACTIVE_SPRINT.md](ACTIVE_SPRINT.md)
 
+## Architecture Checkpoints
+
+- [ARCHITECTURE_CHECKPOINT_1.md](ARCHITECTURE_CHECKPOINT_1.md)
+
 ## Platform Releases
 
 - [PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)

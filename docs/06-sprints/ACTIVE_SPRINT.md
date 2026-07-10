@@ -10,36 +10,35 @@
 
 ## Sprint
 
-Project Atlas: Platform Release 1.1 - Identity and Organisation Foundation.
+Architecture Checkpoint 1 - Repository and COM Health Review.
 
 ## Objective
 
-Implement the minimum Clada OS identity and organisation foundation, validated through a SolarGRANT Pro lead proving slice.
+Perform a complete architecture and repository health review after Foundation Release 1.0, Platform Release 1.0, and Platform Release 1.1.
 
 ## In Scope
 
-- organisation model
-- user and membership model
-- actor context definitions
-- existing admin-auth adapter into identity context
-- tenant-aware access helpers
-- installer and lead organisation ownership
-- migration for existing installer and lead data
-- SolarGRANT Pro lead proving slice
-- tenant isolation tests
-- feature specs, ADRs, and COM updates
+- repository structure review
+- COM health review
+- architecture health review
+- engineering process review
+- security and quality review
+- technical debt register
+- documentation debt register
+- architecture scorecard
+- sprint and COM navigation updates
+- documentation validation
+- pull request to `main`
 
 ## Out Of Scope
 
-- full authentication replacement
-- enterprise SSO
-- invitations
-- complex roles and permissions
-- billing, subscriptions, marketplace tenancy, partner accounts, or SDK implementation
-- workflow, document, notification, AI, or reporting platform changes
-- broad UI redesign
-- unrelated repository restructuring
+- production code changes
+- new platform capabilities
+- Platform Release 1.2 implementation
+- repository redesign
+- folder renames
+- document deletion or archiving
 
 ## Definition Of Done
 
-Platform Release 1.1 is complete when organisation ownership is implemented for the lead proving slice, tenant context is enforced server side, existing data is migrated safely, tenant isolation tests pass, COM navigation points to the release documents, and a pull request is opened to `main` without starting Platform Release 1.2.
+Architecture Checkpoint 1 is complete when the checkpoint review is documented, lasting technical debt is registered where useful, sprint and COM navigation identify the checkpoint as active, documentation validation has been run or caveated, and a pull request is opened to `main` without starting Platform Release 1.2.

@@ -18,6 +18,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [ENGINEERING_STANDARDS.md](ENGINEERING_STANDARDS.md): implementation expectations.
 - [AI_ENGINEERING_RULES.md](AI_ENGINEERING_RULES.md): rules for AI coding agents and AI-assisted work.
 - [POSTGRES_INTEGRATION_TESTS.md](POSTGRES_INTEGRATION_TESTS.md): disposable PostgreSQL setup for database-backed integration tests.
+- [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md): durable technical debt register for platform and repository risks.
 
 ## Engineering Rule
 

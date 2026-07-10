@@ -69,6 +69,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
+- [03-engineering/TECHNICAL_DEBT_REGISTER.md](03-engineering/TECHNICAL_DEBT_REGISTER.md)
 
 ## Features
 
@@ -99,6 +100,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md](06-sprints/FOUNDATION_RELEASE_1_MILESTONE_3.md)
 - [06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)
 - [06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md](06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md)
+- [06-sprints/ARCHITECTURE_CHECKPOINT_1.md](06-sprints/ARCHITECTURE_CHECKPOINT_1.md)
 
 ## Research
 

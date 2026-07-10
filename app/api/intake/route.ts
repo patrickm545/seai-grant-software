@@ -4,7 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { leadFormSchema } from '@/lib/validation';
 import { prisma } from '@/lib/prisma';
 import { generateEligibilityAnalysis } from '@/lib/ai';
-import { DEFAULT_INSTALLER_ID, getDefaultInstallerSeedData } from '@/lib/default-installer';
+import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
 import { sendLeadNotificationEmails } from '@/lib/email';
 import { sendLeadNotificationSms } from '@/lib/sms';
 import type { EligibilityAnalysis, LeadFormInput, LeadTemperature } from '@/lib/types';
@@ -12,6 +12,7 @@ import { buildSolarQuoteEstimate, type SolarQuoteEstimate } from '@/lib/quote-es
 import { writeAuditLog } from '@/lib/audit';
 import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
 import { getDocumentTypeFromLegacyKind } from '@/lib/documents';
+import { ensureDefaultInstallerWithOrganisation } from '@/lib/identity';
 import { createPortalToken } from '@/lib/portal';
 import {
   calculateInstallerGeneratedQuote,
@@ -38,8 +39,9 @@ function normalizeLeadInput(input: LeadFormInput): LeadFormInput {
   };
 }
 
-function getDuplicateLeadWhere(input: LeadFormInput) {
+function getDuplicateLeadWhere(input: LeadFormInput, organisationId: string) {
   return {
+    organisationId,
     installerId: input.installerId,
     fullName: input.fullName,
     email: input.email,
@@ -130,12 +132,11 @@ export async function POST(request: NextRequest) {
 
     const installer =
       leadInput.installerId === DEFAULT_INSTALLER_ID
-        ? await prisma.installer.upsert({
-            where: { id: DEFAULT_INSTALLER_ID },
-            update: {},
-            create: getDefaultInstallerSeedData()
-          })
-        : await prisma.installer.findUnique({ where: { id: leadInput.installerId } });
+        ? await ensureDefaultInstallerWithOrganisation(prisma, { ensureDefaultAdminMembership: false })
+        : await prisma.installer.findUnique({
+            where: { id: leadInput.installerId },
+            include: { organisation: true }
+          });
 
     if (!installer) {
       console.warn('[intake] Installer not found', { installerId: leadInput.installerId });
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     const existingLead = await prisma.lead.findFirst({
-      where: getDuplicateLeadWhere(leadInput),
+      where: getDuplicateLeadWhere(leadInput, installer.organisationId),
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -247,13 +248,13 @@ export async function POST(request: NextRequest) {
     const scoreUpdatedAt = new Date();
     const portalToken = createPortalToken();
 
-    const submissionKey = `${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
+    const submissionKey = `${installer.organisationId}|${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
 
     const submissionResult = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${submissionKey}))`;
 
       const duplicateLead = await tx.lead.findFirst({
-        where: getDuplicateLeadWhere(leadInput),
+        where: getDuplicateLeadWhere(leadInput, installer.organisationId),
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -291,6 +292,7 @@ export async function POST(request: NextRequest) {
 
       const createdLead = await tx.lead.create({
         data: {
+          organisationId: installer.organisationId,
           installerId: leadInput.installerId,
           fullName: leadInput.fullName,
           email: leadInput.email,
@@ -384,6 +386,7 @@ export async function POST(request: NextRequest) {
           metadata: {
             source: 'public_intake',
             installerId: leadInput.installerId,
+            organisationId: installer.organisationId,
             uploadedDocuments: applicantDocuments.length
           },
           createdBy: 'Public intake',
@@ -445,6 +448,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           source: 'public_intake',
           installerId: leadInput.installerId,
+          organisationId: installer.organisationId,
           status: createdLead.status,
           pipelineStage: createdLead.pipelineStage,
           leadScore: createdLead.leadScore,

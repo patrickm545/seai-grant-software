@@ -82,8 +82,72 @@ enum DwellingType {
   OTHER
 }
 
+enum OrganisationType {
+  CLADA_INTERNAL
+  INSTALLER
+}
+
+enum OrganisationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrganisationMembershipStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Organisation {
+  id          String                     @id @default(cuid())
+  name        String
+  type        OrganisationType
+  status      OrganisationStatus         @default(ACTIVE)
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  installers  Installer[]
+  leads       Lead[]
+  memberships OrganisationMembership[]
+
+  @@index([type, status])
+}
+
+model User {
+  id          String                     @id @default(cuid())
+  email       String                     @unique
+  displayName String
+  status      UserStatus                 @default(ACTIVE)
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  memberships OrganisationMembership[]
+
+  @@index([status])
+}
+
+model OrganisationMembership {
+  id             String                       @id @default(cuid())
+  organisationId String
+  userId         String
+  organisation   Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user           User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         OrganisationMembershipStatus @default(ACTIVE)
+  isOwner        Boolean                      @default(false)
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  @@unique([organisationId, userId])
+  @@index([userId, status])
+  @@index([organisationId, status])
+}
+
 model Installer {
   id             String                  @id @default(cuid())
+  organisationId String
+  organisation   Organisation            @relation(fields: [organisationId], references: [id])
   name           String
   seaiCompanyId  String
   websiteDomain  String?
@@ -92,10 +156,14 @@ model Installer {
   updatedAt      DateTime                @updatedAt
   leads          Lead[]
   quotePricing   InstallerQuotePricing?
+
+  @@index([organisationId])
 }
 
 model Lead {
   id                    String        @id @default(cuid())
+  organisationId        String
+  organisation          Organisation  @relation(fields: [organisationId], references: [id])
   installerId           String
   installer             Installer     @relation(fields: [installerId], references: [id])
   fullName              String
@@ -149,6 +217,9 @@ model Lead {
   updatedAt             DateTime      @updatedAt
   documents             LeadDocument[]
   activities            LeadActivity[]
+
+  @@index([organisationId, createdAt])
+  @@index([organisationId, installerId])
 }
 
 model InstallerQuotePricing {

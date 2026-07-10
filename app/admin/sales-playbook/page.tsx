@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { DashboardShell } from '@/components/DashboardShell';
 import { RoiCalculator } from '@/components/RoiCalculator';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { leadOrganisationWhere } from '@/lib/lead-access';
 import { formatEuroAmount, pricingConfig } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
 
@@ -49,7 +51,9 @@ const objections = [
 ];
 
 export default async function SalesPlaybookPage() {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leads = await prisma.lead.findMany({
+    where: leadOrganisationWhere(organisationContext),
     select: {
       county: true,
       status: true,

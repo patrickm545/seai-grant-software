@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { DashboardShell } from '@/components/DashboardShell';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
+import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { leadOrganisationWhere } from '@/lib/lead-access';
 import { pricingConfig } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
 
@@ -20,7 +22,9 @@ function isLiabilityLead(lead: { worksStarted: boolean; priorSolarGrantAtMprn: b
 }
 
 export default async function SupportPage() {
+  const organisationContext = await requireDefaultInstallerOrganisationContext();
   const leads = await prisma.lead.findMany({
+    where: leadOrganisationWhere(organisationContext),
     select: {
       county: true,
       status: true,

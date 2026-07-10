@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { PrismaClient } from '@prisma/client';
-import { getDefaultInstallerSeedData } from '../lib/default-installer';
+import { ensureDefaultInstallerWithOrganisation } from '../lib/identity';
 import { defaultInstallerQuotePricing } from '../lib/installer-quote-pricing';
 
 if (!process.env.DATABASE_URL && existsSync('.env')) {
@@ -25,12 +25,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const now = new Date();
-  const defaultInstaller = getDefaultInstallerSeedData();
-  const installer = await prisma.installer.upsert({
-    where: { id: defaultInstaller.id },
-    update: {},
-    create: defaultInstaller
-  });
+  const installer = await ensureDefaultInstallerWithOrganisation(prisma);
 
   await prisma.installerQuotePricing.upsert({
     where: { installerId: installer.id },
@@ -55,12 +50,15 @@ async function main() {
   const lead1 = await prisma.lead.upsert({
     where: { id: 'demo-lead-1' },
     update: {
+      organisationId: installer.organisationId,
+      installerId: installer.id,
       pipelineStage: 'QUALIFIED',
       leadScore: 'HOT',
       scoreUpdatedAt: now
     },
     create: {
       id: 'demo-lead-1',
+      organisationId: installer.organisationId,
       installerId: installer.id,
       fullName: 'John Murphy',
       email: 'john@example.com',
@@ -101,12 +99,15 @@ async function main() {
   const lead2 = await prisma.lead.upsert({
     where: { id: 'demo-lead-2' },
     update: {
+      organisationId: installer.organisationId,
+      installerId: installer.id,
       pipelineStage: 'CONTACTED',
       leadScore: 'WARM',
       scoreUpdatedAt: now
     },
     create: {
       id: 'demo-lead-2',
+      organisationId: installer.organisationId,
       installerId: installer.id,
       fullName: 'Aoife Byrne',
       email: 'aoife@example.com',
@@ -148,6 +149,8 @@ async function main() {
   const lead3 = await prisma.lead.upsert({
     where: { id: 'demo-lead-3' },
     update: {
+      organisationId: installer.organisationId,
+      installerId: installer.id,
       pipelineStage: 'SURVEY_BOOKED',
       leadScore: 'WARM',
       nextFollowUpAt: now,
@@ -155,6 +158,7 @@ async function main() {
     },
     create: {
       id: 'demo-lead-3',
+      organisationId: installer.organisationId,
       installerId: installer.id,
       fullName: 'Patrick O Sullivan',
       email: 'patrick@example.com',
@@ -197,12 +201,15 @@ async function main() {
   const lead4 = await prisma.lead.upsert({
     where: { id: 'demo-lead-4' },
     update: {
+      organisationId: installer.organisationId,
+      installerId: installer.id,
       pipelineStage: 'QUOTE_SENT',
       leadScore: 'HOT',
       scoreUpdatedAt: now
     },
     create: {
       id: 'demo-lead-4',
+      organisationId: installer.organisationId,
       installerId: installer.id,
       fullName: 'Niamh Kelly',
       email: 'niamh@example.com',
@@ -244,12 +251,15 @@ async function main() {
   const lead5 = await prisma.lead.upsert({
     where: { id: 'demo-lead-5' },
     update: {
+      organisationId: installer.organisationId,
+      installerId: installer.id,
       pipelineStage: 'LOST',
       leadScore: 'COLD',
       scoreUpdatedAt: now
     },
     create: {
       id: 'demo-lead-5',
+      organisationId: installer.organisationId,
       installerId: installer.id,
       fullName: 'Declan Walsh',
       email: 'declan@example.com',

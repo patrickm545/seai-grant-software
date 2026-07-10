@@ -292,6 +292,8 @@ Each Platform Release 1.x must include a small SolarGRANT Pro proving slice. Pro
 | Dependencies | Platform Release 1.1. |
 | Non-goals | Complex ABAC engine, custom role scripting, SIEM replacement, full event-sourcing architecture. |
 
+Implementation note for the active release branch: the selected proving slice is SolarGRANT Pro lead pipeline-stage changes protected by `lead.change_status`, with typed audit attribution written for successful changes.
+
 ### Platform Release 1.3 - Workflow Foundation
 
 | Field | Value |

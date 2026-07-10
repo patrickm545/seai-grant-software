@@ -31,6 +31,7 @@ function activeMembership(overrides: Partial<MembershipWithContext> = {}): Membe
       createdAt: new Date('2026-07-10T00:00:00.000Z'),
       updatedAt: new Date('2026-07-10T00:00:00.000Z')
     },
+    role: 'ORGANISATION_ADMIN',
     ...overrides
   };
 }
@@ -46,6 +47,7 @@ test('resolves valid user and organisation membership context', () => {
   assert.equal(context.organisationType, 'INSTALLER');
   assert.equal(context.actor.actorType, 'human_user');
   assert.equal(context.actor.userId, 'user-a');
+  assert.equal(context.role, 'ORGANISATION_ADMIN');
 });
 
 test('rejects missing organisation context', () => {
@@ -70,7 +72,7 @@ test('rejects inactive users', () => {
 test('rejects inactive membership or organisation context', () => {
   assertContextError(
     () => resolveOrganisationContextFromMembership(activeMembership({ status: 'INACTIVE' }), 'org-a'),
-    'INACTIVE_ORGANISATION'
+    'INACTIVE_MEMBERSHIP'
   );
 
   const inactiveOrganisation = activeMembership({

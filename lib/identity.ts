@@ -1,4 +1,4 @@
-import type { Organisation, OrganisationMembership, User, Prisma, PrismaClient } from '@prisma/client';
+import type { Organisation, OrganisationMembership, PlatformRole, User, Prisma, PrismaClient } from '@prisma/client';
 import { isAdminAuthenticated } from './admin-auth';
 import { DEFAULT_INSTALLER_ID, getDefaultInstallerSeedData } from './default-installer';
 import { prisma } from './prisma';
@@ -30,6 +30,7 @@ export type OrganisationContext = {
   organisationType: Organisation['type'];
   membershipId: string;
   isOwner: boolean;
+  role: PlatformRole;
   actor: ActorContext;
 };
 
@@ -44,6 +45,7 @@ export type OrganisationContextErrorCode =
   | 'MISSING_ORGANISATION'
   | 'INVALID_MEMBERSHIP'
   | 'INACTIVE_USER'
+  | 'INACTIVE_MEMBERSHIP'
   | 'INACTIVE_ORGANISATION';
 
 export class OrganisationContextError extends Error {
@@ -96,7 +98,11 @@ export function resolveOrganisationContextFromMembership(
     throw new OrganisationContextError('INACTIVE_USER');
   }
 
-  if (membership.organisation.status !== 'ACTIVE' || membership.status !== 'ACTIVE') {
+  if (membership.status !== 'ACTIVE') {
+    throw new OrganisationContextError('INACTIVE_MEMBERSHIP');
+  }
+
+  if (membership.organisation.status !== 'ACTIVE') {
     throw new OrganisationContextError('INACTIVE_ORGANISATION');
   }
 
@@ -106,6 +112,7 @@ export function resolveOrganisationContextFromMembership(
     organisationType: membership.organisation.type,
     membershipId: membership.id,
     isOwner: membership.isOwner,
+    role: membership.role,
     actor: {
       actorType: 'human_user',
       userId: membership.user.id,
@@ -188,14 +195,16 @@ export async function ensureInternalIdentityFoundation(db: DbClient = prisma) {
     },
     update: {
       status: 'ACTIVE',
-      isOwner: true
+      isOwner: true,
+      role: 'CLADA_INTERNAL_ADMIN'
     },
     create: {
       id: 'membership_clada_admin_internal',
       organisationId: organisation.id,
       userId: user.id,
       status: 'ACTIVE',
-      isOwner: true
+      isOwner: true,
+      role: 'CLADA_INTERNAL_ADMIN'
     }
   });
 
@@ -239,14 +248,16 @@ export async function ensureDefaultAdminMembershipForOrganisation(args: {
       }
     },
     update: {
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      role: 'ORGANISATION_ADMIN'
     },
     create: {
       id: membershipId,
       organisationId,
       userId: internalIdentity.user.id,
       status: 'ACTIVE',
-      isOwner: false
+      isOwner: false,
+      role: 'ORGANISATION_ADMIN'
     }
   });
 }

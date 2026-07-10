@@ -102,13 +102,36 @@ enum OrganisationMembershipStatus {
   INACTIVE
 }
 
+enum PlatformRole {
+  ORGANISATION_OWNER
+  ORGANISATION_ADMIN
+  ORGANISATION_MEMBER
+  CLADA_INTERNAL_ADMIN
+  CLADA_INTERNAL_SUPPORT
+  SERVICE_ACTOR
+  SYSTEM_ACTOR
+}
+
+enum AuditActorType {
+  HUMAN_USER
+  SYSTEM
+  SERVICE
+  PUBLIC_TOKEN
+}
+
+enum AuditOutcome {
+  SUCCEEDED
+  DENIED
+  FAILED
+}
+
 model Organisation {
-  id          String                     @id @default(cuid())
+  id          String                   @id @default(cuid())
   name        String
   type        OrganisationType
-  status      OrganisationStatus         @default(ACTIVE)
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
+  status      OrganisationStatus       @default(ACTIVE)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
   installers  Installer[]
   leads       Lead[]
   memberships OrganisationMembership[]
@@ -117,12 +140,12 @@ model Organisation {
 }
 
 model User {
-  id          String                     @id @default(cuid())
-  email       String                     @unique
+  id          String                   @id @default(cuid())
+  email       String                   @unique
   displayName String
-  status      UserStatus                 @default(ACTIVE)
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
+  status      UserStatus               @default(ACTIVE)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
   memberships OrganisationMembership[]
 
   @@index([status])
@@ -136,24 +159,26 @@ model OrganisationMembership {
   user           User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
   status         OrganisationMembershipStatus @default(ACTIVE)
   isOwner        Boolean                      @default(false)
+  role           PlatformRole                 @default(ORGANISATION_MEMBER)
   createdAt      DateTime                     @default(now())
   updatedAt      DateTime                     @updatedAt
 
   @@unique([organisationId, userId])
   @@index([userId, status])
   @@index([organisationId, status])
+  @@index([role])
 }
 
 model Installer {
-  id             String                  @id @default(cuid())
+  id             String                 @id @default(cuid())
   organisationId String
-  organisation   Organisation            @relation(fields: [organisationId], references: [id])
+  organisation   Organisation           @relation(fields: [organisationId], references: [id])
   name           String
   seaiCompanyId  String
   websiteDomain  String?
   county         String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   leads          Lead[]
   quotePricing   InstallerQuotePricing?
 
@@ -162,11 +187,11 @@ model Installer {
 }
 
 model Lead {
-  id                    String        @id @default(cuid())
+  id                    String            @id @default(cuid())
   organisationId        String
-  organisation          Organisation  @relation(fields: [organisationId], references: [id])
+  organisation          Organisation      @relation(fields: [organisationId], references: [id])
   installerId           String
-  installer             Installer     @relation(fields: [installerId, organisationId], references: [id, organisationId])
+  installer             Installer         @relation(fields: [installerId, organisationId], references: [id, organisationId])
   fullName              String
   email                 String
   phone                 String?
@@ -175,16 +200,16 @@ model Lead {
   county                String
   eircode               String?
   propertyOwner         Boolean
-  privateLandlord       Boolean       @default(false)
+  privateLandlord       Boolean           @default(false)
   dwellingType          DwellingType
   yearBuilt             Int
   yearOccupied          Int?
   mprn                  String
   worksStarted          Boolean
-  priorSolarGrantAtMprn Boolean       @default(false)
+  priorSolarGrantAtMprn Boolean           @default(false)
   consentToProcess      Boolean
   consentToGrantAssist  Boolean
-  consentToContact      Boolean       @default(false)
+  consentToContact      Boolean           @default(false)
   notes                 String?
   internalNotes         String?
   followUpDate          DateTime?
@@ -196,7 +221,7 @@ model Lead {
   painPoints            String?
   likelihoodToBuy       String?
   leadSource            String?
-  portalToken           String?       @unique
+  portalToken           String?           @unique
   portalTokenCreatedAt  DateTime?
   portalLastAccessedAt  DateTime?
   pipelineStage         LeadPipelineStage @default(NEW_LEAD)
@@ -204,9 +229,9 @@ model Lead {
   lastContactedAt       DateTime?
   nextFollowUpAt        DateTime?
   scoreUpdatedAt        DateTime?
-  researchCallCompleted Boolean       @default(false)
-  salesCallRequired     Boolean       @default(false)
-  status                LeadStatus    @default(NEW)
+  researchCallCompleted Boolean           @default(false)
+  salesCallRequired     Boolean           @default(false)
+  status                LeadStatus        @default(NEW)
   aiSummary             String?
   likelyEligible        Boolean?
   eligibilityConfidence Float?
@@ -214,8 +239,8 @@ model Lead {
   missingItemsJson      Json?
   structuredExportJson  Json?
   generatedQuoteJson    Json?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
   documents             LeadDocument[]
   activities            LeadActivity[]
 
@@ -224,32 +249,32 @@ model Lead {
 }
 
 model InstallerQuotePricing {
-  id                    String    @id @default(cuid())
-  installerId           String    @unique
-  installer             Installer @relation(fields: [installerId], references: [id], onDelete: Cascade)
-  panelUnitCost         Float     @default(320)
-  panelKwCost           Float     @default(0)
-  batteryUnitCost       Float     @default(3500)
-  batteryKwhCost        Float     @default(0)
-  inverterCost          Float     @default(1200)
-  mountingCost          Float     @default(850)
-  wiringCost            Float     @default(450)
-  safetyEquipmentCost   Float     @default(350)
-  baseLabourCost        Float     @default(1200)
-  labourPerPanel        Float     @default(65)
-  labourPerKw           Float     @default(0)
-  electricalWorkCost    Float     @default(650)
-  surveyAdminCost       Float     @default(250)
-  miscellaneousCost     Float     @default(300)
-  optionalExtrasCost    Float     @default(0)
-  markupPercentage      Float     @default(12)
-  vatPercentage         Float     @default(13.5)
-  discountPercentage    Float     @default(0)
-  discountFixedAmount   Float     @default(0)
-  minimumQuotePrice     Float     @default(0)
-  travelCost            Float     @default(0)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  installerId         String    @unique
+  installer           Installer @relation(fields: [installerId], references: [id], onDelete: Cascade)
+  panelUnitCost       Float     @default(320)
+  panelKwCost         Float     @default(0)
+  batteryUnitCost     Float     @default(3500)
+  batteryKwhCost      Float     @default(0)
+  inverterCost        Float     @default(1200)
+  mountingCost        Float     @default(850)
+  wiringCost          Float     @default(450)
+  safetyEquipmentCost Float     @default(350)
+  baseLabourCost      Float     @default(1200)
+  labourPerPanel      Float     @default(65)
+  labourPerKw         Float     @default(0)
+  electricalWorkCost  Float     @default(650)
+  surveyAdminCost     Float     @default(250)
+  miscellaneousCost   Float     @default(300)
+  optionalExtrasCost  Float     @default(0)
+  markupPercentage    Float     @default(12)
+  vatPercentage       Float     @default(13.5)
+  discountPercentage  Float     @default(0)
+  discountFixedAmount Float     @default(0)
+  minimumQuotePrice   Float     @default(0)
+  travelCost          Float     @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([installerId])
 }
@@ -280,30 +305,50 @@ model LeadDocument {
 }
 
 model LeadActivity {
-  id            String           @id @default(cuid())
-  leadId        String
-  lead          Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type          LeadActivityType
-  title         String
-  description   String?
-  metadata      Json?
-  createdAt     DateTime         @default(now())
-  createdBy     String?
-  createdByRole String?
+  id                  String           @id @default(cuid())
+  leadId              String
+  lead                Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type                LeadActivityType
+  title               String
+  description         String?
+  metadata            Json?
+  createdAt           DateTime         @default(now())
+  createdBy           String?
+  createdByRole       String?
+  actorType           AuditActorType?
+  actorUserId         String?
+  actorMembershipId   String?
+  actorOrganisationId String?
 
   @@index([leadId, createdAt])
   @@index([type])
   @@index([createdAt])
+  @@index([actorOrganisationId, createdAt])
+  @@index([actorUserId])
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  leadId       String?
-  action       String
-  actor        String
-  createdAt    DateTime @default(now())
-  metadataJson Json?
+  id             String          @id @default(cuid())
+  leadId         String?
+  organisationId String?
+  action         String
+  actor          String
+  actorType      AuditActorType?
+  userId         String?
+  membershipId   String?
+  resourceType   String?
+  resourceId     String?
+  source         String?
+  outcome        AuditOutcome    @default(SUCCEEDED)
+  createdAt      DateTime        @default(now())
+  metadataJson   Json?
 
   @@index([leadId])
+  @@index([organisationId, createdAt])
+  @@index([actorType])
+  @@index([userId])
+  @@index([membershipId])
+  @@index([resourceType, resourceId])
+  @@index([outcome])
   @@index([createdAt])
 }

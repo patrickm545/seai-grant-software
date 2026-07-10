@@ -43,6 +43,16 @@ SolarGRANT Pro consumes the Clada OS Identity and Organisation Foundation throug
 - lead reads, exports, and workflow mutations resolve organisation context server side;
 - homeowner portal token access remains a customer-facing secret-link flow for this release.
 
+## Platform Release 1.2 Consumption
+
+SolarGRANT Pro consumes the Clada OS users, permissions, and audit foundation through the lead pipeline-stage workflow:
+
+- organisation memberships now carry platform roles;
+- the stage-change server action requires the `lead.change_status` permission through a reusable service boundary;
+- same-organisation restricted users, cross-organisation users, inactive users, inactive memberships, and missing actor context are denied server side;
+- successful stage changes write typed audit attribution with organisation, membership, user, resource, source, and outcome fields;
+- public homeowner portal token routes remain token-scoped and do not become organisation memberships.
+
 ## What Next
 
 Future SolarGRANT Pro features should include a feature specification and note whether any part of the work should become reusable Clada OS infrastructure.

@@ -18,6 +18,10 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0004-existing-authentication-integration.md](ADR-0004-existing-authentication-integration.md): adapt current admin authentication into identity context.
 - [ADR-0005-tenant-aware-data-access.md](ADR-0005-tenant-aware-data-access.md): require organisation context for tenant-owned data access.
 - [ADR-0006-existing-data-migration.md](ADR-0006-existing-data-migration.md): migrate existing SolarGRANT Pro data to installer organisations.
+- [ADR-0007-role-and-permission-model.md](ADR-0007-role-and-permission-model.md): define platform roles, permission naming, and role-to-permission mapping.
+- [ADR-0008-authorisation-enforcement-boundary.md](ADR-0008-authorisation-enforcement-boundary.md): define where protected service boundaries enforce permissions and resource ownership.
+- [ADR-0009-actor-aware-audit-model.md](ADR-0009-actor-aware-audit-model.md): define typed actor-aware audit attribution and compatibility with existing records.
+- [ADR-0010-internal-administrative-access.md](ADR-0010-internal-administrative-access.md): define explicit internal administrative access rules.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

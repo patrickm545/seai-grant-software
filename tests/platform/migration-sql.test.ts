@@ -12,6 +12,16 @@ const migrationPath = join(
 );
 
 const migrationSql = readFileSync(migrationPath, 'utf8');
+const platform12MigrationSql = readFileSync(
+  join(
+    process.cwd(),
+    'prisma',
+    'migrations',
+    '20260710130000_users_roles_permissions_audit',
+    'migration.sql'
+  ),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -54,4 +64,27 @@ test('migration keeps updatedAt columns aligned with Prisma updatedAt semantics'
   assert.match(migrationSql, /"OrganisationMembership"[\s\S]*"updatedAt" TIMESTAMP\(3\) NOT NULL,/);
   assert.match(migrationSql, /ALTER TABLE "InstallerQuotePricing" ALTER COLUMN "updatedAt" DROP DEFAULT/);
   assert.match(migrationSql, /ALTER TABLE "LeadDocument" ALTER COLUMN "updatedAt" DROP DEFAULT/);
+});
+
+test('platform 1.2 migration adds role and typed audit enums', () => {
+  assert.match(platform12MigrationSql, /CREATE TYPE "PlatformRole" AS ENUM/);
+  assert.match(platform12MigrationSql, /CREATE TYPE "AuditActorType" AS ENUM/);
+  assert.match(platform12MigrationSql, /CREATE TYPE "AuditOutcome" AS ENUM/);
+  assert.match(platform12MigrationSql, /ADD COLUMN "role" "PlatformRole" NOT NULL DEFAULT 'ORGANISATION_MEMBER'/);
+});
+
+test('platform 1.2 migration backfills bootstrap roles explicitly', () => {
+  assert.match(platform12MigrationSql, /"role" = 'ORGANISATION_OWNER'::"PlatformRole"/);
+  assert.match(platform12MigrationSql, /"role" = 'CLADA_INTERNAL_ADMIN'::"PlatformRole"/);
+  assert.match(platform12MigrationSql, /"role" = 'ORGANISATION_ADMIN'::"PlatformRole"/);
+  assert.match(platform12MigrationSql, /"userId" = 'user_clada_admin'/);
+});
+
+test('platform 1.2 migration preserves and backfills audit attribution', () => {
+  assert.match(platform12MigrationSql, /ADD COLUMN "organisationId" TEXT/);
+  assert.match(platform12MigrationSql, /ADD COLUMN "actorType" "AuditActorType"/);
+  assert.match(platform12MigrationSql, /"resourceType" = 'lead'/);
+  assert.match(platform12MigrationSql, /"AuditLog"\."leadId" = "Lead"\."id"/);
+  assert.match(platform12MigrationSql, /'PUBLIC_TOKEN'::"AuditActorType"/);
+  assert.match(platform12MigrationSql, /"outcome" "AuditOutcome" NOT NULL DEFAULT 'SUCCEEDED'/);
 });

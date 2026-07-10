@@ -63,6 +63,21 @@ The first implemented platform identity slice introduces:
 
 Existing admin authentication remains in place. It is adapted to a default internal user for this release and should not be mistaken for the full users, roles, permissions, and audit foundation planned for Platform Release 1.2.
 
+## Platform Release 1.2 Authorisation And Audit Foundation
+
+The next implemented platform security slice introduces:
+
+- platform roles on organisation memberships;
+- a product-neutral permission catalogue;
+- role-to-permission mapping in server-side platform code;
+- default-deny permission evaluation;
+- protected service boundaries that check both action permission and organisation-owned resource access;
+- typed audit fields for actor type, organisation, membership, user, resource, source, and outcome;
+- a compatibility audit writer so historical string-based audit records remain readable;
+- a SolarGRANT Pro proving slice that protects lead pipeline-stage changes.
+
+Internal administrative access remains explicit through organisation memberships. Membership in the Clada internal organisation alone does not grant access to installer-owned data.
+
 Do not prematurely split the application into services. Extract reusable boundaries when there is a clear maintenance, reliability, or product reason.
 
 The canonical platform architecture, capability taxonomy, dependency map, and evolution policy are maintained in [../01-platform/README.md](../01-platform/README.md).

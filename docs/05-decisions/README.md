@@ -22,6 +22,10 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0008-authorisation-enforcement-boundary.md](ADR-0008-authorisation-enforcement-boundary.md): define where protected service boundaries enforce permissions and resource ownership.
 - [ADR-0009-actor-aware-audit-model.md](ADR-0009-actor-aware-audit-model.md): define typed actor-aware audit attribution and compatibility with existing records.
 - [ADR-0010-internal-administrative-access.md](ADR-0010-internal-administrative-access.md): define explicit internal administrative access rules.
+- [ADR-0011-workflow-foundation-architecture.md](ADR-0011-workflow-foundation-architecture.md): define the minimum persisted workflow foundation.
+- [ADR-0012-workflow-transition-validation-boundary.md](ADR-0012-workflow-transition-validation-boundary.md): define server-side transition validation responsibility.
+- [ADR-0013-workflow-history-model.md](ADR-0013-workflow-history-model.md): define workflow history and audit relationship.
+- [ADR-0014-product-workflow-consumption-boundary.md](ADR-0014-product-workflow-consumption-boundary.md): define how product modules consume workflow foundation.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

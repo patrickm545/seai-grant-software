@@ -38,6 +38,10 @@ Current platform ADRs:
 | [ADR-0008: Authorisation Enforcement Boundary](../05-decisions/ADR-0008-authorisation-enforcement-boundary.md) | Active | Defines where permission checks, organisation ownership checks, and protected service boundaries live. |
 | [ADR-0009: Actor-Aware Audit Model](../05-decisions/ADR-0009-actor-aware-audit-model.md) | Active | Defines typed audit actor attribution, outcomes, resources, compatibility, and public-token actor treatment. |
 | [ADR-0010: Internal Administrative Access](../05-decisions/ADR-0010-internal-administrative-access.md) | Active | Defines explicit, permission-controlled internal access rather than implicit universal access. |
+| [ADR-0011: Workflow Foundation Architecture](../05-decisions/ADR-0011-workflow-foundation-architecture.md) | Active | Defines the minimum persisted workflow definition, stage, transition, instance, and history model. |
+| [ADR-0012: Workflow Transition Validation Boundary](../05-decisions/ADR-0012-workflow-transition-validation-boundary.md) | Active | Defines server-side transition validation and product adapter responsibility. |
+| [ADR-0013: Workflow History Model](../05-decisions/ADR-0013-workflow-history-model.md) | Active | Defines product-neutral workflow history and its relationship to audit. |
+| [ADR-0014: Product Workflow Consumption Boundary](../05-decisions/ADR-0014-product-workflow-consumption-boundary.md) | Active | Defines how SolarGRANT Pro consumes workflow foundation without coupling the platform to product rules. |
 
 Recommended future ADR candidates:
 
@@ -45,7 +49,7 @@ Recommended future ADR candidates:
 | --- | --- |
 | Platform API boundary ADR | Required before a major module-facing platform API becomes stable across modules. |
 | AI governance ADR | Required before AI output directly affects customer, compliance, finance, legal, or grant-application decisions beyond current human-reviewed support. |
-| Workflow engine ADR | Required before extracting workflow state management into a reusable engine or standalone service. |
+| Workflow automation ADR | Required before adding timers, conditions, customer-defined workflows, or automation rules. |
 | Integration strategy ADR | Required before adding provider abstraction across email, SMS, CRM, grant portals, or AI providers. |
 
 ## How

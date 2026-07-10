@@ -68,6 +68,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/ARCHITECTURE_OVERVIEW.md](03-engineering/ARCHITECTURE_OVERVIEW.md)
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
+- [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
 
 ## Features
 

@@ -28,6 +28,7 @@ Platform identity work must be validated through a real product workflow, not on
 In scope:
 
 - assign existing and new leads to installer organisations;
+- enforce that each lead references an installer owned by the same organisation;
 - scope lead list and detail views;
 - scope lead workflow updates;
 - scope document status updates;
@@ -63,6 +64,7 @@ No broad UI redesign. Existing pages may show the same content, but data must be
 
 - `installerId` remains a SolarGRANT Pro relationship.
 - `organisationId` becomes the platform tenant relationship.
+- `Lead.installerId` and `Lead.organisationId` are enforced together with a PostgreSQL composite foreign key to `Installer(id, organisationId)`.
 - Lead documents and activities are scoped through the parent lead for this release.
 - Portal token access remains a customer-facing secret-link flow and is not treated as an authenticated organisation context.
 
@@ -76,7 +78,8 @@ No broad UI redesign. Existing pages may show the same content, but data must be
 
 - Create two organisations in tests.
 - Prove organisation A can access its own lead.
-- Prove organisation A cannot access or modify organisation B's lead.
+- Prove organisation A cannot access, modify, or delete organisation B's lead against PostgreSQL.
+- Prove PostgreSQL rejects a lead whose installer belongs to another organisation.
 - Prove server context rejects invalid client-supplied organisation IDs.
 - Manually verify the lead dashboard, lead detail, exports, and quote pricing still work for the default installer.
 

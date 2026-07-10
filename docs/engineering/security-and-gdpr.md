@@ -42,10 +42,12 @@ Customer portals and upload features should be designed with privacy, access con
 Platform Release 1.1 treats organisation boundaries as a security requirement:
 
 - organisation-owned records must have an organisation owner;
+- lead records must reference an installer owned by the same organisation, enforced by a PostgreSQL composite foreign key;
 - server-side code must resolve active organisation context before reading or writing organisation-owned records;
 - client-supplied organisation IDs are not trusted without membership validation;
 - missing, inactive, or invalid organisation membership fails closed;
 - cross-organisation access should return safe unavailable or unauthorized responses without revealing whether another organisation's record exists;
+- tenant isolation must be verified with database-backed PostgreSQL integration tests for security-sensitive boundaries;
 - audit actor and organisation ownership remain known hardening work for Platform Release 1.2.
 
 ## Sprint requirement

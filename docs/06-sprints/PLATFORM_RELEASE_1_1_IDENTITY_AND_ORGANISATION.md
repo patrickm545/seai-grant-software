@@ -34,6 +34,7 @@ Repository review on 2026-07-10 found:
 - Admin cookie authentication does not identify a durable user record.
 - Middleware is not sufficient as an authorization boundary for route handlers or server actions.
 - Lead APIs can currently fetch by ID without tenant context.
+- `Lead.organisationId` and `Lead.installerId` can become inconsistent unless the installer relationship also checks organisation ownership.
 - Existing data lacks an organisation owner and must be migrated safely.
 - Internal Clada access and installer organisation access are not yet separate concepts in implementation.
 - Audit logs still use string actors and are not a complete Platform Release 1.2 audit model.
@@ -51,7 +52,7 @@ In scope:
 - tenant-aware lead data access;
 - migration of existing installers and leads to organisation ownership;
 - SolarGRANT Pro lead proving slice;
-- automated tests for context resolution and tenant scoping;
+- automated tests for context resolution, tenant scoping, database-backed tenant isolation, and ownership consistency;
 - documentation, feature specs, ADRs, and COM updates.
 
 Out of scope:
@@ -89,7 +90,7 @@ Out of scope:
 5. Add scoped lead access helpers.
 6. Update lead list, detail, export, quote-pricing, and mutation paths to use organisation context.
 7. Keep homeowner portal token access unchanged except where records already inherit organisation ownership through their lead.
-8. Add tests for membership validation, invalid organisation requests, tenant-scoped queries, and migration assumptions.
+8. Add tests for membership validation, invalid organisation requests, tenant-scoped queries, migration assumptions, database-backed tenant isolation, and lead/installer ownership consistency.
 9. Run lint, type checking, Prisma validation/generation, tests, build, documentation checks, and `git diff --check`.
 
 ## SolarGRANT Pro Proving Slice
@@ -108,9 +109,18 @@ Success criteria:
 
 - every lead has an `organisationId`;
 - lead creation derives organisation ownership from the server-side installer record;
+- PostgreSQL enforces that a lead's installer belongs to the same organisation as the lead;
 - lead reads and writes require active organisation context;
 - a user without membership in another organisation cannot access that organisation's lead;
 - client-supplied organisation identifiers cannot bypass membership validation.
+
+## Integration Test Database
+
+Database-backed tenant isolation tests run with `pnpm test:integration:postgres` and require a disposable PostgreSQL database through `TEST_DATABASE_URL`.
+
+Local validation used PostgreSQL 18 with database `clada_platform_11_test`. The runner maps `TEST_DATABASE_URL` to Prisma `DATABASE_URL`, applies all migrations with `prisma migrate deploy`, then executes `tests/integration/**/*.test.ts`.
+
+Setup details are documented in [PostgreSQL Integration Tests](../03-engineering/POSTGRES_INTEGRATION_TESTS.md).
 
 ## Security And GDPR Notes
 
@@ -136,7 +146,7 @@ This release is done when:
 - feature specifications and ADRs are present and linked;
 - database migration preserves existing SolarGRANT Pro data;
 - organisation context is enforced for the lead proving slice;
-- automated tenant-isolation tests pass;
+- automated unit and database-backed tenant-isolation tests pass;
 - COM indexes and relevant architecture/security/product docs are updated;
 - validation results are recorded in the PR;
 - a PR is opened to `main` and not merged.

@@ -31,6 +31,7 @@ test('migration backfills installer and lead organisation ownership before enfor
 test('migration fails closed when existing ownership cannot be derived', () => {
   assert.match(migrationSql, /lead without organisation owner/);
   assert.match(migrationSql, /installer without organisation owner/);
+  assert.match(migrationSql, /lead installer ownership mismatch/);
 });
 
 test('migration creates default internal context and installer memberships', () => {
@@ -38,4 +39,19 @@ test('migration creates default internal context and installer memberships', () 
   assert.match(migrationSql, /user_clada_admin/);
   assert.match(migrationSql, /membership_clada_admin_internal/);
   assert.match(migrationSql, /membership_clada_admin_/);
+});
+
+test('migration enforces lead and installer ownership consistency', () => {
+  assert.match(migrationSql, /CREATE UNIQUE INDEX "Installer_id_organisationId_key" ON "Installer"\("id", "organisationId"\)/);
+  assert.match(migrationSql, /DROP CONSTRAINT "Lead_installerId_fkey"/);
+  assert.match(migrationSql, /"Lead_installerId_organisationId_fkey"/);
+  assert.match(migrationSql, /FOREIGN KEY \("installerId", "organisationId"\) REFERENCES "Installer"\("id", "organisationId"\)/);
+});
+
+test('migration keeps updatedAt columns aligned with Prisma updatedAt semantics', () => {
+  assert.match(migrationSql, /"Organisation"[\s\S]*"updatedAt" TIMESTAMP\(3\) NOT NULL,/);
+  assert.match(migrationSql, /"User"[\s\S]*"updatedAt" TIMESTAMP\(3\) NOT NULL,/);
+  assert.match(migrationSql, /"OrganisationMembership"[\s\S]*"updatedAt" TIMESTAMP\(3\) NOT NULL,/);
+  assert.match(migrationSql, /ALTER TABLE "InstallerQuotePricing" ALTER COLUMN "updatedAt" DROP DEFAULT/);
+  assert.match(migrationSql, /ALTER TABLE "LeadDocument" ALTER COLUMN "updatedAt" DROP DEFAULT/);
 });

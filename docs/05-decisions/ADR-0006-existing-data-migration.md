@@ -23,7 +23,10 @@ The migration will:
 - create one installer organisation for each existing installer;
 - assign each installer to its organisation;
 - assign each existing lead to its installer's organisation;
-- make installer and lead organisation ownership required after backfill.
+- validate that each lead's installer belongs to the same organisation;
+- make installer and lead organisation ownership required after backfill;
+- add a composite unique key on `Installer(id, organisationId)` and a composite foreign key from `Lead(installerId, organisationId)` to that key;
+- remove stale database defaults from `updatedAt` columns that Prisma models as `@updatedAt` so migration/schema validation remains clean.
 
 ## Rationale
 
@@ -34,12 +37,13 @@ This preserves existing data without inventing arbitrary lead ownership. The cur
 Improves:
 
 - every existing lead receives an organisation owner;
+- future mismatched lead/installer organisation ownership is rejected at the database layer;
 - installer and lead IDs remain stable;
 - migration rule is explicit and reviewable.
 
 Becomes harder:
 
-- existing inconsistent data with missing installers would block the non-null constraint;
+- existing inconsistent data with missing installers or mismatched lead/installer organisation ownership would block the migration;
 - production migration needs a backup and validation query.
 
 ## Alternatives Considered
@@ -51,5 +55,6 @@ Becomes harder:
 ## Follow-Up
 
 - Add migration SQL with staged backfill and non-null enforcement.
-- Add tests that inspect migration assumptions.
+- Add migration SQL with ownership-consistency validation and composite foreign-key enforcement.
+- Add tests that inspect migration assumptions and PostgreSQL integration tests that prove constraint enforcement.
 - Record production backup and migration validation in the PR before deployment.

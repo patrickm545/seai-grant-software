@@ -157,6 +157,7 @@ model Installer {
   leads          Lead[]
   quotePricing   InstallerQuotePricing?
 
+  @@unique([id, organisationId])
   @@index([organisationId])
 }
 
@@ -165,7 +166,7 @@ model Lead {
   organisationId        String
   organisation          Organisation  @relation(fields: [organisationId], references: [id])
   installerId           String
-  installer             Installer     @relation(fields: [installerId], references: [id])
+  installer             Installer     @relation(fields: [installerId, organisationId], references: [id, organisationId])
   fullName              String
   email                 String
   phone                 String?

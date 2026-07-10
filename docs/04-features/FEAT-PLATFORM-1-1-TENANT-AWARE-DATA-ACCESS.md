@@ -31,7 +31,7 @@ In scope:
 - default-deny behaviour for missing or invalid context;
 - lead read scoping by organisation;
 - lead write scoping by organisation;
-- tests for cross-organisation rejection;
+- database-backed tests for cross-organisation rejection;
 - safe generic error behaviour.
 
 Out of scope:
@@ -64,6 +64,7 @@ Unauthorized and missing states should be safe and plain. Do not reveal whether 
 - Client-supplied organisation IDs are never trusted by themselves.
 - Organisation membership is validated server side before data access.
 - Lead ownership is stored directly on `Lead.organisationId`.
+- PostgreSQL enforces installer/lead organisation consistency with a composite installer key and composite lead foreign key.
 - Document and activity access is scoped through the parent lead.
 - Direct Prisma access remains allowed for unowned platform setup and seed paths, but organisation-owned workflow paths should use scoped helpers.
 
@@ -77,7 +78,8 @@ Unauthorized and missing states should be safe and plain. Do not reveal whether 
 
 - Unit tests for organisation context resolution.
 - Unit tests for scoped lead where clauses.
-- Tests proving organisation A cannot read or modify organisation B's lead.
+- PostgreSQL integration tests proving organisation A cannot read, update, or delete organisation B's lead.
+- PostgreSQL integration tests proving mismatched lead/installer ownership is rejected by the database constraint.
 - Migration checks for non-null lead ownership.
 - Manual checks for lead dashboard, lead detail, export JSON, quote pricing, and portal token workflows.
 

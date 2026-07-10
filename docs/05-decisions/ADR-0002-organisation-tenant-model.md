@@ -23,6 +23,7 @@ In this release:
 - an organisation can be `CLADA_INTERNAL` or `INSTALLER`;
 - each installer belongs to one organisation;
 - each organisation-owned lead belongs to one organisation;
+- a lead can reference only an installer owned by the same organisation;
 - the organisation is not yet a full billing account, marketplace tenant, or hierarchy node.
 
 ## Rationale
@@ -52,5 +53,6 @@ Becomes harder:
 ## Follow-Up
 
 - Add organisation ownership to installers and leads.
+- Enforce installer/lead organisation consistency through the database migration.
 - Update feature specs and capability map.
 - Revisit commercial account modelling in a future billing release.

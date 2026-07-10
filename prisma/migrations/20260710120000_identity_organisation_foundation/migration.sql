@@ -13,7 +13,7 @@ CREATE TABLE "Organisation" (
     "type" "OrganisationType" NOT NULL,
     "status" "OrganisationStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Organisation_pkey" PRIMARY KEY ("id")
 );
@@ -24,7 +24,7 @@ CREATE TABLE "User" (
     "displayName" TEXT NOT NULL,
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -36,7 +36,7 @@ CREATE TABLE "OrganisationMembership" (
     "status" "OrganisationMembershipStatus" NOT NULL DEFAULT 'ACTIVE',
     "isOwner" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "OrganisationMembership_pkey" PRIMARY KEY ("id")
 );
@@ -98,8 +98,26 @@ END $$;
 ALTER TABLE "Installer" ALTER COLUMN "organisationId" SET NOT NULL;
 ALTER TABLE "Lead" ALTER COLUMN "organisationId" SET NOT NULL;
 
+ALTER TABLE "InstallerQuotePricing" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "LeadDocument" ALTER COLUMN "updatedAt" DROP DEFAULT;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM "Lead"
+        LEFT JOIN "Installer"
+            ON "Lead"."installerId" = "Installer"."id"
+            AND "Lead"."organisationId" = "Installer"."organisationId"
+        WHERE "Installer"."id" IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Identity organisation migration failed: lead installer ownership mismatch';
+    END IF;
+END $$;
+
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "OrganisationMembership_organisationId_userId_key" ON "OrganisationMembership"("organisationId", "userId");
+CREATE UNIQUE INDEX "Installer_id_organisationId_key" ON "Installer"("id", "organisationId");
 CREATE INDEX "Organisation_type_status_idx" ON "Organisation"("type", "status");
 CREATE INDEX "User_status_idx" ON "User"("status");
 CREATE INDEX "OrganisationMembership_userId_status_idx" ON "OrganisationMembership"("userId", "status");
@@ -112,3 +130,5 @@ ALTER TABLE "OrganisationMembership" ADD CONSTRAINT "OrganisationMembership_orga
 ALTER TABLE "OrganisationMembership" ADD CONSTRAINT "OrganisationMembership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Installer" ADD CONSTRAINT "Installer_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "Lead" ADD CONSTRAINT "Lead_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Lead" DROP CONSTRAINT "Lead_installerId_fkey";
+ALTER TABLE "Lead" ADD CONSTRAINT "Lead_installerId_organisationId_fkey" FOREIGN KEY ("installerId", "organisationId") REFERENCES "Installer"("id", "organisationId") ON DELETE RESTRICT ON UPDATE CASCADE;

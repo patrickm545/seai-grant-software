@@ -1,13 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { LeadActivityType, LeadDocumentStatus, LeadPipelineStage, Prisma } from '@prisma/client';
+import type { LeadActivityType, LeadDocumentStatus } from '@prisma/client';
 import { writeAuditLog } from '@/lib/audit';
-import {
-  getPipelineStageLabel,
-  isLeadPipelineStage,
-  shouldSetLastContactedAt
-} from '@/lib/crm';
 import {
   getDocumentStatusLabel,
   getDocumentTypeLabel,
@@ -20,6 +15,7 @@ import {
   requireLeadInOrganisation,
   updateLeadInOrganisation
 } from '@/lib/lead-access';
+import { changeLeadPipelineStage } from '@/lib/lead-workflow';
 import { regenerateLeadPortalToken } from '@/lib/portal';
 import { prisma } from '@/lib/prisma';
 
@@ -69,69 +65,12 @@ export async function updateLeadPipelineStage(formData: FormData) {
   const leadId = getRequiredLeadId(formData);
   const nextStage = String(formData.get('pipelineStage') || '').trim();
 
-  if (!isLeadPipelineStage(nextStage)) {
-    throw new Error('Invalid pipeline stage');
-  }
-
   await prisma.$transaction(async (tx) => {
-    const existingLead = await tx.lead.findFirst({
-      where: leadOrganisationWhere(organisationContext, { id: leadId }),
-      select: {
-        id: true,
-        fullName: true,
-        pipelineStage: true,
-        lastContactedAt: true
-      }
-    });
-
-    if (!existingLead) {
-      throw new Error('Lead not found');
-    }
-
-    const now = new Date();
-    const updateData: Prisma.LeadUpdateManyMutationInput = {
-      pipelineStage: nextStage as LeadPipelineStage
-    };
-
-    if (shouldSetLastContactedAt(nextStage)) {
-      updateData.lastContactedAt = now;
-    }
-
-    if (nextStage === 'WON' || nextStage === 'LOST') {
-      updateData.nextFollowUpAt = null;
-    }
-
-    await updateLeadInOrganisation(tx, organisationContext, leadId, updateData);
-
-    if (existingLead.pipelineStage !== nextStage) {
-      await tx.leadActivity.create({
-        data: {
-          leadId,
-          type: 'STAGE_CHANGED',
-          title: 'Pipeline stage changed',
-          description: `${getPipelineStageLabel(existingLead.pipelineStage)} to ${getPipelineStageLabel(nextStage)}`,
-          metadata: {
-            previousStage: existingLead.pipelineStage,
-            nextStage,
-            previousStageLabel: getPipelineStageLabel(existingLead.pipelineStage),
-            nextStageLabel: getPipelineStageLabel(nextStage)
-          },
-          createdBy: 'Installer dashboard',
-          createdByRole: 'INSTALLER'
-        }
-      });
-    }
-
-    await writeAuditLog(tx, {
+    await changeLeadPipelineStage({
+      db: tx,
+      context: organisationContext,
       leadId,
-      action: 'lead.pipeline_stage_updated',
-      actor: 'installer',
-      metadata: {
-        previousStage: existingLead.pipelineStage,
-        nextStage,
-        lastContactedAt: shouldSetLastContactedAt(nextStage) ? now.toISOString() : existingLead.lastContactedAt?.toISOString() ?? null,
-        organisationId: organisationContext.organisationId
-      }
+      nextStage
     });
   });
 

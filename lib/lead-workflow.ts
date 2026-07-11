@@ -1,5 +1,4 @@
 import type { LeadPipelineStage, Prisma, PrismaClient } from '@prisma/client';
-import { writeAuditEvent } from './audit';
 import { authorizeLeadAction } from './authorization';
 import {
   getPipelineStageLabel,
@@ -8,8 +7,15 @@ import {
 } from './crm';
 import type { OrganisationContext } from './identity';
 import { leadOrganisationWhere, updateLeadInOrganisation } from './lead-access';
+import { ensureWorkflowInstanceForResource, executeWorkflowTransition } from './workflow';
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
+
+export const LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY = 'solargrant.lead_pipeline';
+
+function canOwnTransaction(db: DbClient): db is PrismaClient {
+  return '$transaction' in db;
+}
 
 export async function changeLeadPipelineStage(args: {
   db: DbClient;
@@ -17,11 +23,30 @@ export async function changeLeadPipelineStage(args: {
   leadId: string;
   nextStage: string;
 }) {
-  const { db, context, leadId, nextStage } = args;
-
-  if (!isLeadPipelineStage(nextStage)) {
-    throw new Error('Invalid pipeline stage');
+  if (canOwnTransaction(args.db)) {
+    return args.db.$transaction((tx) =>
+      changeLeadPipelineStageInTransaction({
+        ...args,
+        db: tx
+      })
+    );
   }
+
+  return changeLeadPipelineStageInTransaction(args as {
+    db: Prisma.TransactionClient;
+    context: OrganisationContext | null | undefined;
+    leadId: string;
+    nextStage: string;
+  });
+}
+
+async function changeLeadPipelineStageInTransaction(args: {
+  db: Prisma.TransactionClient;
+  context: OrganisationContext | null | undefined;
+  leadId: string;
+  nextStage: string;
+}) {
+  const { db, context, leadId, nextStage } = args;
 
   await authorizeLeadAction({
     db,
@@ -40,6 +65,7 @@ export async function changeLeadPipelineStage(args: {
       id: true,
       fullName: true,
       pipelineStage: true,
+      organisationId: true,
       lastContactedAt: true
     }
   });
@@ -48,56 +74,77 @@ export async function changeLeadPipelineStage(args: {
     throw new Error('Lead not found');
   }
 
-  const now = new Date();
-  const updateData: Prisma.LeadUpdateManyMutationInput = {
-    pipelineStage: nextStage as LeadPipelineStage
-  };
-
-  if (shouldSetLastContactedAt(nextStage)) {
-    updateData.lastContactedAt = now;
-  }
-
-  if (nextStage === 'WON' || nextStage === 'LOST') {
-    updateData.nextFollowUpAt = null;
-  }
-
-  await updateLeadInOrganisation(db, context, leadId, updateData);
-
-  if (existingLead.pipelineStage !== nextStage) {
-    await db.leadActivity.create({
-      data: {
-        leadId,
-        type: 'STAGE_CHANGED',
-        title: 'Pipeline stage changed',
-        description: `${getPipelineStageLabel(existingLead.pipelineStage)} to ${getPipelineStageLabel(nextStage)}`,
-        metadata: {
-          previousStage: existingLead.pipelineStage,
-          nextStage,
-          previousStageLabel: getPipelineStageLabel(existingLead.pipelineStage),
-          nextStageLabel: getPipelineStageLabel(nextStage)
-        },
-        createdBy: context.actor.displayName,
-        createdByRole: context.role,
-        actorType: 'HUMAN_USER',
-        actorUserId: context.actor.actorType === 'human_user' ? context.actor.userId : null,
-        actorMembershipId: context.membershipId,
-        actorOrganisationId: context.organisationId
-      }
-    });
-  }
-
-  await writeAuditEvent(db, {
-    leadId,
-    context,
-    action: 'lead.pipeline_stage_updated',
+  await ensureWorkflowInstanceForResource({
+    db,
+    workflowDefinitionKey: LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY,
+    organisationId: existingLead.organisationId,
     resourceType: 'lead',
     resourceId: leadId,
-    source: 'installer_dashboard',
-    outcome: 'SUCCEEDED',
+    stageKey: existingLead.pipelineStage,
     metadata: {
-      previousStage: existingLead.pipelineStage,
-      nextStage,
-      lastContactedAt: shouldSetLastContactedAt(nextStage) ? now.toISOString() : existingLead.lastContactedAt?.toISOString() ?? null
+      source: 'lead_pipeline_lazy_initialisation'
+    }
+  });
+
+  await executeWorkflowTransition({
+    tx: db,
+    context,
+    workflowDefinitionKey: LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY,
+    resourceType: 'lead',
+    resourceId: leadId,
+    nextStageKey: nextStage,
+    fallbackPermission: 'lead.change_status',
+    auditAction: 'lead.pipeline_stage_updated',
+    auditLeadId: leadId,
+    source: 'installer_dashboard',
+    metadata: {
+      leadId,
+      leadName: existingLead.fullName
+    },
+    onTransition: async ({ tx, previousStage, nextStage: workflowNextStage, metadata, now }) => {
+      if (!isLeadPipelineStage(workflowNextStage.key)) {
+        throw new Error('Workflow stage is not compatible with lead pipeline projection');
+      }
+
+      const leadNextStage = workflowNextStage.key as LeadPipelineStage;
+      const updateData: Prisma.LeadUpdateManyMutationInput = {
+        pipelineStage: leadNextStage
+      };
+
+      if (shouldSetLastContactedAt(leadNextStage)) {
+        updateData.lastContactedAt = now;
+      }
+
+      if (leadNextStage === 'WON' || leadNextStage === 'LOST') {
+        updateData.nextFollowUpAt = null;
+      }
+
+      await updateLeadInOrganisation(tx, context, leadId, updateData);
+
+      metadata.lastContactedAt = shouldSetLastContactedAt(leadNextStage)
+        ? now.toISOString()
+        : existingLead.lastContactedAt?.toISOString() ?? null;
+
+      await tx.leadActivity.create({
+        data: {
+          leadId,
+          type: 'STAGE_CHANGED',
+          title: 'Pipeline stage changed',
+          description: `${getPipelineStageLabel(previousStage.key)} to ${getPipelineStageLabel(leadNextStage)}`,
+          metadata: {
+            previousStage: previousStage.key,
+            nextStage: leadNextStage,
+            previousStageLabel: getPipelineStageLabel(previousStage.key),
+            nextStageLabel: getPipelineStageLabel(leadNextStage)
+          },
+          createdBy: context.actor.displayName,
+          createdByRole: context.role,
+          actorType: 'HUMAN_USER',
+          actorUserId: context.actor.actorType === 'human_user' ? context.actor.userId : null,
+          actorMembershipId: context.membershipId,
+          actorOrganisationId: context.organisationId
+        }
+      });
     }
   });
 }

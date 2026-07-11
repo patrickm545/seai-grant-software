@@ -6,6 +6,7 @@ import { OrganisationContextError, resolveOrganisationContextForUser } from '../
 import { OrganisationRecordAccessError } from '../../lib/lead-access';
 import { changeLeadPipelineStage } from '../../lib/lead-workflow';
 import { AuthorizationError } from '../../lib/permissions';
+import { WorkflowExecutionError } from '../../lib/workflow';
 
 const prisma = new PrismaClient();
 const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
@@ -61,6 +62,24 @@ async function cleanupTestData() {
         { leadId: { in: [leadA, leadB] } },
         { organisationId: { in: [orgA, orgB] } }
       ]
+    }
+  });
+  await prisma.workflowHistory.deleteMany({
+    where: {
+      workflowInstance: {
+        resourceType: 'lead',
+        resourceId: {
+          in: [leadA, leadB]
+        }
+      }
+    }
+  });
+  await prisma.workflowInstance.deleteMany({
+    where: {
+      resourceType: 'lead',
+      resourceId: {
+        in: [leadA, leadB]
+      }
     }
   });
   await prisma.leadActivity.deleteMany({
@@ -232,6 +251,20 @@ async function assertLeadStage(expectedStage: string) {
   assert.equal(lead.pipelineStage, expectedStage);
 }
 
+async function assertLeadWorkflowStage(expectedStage: string) {
+  const workflowInstance = await prisma.workflowInstance.findFirstOrThrow({
+    where: {
+      resourceType: 'lead',
+      resourceId: leadA
+    },
+    include: {
+      currentStage: true
+    }
+  });
+
+  assert.equal(workflowInstance.currentStage.key, expectedStage);
+}
+
 test('protected lead stage workflow enforces permissions, tenant ownership, and typed audit', async () => {
   await prisma.$connect();
   await seedTestData();
@@ -252,6 +285,7 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
   });
 
   await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   const auditEvent = await prisma.auditLog.findFirstOrThrow({
     where: {
@@ -267,6 +301,25 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
   assert.equal(auditEvent.resourceType, 'lead');
   assert.equal(auditEvent.outcome, 'SUCCEEDED');
   assert.equal(auditEvent.source, 'installer_dashboard');
+  assert.equal((auditEvent.metadataJson as Record<string, unknown>).workflowDefinitionKey, 'solargrant.lead_pipeline');
+
+  const workflowHistory = await prisma.workflowHistory.findFirstOrThrow({
+    where: {
+      workflowInstance: {
+        resourceType: 'lead',
+        resourceId: leadA
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  assert.equal(workflowHistory.previousStageKey, 'NEW_LEAD');
+  assert.equal(workflowHistory.nextStageKey, 'CONTACTED');
+  assert.equal(workflowHistory.organisationId, orgA);
+  assert.equal(workflowHistory.actorType, 'HUMAN_USER');
+  assert.equal(workflowHistory.actorUserId, permittedUser);
+  assert.equal(workflowHistory.actorMembershipId, permittedContext.membershipId);
+  assert.equal(workflowHistory.actorOrganisationId, orgA);
+  assert.equal(workflowHistory.auditLogId, auditEvent.id);
 
   const activity = await prisma.leadActivity.findFirstOrThrow({
     where: {
@@ -279,6 +332,20 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
   assert.equal(activity.actorUserId, permittedUser);
   assert.equal(activity.actorMembershipId, permittedContext.membershipId);
   assert.equal(activity.actorOrganisationId, orgA);
+
+  await assert.rejects(
+    prisma.$transaction((tx) =>
+      changeLeadPipelineStage({
+        db: tx,
+        context: permittedContext,
+        leadId: leadA,
+        nextStage: 'NOT_A_STAGE'
+      })
+    ),
+    (error) => error instanceof WorkflowExecutionError && error.code === 'WORKFLOW_STAGE_NOT_FOUND'
+  );
+  await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   const restrictedContext = await resolveOrganisationContextForUser({
     userId: restrictedUser,
@@ -298,6 +365,7 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
     (error) => error instanceof AuthorizationError && error.code === 'PERMISSION_DENIED'
   );
   await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   const crossOrgContext = await resolveOrganisationContextForUser({
     userId: crossOrgUser,
@@ -317,6 +385,7 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
     (error) => error instanceof OrganisationRecordAccessError
   );
   await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   await assert.rejects(
     prisma.$transaction((tx) =>
@@ -330,6 +399,7 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
     (error) => error instanceof AuthorizationError && error.code === 'MISSING_CONTEXT'
   );
   await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   await assert.rejects(
     resolveOrganisationContextForUser({
@@ -366,6 +436,7 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
     (error) => error instanceof AuthorizationError && error.code === 'PERMISSION_DENIED'
   );
   await assertLeadStage('CONTACTED');
+  await assertLeadWorkflowStage('CONTACTED');
 
   const successCount = await prisma.auditLog.count({
     where: {
@@ -375,6 +446,16 @@ test('protected lead stage workflow enforces permissions, tenant ownership, and 
     }
   });
   assert.equal(successCount, 1);
+
+  const historyCount = await prisma.workflowHistory.count({
+    where: {
+      workflowInstance: {
+        resourceType: 'lead',
+        resourceId: leadA
+      }
+    }
+  });
+  assert.equal(historyCount, 1);
 
   await cleanupTestData();
 });

@@ -84,6 +84,11 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [04-features/FEAT-PLATFORM-1-2-AUTHORISATION-SERVICE.md](04-features/FEAT-PLATFORM-1-2-AUTHORISATION-SERVICE.md)
 - [04-features/FEAT-PLATFORM-1-2-ACTOR-AWARE-AUDIT-FOUNDATION.md](04-features/FEAT-PLATFORM-1-2-ACTOR-AWARE-AUDIT-FOUNDATION.md)
 - [04-features/FEAT-PLATFORM-1-2-SOLARGRANT-PRO-PROTECTED-WORKFLOW.md](04-features/FEAT-PLATFORM-1-2-SOLARGRANT-PRO-PROTECTED-WORKFLOW.md)
+- [04-features/FEAT-PLATFORM-1-3-WORKFLOW-FOUNDATION.md](04-features/FEAT-PLATFORM-1-3-WORKFLOW-FOUNDATION.md)
+- [04-features/FEAT-PLATFORM-1-3-WORKFLOW-DEFINITIONS.md](04-features/FEAT-PLATFORM-1-3-WORKFLOW-DEFINITIONS.md)
+- [04-features/FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md](04-features/FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md)
+- [04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md](04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md)
+- [04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md](04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md)
 
 ## Decisions
 
@@ -99,6 +104,10 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0008-authorisation-enforcement-boundary.md](05-decisions/ADR-0008-authorisation-enforcement-boundary.md)
 - [05-decisions/ADR-0009-actor-aware-audit-model.md](05-decisions/ADR-0009-actor-aware-audit-model.md)
 - [05-decisions/ADR-0010-internal-administrative-access.md](05-decisions/ADR-0010-internal-administrative-access.md)
+- [05-decisions/ADR-0011-workflow-foundation-architecture.md](05-decisions/ADR-0011-workflow-foundation-architecture.md)
+- [05-decisions/ADR-0012-workflow-transition-validation-boundary.md](05-decisions/ADR-0012-workflow-transition-validation-boundary.md)
+- [05-decisions/ADR-0013-workflow-history-model.md](05-decisions/ADR-0013-workflow-history-model.md)
+- [05-decisions/ADR-0014-product-workflow-consumption-boundary.md](05-decisions/ADR-0014-product-workflow-consumption-boundary.md)
 
 ## Sprints
 
@@ -110,6 +119,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md](06-sprints/PLATFORM_RELEASE_1_0_EXECUTION_MODEL.md)
 - [06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md](06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md)
 - [06-sprints/PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md](06-sprints/PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md)
+- [06-sprints/PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md](06-sprints/PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md)
 - [06-sprints/ARCHITECTURE_CHECKPOINT_1.md](06-sprints/ARCHITECTURE_CHECKPOINT_1.md)
 
 ## Research

@@ -87,7 +87,7 @@ export async function writeAuditEvent(
   const resourceId = input.resourceId ?? input.leadId ?? undefined;
   const sanitizedMetadata = sanitizeAuditMetadata(input.metadata);
 
-  await tx.auditLog.create({
+  return tx.auditLog.create({
     data: {
       leadId: input.leadId ?? null,
       organisationId: input.organisationId ?? actorFromContext?.organisationId ?? metadataOrganisationId(input.metadata) ?? null,

@@ -1,0 +1,60 @@
+# ADR-0013: Workflow History Model
+
+| Field | Value |
+| --- | --- |
+| Document ID | ADR-0013 |
+| Status | Accepted |
+| Owner | Clada Systems Engineering |
+| Review cycle | When audit, reporting, or workflow history requirements expand |
+| Last reviewed | 2026-07-10 |
+
+## Context
+
+Platform Release 1.2 introduced actor-aware audit. SolarGRANT Pro also has lead activity timelines. Workflow Foundation needs transition history without duplicating either model's full responsibility.
+
+## Decision
+
+Create `WorkflowHistory` as a product-neutral transition history table. It records workflow instance, previous stage, next stage, actor, organisation, timestamp, metadata, outcome, and an optional link to the audit event for the same transition.
+
+Do not fabricate history for existing lead stages during migration.
+
+History uses composite foreign keys where they carry integrity value:
+
+- `workflowInstanceId`, `workflowDefinitionId`, and `organisationId` must match the owning workflow instance;
+- `transitionId` and `workflowDefinitionId` must match the referenced transition when a transition is present;
+- `previousStageId` and `nextStageId` must reference stages in the recorded workflow definition when stage references are present.
+
+The denormalised `previousStageKey` and `nextStageKey` fields remain service-written immutable context for readability and reporting. The database does not require those strings to match the referenced stage key because they intentionally preserve the key observed at execution time.
+
+## Rationale
+
+Workflow history is a platform fact useful for workflow review and future reporting. Audit remains the trust and compliance record. Product activity remains a user-facing module timeline.
+
+## Consequences
+
+Improves:
+
+- workflow transitions can be reported without reading SolarGRANT Pro activity rows;
+- audit and workflow history can be correlated;
+- historical lead pipeline state is preserved without invented transition events;
+- contradictory workflow-definition or organisation attribution is rejected where the database can enforce it.
+
+Becomes harder:
+
+- successful transitions write two related records;
+- history and audit metadata must remain aligned;
+- stage-key strings are intentionally denormalised and must be written by the workflow service;
+- product timelines still need their own activity rows for UI language.
+
+## Alternatives Considered
+
+- Use only `AuditLog`: rejected because audit includes more than workflow and is not a clean source for workflow reporting.
+- Use only `LeadActivity`: rejected because it is product-specific.
+- Backfill history from current lead stages: rejected because it would fabricate transition events that did not exist.
+
+## Follow-Up
+
+- Return created audit rows from the audit writer.
+- Add integration tests for history and audit creation.
+- Document any denied-attempt history limitations.
+- Revisit denied-attempt workflow history and audit semantic constraints when the platform defines a durable failed-attempt policy.

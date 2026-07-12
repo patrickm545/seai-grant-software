@@ -59,7 +59,7 @@ The Master Release Specification is the permanent release source of truth.
 
 It records the approved release objective, scope, non-goals, platform responsibilities, product responsibilities, architecture, database design, services, APIs, permissions, transactions, concurrency, threat analysis, testing, validation, migration plan, sprint breakdown, acceptance criteria, deferrals, technical debt, CTO review, CEO approval, and release sign-off.
 
-Master Release Specifications live in [../03-release-specifications](../03-release-specifications/README.md).
+Master Release Specifications live in [../release-specifications](../release-specifications/README.md).
 
 ### Architecture Review
 

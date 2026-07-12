@@ -20,7 +20,7 @@ Release Governance sits inside the Clada Operating Manual and follows the existi
 2. [The Clada Way](../THE_CLADA_WAY.md)
 3. [Clada Operating Manual](../README.md), including this Release Governance section
 4. ADRs
-5. [Master Release Specifications](../03-release-specifications/README.md)
+5. [Master Release Specifications](../release-specifications/README.md)
 6. Feature specifications
 7. Sprint documents
 8. Implementation
@@ -35,7 +35,7 @@ Release Governance defines how any approved release moves from idea to merge. Th
 
 ## Relationship To Master Release Specifications
 
-Every future platform release begins with a Master Release Specification in [../03-release-specifications](../03-release-specifications/README.md).
+Every future platform release begins with a Master Release Specification in [../release-specifications](../release-specifications/README.md).
 
 A Master Release Specification is the durable source of truth for:
 

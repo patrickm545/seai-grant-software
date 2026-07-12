@@ -24,7 +24,7 @@ These principles translate the Constitution and The Clada Way into daily operati
 
 Platform release implementation may not begin from chat instructions alone.
 
-Every future platform release must begin with a Master Release Specification stored in [03-release-specifications](03-release-specifications/README.md). Implementation may begin only after CTO architecture approval, CEO specification approval, required feature specifications, required ADRs, and sprint scope are documented.
+Every future platform release must begin with a Master Release Specification stored in [release-specifications](release-specifications/README.md). Implementation may begin only after CTO architecture approval, CEO specification approval, required feature specifications, required ADRs, and sprint scope are documented.
 
 Every platform release ends with a draft pull request, CTO review, CEO approval, merge, release tag, and roadmap update.
 

@@ -45,9 +45,9 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
 - [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, evolution policy, and Platform Release 1.x execution roadmap.
 - [01-product](01-product/README.md): platform and module strategy.
-- [02-release-governance](02-release-governance/README.md): release lifecycle, approval gates, release specification template, CTO review, CEO approval, and governance changelog.
+- [release-governance](release-governance/README.md): release lifecycle, approval gates, release specification template, CTO review, CEO approval, and governance changelog.
 - [02-design](02-design/README.md): product design standards.
-- [03-release-specifications](03-release-specifications/README.md): permanent Master Release Specifications for future platform releases.
+- [release-specifications](release-specifications/README.md): permanent Master Release Specifications for future platform releases.
 - [03-engineering](03-engineering/README.md): architecture, engineering standards, and AI engineering rules.
 - [04-features](04-features/README.md): feature specification process and templates.
 - [05-decisions](05-decisions/README.md): ADR process and decisions.
@@ -80,8 +80,8 @@ Before changing application code, read:
 3. [THE_CLADA_WAY.md](THE_CLADA_WAY.md).
 4. [01-platform/README.md](01-platform/README.md) for platform or module-boundary changes.
 5. [01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md) before Platform Release 1.x implementation work.
-6. [02-release-governance/README.md](02-release-governance/README.md) before platform release planning, implementation, review, approval, merge, or tag work.
-7. The relevant Master Release Specification in [03-release-specifications](03-release-specifications/README.md) before future platform implementation work.
+6. [release-governance/README.md](release-governance/README.md) before platform release planning, implementation, review, approval, merge, or tag work.
+7. The relevant Master Release Specification in [release-specifications](release-specifications/README.md) before future platform implementation work.
 8. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
 9. Any linked feature specification.
 10. Any linked ADR.

@@ -10,7 +10,7 @@
 
 Use this template for every future Clada OS platform release.
 
-Copy this structure into [../03-release-specifications](../03-release-specifications/README.md) and replace bracketed guidance with release-specific content. Do not begin implementation until the completed specification has CTO architecture approval and CEO approval.
+Copy this structure into [../release-specifications](../release-specifications/README.md) and replace bracketed guidance with release-specific content. Do not begin implementation until the completed specification has CTO architecture approval and CEO approval.
 
 ## Metadata
 

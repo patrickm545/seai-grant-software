@@ -20,12 +20,12 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 ## Release Governance
 
-- [02-release-governance/README.md](02-release-governance/README.md)
-- [02-release-governance/RELEASE_LIFECYCLE.md](02-release-governance/RELEASE_LIFECYCLE.md)
-- [02-release-governance/RELEASE_SPECIFICATION_TEMPLATE.md](02-release-governance/RELEASE_SPECIFICATION_TEMPLATE.md)
-- [02-release-governance/CTO_REVIEW_CHECKLIST.md](02-release-governance/CTO_REVIEW_CHECKLIST.md)
-- [02-release-governance/CEO_RELEASE_APPROVAL.md](02-release-governance/CEO_RELEASE_APPROVAL.md)
-- [02-release-governance/GOVERNANCE_CHANGELOG.md](02-release-governance/GOVERNANCE_CHANGELOG.md)
+- [release-governance/README.md](release-governance/README.md)
+- [release-governance/RELEASE_LIFECYCLE.md](release-governance/RELEASE_LIFECYCLE.md)
+- [release-governance/RELEASE_SPECIFICATION_TEMPLATE.md](release-governance/RELEASE_SPECIFICATION_TEMPLATE.md)
+- [release-governance/CTO_REVIEW_CHECKLIST.md](release-governance/CTO_REVIEW_CHECKLIST.md)
+- [release-governance/CEO_RELEASE_APPROVAL.md](release-governance/CEO_RELEASE_APPROVAL.md)
+- [release-governance/GOVERNANCE_CHANGELOG.md](release-governance/GOVERNANCE_CHANGELOG.md)
 
 ## Company
 
@@ -68,7 +68,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 ## Release Specifications
 
-- [03-release-specifications/README.md](03-release-specifications/README.md)
+- [release-specifications/README.md](release-specifications/README.md)
 
 ## Design
 

@@ -59,9 +59,9 @@ Use uppercase words separated by underscores to match existing sprint and releas
 
 ## Relationship To Release Governance
 
-Release Governance is defined in [../02-release-governance](../02-release-governance/README.md).
+Release Governance is defined in [../release-governance](../release-governance/README.md).
 
-Every Master Release Specification must follow [../02-release-governance/RELEASE_SPECIFICATION_TEMPLATE.md](../02-release-governance/RELEASE_SPECIFICATION_TEMPLATE.md).
+Every Master Release Specification must follow [../release-governance/RELEASE_SPECIFICATION_TEMPLATE.md](../release-governance/RELEASE_SPECIFICATION_TEMPLATE.md).
 
 ## Relationship To The Clada Operating Manual
 

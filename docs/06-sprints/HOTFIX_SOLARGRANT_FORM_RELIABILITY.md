@@ -126,18 +126,31 @@ Fresh Postgres verification:
 
 ## Preview Deployment
 
-- Preview deployment built successfully on Vercel at `https://seai-grant-software-4u1dkk6or-patrick-mc-kennas-projects.vercel.app`.
-- Protected preview browser smoke reached the real form and loaded the public route successfully.
-- Happy-path preview submission failed with HTTP 500, request id `6cde9dc0-7304-4fa7-8242-05f980950909`.
-- Preview logs confirmed Prisma `P2021` during `installer_lookup`: the table `public.Organisation` does not exist in the connected hosted database.
-- Vercel environment metadata shows database variables are scoped to Production, Preview, and Development, so migrations were not applied automatically as part of this hotfix.
-- Preview is not ready for demonstration until target database migrations are applied and the preview happy path is rerun successfully.
+- Vercel Preview, Vercel Production, Vercel Development, and local `.env.local` use the same Neon-hosted `DATABASE_URL` fingerprint. Migrating the hosted target therefore updates both preview and production runtime database paths.
+- Pre-migration status found the hosted database current through `20260624162000_clada_os_customer_portal_foundation`.
+- Missing approved migrations were `20260710120000_identity_organisation_foundation`, `20260710130000_users_roles_permissions_audit`, and `20260710140000_workflow_foundation`.
+- The hotfix branch introduced no Prisma migration or Prisma schema change.
+- A pre-migration custom-format `pg_dump` backup was taken to local temp storage; Neon backup and restore documentation confirms point-in-time restore and backup/snapshot recovery support for root branches.
+- `prisma migrate deploy` applied the three approved Platform Release 1.1, 1.2, and 1.3 migrations successfully. Post-deploy `prisma migrate status` reported the hosted database schema is up to date.
+- Final preview deployment built successfully at `https://seai-grant-software-er58roq2e-patrick-mc-kennas-projects.vercel.app`.
+- Protected preview browser testing produced five varied valid HTTP 200 submissions, one slow-response HTTP 200 submission with loading state visible, one rapid-submit HTTP 200 submission with one intake request, one invalid-step check with zero intake requests, and one refresh/state-preservation check.
+- A final success-state check returned HTTP 200, created lead `cmrhxp7ot005awbkgkjzzfzr6`, and displayed the success layout.
+- Direct hosted database verification found all eight checked preview-created leads, each with exactly one lead record, one workflow instance, an audit log, and activity records. The upload case had two `LeadDocument` rows.
+- Vercel function logs after the amendment showed no HTTP 500 intake logs and no notification failure logs for the checked window.
+
+## CTO Review Amendment
+
+- Email and SMS notifications are now awaited with `Promise.allSettled` after persistence succeeds.
+- Notification provider failures do not roll back saved leads and do not change the homeowner success response after persistence succeeds.
+- Notification failure logs include request id, stage, channel, and lead id, but omit provider message text to avoid leaking customer contact details.
+- Provider timeouts remain bounded in `lib/email.ts` and `lib/sms.ts`.
+- Added `tests/platform/intake-notifications.test.ts` to prove notification failures settle without throwing and without logging customer contact details.
 
 ## Risks And Deferrals
 
-- The connected hosted database must have all migrations applied before production can be considered fixed.
-- Notification delivery is now non-blocking. A durable notification outbox is deferred.
-- The production deployment itself was not tested by this hotfix record. Preview deployment built, but its database-backed happy path is blocked by unapplied hosted database migrations.
+- Preview and production currently share the same hosted Neon database variables. This is acceptable for the hotfix after migration, but future release process should separate or explicitly document environment ownership.
+- Notification delivery is bounded and awaited, but a durable notification outbox and retry worker are still deferred.
+- The production deployment itself was not tested after merge. The final recommendation applies to the verified Vercel preview and shared hosted database state.
 - No Platform Release 1.4 work was started.
 
 ## Rollback

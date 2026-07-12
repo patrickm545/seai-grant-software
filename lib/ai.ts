@@ -2,6 +2,12 @@ import { openai } from './openai';
 import type { LeadFormInput, EligibilityAnalysis } from './types';
 import { runRulesBasedEligibility } from './eligibility';
 
+const OPTIONAL_AI_TIMEOUT_MS = 8000;
+const optionalAiRequestOptions = {
+  timeout: OPTIONAL_AI_TIMEOUT_MS,
+  maxRetries: 0
+};
+
 export async function generateEligibilityAnalysis(input: LeadFormInput): Promise<EligibilityAnalysis> {
   const fallback = runRulesBasedEligibility(input);
 
@@ -16,7 +22,7 @@ Lead: ${JSON.stringify(input)}`;
     const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: prompt
-    });
+    }, optionalAiRequestOptions);
 
     const text = response.output_text.trim();
     const parsed = JSON.parse(text) as EligibilityAnalysis;
@@ -48,7 +54,7 @@ export async function extractDocumentFields(args: {
     const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: prompt
-    });
+    }, optionalAiRequestOptions);
     return JSON.parse(response.output_text.trim());
   } catch {
     return fallback;

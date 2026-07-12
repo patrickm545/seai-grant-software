@@ -22,6 +22,12 @@ import {
   type SystemSizeVariant
 } from '@/lib/quote-estimate';
 import type { GeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
+import {
+  isLeadFormFieldKey,
+  type LeadFormFieldErrorMap,
+  type LeadFormStepId,
+  type LeadFormValidationFailure
+} from '@/lib/lead-form-flow';
 
 function createInitialState(installerId: string) {
   return {
@@ -77,6 +83,17 @@ type IntakeResult = {
   quoteEstimate?: SolarQuoteEstimate;
   generatedQuote?: GeneratedInstallerQuote;
   uploadedDocuments?: number;
+  requestId?: string;
+};
+
+type IntakeErrorResult = LeadFormValidationFailure & {
+  error?: string;
+};
+
+type RuntimeInitialState = {
+  form: FormState;
+  selectedSystemSize: SystemSizeVariant;
+  currentStep: number;
 };
 
 const euroFormatter = new Intl.NumberFormat('en-IE', {
@@ -90,11 +107,15 @@ const validationChecks: Array<{
   isInvalid: (form: FormState) => boolean;
   message: string;
 }> = [
-  { key: 'fullName', isInvalid: (form) => !form.fullName.trim(), message: 'Please fill in Full name.' },
-  { key: 'email', isInvalid: (form) => !form.email.trim(), message: 'Please fill in Email.' },
-  { key: 'phone', isInvalid: (form) => !form.phone.trim(), message: 'Please fill in Phone.' },
+  { key: 'fullName', isInvalid: (form) => form.fullName.trim().length < 2, message: 'Please enter your full name.' },
+  {
+    key: 'email',
+    isInvalid: (form) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()),
+    message: 'Please enter a valid email address.'
+  },
+  { key: 'phone', isInvalid: (form) => form.phone.trim().length < 7, message: 'Please enter a valid phone number.' },
   { key: 'preferredCallbackWindow', isInvalid: (form) => !form.preferredCallbackWindow, message: 'Please choose Best callback time.' },
-  { key: 'addressLine1', isInvalid: (form) => !form.addressLine1.trim(), message: 'Please fill in Address line 1.' },
+  { key: 'addressLine1', isInvalid: (form) => form.addressLine1.trim().length < 5, message: 'Please enter address line 1.' },
   { key: 'county', isInvalid: (form) => !form.county, message: 'Please choose County.' },
   { key: 'mprn', isInvalid: (form) => form.mprn.length !== 11, message: 'MPRN must be 11 digits.' },
   { key: 'dwellingType', isInvalid: (form) => !form.dwellingType, message: 'Please choose Dwelling type.' },
@@ -118,10 +139,20 @@ const validationChecks: Array<{
   },
   { key: 'roofType', isInvalid: (form) => !form.roofType, message: 'Please choose Roof type.' },
   { key: 'monthlyElectricityBillRange', isInvalid: (form) => !form.monthlyElectricityBillRange, message: 'Please choose Monthly electricity bill.' },
+  {
+    key: 'numberOfOccupants',
+    isInvalid: (form) => {
+      if (!form.numberOfOccupants.trim()) return false;
+      const value = Number(form.numberOfOccupants);
+      return !Number.isInteger(value) || value < 1 || value > 12;
+    },
+    message: 'Number of occupants must be between 1 and 12.'
+  },
   { key: 'installTimeline', isInvalid: (form) => !form.installTimeline, message: 'Please choose Installation timeframe.' },
   { key: 'consentToProcess', isInvalid: (form) => !form.consentToProcess, message: 'Please agree to your details being used for this application.' },
   { key: 'consentToGrantAssist', isInvalid: (form) => !form.consentToGrantAssist, message: 'Please confirm you want help with grant and installer follow-up.' },
-  { key: 'consentToContact', isInvalid: (form) => !form.consentToContact, message: 'Please agree to be contacted by phone or email.' }
+  { key: 'consentToContact', isInvalid: (form) => !form.consentToContact, message: 'Please agree to be contacted by phone or email.' },
+  { key: 'notes', isInvalid: (form) => form.notes.length > 2000, message: 'Notes must be 2,000 characters or fewer.' }
 ];
 
 const formSteps: Array<{
@@ -140,7 +171,7 @@ const formSteps: Array<{
     id: 'usage',
     title: 'Electricity usage',
     helper: 'This helps estimate your likely system size.',
-    fields: ['monthlyElectricityBillRange']
+    fields: ['monthlyElectricityBillRange', 'numberOfOccupants']
   },
   {
     id: 'roof',
@@ -164,11 +195,11 @@ const formSteps: Array<{
     id: 'contact',
     title: 'Contact and consent',
     helper: 'Last step: where should the installer send your survey follow-up?',
-    fields: ['fullName', 'email', 'phone', 'preferredCallbackWindow', 'addressLine1', 'consentToProcess', 'consentToGrantAssist', 'consentToContact']
+    fields: ['fullName', 'email', 'phone', 'preferredCallbackWindow', 'addressLine1', 'notes', 'consentToProcess', 'consentToGrantAssist', 'consentToContact']
   }
 ];
 
-const earlyBrowsingOptionalFields = new Set<FormFieldKey>(['mprn']);
+const draftStorageVersion = 1;
 
 function labelise(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -237,6 +268,16 @@ function getInvalidFields(form: FormState, fields?: FormFieldKey[]) {
     .map((check) => check.key);
 }
 
+function getInvalidFieldErrors(form: FormState, fields?: FormFieldKey[]) {
+  return validationChecks
+    .filter((check) => !fields || fields.includes(check.key))
+    .filter((check) => check.isInvalid(form))
+    .reduce<Partial<Record<FormFieldKey, string>>>((errors, check) => {
+      errors[check.key] = check.message;
+      return errors;
+    }, {});
+}
+
 function getValidationError(form: FormState, fields?: FormFieldKey[]) {
   const firstInvalid = validationChecks
     .filter((check) => !fields || fields.includes(check.key))
@@ -254,8 +295,101 @@ function getStepIndexForField(field: FormFieldKey) {
   return stepIndex === -1 ? 0 : stepIndex;
 }
 
-function getStepNavigationFields(fields: FormFieldKey[]) {
-  return fields.filter((field) => !earlyBrowsingOptionalFields.has(field));
+function getStepIndexForStepId(stepId?: LeadFormStepId) {
+  if (!stepId) return undefined;
+  const stepIndex = formSteps.findIndex((step) => step.id === stepId);
+  return stepIndex === -1 ? undefined : stepIndex;
+}
+
+function isFormFieldKey(value: string): value is FormFieldKey {
+  return value in fallbackInitialState;
+}
+
+function sanitizeServerFieldErrors(fieldErrors?: LeadFormFieldErrorMap) {
+  if (!fieldErrors) return {};
+
+  return Object.entries(fieldErrors).reduce<Partial<Record<FormFieldKey, string>>>((errors, [field, message]) => {
+    if (isLeadFormFieldKey(field) && isFormFieldKey(field) && typeof message === 'string') {
+      errors[field] = message;
+    }
+
+    return errors;
+  }, {});
+}
+
+function isIntakeErrorResult(value: unknown): value is IntakeErrorResult {
+  return Boolean(value && typeof value === 'object');
+}
+
+function getDraftStorageKey(installerId: string) {
+  return `solargrant-pro-intake-draft:${installerId}`;
+}
+
+function normalizeDraftStep(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < formSteps.length ? value : 0;
+}
+
+function readRuntimeInitialState(installerId: string): RuntimeInitialState {
+  const fallback = {
+    form: createInitialState(installerId),
+    selectedSystemSize: 'recommended' as SystemSizeVariant,
+    currentStep: 0
+  };
+
+  if (typeof window === 'undefined') return fallback;
+
+  try {
+    const rawDraft = window.sessionStorage.getItem(getDraftStorageKey(installerId));
+    if (!rawDraft) return fallback;
+
+    const parsed = JSON.parse(rawDraft) as {
+      version?: number;
+      form?: Partial<FormState>;
+      selectedSystemSize?: SystemSizeVariant;
+      currentStep?: number;
+    };
+
+    if (parsed.version !== draftStorageVersion || !parsed.form) return fallback;
+
+    return {
+      form: {
+        ...fallback.form,
+        ...parsed.form,
+        installerId
+      },
+      selectedSystemSize: parsed.selectedSystemSize ?? fallback.selectedSystemSize,
+      currentStep: normalizeDraftStep(parsed.currentStep)
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function writeRuntimeDraft(installerId: string, state: RuntimeInitialState) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.setItem(
+      getDraftStorageKey(installerId),
+      JSON.stringify({
+        version: draftStorageVersion,
+        ...state,
+        savedAt: new Date().toISOString()
+      })
+    );
+  } catch {
+    // Ignore storage failures so private browsing never blocks the form.
+  }
+}
+
+function clearRuntimeDraft(installerId: string) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.removeItem(getDraftStorageKey(installerId));
+  } catch {
+    // Ignore storage failures.
+  }
 }
 
 async function parseJsonSafely(response: Response) {
@@ -271,8 +405,9 @@ async function parseJsonSafely(response: Response) {
 }
 
 export function LeadForm({ installerId = fallbackInitialState.installerId }: { installerId?: string }) {
-  const [form, setForm] = useState<FormState>(() => createInitialState(installerId));
-  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>('recommended');
+  const [runtimeInitialState] = useState(() => readRuntimeInitialState(installerId));
+  const [form, setForm] = useState<FormState>(() => runtimeInitialState.form);
+  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>(runtimeInitialState.selectedSystemSize);
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [meterPhotoFiles, setMeterPhotoFiles] = useState<File[]>([]);
   const [roofPhotoFiles, setRoofPhotoFiles] = useState<File[]>([]);
@@ -280,7 +415,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [invalidFields, setInvalidFields] = useState<FormFieldKey[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [fieldErrorMessages, setFieldErrorMessages] = useState<Partial<Record<FormFieldKey, string>>>({});
+  const [currentStep, setCurrentStep] = useState(runtimeInitialState.currentStep);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
@@ -288,6 +424,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const roofInputRef = useRef<HTMLInputElement | null>(null);
   const successRef = useRef<HTMLDivElement | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const installerIdRef = useRef(installerId);
   const submitLockRef = useRef(false);
 
   const uploadSummary = useMemo(() => {
@@ -310,12 +447,16 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const isFinalStep = currentStep === formSteps.length - 1;
   const progressPercent = ((currentStep + 1) / formSteps.length) * 100;
 
-  const update = (key: keyof FormState, value: string | boolean) =>
-    setForm((prev) => {
-      const nextForm = { ...prev, [key]: value };
-      setInvalidFields((current) => current.filter((field) => validationChecks.find((check) => check.key === field)?.isInvalid(nextForm)));
-      return nextForm;
+  const update = (key: keyof FormState, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setInvalidFields((current) => current.filter((field) => field !== key));
+    setFieldErrorMessages((current) => {
+      if (!(key in current)) return current;
+      const nextMessages = { ...current };
+      delete nextMessages[key];
+      return nextMessages;
     });
+  };
 
   function isFieldInvalid(key: FormFieldKey) {
     return invalidFields.includes(key);
@@ -323,7 +464,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function renderFieldError(key: FormFieldKey) {
     if (!isFieldInvalid(key)) return null;
-    const message = getFieldValidationMessage(form, key);
+    const message = fieldErrorMessages[key] ?? getFieldValidationMessage(form, key);
     return message ? (
       <p id={`${key}-error`} className="field-error-message">
         {message}
@@ -345,16 +486,25 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function validateStepFields(fields: FormFieldKey[]) {
     const nextInvalidFields = getInvalidFields(form, fields);
+    const nextFieldErrors = getInvalidFieldErrors(form, fields);
     const validationError = getValidationError(form, fields);
 
     if (validationError) {
       setInvalidFields(nextInvalidFields);
+      setFieldErrorMessages((current) => ({ ...current, ...nextFieldErrors }));
       setSubmitError(validationError);
       focusFirstInvalidField(nextInvalidFields[0]);
       return false;
     }
 
     setInvalidFields((current) => current.filter((field) => !fields.includes(field)));
+    setFieldErrorMessages((current) => {
+      const nextMessages = { ...current };
+      for (const field of fields) {
+        delete nextMessages[field];
+      }
+      return nextMessages;
+    });
     setSubmitError(null);
     return true;
   }
@@ -364,7 +514,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }
 
   function continueStep() {
-    if (!validateStepFields(getStepNavigationFields(activeStep.fields))) return;
+    if (!validateStepFields(activeStep.fields)) return;
 
     setCurrentStep((step) => Math.min(step + 1, formSteps.length - 1));
     scrollFormToTop();
@@ -373,6 +523,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   function backStep() {
     setSubmitError(null);
     setInvalidFields([]);
+    setFieldErrorMessages({});
     setCurrentStep((step) => Math.max(step - 1, 0));
     scrollFormToTop();
   }
@@ -394,9 +545,11 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
     submitLockRef.current = true;
     const nextInvalidFields = getInvalidFields(form);
+    const nextFieldErrors = getInvalidFieldErrors(form);
     const validationError = getValidationError(form);
     if (validationError) {
       setInvalidFields(nextInvalidFields);
+      setFieldErrorMessages(nextFieldErrors);
       setSubmitError(validationError);
       setResult(null);
       setLoading(false);
@@ -410,6 +563,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setResult(null);
     setSubmitError(null);
     setInvalidFields([]);
+    setFieldErrorMessages({});
 
     const applicantDocuments: UploadItem[] = [
       ...billFiles.map((file) => ({
@@ -443,7 +597,6 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
     try {
       console.info('[lead-form] Submitting lead form', {
-        email: form.email,
         hasMprn: form.mprn.length > 0,
         applicantDocuments: applicantDocuments.length
       });
@@ -457,14 +610,31 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       console.info('[lead-form] Submit response received', {
         ok: response.ok,
         status: response.status,
-        leadId: typeof data?.leadId === 'string' ? data.leadId : undefined
+        leadId: typeof data?.leadId === 'string' ? data.leadId : undefined,
+        requestId: typeof data?.requestId === 'string' ? data.requestId : undefined
       });
       if (!response.ok) {
-        setSubmitError(
-          typeof data?.error === 'string'
-            ? data.error
-            : 'We could not submit your application right now. Please try again.'
-        );
+        const fallbackError = 'We could not submit your application right now. Please try again.';
+        const errorMessage = isIntakeErrorResult(data) && typeof data.error === 'string' ? data.error : fallbackError;
+        const serverFieldErrors = isIntakeErrorResult(data) ? sanitizeServerFieldErrors(data.fieldErrors) : {};
+        const serverInvalidFields = Object.keys(serverFieldErrors).filter(isFormFieldKey);
+
+        if (serverInvalidFields.length) {
+          const firstInvalidField = serverInvalidFields[0];
+          const serverStepIndex =
+            isIntakeErrorResult(data) && typeof data.firstErrorStepIndex === 'number'
+              ? data.firstErrorStepIndex
+              : getStepIndexForStepId(isIntakeErrorResult(data) ? data.firstErrorStepId : undefined);
+          setInvalidFields(serverInvalidFields);
+          setFieldErrorMessages(serverFieldErrors);
+          setSubmitError(errorMessage);
+          setCurrentStep(serverStepIndex ?? getStepIndexForField(firstInvalidField));
+          focusFirstInvalidField(firstInvalidField);
+          return;
+        }
+
+        const requestReference = isIntakeErrorResult(data) && data.requestId ? ` Reference: ${data.requestId}.` : '';
+        setSubmitError(`${errorMessage}${requestReference}`);
         return;
       }
 
@@ -474,6 +644,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
       }
 
       setResult(data);
+      clearRuntimeDraft(installerId);
     } catch (error) {
       console.error('[lead-form] Lead form submission failed', error);
       setSubmitError('We could not submit your application right now. Please check your connection and try again.');
@@ -492,7 +663,9 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setResult(null);
     setSubmitError(null);
     setInvalidFields([]);
+    setFieldErrorMessages({});
     setCurrentStep(0);
+    clearRuntimeDraft(installerId);
   }
 
   useEffect(() => {
@@ -500,13 +673,30 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
     successRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     successRef.current?.focus();
-  }, [result]);
+    clearRuntimeDraft(installerId);
+  }, [installerId, result]);
 
   useEffect(() => {
-    setForm(createInitialState(installerId));
-    setSelectedSystemSize('recommended');
-    setCurrentStep(0);
+    if (installerIdRef.current === installerId) return;
+
+    installerIdRef.current = installerId;
+    const nextInitialState = readRuntimeInitialState(installerId);
+    setForm(nextInitialState.form);
+    setSelectedSystemSize(nextInitialState.selectedSystemSize);
+    setCurrentStep(nextInitialState.currentStep);
+    setInvalidFields([]);
+    setFieldErrorMessages({});
+    setSubmitError(null);
   }, [installerId]);
+
+  useEffect(() => {
+    if (result) return;
+    writeRuntimeDraft(installerId, {
+      form,
+      selectedSystemSize,
+      currentStep
+    });
+  }, [currentStep, form, installerId, result, selectedSystemSize]);
 
   function renderEstimatePreview(includeGrant = false) {
     const grantCopy = estimate.grantLikely
@@ -581,7 +771,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
               </div>
               <div data-field="mprn">
                 <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
-                  MPRN Number
+                  {requiredLabel('MPRN Number')}
                 </label>
                 <input
                   id="mprn"
@@ -665,10 +855,15 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 </select>
                 {renderFieldError('monthlyElectricityBillRange')}
               </div>
-              <div>
-                <label htmlFor="numberOfOccupants">{optionalLabel('Number of occupants')}</label>
+              <div data-field="numberOfOccupants">
+                <label htmlFor="numberOfOccupants" className={isFieldInvalid('numberOfOccupants') ? 'field-label-error' : undefined}>
+                  {optionalLabel('Number of occupants')}
+                </label>
                 <input
                   id="numberOfOccupants"
+                  className={isFieldInvalid('numberOfOccupants') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('numberOfOccupants')}
+                  aria-describedby={isFieldInvalid('numberOfOccupants') ? 'numberOfOccupants-error' : undefined}
                   type="number"
                   min="1"
                   max="12"
@@ -676,6 +871,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   onChange={(e) => update('numberOfOccupants', e.target.value)}
                   placeholder="Optional"
                 />
+                {renderFieldError('numberOfOccupants')}
               </div>
               <div>
                 <label htmlFor="daytimeUsage">{optionalLabel('Daytime usage')}</label>
@@ -995,9 +1191,20 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <label htmlFor="addressLine2">{optionalLabel('Address line 2')}</label>
                 <input id="addressLine2" value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} />
               </div>
-              <div>
-                <label htmlFor="notes">{optionalLabel('Anything we should know?')}</label>
-                <input id="notes" value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Optional" />
+              <div data-field="notes">
+                <label htmlFor="notes" className={isFieldInvalid('notes') ? 'field-label-error' : undefined}>
+                  {optionalLabel('Anything we should know?')}
+                </label>
+                <input
+                  id="notes"
+                  className={isFieldInvalid('notes') ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('notes')}
+                  aria-describedby={isFieldInvalid('notes') ? 'notes-error' : undefined}
+                  value={form.notes}
+                  onChange={(e) => update('notes', e.target.value)}
+                  placeholder="Optional"
+                />
+                {renderFieldError('notes')}
               </div>
             </div>
 

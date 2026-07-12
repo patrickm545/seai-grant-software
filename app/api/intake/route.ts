@@ -12,6 +12,7 @@ import { writeAuditLog } from '@/lib/audit';
 import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
 import { getDocumentTypeFromLegacyKind } from '@/lib/documents';
 import { ensureDefaultInstallerWithOrganisation } from '@/lib/identity';
+import { runLeadNotificationTasks } from '@/lib/intake-notifications';
 import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from '@/lib/lead-workflow';
 import { createPortalToken } from '@/lib/portal';
 import { ensureWorkflowInstanceForResource } from '@/lib/workflow';
@@ -570,30 +571,30 @@ export async function POST(request: NextRequest) {
     });
 
     if (!submissionResult.isDuplicate) {
-      const notificationStage = 'notifications';
-      void Promise.allSettled([
-        sendLeadNotificationEmails({
-          lead: submissionResult.lead,
-          installerName: installer.name,
-          quoteEstimate: submissionResult.quoteEstimate,
-          recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
-        }),
-        sendLeadNotificationSms({
-          lead: submissionResult.lead,
-          quoteEstimate: submissionResult.quoteEstimate,
-          leadTemperature: submissionResult.analysis.leadTemperature
-        })
-      ]).then((notificationResults) => {
-        for (const [index, result] of notificationResults.entries()) {
-          if (result.status === 'rejected') {
-            console.error('[intake] Notification failed', {
-              ...buildRequestContext(requestId, notificationStage),
-              channel: index === 0 ? 'email' : 'sms',
-              leadId: submissionResult.lead.id,
-              error: getErrorLogDetails(result.reason)
-            });
+      await runLeadNotificationTasks({
+        requestId,
+        leadId: submissionResult.lead.id,
+        tasks: [
+          {
+            channel: 'email',
+            run: () =>
+              sendLeadNotificationEmails({
+                lead: submissionResult.lead,
+                installerName: installer.name,
+                quoteEstimate: submissionResult.quoteEstimate,
+                recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
+              })
+          },
+          {
+            channel: 'sms',
+            run: () =>
+              sendLeadNotificationSms({
+                lead: submissionResult.lead,
+                quoteEstimate: submissionResult.quoteEstimate,
+                leadTemperature: submissionResult.analysis.leadTemperature
+              })
           }
-        }
+        ]
       });
     }
 

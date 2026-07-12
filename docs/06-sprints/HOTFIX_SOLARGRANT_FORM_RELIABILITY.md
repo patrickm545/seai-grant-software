@@ -124,11 +124,20 @@ Fresh Postgres verification:
 - Rapid browser submit created one lead.
 - Five concurrent identical API submissions created one lead.
 
+## Preview Deployment
+
+- Preview deployment built successfully on Vercel at `https://seai-grant-software-4u1dkk6or-patrick-mc-kennas-projects.vercel.app`.
+- Protected preview browser smoke reached the real form and loaded the public route successfully.
+- Happy-path preview submission failed with HTTP 500, request id `6cde9dc0-7304-4fa7-8242-05f980950909`.
+- Preview logs confirmed Prisma `P2021` during `installer_lookup`: the table `public.Organisation` does not exist in the connected hosted database.
+- Vercel environment metadata shows database variables are scoped to Production, Preview, and Development, so migrations were not applied automatically as part of this hotfix.
+- Preview is not ready for demonstration until target database migrations are applied and the preview happy path is rerun successfully.
+
 ## Risks And Deferrals
 
 - The connected hosted database must have all migrations applied before production can be considered fixed.
 - Notification delivery is now non-blocking. A durable notification outbox is deferred.
-- The production deployment itself was not tested by this hotfix record. Only local and preview evidence should be used for release review until production is tested after merge.
+- The production deployment itself was not tested by this hotfix record. Preview deployment built, but its database-backed happy path is blocked by unapplied hosted database migrations.
 - No Platform Release 1.4 work was started.
 
 ## Rollback

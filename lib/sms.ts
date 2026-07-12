@@ -11,6 +11,8 @@ type LeadSmsArgs = {
   leadTemperature?: string;
 };
 
+const NOTIFICATION_TIMEOUT_MS = 3000;
+
 function getTwilioConfig() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
   const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
@@ -26,7 +28,9 @@ export async function sendLeadNotificationSms(args: LeadSmsArgs) {
   const config = getTwilioConfig();
   if (!config || !args.lead.phone) return;
 
-  const client = twilio(config.accountSid, config.authToken);
+  const client = twilio(config.accountSid, config.authToken, {
+    timeout: NOTIFICATION_TIMEOUT_MS
+  });
   const fireEmoji = '\u{1F525}';
   const quoteLine = args.quoteEstimate
     ? `\nEstimate: ${args.quoteEstimate.selectedSystemSizeKwp} kWp, ${args.quoteEstimate.estimatedPanelCount} panels, net EUR ${args.quoteEstimate.netCostRangeAfterGrant.min}-${args.quoteEstimate.netCostRangeAfterGrant.max}`

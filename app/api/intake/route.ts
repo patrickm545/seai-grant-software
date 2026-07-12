@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import type { Prisma } from '@prisma/client';
-import { leadFormSchema } from '@/lib/validation';
+import { formatLeadFormValidationFailure, leadFormSchema } from '@/lib/validation';
 import { prisma } from '@/lib/prisma';
 import { generateEligibilityAnalysis } from '@/lib/ai';
 import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
@@ -13,6 +12,7 @@ import { writeAuditLog } from '@/lib/audit';
 import { calculateLeadScore, getLeadScorePlainLabel } from '@/lib/crm';
 import { getDocumentTypeFromLegacyKind } from '@/lib/documents';
 import { ensureDefaultInstallerWithOrganisation } from '@/lib/identity';
+import { runLeadNotificationTasks } from '@/lib/intake-notifications';
 import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from '@/lib/lead-workflow';
 import { createPortalToken } from '@/lib/portal';
 import { ensureWorkflowInstanceForResource } from '@/lib/workflow';
@@ -26,6 +26,26 @@ import {
 export const runtime = 'nodejs';
 
 const DUPLICATE_SUBMISSION_WINDOW_MS = 2 * 60 * 1000;
+
+function buildRequestContext(requestId: string, stage: string) {
+  return { requestId, stage };
+}
+
+function getErrorLogDetails(error: unknown) {
+  if (error && typeof error === 'object') {
+    const maybeCode = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+    return {
+      name: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: maybeCode
+    };
+  }
+
+  return {
+    name: 'UnknownError',
+    message: 'Unknown error'
+  };
+}
 
 function normalizeLeadInput(input: LeadFormInput): LeadFormInput {
   return {
@@ -110,14 +130,66 @@ function buildStoredAnalysis(lead: {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID();
+  let stage = 'received';
+
   try {
-    console.info('[intake] POST /api/intake received');
-    const body = await request.json();
+    console.info('[intake] POST /api/intake received', buildRequestContext(requestId, stage));
+
+    const contentType = request.headers.get('content-type') ?? '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      console.warn('[intake] Unsupported content type', {
+        ...buildRequestContext(requestId, 'request_content_type'),
+        contentType: contentType || 'missing'
+      });
+      return NextResponse.json(
+        {
+          error: 'We could not read the form submission. Please refresh and try again.',
+          formErrors: ['The submission must be sent as JSON.'],
+          requestId
+        },
+        { status: 415 }
+      );
+    }
+
+    stage = 'request_json';
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.warn('[intake] Request body could not be parsed', {
+        ...buildRequestContext(requestId, stage),
+        error: getErrorLogDetails(error)
+      });
+      return NextResponse.json(
+        {
+          error: 'We could not read the form submission. Please refresh and try again.',
+          formErrors: ['The submission body was empty or malformed.'],
+          requestId
+        },
+        { status: 400 }
+      );
+    }
+
     console.info('[intake] Request body parsed', {
-      email: typeof body?.email === 'string' ? body.email : undefined,
-      hasMprn: typeof body?.mprn === 'string' && body.mprn.length > 0
+      ...buildRequestContext(requestId, stage),
+      hasMprn: typeof (body as { mprn?: unknown })?.mprn === 'string' && (body as { mprn: string }).mprn.length > 0
     });
-    const parsed = leadFormSchema.parse(body) as LeadFormInput & {
+
+    stage = 'validation';
+    const validationResult = leadFormSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      const failure = formatLeadFormValidationFailure(validationResult.error, requestId);
+      console.warn('[intake] Submission validation failed', {
+        ...buildRequestContext(requestId, stage),
+        fields: Object.keys(failure.fieldErrors ?? {}),
+        formErrors: failure.formErrors?.length ?? 0
+      });
+      return NextResponse.json(failure, { status: 400 });
+    }
+
+    const parsed = validationResult.data as LeadFormInput & {
       applicantDocuments?: Array<{
         kind: 'electricity_bill' | 'meter_photo' | 'roof_photo';
         fileName: string;
@@ -128,10 +200,12 @@ export async function POST(request: NextRequest) {
     const { applicantDocuments = [], ...rawLeadInput } = parsed;
     const leadInput = normalizeLeadInput(rawLeadInput);
     console.info('[intake] Submission validated', {
-      email: leadInput.email,
+      ...buildRequestContext(requestId, stage),
+      installerId: leadInput.installerId,
       applicantDocuments: applicantDocuments.length
     });
 
+    stage = 'installer_lookup';
     const installer =
       leadInput.installerId === DEFAULT_INSTALLER_ID
         ? await ensureDefaultInstallerWithOrganisation(prisma, { ensureDefaultAdminMembership: false })
@@ -141,10 +215,14 @@ export async function POST(request: NextRequest) {
           });
 
     if (!installer) {
-      console.warn('[intake] Installer not found', { installerId: leadInput.installerId });
-      return NextResponse.json({ error: 'Installer not found' }, { status: 404 });
+      console.warn('[intake] Installer not found', {
+        ...buildRequestContext(requestId, stage),
+        installerId: leadInput.installerId
+      });
+      return NextResponse.json({ error: 'Installer not found', requestId }, { status: 404 });
     }
 
+    stage = 'duplicate_lookup';
     const existingLead = await prisma.lead.findFirst({
       where: getDuplicateLeadWhere(leadInput, installer.organisationId),
       orderBy: { createdAt: 'desc' },
@@ -166,7 +244,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingLead) {
-      console.info('[intake] Duplicate submission returned existing lead', { leadId: existingLead.id });
+      console.info('[intake] Duplicate submission returned existing lead', {
+        ...buildRequestContext(requestId, stage),
+        leadId: existingLead.id
+      });
       return NextResponse.json({
         leadId: existingLead.id,
         analysis: buildStoredAnalysis(existingLead),
@@ -176,6 +257,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    stage = 'quote_and_analysis';
     const quoteEstimate = buildSolarQuoteEstimate(leadInput, leadInput.selectedSystemSizeVariant ?? 'recommended');
     const installerPricing = await prisma.installerQuotePricing.upsert({
       where: { installerId: installer.id },
@@ -252,6 +334,7 @@ export async function POST(request: NextRequest) {
 
     const submissionKey = `${installer.organisationId}|${leadInput.installerId}|${leadInput.fullName}|${leadInput.email}|${leadInput.phone}|${leadInput.addressLine1}|${leadInput.mprn}`;
 
+    stage = 'persistence_transaction';
     const submissionResult = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${submissionKey}))`;
 
@@ -281,7 +364,10 @@ export async function POST(request: NextRequest) {
       });
 
       if (duplicateLead) {
-        console.info('[intake] Duplicate submission found after transaction lock', { leadId: duplicateLead.id });
+        console.info('[intake] Duplicate submission found after transaction lock', {
+          ...buildRequestContext(requestId, 'transaction_duplicate_lookup'),
+          leadId: duplicateLead.id
+        });
         return {
           lead: duplicateLead,
           analysis: buildStoredAnalysis(duplicateLead),
@@ -377,7 +463,10 @@ export async function POST(request: NextRequest) {
             : undefined
         }
       });
-      console.info('[intake] Lead created', { leadId: createdLead.id, email: createdLead.email });
+      console.info('[intake] Lead created', {
+        ...buildRequestContext(requestId, 'lead_create'),
+        leadId: createdLead.id
+      });
 
       await ensureWorkflowInstanceForResource({
         db: tx,
@@ -482,29 +571,35 @@ export async function POST(request: NextRequest) {
     });
 
     if (!submissionResult.isDuplicate) {
-      try {
-        await sendLeadNotificationEmails({
-          lead: submissionResult.lead,
-          installerName: installer.name,
-          quoteEstimate: submissionResult.quoteEstimate,
-          recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
-        });
-      } catch (error) {
-        console.error('Email notification failed during intake submission', error);
-      }
-
-      try {
-        await sendLeadNotificationSms({
-          lead: submissionResult.lead,
-          quoteEstimate: submissionResult.quoteEstimate,
-          leadTemperature: submissionResult.analysis.leadTemperature
-        });
-      } catch (error) {
-        console.error('SMS notification failed during intake submission', error);
-      }
+      await runLeadNotificationTasks({
+        requestId,
+        leadId: submissionResult.lead.id,
+        tasks: [
+          {
+            channel: 'email',
+            run: () =>
+              sendLeadNotificationEmails({
+                lead: submissionResult.lead,
+                installerName: installer.name,
+                quoteEstimate: submissionResult.quoteEstimate,
+                recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
+              })
+          },
+          {
+            channel: 'sms',
+            run: () =>
+              sendLeadNotificationSms({
+                lead: submissionResult.lead,
+                quoteEstimate: submissionResult.quoteEstimate,
+                leadTemperature: submissionResult.analysis.leadTemperature
+              })
+          }
+        ]
+      });
     }
 
     console.info('[intake] Submission completed', {
+      ...buildRequestContext(requestId, 'completed'),
       leadId: submissionResult.lead.id,
       isDuplicate: submissionResult.isDuplicate
     });
@@ -513,14 +608,20 @@ export async function POST(request: NextRequest) {
       analysis: submissionResult.analysis,
       quoteEstimate: submissionResult.quoteEstimate,
       generatedQuote: submissionResult.generatedQuote,
-      uploadedDocuments: submissionResult.uploadedDocuments
+      uploadedDocuments: submissionResult.uploadedDocuments,
+      requestId
     });
   } catch (error) {
-    console.error('[intake] Submission failed', error);
-    if (error instanceof ZodError) {
-      const firstIssue = error.issues[0];
-      return NextResponse.json({ error: firstIssue?.message || 'Invalid submission' }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'We could not submit your application right now. Please try again.' }, { status: 500 });
+    console.error('[intake] Submission failed', {
+      ...buildRequestContext(requestId, stage),
+      error: getErrorLogDetails(error)
+    });
+    return NextResponse.json(
+      {
+        error: 'We could not submit your application right now. Please try again.',
+        requestId
+      },
+      { status: 500 }
+    );
   }
 }

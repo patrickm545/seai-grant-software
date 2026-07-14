@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0015 |
-| Status | Proposed |
+| Status | Accepted |
 | Owner | Clada Systems Engineering |
 | Review cycle | When generated-document domain, ownership, or resource-link rules change |
 | Last reviewed | 2026-07-14 |
@@ -554,9 +554,31 @@ Implementation complexity:
 
 Rejected because it violates the release's focused ambition and would delay the governed generated-document foundation.
 
+## CTO Approval
+
+| Field | Value |
+| --- | --- |
+| Status | Approved |
+| Reviewer | CTO |
+| Date | 2026-07-14 |
+
+The CTO approves:
+
+- the focused generic Clada OS generated-document domain;
+- `DocumentDefinition`;
+- `DocumentTemplate`;
+- `DocumentTemplateVersion`;
+- `Document`;
+- `DocumentResourceLink`;
+- organisation-owned generated documents;
+- global, module-owned definitions and templates for Release 1.4;
+- generic resource links restricted to `resourceType = lead` and one primary lead link in Release 1.4;
+- additive coexistence with `LeadDocument` and current portal, application-pack, intake-upload, quote, and workflow behaviour;
+- no separate `DocumentGenerationRequest` table;
+- no implementation in this PR.
+
 ## Follow-Up
 
-- CTO must review this proposed ADR before it becomes accepted.
 - ADR-0016 must decide template versioning and PDF rendering details.
 - A later storage and retrieval ADR must decide database-backed storage details, storage abstraction, checksums, and server-streamed retrieval.
 - A later generation transactions ADR must decide idempotency, concurrency, transaction, retry, and failure handling.

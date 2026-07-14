@@ -21,6 +21,13 @@ import {
   type SolarQuoteInput,
   type SystemSizeVariant
 } from '@/lib/quote-estimate';
+import {
+  addUniqueValue,
+  createLeadFormErrorVisibilityState,
+  removeValue,
+  removeValues,
+  shouldShowLeadFormFieldError
+} from '@/lib/lead-form-error-visibility';
 import type { GeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
 import {
   isLeadFormFieldKey,
@@ -156,7 +163,7 @@ const validationChecks: Array<{
 ];
 
 const formSteps: Array<{
-  id: string;
+  id: LeadFormStepId;
   title: string;
   helper: string;
   fields: FormFieldKey[];
@@ -295,6 +302,10 @@ function getStepIndexForField(field: FormFieldKey) {
   return stepIndex === -1 ? 0 : stepIndex;
 }
 
+function getStepIdForField(field: FormFieldKey) {
+  return formSteps.find((step) => step.fields.includes(field))?.id;
+}
+
 function getStepIndexForStepId(stepId?: LeadFormStepId) {
   if (!stepId) return undefined;
   const stepIndex = formSteps.findIndex((step) => step.id === stepId);
@@ -405,18 +416,20 @@ async function parseJsonSafely(response: Response) {
 }
 
 export function LeadForm({ installerId = fallbackInitialState.installerId }: { installerId?: string }) {
-  const [runtimeInitialState] = useState(() => readRuntimeInitialState(installerId));
-  const [form, setForm] = useState<FormState>(() => runtimeInitialState.form);
-  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>(runtimeInitialState.selectedSystemSize);
+  const [form, setForm] = useState<FormState>(() => createInitialState(installerId));
+  const [selectedSystemSize, setSelectedSystemSize] = useState<SystemSizeVariant>('recommended');
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [meterPhotoFiles, setMeterPhotoFiles] = useState<File[]>([]);
   const [roofPhotoFiles, setRoofPhotoFiles] = useState<File[]>([]);
   const [result, setResult] = useState<IntakeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [invalidFields, setInvalidFields] = useState<FormFieldKey[]>([]);
   const [fieldErrorMessages, setFieldErrorMessages] = useState<Partial<Record<FormFieldKey, string>>>({});
-  const [currentStep, setCurrentStep] = useState(runtimeInitialState.currentStep);
+  const [errorVisibility, setErrorVisibility] = useState(() =>
+    createLeadFormErrorVisibilityState<FormFieldKey, LeadFormStepId>()
+  );
+  const [currentStep, setCurrentStep] = useState(0);
+  const [hydratedInstallerId, setHydratedInstallerId] = useState<string | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
@@ -424,7 +437,6 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const roofInputRef = useRef<HTMLInputElement | null>(null);
   const successRef = useRef<HTMLDivElement | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
-  const installerIdRef = useRef(installerId);
   const submitLockRef = useRef(false);
 
   const uploadSummary = useMemo(() => {
@@ -447,9 +459,42 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const isFinalStep = currentStep === formSteps.length - 1;
   const progressPercent = ((currentStep + 1) / formSteps.length) * 100;
 
+  function resetErrorVisibility() {
+    setErrorVisibility(createLeadFormErrorVisibilityState<FormFieldKey, LeadFormStepId>());
+  }
+
+  function markStepAttempted(stepId: LeadFormStepId) {
+    setErrorVisibility((current) => ({
+      ...current,
+      attemptedStepIds: addUniqueValue(current.attemptedStepIds, stepId)
+    }));
+  }
+
+  function handleFormBlur(event: React.FocusEvent<HTMLFormElement>) {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement) || !isFormFieldKey(target.id)) return;
+
+    const field = target.id;
+    setErrorVisibility((current) => ({
+      ...current,
+      touchedFields: addUniqueValue(current.touchedFields, field)
+    }));
+  }
+
   const update = (key: keyof FormState, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setInvalidFields((current) => current.filter((field) => field !== key));
+    const nextForm = { ...form, [key]: value };
+    setForm(nextForm);
+    if (isFormFieldKey(key)) {
+      if (submitError && activeStep.fields.includes(key)) {
+        setSubmitError(getValidationError(nextForm, activeStep.fields));
+      }
+
+      setErrorVisibility((current) => ({
+        ...current,
+        serverErrorFields: removeValue(current.serverErrorFields, key)
+      }));
+    }
     setFieldErrorMessages((current) => {
       if (!(key in current)) return current;
       const nextMessages = { ...current };
@@ -458,13 +503,26 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     });
   };
 
+  function getVisibleFieldErrorMessage(key: FormFieldKey) {
+    const message = fieldErrorMessages[key] ?? getFieldValidationMessage(form, key);
+    if (!message) return null;
+
+    return shouldShowLeadFormFieldError({
+      field: key,
+      fieldStepId: getStepIdForField(key),
+      hasValidationError: true,
+      visibility: errorVisibility
+    })
+      ? message
+      : null;
+  }
+
   function isFieldInvalid(key: FormFieldKey) {
-    return invalidFields.includes(key);
+    return Boolean(getVisibleFieldErrorMessage(key));
   }
 
   function renderFieldError(key: FormFieldKey) {
-    if (!isFieldInvalid(key)) return null;
-    const message = fieldErrorMessages[key] ?? getFieldValidationMessage(form, key);
+    const message = getVisibleFieldErrorMessage(key);
     return message ? (
       <p id={`${key}-error`} className="field-error-message">
         {message}
@@ -484,20 +542,25 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     });
   }
 
-  function validateStepFields(fields: FormFieldKey[]) {
+  function validateStepFields(step: (typeof formSteps)[number]) {
+    const { fields } = step;
     const nextInvalidFields = getInvalidFields(form, fields);
     const nextFieldErrors = getInvalidFieldErrors(form, fields);
     const validationError = getValidationError(form, fields);
 
+    markStepAttempted(step.id);
+
     if (validationError) {
-      setInvalidFields(nextInvalidFields);
       setFieldErrorMessages((current) => ({ ...current, ...nextFieldErrors }));
       setSubmitError(validationError);
       focusFirstInvalidField(nextInvalidFields[0]);
       return false;
     }
 
-    setInvalidFields((current) => current.filter((field) => !fields.includes(field)));
+    setErrorVisibility((current) => ({
+      ...current,
+      serverErrorFields: removeValues(current.serverErrorFields, fields)
+    }));
     setFieldErrorMessages((current) => {
       const nextMessages = { ...current };
       for (const field of fields) {
@@ -514,7 +577,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }
 
   function continueStep() {
-    if (!validateStepFields(activeStep.fields)) return;
+    if (!validateStepFields(activeStep)) return;
 
     setCurrentStep((step) => Math.min(step + 1, formSteps.length - 1));
     scrollFormToTop();
@@ -522,8 +585,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   function backStep() {
     setSubmitError(null);
-    setInvalidFields([]);
     setFieldErrorMessages({});
+    resetErrorVisibility();
     setCurrentStep((step) => Math.max(step - 1, 0));
     scrollFormToTop();
   }
@@ -547,8 +610,12 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     const nextInvalidFields = getInvalidFields(form);
     const nextFieldErrors = getInvalidFieldErrors(form);
     const validationError = getValidationError(form);
+    setErrorVisibility((current) => ({
+      ...current,
+      allFieldsValidationAttempted: true
+    }));
+
     if (validationError) {
-      setInvalidFields(nextInvalidFields);
       setFieldErrorMessages(nextFieldErrors);
       setSubmitError(validationError);
       setResult(null);
@@ -562,8 +629,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setLoading(true);
     setResult(null);
     setSubmitError(null);
-    setInvalidFields([]);
     setFieldErrorMessages({});
+    resetErrorVisibility();
 
     const applicantDocuments: UploadItem[] = [
       ...billFiles.map((file) => ({
@@ -625,7 +692,11 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             isIntakeErrorResult(data) && typeof data.firstErrorStepIndex === 'number'
               ? data.firstErrorStepIndex
               : getStepIndexForStepId(isIntakeErrorResult(data) ? data.firstErrorStepId : undefined);
-          setInvalidFields(serverInvalidFields);
+          setErrorVisibility((current) => ({
+            ...current,
+            allFieldsValidationAttempted: true,
+            serverErrorFields: serverInvalidFields
+          }));
           setFieldErrorMessages(serverFieldErrors);
           setSubmitError(errorMessage);
           setCurrentStep(serverStepIndex ?? getStepIndexForField(firstInvalidField));
@@ -662,8 +733,8 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setRoofPhotoFiles([]);
     setResult(null);
     setSubmitError(null);
-    setInvalidFields([]);
     setFieldErrorMessages({});
+    resetErrorVisibility();
     setCurrentStep(0);
     clearRuntimeDraft(installerId);
   }
@@ -677,26 +748,24 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }, [installerId, result]);
 
   useEffect(() => {
-    if (installerIdRef.current === installerId) return;
-
-    installerIdRef.current = installerId;
     const nextInitialState = readRuntimeInitialState(installerId);
     setForm(nextInitialState.form);
     setSelectedSystemSize(nextInitialState.selectedSystemSize);
     setCurrentStep(nextInitialState.currentStep);
-    setInvalidFields([]);
     setFieldErrorMessages({});
+    resetErrorVisibility();
     setSubmitError(null);
+    setHydratedInstallerId(installerId);
   }, [installerId]);
 
   useEffect(() => {
-    if (result) return;
+    if (result || hydratedInstallerId !== installerId) return;
     writeRuntimeDraft(installerId, {
       form,
       selectedSystemSize,
       currentStep
     });
-  }, [currentStep, form, installerId, result, selectedSystemSize]);
+  }, [currentStep, form, hydratedInstallerId, installerId, result, selectedSystemSize]);
 
   function renderEstimatePreview(includeGrant = false) {
     const grantCopy = estimate.grantLikely
@@ -1437,7 +1506,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
         </div>
       </aside>
 
-      <form ref={formRef} onSubmit={submit} noValidate className="card grid polished-form stepped-form">
+      <form ref={formRef} onSubmit={submit} onBlur={handleFormBlur} noValidate className="card grid polished-form stepped-form">
         <div className="step-progress-panel" aria-label="Application progress">
           <div className="step-progress-meta">
             <span>Step {currentStep + 1} of {formSteps.length}</span>

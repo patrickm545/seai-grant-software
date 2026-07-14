@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-12 |
 
 The Clada Operating Manual (COM) is the permanent source of truth for Clada Systems. It governs how Clada OS is planned, designed, built, reviewed, released, and maintained.
 
@@ -45,7 +45,9 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
 - [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, evolution policy, and Platform Release 1.x execution roadmap.
 - [01-product](01-product/README.md): platform and module strategy.
+- [release-governance](release-governance/README.md): release lifecycle, approval gates, release specification template, CTO review, CEO approval, and governance changelog.
 - [02-design](02-design/README.md): product design standards.
+- [release-specifications](release-specifications/README.md): permanent Master Release Specifications for future platform releases.
 - [03-engineering](03-engineering/README.md): architecture, engineering standards, and AI engineering rules.
 - [04-features](04-features/README.md): feature specification process and templates.
 - [05-decisions](05-decisions/README.md): ADR process and decisions.
@@ -78,10 +80,12 @@ Before changing application code, read:
 3. [THE_CLADA_WAY.md](THE_CLADA_WAY.md).
 4. [01-platform/README.md](01-platform/README.md) for platform or module-boundary changes.
 5. [01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md) before Platform Release 1.x implementation work.
-6. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
-7. Any linked feature specification.
-8. Any linked ADR.
-9. The relevant engineering or design standard.
+6. [release-governance/README.md](release-governance/README.md) before platform release planning, implementation, review, approval, merge, or tag work.
+7. The relevant Master Release Specification in [release-specifications](release-specifications/README.md) before future platform implementation work.
+8. [06-sprints/ACTIVE_SPRINT.md](06-sprints/ACTIVE_SPRINT.md).
+9. Any linked feature specification.
+10. Any linked ADR.
+11. The relevant engineering or design standard.
 
 Small maintenance changes may be lighter, but no change may violate constitutional principles, documented decisions, or security and privacy expectations.
 

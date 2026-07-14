@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-12 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -17,6 +17,15 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 3. [DOCUMENTATION_STANDARD.md](DOCUMENTATION_STANDARD.md)
 4. [DOCUMENT_LIFECYCLE.md](DOCUMENT_LIFECYCLE.md)
 5. [OPERATING_PRINCIPLES.md](OPERATING_PRINCIPLES.md)
+
+## Release Governance
+
+- [release-governance/README.md](release-governance/README.md)
+- [release-governance/RELEASE_LIFECYCLE.md](release-governance/RELEASE_LIFECYCLE.md)
+- [release-governance/RELEASE_SPECIFICATION_TEMPLATE.md](release-governance/RELEASE_SPECIFICATION_TEMPLATE.md)
+- [release-governance/CTO_REVIEW_CHECKLIST.md](release-governance/CTO_REVIEW_CHECKLIST.md)
+- [release-governance/CEO_RELEASE_APPROVAL.md](release-governance/CEO_RELEASE_APPROVAL.md)
+- [release-governance/GOVERNANCE_CHANGELOG.md](release-governance/GOVERNANCE_CHANGELOG.md)
 
 ## Company
 
@@ -56,6 +65,10 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [01-product/README.md](01-product/README.md)
 - [01-product/CLADA_OS_PRODUCT_MODEL.md](01-product/CLADA_OS_PRODUCT_MODEL.md)
 - [01-product/SOLARGRANT_PRO_MODULE.md](01-product/SOLARGRANT_PRO_MODULE.md)
+
+## Release Specifications
+
+- [release-specifications/README.md](release-specifications/README.md)
 
 ## Design
 

@@ -15,6 +15,8 @@ type LeadNotificationArgs = {
   recommendedNextAction?: string;
 };
 
+const NOTIFICATION_TIMEOUT_MS = 3000;
+
 const euroFormatter = new Intl.NumberFormat('en-IE', {
   style: 'currency',
   currency: 'EUR',
@@ -70,6 +72,9 @@ export async function sendLeadNotificationEmails(args: LeadNotificationArgs) {
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
+    connectionTimeout: NOTIFICATION_TIMEOUT_MS,
+    greetingTimeout: NOTIFICATION_TIMEOUT_MS,
+    socketTimeout: NOTIFICATION_TIMEOUT_MS,
     auth: {
       user: config.user,
       pass: config.pass

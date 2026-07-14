@@ -10,6 +10,16 @@ import {
   roofTypes,
   shadingLevels
 } from './types';
+import {
+  getLeadFormFieldMessage,
+  getLeadFormStepForField,
+  getLeadFormStepIndex,
+  isLeadFormFieldKey,
+  leadFormFriendlyFieldMessages,
+  MAX_APPLICANT_DOCUMENTS,
+  type LeadFormFieldErrorMap,
+  type LeadFormValidationFailure
+} from './lead-form-flow';
 
 const currentYear = new Date().getFullYear();
 const leadStatuses = [
@@ -61,10 +71,10 @@ const optionalOccupantsField = z.preprocess((value) => {
 
 export const leadFormSchema = z.object({
   installerId: z.string().min(1),
-  fullName: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(7),
-  addressLine1: z.string().min(5),
+  fullName: z.string().trim().min(2),
+  email: z.string().trim().email(),
+  phone: z.string().trim().min(7),
+  addressLine1: z.string().trim().min(5),
   addressLine2: z.string().optional(),
   county: z.enum(counties),
   eircode: z.string().optional(),
@@ -90,12 +100,60 @@ export const leadFormSchema = z.object({
   preferredCallbackWindow: z.enum(callbackWindows),
   consentToProcess: z.literal(true),
   consentToGrantAssist: z.literal(true),
-  consentToContact: z.boolean().default(false),
+  consentToContact: z.literal(true),
   notes: z.string().max(2000).optional(),
-  applicantDocuments: z.array(applicantDocumentSchema).max(6).optional().default([])
-});
+  applicantDocuments: z.array(applicantDocumentSchema).max(MAX_APPLICANT_DOCUMENTS).optional().default([])
+}).strict();
 
 export type LeadFormSchema = z.infer<typeof leadFormSchema>;
+
+function getIssueField(issue: z.ZodIssue) {
+  const path = issue.path[0];
+  return typeof path === 'string' && isLeadFormFieldKey(path) ? path : undefined;
+}
+
+function getFormIssueMessage(issue: z.ZodIssue) {
+  if (issue.code === 'unrecognized_keys') {
+    return 'Please remove unsupported fields and try again.';
+  }
+
+  if (issue.path.length === 0) {
+    return issue.message || 'Please check the form details and try again.';
+  }
+
+  return undefined;
+}
+
+export function formatLeadFormValidationFailure(error: z.ZodError, requestId?: string): LeadFormValidationFailure {
+  const fieldErrors: LeadFormFieldErrorMap = {};
+  const formErrors: string[] = [];
+  let firstErrorField: keyof LeadFormFieldErrorMap | undefined;
+
+  for (const issue of error.issues) {
+    const field = getIssueField(issue);
+
+    if (!field) {
+      const formMessage = getFormIssueMessage(issue);
+      if (formMessage && !formErrors.includes(formMessage)) formErrors.push(formMessage);
+      continue;
+    }
+
+    if (!firstErrorField) firstErrorField = field;
+    fieldErrors[field] = getLeadFormFieldMessage(field, leadFormFriendlyFieldMessages[field] ?? issue.message);
+  }
+
+  const firstErrorStepId = firstErrorField ? getLeadFormStepForField(firstErrorField) : undefined;
+
+  return {
+    error: firstErrorField ? 'Please review the highlighted fields.' : formErrors[0] ?? 'Please check the form details and try again.',
+    fieldErrors: Object.keys(fieldErrors).length ? fieldErrors : undefined,
+    formErrors: formErrors.length ? formErrors : undefined,
+    firstErrorField,
+    firstErrorStepId,
+    firstErrorStepIndex: firstErrorStepId ? getLeadFormStepIndex(firstErrorStepId) : undefined,
+    requestId
+  };
+}
 
 export const adminWorkflowSchema = z.object({
   status: z.enum(leadStatuses),

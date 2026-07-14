@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-14 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -69,6 +69,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 ## Release Specifications
 
 - [release-specifications/README.md](release-specifications/README.md)
+- [release-specifications/PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md](release-specifications/PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md)
 
 ## Design
 

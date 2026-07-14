@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | REL-PLATFORM-1.4 |
-| Status | Draft |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | At release close |
 | Last reviewed | 2026-07-14 |
@@ -23,7 +23,9 @@ The release must not treat SolarGRANT Pro as the platform. Clada OS should own t
 
 The first assessment summary is primarily installer-facing. It should help the installer review the lead and prepare for customer follow-up. It must not imply binding quotation, grant approval, technical site survey, financial advice, guaranteed savings, or contract status.
 
-Although this Master Release Specification has CTO architecture approval and CEO approval, Release 1.4 should not begin implementation until required ADRs are complete, feature specifications are complete, and sprint scope is approved.
+Although this Master Release Specification has CTO architecture approval and CEO approval, Release 1.4 implementation must not begin until required ADRs are complete, feature specifications are complete, sprint scope is approved, and explicit implementation authorisation is granted.
+
+PR #12 may merge after CTO and CEO approval and successful documentation validation so this Master Release Specification becomes the authoritative repository baseline for subsequent ADR and feature-specification work. Merging PR #12 does not authorise implementation. The later Platform Release 1.4 implementation PR must remain unmerged until CTO review, CEO approval, testing, validation, and release sign-off are complete.
 
 ## Business Context
 
@@ -855,7 +857,7 @@ Release 1.4 is acceptable for implementation review only when:
 - existing `LeadDocument`, customer portal, application pack, submission package, quote, workflow, and audit behavior remains compatible;
 - tests cover permissions, tenant isolation, audit, idempotency, concurrency, storage, and migration risks;
 - validation commands are run and recorded honestly;
-- draft PR remains unmerged until implementation authorisation, ADR completion, feature-specification completion, and sprint approval are complete.
+- no Release 1.4 implementation may begin until the required ADRs, feature specifications, sprint scope, and explicit implementation authorisation are complete.
 
 ## Release Planning Checklist
 
@@ -990,11 +992,11 @@ This foundation enables later work:
 
 | Field | Value |
 | --- | --- |
-| Draft PR | PR #12 draft |
+| Master Specification PR | PR #12 |
 | CTO review | Approved |
 | CEO approval | Approved |
-| Merge commit | Pending |
+| Release 1.4 implementation merge commit | Pending |
 | Release tag | Pending |
 | Roadmap update | Pending |
 
-This section must remain pending until release close. This draft does not authorise implementation, merge, release tag, or roadmap completion updates.
+This section must remain pending until release close. Merging PR #12 records the approved Master Release Specification only; it must not populate the Release 1.4 implementation merge commit, release tag, or roadmap completion fields, and it does not authorise implementation.

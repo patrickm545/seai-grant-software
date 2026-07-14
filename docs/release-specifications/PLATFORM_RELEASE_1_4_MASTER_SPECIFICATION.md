@@ -10,16 +10,18 @@
 | Release | Platform Release 1.4 |
 | Approved baseline | 63b08fa87a61569c6ff4adbda730e75d86a9d31e |
 | Target branch | codex/platform-release-1.4-master-spec |
-| CTO approval | Pending |
+| CTO approval | Pending Review |
 | CEO approval | Pending |
 
 ## Executive Summary
 
-Platform Release 1.4 should create the first reusable Clada OS document foundation. The release should let product modules create, store, retrieve, secure, audit, and reason about governed business documents without embedding document mechanics inside SolarGRANT Pro.
+Platform Release 1.4 will create the first reusable Clada OS document foundation for governed generated documents. The release will let product modules generate, store, retrieve, secure, audit, and reason about generated business documents without embedding document mechanics inside SolarGRANT Pro.
 
-The recommended proving slice is to generate a professional SolarGRANT Pro lead assessment summary from existing lead data, store it as a governed document record, link it to the lead, audit generation and download activity, and make it available through a secure organisation-scoped download path. This slice is intentionally narrower than a full document management product.
+The approved proving slice is to generate and securely download a professional SolarGRANT Pro lead assessment summary PDF from existing lead data, store it as a governed Clada OS document record, link it to the lead, audit generation and download activity, and make it available only through an authenticated, authorised server route. This slice is intentionally narrower than a full document management product.
 
 The release must not treat SolarGRANT Pro as the platform. Clada OS should own the reusable document record, template-version attribution, storage metadata, generation status, access control, audit contracts, idempotency, and resource-link mechanics. SolarGRANT Pro should own the lead summary template, grant-specific wording, quote wording, merge-data mapping, branding, and the product surface that invokes generation.
+
+The first assessment summary is primarily installer-facing. It should help the installer review the lead and prepare for customer follow-up. It must not imply binding quotation, grant approval, technical site survey, financial advice, guaranteed savings, or contract status.
 
 Release 1.4 should not begin implementation until this Master Release Specification receives CTO architecture approval and CEO approval, required ADRs are complete, feature specifications are complete, and sprint scope is approved.
 
@@ -36,7 +38,7 @@ SolarGRANT Pro already exposes several document-adjacent workflows:
 - installer quote estimates and generated quote data;
 - audit and lead activity records for selected document actions.
 
-Those workflows are useful, but they are not a reusable platform document foundation. They are mostly tied to SolarGRANT Pro leads, grant wording, portal tokens, and application-pack views. The platform needs a small common foundation before later products such as SOLARfarm Pro or future contractor modules create their own reports, proposals, compliance packs, or contracts.
+Those workflows are useful, but they are not a reusable platform generated-document foundation. They are mostly tied to SolarGRANT Pro leads, grant wording, portal tokens, and application-pack views. Platform Release 1.4 will not prioritise migration of homeowner-uploaded documents. Existing `LeadDocument`, portal upload/download, application pack, submission package, and intake upload behaviour must remain unchanged during this release.
 
 The timing is justified because Platform Releases 1.1 through 1.3 have established the foundations this capability depends on:
 
@@ -45,11 +47,11 @@ The timing is justified because Platform Releases 1.1 through 1.3 have establish
 - actor-aware audit logging;
 - reusable workflow definitions, instances, transitions, and history.
 
-Document generation, storage, and retrieval should build on those foundations rather than creating parallel access, audit, or workflow mechanics.
+Generated-document creation, storage, and retrieval should build on those foundations rather than creating parallel access, audit, or workflow mechanics.
 
 ## Strategic Objectives
 
-1. Establish a reusable platform document domain that can support generated business documents across multiple products.
+1. Establish a reusable platform document domain that can support governed generated business documents across multiple products.
 2. Preserve the boundary between product-owned document content and platform-owned document mechanics.
 3. Prove the foundation through one useful SolarGRANT Pro slice without turning the release into a full document management system.
 4. Create an approval-gated path for ADRs, feature specifications, schema, services, APIs, tests, and sprint planning.
@@ -61,15 +63,16 @@ Document generation, storage, and retrieval should build on those foundations ra
 Release 1.4 should include the specification, approval-gated design, and eventual implementation of the following after approval:
 
 - platform document domain model for governed generated documents;
-- document type or definition registry with product-neutral mechanics and product namespace support;
-- repository-defined or database-registered document templates with immutable template versions;
+- document definition registry with product-neutral mechanics and product namespace support;
+- repository-owned product templates registered by Clada OS with immutable template versions;
 - generated document record with organisation owner, lifecycle status, generation status, storage metadata, file metadata, checksum, template-version attribution, and actor attribution;
 - document-resource links, initially for a generated document linked to a SolarGRANT Pro lead;
 - document generation service contract with deterministic merge data, idempotency, duplicate prevention, failure state, and retry rules;
-- storage abstraction boundary that can use existing database-backed storage for the proving slice and support future object storage;
+- deterministic PDF generation for the SolarGRANT Pro proving slice, using `application/pdf`, sanitized `.pdf` filenames, file size, and SHA-256 checksum metadata;
+- database-backed generated-file storage behind a platform storage abstraction, with future object-storage compatibility;
 - secure organisation-scoped document download path;
 - minimum permissions required for generation, metadata read, and download;
-- audit events for requested, generated, failed, downloaded, and archived or erased document lifecycle actions where in scope;
+- audit events for requested, generated, failed, downloaded, and archived document lifecycle actions where in scope;
 - compatibility plan for existing `LeadDocument`, application pack, portal upload, quote, and submission package concepts;
 - SolarGRANT Pro lead assessment summary proving slice;
 - ADR list and feature-specification list required before implementation;
@@ -109,7 +112,10 @@ The following are not included in Release 1.4 unless CTO and CEO approval explic
 - Forms Foundation;
 - Release 1.5 notification functionality;
 - migration of every existing upload and application-pack flow into the new platform model;
+- prioritised migration of homeowner-uploaded documents;
+- implemented GDPR erasure or retention automation states;
 - portal-token replacement for customer document upload and download flows;
+- local filesystem storage in deployed environments;
 - broad product UI redesign.
 
 ## Platform Responsibilities
@@ -118,25 +124,25 @@ Clada OS should own these product-neutral document responsibilities in Release 1
 
 | Responsibility | Release 1.4 recommendation | Reason |
 | --- | --- | --- |
-| Document definitions or document types | Include minimum registry. | Product modules need namespaced document keys without hard-coding solar concepts into platform mechanics. |
-| Document templates | Include as platform-managed records that point to product-owned template sources. | The platform needs attribution and activation mechanics; the product owns content. |
-| Immutable template versions | Include. | Generated documents must remain traceable to the exact source version. |
+| Document definitions | Include minimum registry. | Product modules need namespaced document keys without hard-coding solar concepts into platform mechanics. |
+| Document templates | Include as platform-managed registrations for product-owned repository template sources. | The platform needs attribution and activation mechanics; the product owns content. |
+| Immutable template versions | Include activated snapshots or canonical serialized representations. | Generated documents must remain traceable to the exact source version, even if repository files later change or disappear. |
 | Generated document records | Include. | This is the central foundation. |
 | Source template version attribution | Include. | Required for auditability and deterministic regeneration analysis. |
 | Document metadata | Include minimum metadata. | Title, key, content type, size, checksum, status, and timestamps are reusable. |
 | Organisation ownership | Include. | Documents contain customer and business data and must be tenant-scoped. |
-| Document lifecycle state | Include minimum states. | Active, archived, and erasure/deletion handling need explicit behavior. |
-| Storage references | Include. | Retrieval and future object storage require a stable boundary. |
-| File metadata | Include. | Filename, content type, size, checksum, and storage key are needed for trust and download. |
+| Document lifecycle state | Include minimum states. | Release 1.4 uses `ACTIVE` and `ARCHIVED`; GDPR erasure and retention processes remain future-compatible but unimplemented. |
+| Storage references | Include database-backed generated-file storage behind an abstraction. | Retrieval and future object storage require a stable boundary; local filesystem storage is forbidden for deployed environments. |
+| File metadata | Include. | Sanitized `.pdf` filename, `application/pdf`, size, checksum, and storage key are needed for trust and download. |
 | Checksum or integrity metadata | Include SHA-256. | Generated files should be tamper-evident and duplicate-safe. |
 | Generation status | Include. | Requested, stored, failed, and retry states need durable tracking. |
-| Failure status and failure reason | Include. | Operators need recoverable and supportable failure records. |
+| Failure status and failure metadata | Include. | Failed records need sanitized failure code, safe operational category, and failed timestamp without provider error text or personal data. |
 | Document access permissions | Include minimal keys. | Generation and download should not rely only on lead access. |
 | Audit events | Include minimum required events. | Trust and traceability are platform responsibilities. |
 | Service contracts for document generation | Include. | Product modules should call stable platform contracts. |
 | Idempotency or duplicate prevention | Include. | Concurrent requests must not produce uncontrolled duplicates. |
 | Links between documents and platform resources | Include generic link table or equivalent. | Leads are the first resource; future products need other resources. |
-| Retention and deletion foundations | Include basic lifecycle and erasure hooks; defer automation. | Full records management is too broad, but GDPR erasure compatibility is required. |
+| Retention and deletion foundations | Keep architecture compatible; do not implement lifecycle states beyond `ACTIVE` and `ARCHIVED`. | Full records management, retention automation, and GDPR erasure workflows require later policy and implementation approval. |
 | Download authorisation | Include. | Prevent insecure direct object references. |
 | Product-neutral document-generation interfaces | Include. | Future modules should not consume SolarGRANT Pro implementation details. |
 
@@ -153,12 +159,15 @@ SolarGRANT Pro should own product-specific document responsibilities:
 | System recommendations | Own solar recommendation copy and survey caveats. |
 | Grant eligibility content | Own grant-specific logic and warnings. |
 | Product branding | Own SolarGRANT Pro customer-facing or installer-facing branding. |
-| Customer-facing layouts | Own the module-specific look of the generated lead assessment summary. |
+| Installer-facing layouts | Own the professional SolarGRANT Pro PDF design, including disclaimers and product-specific presentation. |
 | Solar-specific template content | Own the repository template source. |
 | Generation timing | Decide when a lead assessment summary should be generated. |
 | Product UI invocation | Own the installer/admin control that requests generation. |
+| Assessment-summary disclaimers | Own disclaimers that the PDF is not a binding quote, grant approval, site survey, financial advice, guaranteed savings statement, or contract. |
 
 Solar-specific concepts must not become platform enum values, platform roles, generic document lifecycle states, or generic service names.
+
+The lead assessment summary is installer-facing in Release 1.4. It helps the installer review the lead and prepare customer follow-up. It may later evolve into a customer-facing assessment, but this release must not imply that the generated document is a binding quotation, formal grant approval, technical site survey, financial advice, guaranteed savings statement, or contract.
 
 ## Architecture
 
@@ -168,7 +177,7 @@ Repository inspection found these existing capabilities:
 
 | Area | Current state | Release 1.4 treatment |
 | --- | --- | --- |
-| `LeadDocument` | SolarGRANT Pro lead-owned upload records with type, status, file metadata, storage path/URL, optional `contentBytes`, extracted text, and AI fields. | Leave unchanged for the proving slice. Reuse lessons and plan migration/wrapping through ADR. |
+| `LeadDocument` | SolarGRANT Pro lead-owned upload records with type, status, file metadata, storage path/URL, optional `contentBytes`, extracted text, and AI fields. | Leave unchanged in Release 1.4. Reuse lessons and plan any future migration/wrapping through ADR. |
 | Portal uploads | `/portal/[token]/documents` validates size, MIME type, and sanitized filenames, then stores bytes in Postgres and records activity/audit. | Reuse validation ideas and storage evidence. Do not make token access the generic download model. |
 | Portal downloads | `/portal/[token]/documents/[documentId]` serves DB bytes or redirects to storage URL when token matches parent lead. | Keep as customer-token flow. Do not treat as organisation permission enforcement. |
 | Intake applicant documents | Public intake stores metadata and `uploaded://...` references, not file bytes. | Do not use as proof of durable file storage. Preserve compatibility. |
@@ -178,10 +187,10 @@ Repository inspection found these existing capabilities:
 | Submission package JSON | `/api/submission-package` emits a structured JSON package for manual review. | Useful source for merge data, not a stored document. |
 | Portal fill preview JSON | `/api/portal-fill-preview` emits manual reference fields. | Leave product-specific. |
 | Quote estimates | `lib/quote-estimate.ts` and `lib/installer-quote-pricing.ts` produce solar-specific estimate and generated quote JSON. | SolarGRANT Pro owns wording and calculations used in the assessment summary. |
-| Permissions | `document.read` and `document.review` exist in the platform permission catalogue. | Extend only with minimum keys needed for generation/download if approved. |
+| Permissions | `document.read` and `document.review` exist in the platform permission catalogue. | Add approved `document.generate` and `document.download`; keep `document.download` separate from `document.read`. |
 | Audit | `lib/audit.ts` writes actor-aware audit records and sanitizes sensitive keys. | Reuse. Add document-specific audit action names and resource metadata. |
 | Workflow | `lib/workflow.ts` supports organisation-scoped transition execution with audit and history. | Document generation should remain workflow-independent in Release 1.4. |
-| Storage | Mixed behavior: DB bytes for portal uploads, placeholder upload URLs for intake, storage URL fields, no object storage abstraction. | Define a platform storage boundary. Use database-backed storage for the proving slice unless ADR approves object storage. |
+| Storage | Mixed behavior: DB bytes for portal uploads, placeholder upload URLs for intake, storage URL fields, no object storage abstraction. | Define a platform storage boundary. Use database-backed generated-file storage for the proving slice; external object storage is deferred until evidence requires it. |
 
 ### Recommended Architecture
 
@@ -197,12 +206,43 @@ SolarGRANT Pro UI or server action
       -> checks document generation permission
       -> validates active template version
       -> creates or reuses idempotent document record
-      -> renders deterministic file content
-      -> writes storage object through platform storage boundary
+      -> renders deterministic PDF content
+      -> writes database-backed storage object through platform storage boundary
       -> records checksum and file metadata
       -> links document to lead
       -> writes audit event
 ```
+
+Template strategy:
+
+- SolarGRANT Pro owns the repository template source and product wording.
+- Clada OS owns template registration and immutable version attribution.
+- Each activated template version must preserve an immutable snapshot or canonical serialized representation sufficient to prove exactly what produced the document.
+- A checksum or repository path alone is not sufficient if the referenced source can later change or disappear.
+- Existing template versions must never be edited in place.
+- A new template change creates a new version.
+- Generated documents permanently reference the exact template version used.
+- The template format and renderer-specific representation remain subject to the renderer ADR.
+
+PDF output rules:
+
+- the proving-slice deliverable is a persisted PDF document;
+- stored HTML is not the approved installer-facing deliverable;
+- the PDF must be generated deterministically from approved merge data;
+- the PDF must use a professional SolarGRANT Pro layout;
+- the generated file must be immutable after storage;
+- the content type must be `application/pdf`;
+- the filename must be sanitized and end in `.pdf`;
+- size and SHA-256 checksum must be recorded;
+- download must happen only through an authenticated, authorised server route.
+
+Storage strategy:
+
+- Release 1.4 uses database-backed generated-file storage behind a platform storage abstraction.
+- This is acceptable because the first proving slice produces a small number of bounded PDF documents.
+- The feature specification must define a strict maximum generated PDF size, storage abstraction contracts, safe streaming, checksum calculation, content-type enforcement, file metadata, failure behaviour, and future object-storage compatibility.
+- External object storage is deferred until volume, file size, performance, or operating-cost evidence requires it.
+- Local filesystem storage is forbidden for deployed environments.
 
 Dependency direction:
 
@@ -210,7 +250,7 @@ Dependency direction:
 SolarGRANT Pro product adapter
   -> Clada OS document service
     -> shared validation, Prisma, audit, permissions, storage abstraction
-      -> Postgres or future object storage
+      -> Postgres-backed generated-file storage or future object storage
 ```
 
 Forbidden dependency:
@@ -220,33 +260,44 @@ Clada OS document service
   -/-> SolarGRANT Pro lead, grant, quote, SEAI, or installer wording
 ```
 
+Workflow behaviour:
+
+- document generation remains independent of the workflow engine;
+- a SolarGRANT Pro product surface may invoke generation while viewing a lead;
+- Release 1.4 must not automatically generate documents on workflow transitions;
+- Release 1.4 must not change lead pipeline stages;
+- Release 1.4 must not require new workflow definitions;
+- Release 1.4 must not write workflow history for ordinary document generation.
+
 ### Options Considered
 
 | Decision | Options | Recommended choice | Owner | ADR required |
 | --- | --- | --- | --- | --- |
-| Scope of document foundation | Upload review, generated documents, or full DMS. | Generated governed document foundation with compatibility plan for uploads. | CTO and CEO | Yes |
-| Template storage | Repository-defined, database-authored, or hybrid. | Hybrid: repository-owned template source plus DB immutable version registry. | CTO | Yes |
-| Generated file format | Persisted HTML, persisted PDF, or browser print only. | CTO to decide. Recommended foundation supports content type generically; proving slice may use stored HTML unless PDF renderer ADR is approved. | CTO and CEO | Yes |
-| Storage backend | Database bytes, external object storage, or local filesystem. | Database-backed storage through an abstraction for Release 1.4; external object storage deferred unless file size or runtime evidence requires it. | CTO | Yes |
-| Resource links | Single nullable lead foreign key or generic link table. | Generic `DocumentResourceLink` with one primary lead link in proving slice. | CTO | Yes |
-| Generation execution | Synchronous request, background job, or scheduled job. | Synchronous for the small proving slice with durable failed state; async deferred. | CTO | Yes |
-| Idempotency | None, request key only, or deterministic content hash. | Required idempotency key plus checksum; unique active generation by organisation, type, template version, resource, and key. | CTO | Yes |
+| Scope of document foundation | Upload review, generated documents, or full DMS. | Locked: governed generated documents with existing upload behaviours unchanged. | CTO and CEO | Yes |
+| Template storage | Repository-defined, database-authored, or hybrid. | Locked: SolarGRANT Pro owns repository template source; Clada OS owns registration and immutable activated template snapshots. | CTO | Yes |
+| Generated file format | Persisted HTML, persisted PDF, or browser print only. | Locked: persisted PDF for the proving slice. Renderer/library selection remains an ADR decision. | CTO | Yes |
+| Storage backend | Database bytes, external object storage, or local filesystem. | Locked: database-backed generated-file storage behind a platform abstraction for Release 1.4; local filesystem forbidden in deployed environments. | CTO | Yes |
+| Resource links | Single nullable lead foreign key or generic link table. | Locked: generic `DocumentResourceLink`, with only `resourceType = lead` and one primary lead link implemented and tested in Release 1.4. | CTO | Yes |
+| Generation execution | Synchronous request, background job, or scheduled job. | Locked: synchronous generation with durable `REQUESTED`, `STORED`, and `FAILED` states. | CTO | Yes |
+| Idempotency | None, request key only, or deterministic content hash. | Locked: caller-supplied idempotency key combined with organisation, document definition, template version, primary resource, and operation. | CTO | Yes |
+
+Renderer/library selection remains unresolved and must be evaluated in ADR 2 using Vercel compatibility, deterministic output, maintenance burden, cold-start and bundle impact, security, typography and layout quality, testability, licensing, and support for page breaks, headers, footers, and tables.
 
 ## Domain Model
 
 ### Minimum Concepts
 
-| Concept | Purpose | Release 1.4 recommendation |
+| Concept | Purpose | Release 1.4 direction |
 | --- | --- | --- |
-| Document type or definition | Names a kind of document without owning product copy. | Include as a namespaced registry key. |
-| Document template | Product-owned template identity registered with the platform. | Include. |
-| Document template version | Immutable version used to produce a document. | Include. |
-| Generated document | Durable platform record for a rendered document. | Include as `Document`. |
-| Document-resource link | Connects documents to leads or future resources. | Include. |
-| Document generation request | Captures idempotent generation attempt. | Combine into `Document` generation fields for Release 1.4 unless ADR requires separate table. |
-| Stored file or storage object | File bytes and storage metadata. | Include as fields or associated storage row. |
-| Generation status | Tracks requested, stored, failed. | Include. |
-| Lifecycle status | Tracks active, archived, deleted or erasure pending. | Include minimum. |
+| `DocumentDefinition` | Represents a namespaced product-owned document kind, such as `solargrant.lead_assessment_summary` or future `solarfarm.site_assessment_report`. | Include. |
+| `DocumentTemplate` | Represents a template identity for a document definition. | Include. |
+| `DocumentTemplateVersion` | Represents an immutable activated template snapshot/version. | Include. |
+| `Document` | Represents one generation attempt and its final generated-document state. | Include; do not create a separate `DocumentGenerationRequest` table in Release 1.4. |
+| `DocumentResourceLink` | Provides product-neutral links between documents and resources. | Include; implement and test only `resourceType = lead` with one primary lead link per generated document. |
+
+Generation statuses are limited to `REQUESTED`, `STORED`, and `FAILED`.
+
+Lifecycle statuses are limited to `ACTIVE` and `ARCHIVED`.
 
 ### Recommended Invariants
 
@@ -254,13 +305,15 @@ Clada OS document service
 2. Every generated document references exactly one template version.
 3. Template versions are immutable after creation.
 4. Product-specific document keys are namespaced, for example `solargrant.lead_assessment_summary`.
-5. A generated document may link to one or more resources, but Release 1.4 uses one primary lead link.
+5. A generated document may be architecturally compatible with multiple resource links, but Release 1.4 implements and tests only one primary lead link.
 6. Resource links must carry the same organisation as the document.
-7. A stored document must have content type, filename, storage key, size, checksum, and stored timestamp.
-8. A failed generation record must not pretend a file exists.
+7. A stored document must have `application/pdf`, sanitized `.pdf` filename, storage key, size, SHA-256 checksum, and stored timestamp.
+8. A failed generation record must not pretend a file exists and must contain only sanitized failure code, safe operational category, and failed timestamp.
 9. A successful stored document must not be overwritten in place.
 10. Downloads must be authorised through server-side organisation context and permissions.
 11. Audit metadata must not contain raw document contents, merge values, signed URLs, tokens, or customer personal data beyond necessary identifiers.
+12. Existing activated template versions must never be edited in place; each template change creates a new version.
+13. Each activated template version must preserve an immutable snapshot or canonical serialized representation sufficient to prove exactly what produced the document; a checksum or repository path alone is not sufficient.
 
 ### Ownership And Attribution
 
@@ -268,12 +321,13 @@ Clada OS document service
 | --- | --- |
 | Organisation ownership | Required on document, template where applicable, resource link, and audit event. Product templates may be globally registered but generated documents are organisation-owned. |
 | Creator attribution | Store actor type, user id, membership id, organisation id, source, and created timestamp where available. |
-| Mutable fields | Lifecycle status, archived timestamp/reason, failure fields for failed records, download counters only if approved. |
-| Immutable fields | Template version, checksum, stored file metadata, generated content bytes, generation input hash, resource link identity after stored success. |
+| Mutable fields | Lifecycle status between `ACTIVE` and `ARCHIVED`, archived timestamp/reason, and failure fields before or when a record enters `FAILED`. |
+| Immutable fields | Template version, checksum, stored file metadata, generated PDF bytes, generation input hash, idempotency identity, and primary resource link identity after stored success. |
 | Versioning | Template versions are append-only; activation moves from one version to another without mutating prior versions. |
-| Lifecycle transitions | `REQUESTED -> STORED`, `REQUESTED -> FAILED`, `FAILED -> REQUESTED` through retry or new attempt, `STORED -> ARCHIVED`, `STORED -> ERASURE_PENDING -> DELETED` where erasure is approved. |
+| Generation transitions | `REQUESTED -> STORED` or `REQUESTED -> FAILED`. A retry may reuse the same active attempt only where the feature specification permits; a different idempotency key may intentionally create a new immutable generated assessment. |
+| Lifecycle transitions | `ACTIVE -> ARCHIVED`. `DELETED` and `ERASURE_PENDING` are not implemented Release 1.4 lifecycle states. |
 | Relationship to leads | Leads remain SolarGRANT Pro resources. The platform document record links through a generic resource link. |
-| Multiple resources | Supported by model, but Release 1.4 should only implement one primary lead link unless a feature spec proves more is required. |
+| Multiple resources | Architecture-compatible only. Release 1.4 implements and tests only `resourceType = lead`. |
 
 ## Database Design
 
@@ -283,26 +337,27 @@ No schema or migration is created by this specification. The following is the pr
 
 | Entity | Key fields |
 | --- | --- |
-| `DocumentType` or `DocumentDefinition` | `id`, `key`, `namespace`, `kind`, `ownerModule`, `description`, `isActive`, `createdAt`, `updatedAt` |
-| `DocumentTemplate` | `id`, `documentTypeId`, `key`, `ownerModule`, `renderer`, `isActive`, `createdAt`, `updatedAt` |
-| `DocumentTemplateVersion` | `id`, `templateId`, `version`, `sourceChecksumSha256`, `mergeSchemaJson`, `rendererVersion`, `status`, `activatedAt`, `createdAt` |
-| `Document` | `id`, `organisationId`, `documentTypeId`, `templateVersionId`, `title`, `lifecycleStatus`, `generationStatus`, `idempotencyKey`, `inputChecksumSha256`, `storageProvider`, `storageKey`, `fileName`, `contentType`, `sizeBytes`, `checksumSha256`, `failureCode`, `failureReason`, `createdBy fields`, `storedAt`, `failedAt`, `createdAt`, `updatedAt` |
+| `DocumentDefinition` | `id`, `key`, `namespace`, `kind`, `ownerModule`, `description`, `isActive`, `createdAt`, `updatedAt` |
+| `DocumentTemplate` | `id`, `documentDefinitionId`, `key`, `ownerModule`, `renderer`, `isActive`, `createdAt`, `updatedAt` |
+| `DocumentTemplateVersion` | `id`, `templateId`, `version`, immutable template snapshot or canonical serialized representation, `sourceChecksumSha256`, `mergeSchemaJson`, `rendererVersion`, `status`, `activatedAt`, `createdAt` |
+| `Document` | `id`, `organisationId`, `documentDefinitionId`, `templateVersionId`, `title`, `lifecycleStatus`, `generationStatus`, `idempotencyKey`, `idempotencyOperation`, `inputChecksumSha256`, `storageProvider`, `storageKey`, `fileName`, `contentType`, `sizeBytes`, `checksumSha256`, `failureCode`, `failureCategory`, `createdBy fields`, `storedAt`, `failedAt`, `createdAt`, `updatedAt` |
 | `DocumentResourceLink` | `id`, `organisationId`, `documentId`, `resourceType`, `resourceId`, `relationshipType`, `isPrimary`, `createdAt` |
 
 ### Constraints And Indexes
 
 Required constraints and indexes should include:
 
-- unique `DocumentType.key`;
-- unique `DocumentTemplate(documentTypeId, key)`;
+- unique `DocumentDefinition.key`;
+- unique `DocumentTemplate(documentDefinitionId, key)`;
 - unique `DocumentTemplateVersion(templateId, version)`;
 - unique active template version per template if activation is modelled with an active flag;
 - index `Document(organisationId, createdAt)`;
-- index `Document(organisationId, documentTypeId, lifecycleStatus)`;
+- index `Document(organisationId, documentDefinitionId, lifecycleStatus)`;
 - index `Document(generationStatus, createdAt)` for failed or pending operational review;
-- unique idempotency constraint for active generation, likely on `organisationId`, `documentTypeId`, `templateVersionId`, `idempotencyKey`;
+- unique idempotency constraint for active generation on organisation, document definition, template version, primary resource, operation, and idempotency key;
 - index `DocumentResourceLink(organisationId, resourceType, resourceId, createdAt)`;
 - unique primary resource link per document;
+- Release 1.4-only constraint or service invariant that the primary link uses `resourceType = lead`;
 - database constraint or service invariant that document and resource link organisation IDs match;
 - checksum index if duplicate detection uses file checksum.
 
@@ -317,11 +372,21 @@ Release 1.4 implementation should be additive:
 5. Optionally create compatibility views or service wrappers in later releases after a migration ADR.
 6. Preserve current portal upload/download behavior.
 
+Hosted migration gate:
+
+- Production must use its own database.
+- Preview must use a separate database or isolated Neon branch.
+- Development and local environments must not point at the production database.
+- Database fingerprints must be documented and verified before migration.
+- Destructive or stress tests must never run against production customer data.
+
+Local Release 1.4 implementation may begin before hosted database isolation is complete, but hosted migration, preview generation tests, and document-storage tests may not.
+
 Rollback limitations:
 
 - additive tables can be ignored by rolled-back application code;
 - generated document rows and stored bytes may remain unless a database rollback is performed;
-- storage writes cannot be rolled back automatically if an external object store is later selected;
+- database-backed storage writes require compensation if a later database update fails;
 - generated documents should not become authoritative legal records until retention and deletion policy is approved.
 
 ## Permissions
@@ -335,15 +400,15 @@ The current platform catalogue includes:
 
 `document.read` is currently granted to organisation owners, admins, members, internal admins, and internal support. `document.review` is granted to organisation owners, organisation admins, and internal admins.
 
-### Proposed Minimum Permissions
+### Approved Minimum Permissions
 
-Release 1.4 should add only the keys required for the proving slice:
+Release 1.4 uses only the keys required for the proving slice:
 
-| Permission | Meaning | Recommended roles |
+| Permission | Meaning | Initial role mapping |
 | --- | --- | --- |
-| `document.generate` | Actor may request a generated document for an organisation-owned resource. | Organisation owner, organisation admin, Clada internal admin. |
-| `document.download` | Actor may download stored document file contents. | Organisation owner, organisation admin, Clada internal admin; CTO to decide support/member access. |
-| `document.read` | Actor may read document metadata in their organisation. | Keep existing role mapping unless CTO narrows it. |
+| `document.read` | Actor may view governed document metadata. | Organisation owner, organisation admin, organisation member, Clada internal admin, and internal support. |
+| `document.generate` | Actor may request a generated document for an organisation-owned resource. | Organisation owner, organisation admin, and Clada internal admin when operating within authorised organisation context. |
+| `document.download` | Actor may access stored file bytes. | Organisation owner, organisation admin, and Clada internal admin when operating within authorised organisation context. |
 
 Deferred permissions:
 
@@ -353,6 +418,12 @@ Deferred permissions:
 - `document.delete`;
 - `document.share`;
 - `document.search`.
+
+`document.download` must remain separate from `document.read`. Organisation members and internal support receive metadata read only by default. Internal support download requires an explicitly approved support process outside this release's default role mapping.
+
+The existing `document.review` permission remains available for current document-review behaviour but is not part of the governed generated-document proving slice.
+
+Template-management permissions are not added in Release 1.4 because templates are repository-owned and deployment-managed.
 
 ### Enforcement Points
 
@@ -388,12 +459,24 @@ Generated lead assessment summaries may contain customer personal data, property
 - sanitize filenames;
 - validate content type and size;
 - prevent predictable public URLs;
-- use `Cache-Control: private, no-store` for secure downloads unless CTO approves a different policy;
+- set `Content-Type: application/pdf`;
+- set safe `Content-Disposition`;
+- use `Cache-Control: private, no-store` for secure downloads;
 - keep audit metadata identifier-focused.
 
 ### Storage And Environment Risk
 
-TD-015 states that Vercel Preview, Production, Development, and local development currently use the same Neon-hosted PostgreSQL database. If Release 1.4 stores generated document bytes in Postgres, Preview generation could write documents into production data. The implementation sprint must include an environment-isolation check and must not run destructive preview tests against shared production data.
+TD-015 states that Vercel Preview, Production, Development, and local development currently use the same Neon-hosted PostgreSQL database. This is a Release 1.4 blocker for hosted migrations, preview generation tests, and document-storage tests.
+
+Before any Release 1.4 migration, preview generation test, or document-storage test runs against hosted infrastructure:
+
+- Production must use its own database.
+- Preview must use a separate database or isolated Neon branch.
+- Development and local environments must not point at the production database.
+- Database fingerprints must be documented and verified.
+- Destructive or stress tests must never run against production customer data.
+
+Release 1.4 implementation may begin locally before isolation is finished, but hosted migration and generated-document testing may not.
 
 TD-016 tracks removal of SMS because unmanaged mobile devices create privacy and retention risk. Release 1.4 must not add SMS delivery of generated documents.
 
@@ -406,19 +489,20 @@ The platform should expose internal service contracts equivalent to:
 ```ts
 type GenerateDocumentRequest = {
   context: OrganisationContext;
-  documentTypeKey: string;
+  documentDefinitionKey: string;
   templateKey: string;
   templateVersion?: number;
   idempotencyKey: string;
+  operation: 'generate_lead_assessment_summary';
   title: string;
   resourceLinks: Array<{
-    resourceType: string;
+    resourceType: 'lead';
     resourceId: string;
-    relationshipType: 'primary' | 'supporting';
+    relationshipType: 'primary';
   }>;
   mergeData: unknown;
   output: {
-    contentType: string;
+    contentType: 'application/pdf';
     fileName: string;
   };
   source: string;
@@ -430,7 +514,7 @@ Expected output:
 ```ts
 type GenerateDocumentResult = {
   documentId: string;
-  generationStatus: 'STORED' | 'FAILED';
+  generationStatus: 'REQUESTED' | 'STORED' | 'FAILED';
   lifecycleStatus: 'ACTIVE';
   templateVersionId: string;
   storageKey?: string;
@@ -438,6 +522,7 @@ type GenerateDocumentResult = {
   sizeBytes?: number;
   reusedExisting: boolean;
   failureCode?: string;
+  failureCategory?: string;
 };
 ```
 
@@ -475,6 +560,7 @@ The adapter owns:
 - choosing the SolarGRANT Pro template;
 - deciding title and filename;
 - invoking the platform document service;
+- ensuring the PDF includes approved installer-facing disclaimers;
 - preserving current lead workflow behavior.
 
 The platform document service must not import SolarGRANT Pro lead helper modules.
@@ -489,32 +575,48 @@ Minimum contracts likely needed after approval:
 | --- | --- | --- |
 | Product server action or route to generate lead assessment summary | Invokes SolarGRANT Pro adapter for a lead. | `document.generate` plus organisation-scoped lead access. |
 | Platform metadata read/list contract | Lists generated documents for a resource. | `document.read`. |
-| Platform download route, for example `/api/documents/[documentId]/download` | Streams stored file content. | `document.download`. |
+| Platform download route, for example `/api/documents/[documentId]/download` | Streams stored PDF file content. | `document.download`. |
 
-Request and response shapes must not expose storage keys, raw template source, raw merge values, or signed URLs unless an ADR approves signed URL semantics.
+Request and response shapes must not expose storage keys, raw template source, raw merge values, public links, or signed URLs. Public links and signed URLs are deferred.
+
+The download route must:
+
+- resolve actor and organisation context server side;
+- scope the document by organisation;
+- enforce `document.download`;
+- reject non-`STORED` or archived documents as defined by the feature specification;
+- never accept a storage key from the client;
+- set safe `Content-Disposition`;
+- set `Content-Type: application/pdf`;
+- use private/no-store caching;
+- stream bytes safely;
+- write an audit event for successful download;
+- avoid exposing whether another organisation's document exists.
 
 Versioning:
 
-- service contracts should be versioned through template version and document type keys;
+- service contracts should be versioned through template version and document definition keys;
 - breaking API shape changes require feature-spec and ADR updates;
 - generated documents remain immutable even if template versions change.
 
 ## Transactions
 
-Document generation includes database writes and storage writes. Storage writes cannot always participate in database transactions.
+Document generation is synchronous in Release 1.4. It includes database writes and database-backed storage writes behind a platform abstraction. Rendering must not hold long-running database locks.
 
-Recommended transaction strategy:
+Required generation strategy:
 
-1. Start a database transaction.
-2. Check permissions, organisation scope, resource existence, template version, and idempotency.
-3. Create or reuse a `Document` record in `REQUESTED` status.
-4. Commit the request record before rendering if rendering may be slow, or keep transaction short if rendering is guaranteed small.
-5. Render content outside long-lived database locks.
-6. Write file through storage abstraction.
-7. Open a short database transaction to mark the document `STORED`, record metadata, create resource links if not already created, and write audit event.
-8. If rendering or storage fails, mark the record `FAILED` with sanitized failure reason and write failure audit.
+1. Validate organisation context and permission.
+2. Validate the linked lead belongs to the organisation.
+3. Resolve the approved active template version.
+4. Create or reuse the idempotent `Document` attempt.
+5. Render outside long-running database locks.
+6. Write the PDF through the storage abstraction.
+7. Calculate file metadata and SHA-256 checksum.
+8. Mark the document `STORED`.
+9. Write the primary lead resource link and audit event.
+10. Return the governed document identifier.
 
-For the proving slice, CTO may approve a shorter single-request strategy only if rendering is fast and storage is database-backed. The feature specification must make the transaction boundary explicit.
+If rendering or storage fails, the document must become `FAILED` and record only sanitized failure code, safe operational category, and failed timestamp. It must not store provider error text, document contents, raw merge data, or customer personal data in failure fields.
 
 ## Concurrency
 
@@ -530,11 +632,13 @@ Concurrency risks:
 
 Required strategy:
 
-- caller must provide or server must derive an idempotency key;
-- unique constraint must allow only one active document for the same organisation, document type, template version, resource, and idempotency key;
+- caller must provide an idempotency key;
+- the idempotency identity combines organisation, document definition, template version, primary resource, operation, and idempotency key;
+- unique constraints or equivalent transactional guards must allow only one active attempt for the same idempotency identity;
 - generation must pin a specific template version before rendering;
-- same idempotency key with same inputs should return the existing document result;
-- same idempotency key with conflicting input checksum should fail with idempotency conflict;
+- concurrent requests using the same idempotency identity must return the same stored document or the same active attempt rather than create duplicates;
+- same idempotency identity with conflicting input checksum should fail with idempotency conflict;
+- a different idempotency key may intentionally generate a new immutable version of the assessment summary;
 - storage success followed by database failure must create a compensating failure or cleanup path;
 - resource deletion during generation must fail safely before a stored active document is exposed.
 
@@ -549,15 +653,16 @@ Required strategy:
 | Malicious content type | Renderer sets known content type; uploads keep strict allowlist. |
 | Oversized payloads | Set generated output and upload size limits; reject or fail safely. |
 | Template injection | Use repository-defined templates and validated merge schema; escape user values by default. |
-| HTML/PDF rendering risk | Disable remote assets unless explicitly approved; avoid server-side request forgery. |
+| PDF rendering risk | Disable remote assets unless explicitly approved; avoid server-side request forgery; choose renderer through ADR using Vercel compatibility, determinism, security, layout quality, testability, licensing, and maintenance criteria. |
 | Log leakage | Do not log raw merge data, customer data, document contents, tokens, or storage keys. |
 | Audit leakage | Store identifiers, statuses, checksums, and counts only. |
 | Privilege escalation | Server ignores client-supplied permission and role values. |
 | Duplicate generation | Enforce idempotency and uniqueness. |
 | Template activation race | Pin template version at request start. |
-| Shared Preview/Production DB | Treat TD-015 as a release risk; require environment check before generating documents in Preview. |
+| Shared Preview/Production DB | Treat TD-015 as a release blocker for hosted migration, preview generation tests, and document-storage tests until database isolation and fingerprints are verified. |
 | SMS/document delivery leakage | Do not add SMS delivery; keep TD-016 in view. |
 | Employee access risk | Internal access must be membership-scoped, permission-controlled, and auditable. |
+| Local filesystem storage | Forbid local filesystem storage in deployed environments; use database-backed storage through the platform abstraction. |
 
 ## Failure Modes
 
@@ -571,10 +676,10 @@ Required strategy:
 | Renderer error | Mark generation failed; no active stored file is exposed. |
 | Storage write failure | Mark generation failed; include sanitized failure code. |
 | Database update failure after storage | Attempt cleanup or record orphan cleanup task; feature spec must define exact behavior. |
-| Duplicate request | Return existing document when idempotency and input checksum match. |
+| Duplicate request | Return the same stored document or same active attempt for the same idempotency identity. |
 | Idempotency conflict | Reject and do not overwrite existing document. |
 | Download of failed document | Return not found or unavailable. |
-| Download after archive | Deny or require explicit archive access; CTO decision required. |
+| Download after archive | Deny unless the access feature specification approves a narrower archived-document retrieval rule. |
 
 Operational observability should include generated/failure counts, failure codes, and audit events without document contents.
 
@@ -591,9 +696,11 @@ Implementation must include tests proportionate to platform persistence and secu
 - tenant isolation tests for cross-organisation generation, read, and download denial;
 - PostgreSQL integration tests for database constraints, resource link organisation consistency, idempotency uniqueness, failed generation state, and concurrency;
 - audit tests confirming no document contents, merge values, tokens, or raw files enter metadata;
-- storage tests for successful write, read, checksum verification, and failure handling;
+- storage tests for successful database-backed write, safe streaming read, content-type enforcement, maximum PDF size enforcement, checksum verification, and failure handling;
+- renderer tests for deterministic PDF output, page breaks, headers, footers, tables, and approved disclaimer presence once the renderer ADR selects an implementation;
 - SolarGRANT Pro regression tests proving existing lead intake, portal uploads, application pack pages, quote data, and workflow stage changes remain compatible;
-- migration tests proving additive schema changes and no destructive migration of `LeadDocument`.
+- migration tests proving additive schema changes and no destructive migration of `LeadDocument`;
+- hosted testing gate proving Production, Preview, Development, and local database fingerprints are isolated before hosted migration or generated-document storage tests run.
 
 Because this task creates documentation only, no implementation tests are added in this branch.
 
@@ -621,6 +728,8 @@ Implementation branches after approval should additionally run:
 - `pnpm lint`;
 - `pnpm build` if runtime code changes or release policy requires it.
 
+Hosted migration and generated-document storage tests must not run until the TD-015 environment-isolation gate is satisfied.
+
 Do not claim a check passed unless it ran successfully.
 
 ## Migration
@@ -630,19 +739,22 @@ Release 1.4 implementation should migrate from the approved baseline additively.
 Fresh database deployment:
 
 1. Apply existing migrations through Platform Release 1.3.
-2. Apply new document foundation migration after approval.
-3. Seed or register initial document type/template/version records through approved migration or seed path.
-4. Verify constraints and indexes.
-5. Verify the SolarGRANT Pro proving slice can generate one document in a disposable environment.
+2. Verify environment isolation if the target is hosted infrastructure.
+3. Apply new document foundation migration after approval.
+4. Seed or register initial document definition/template/version records through approved migration or seed path.
+5. Verify constraints and indexes.
+6. Verify the SolarGRANT Pro proving slice can generate one PDF document in a disposable environment.
 
 Approved-baseline deployment:
 
 1. Back up target database before migration.
-2. Verify environment isolation, especially TD-015.
+2. Verify environment isolation and database fingerprints, especially TD-015.
 3. Apply additive document tables.
 4. Do not mutate existing `LeadDocument` rows.
 5. Do not backfill generated documents from historical application packs.
 6. Verify existing portal upload/download, lead detail, application pack, submission package JSON, workflow stage changes, and quote pricing still work.
+
+Hosted migration may not proceed unless Production uses its own database, Preview uses a separate database or isolated Neon branch, Development/local does not point at production, and fingerprints are documented.
 
 Rollback:
 
@@ -657,21 +769,22 @@ Rollback:
 3. Create required ADRs.
 4. Create required feature specifications.
 5. Plan implementation sprint and validation gates.
-6. Add additive schema and migrations.
-7. Implement template registry and immutable version handling.
-8. Implement storage abstraction and generated document persistence.
-9. Implement document generation service.
-10. Implement secure document download.
-11. Implement permissions and audit events.
-12. Implement SolarGRANT Pro lead assessment summary proving slice.
-13. Add unit, permission, tenant, audit, storage, migration, and PostgreSQL integration tests.
-14. Run full validation.
-15. Open implementation draft PR.
-16. Complete CTO review.
-17. Complete CEO approval.
-18. Merge only after approval.
-19. Tag release only after explicit instruction.
-20. Update roadmap only at release close.
+6. Complete or document local-only status for the TD-015 environment-isolation prerequisite.
+7. Add additive schema and migrations.
+8. Implement template registry and immutable version handling.
+9. Implement storage abstraction and generated document persistence.
+10. Implement synchronous document generation service.
+11. Implement secure server-streamed PDF download.
+12. Implement permissions and audit events.
+13. Implement SolarGRANT Pro lead assessment summary proving slice.
+14. Add unit, permission, tenant, audit, storage, migration, renderer, and PostgreSQL integration tests.
+15. Run full validation.
+16. Open implementation draft PR.
+17. Complete CTO review.
+18. Complete CEO approval.
+19. Merge only after approval.
+20. Tag release only after explicit instruction.
+21. Update roadmap only at release close.
 
 ## Deliverables
 
@@ -689,7 +802,8 @@ Approval-gated implementation deliverables should include:
 - platform document service;
 - template version registry;
 - storage abstraction;
-- secure download route;
+- database-backed generated-file storage;
+- secure server-streamed PDF download route;
 - permissions catalogue update;
 - audit events;
 - SolarGRANT Pro proving-slice adapter and product surface;
@@ -699,25 +813,29 @@ Approval-gated implementation deliverables should include:
 
 ### Required ADR Plan
 
-1. Core document domain model.
-2. Template storage and immutable versioning.
-3. Generated-file storage strategy.
-4. Document generation execution model.
-5. Resource-link model.
-6. Secure document retrieval.
-7. Existing document concept compatibility and migration strategy.
-8. Generated output format and renderer choice, if PDF or another renderer is introduced.
+1. Document Domain, Ownership And Resource Linking.
+   Cover domain model, organisation ownership, lifecycle, product namespaces, resource links, and existing-document compatibility.
+2. Template Versioning And PDF Rendering.
+   Cover repository-owned templates, immutable database snapshots, activation, merge schema, renderer evaluation and choice, and deterministic PDF output.
+3. Generated File Storage And Secure Retrieval.
+   Cover database-backed storage, storage abstraction, file limits, checksums, server-streamed downloads, and future object-storage migration.
+4. Generation Transactions, Idempotency And Failure Handling.
+   Cover synchronous execution, transaction boundaries, idempotency, concurrency, storage compensation, durable failure state, and retry behaviour.
+
+Permissions and audit requirements should be specified within the relevant feature specifications using the existing Platform Release 1.2 architecture. Do not create a separate permissions or audit ADR unless a genuine architectural conflict is discovered.
 
 ### Required Feature-Specification Plan
 
-1. Platform document registry.
-2. Template and template-version management.
-3. Document generation service.
-4. Document persistence and storage.
-5. Document permissions and audit.
-6. Secure document download.
-7. SolarGRANT Pro lead assessment summary proving slice.
-8. Existing document compatibility and regression protection.
+1. Platform Document Registry And Templates.
+   Includes document definitions, templates, immutable versions, activation, and namespacing.
+2. Document Generation, Persistence And Storage.
+   Includes generation service, PDF rendering integration, document record, idempotency, failure state, database storage, and checksums.
+3. Document Access, Permissions And Audit.
+   Includes metadata access, secure download, permission enforcement, organisation isolation, audit events, and error behaviour.
+4. SolarGRANT Pro Lead Assessment Summary.
+   Includes lead merge-data contract, product template, PDF design, product invocation surface, document listing/download from the lead, compatibility, and regression tests.
+
+Existing-document compatibility requirements must be included across these specifications and in regression testing rather than becoming a separate feature.
 
 ## Acceptance Criteria
 
@@ -730,9 +848,10 @@ Release 1.4 is acceptable for implementation review only when:
 - no solar-specific terminology leaks into platform domain model except namespaced product keys;
 - document generation is organisation-scoped, permission-protected, audited, and idempotent;
 - generated documents are attributable to immutable template versions;
-- stored files have content type, filename, size, checksum, and storage metadata;
+- stored files are immutable PDFs with `application/pdf`, sanitized `.pdf` filenames, size, SHA-256 checksum, and storage metadata;
 - failed generation produces a durable, sanitized failure state;
-- secure downloads cannot bypass organisation and permission checks;
+- secure downloads cannot bypass organisation and separate `document.download` permission checks;
+- Production, Preview, Development, and local database isolation is verified before hosted migrations, preview generation tests, or document-storage tests run;
 - existing `LeadDocument`, customer portal, application pack, submission package, quote, workflow, and audit behavior remains compatible;
 - tests cover permissions, tenant isolation, audit, idempotency, concurrency, storage, and migration risks;
 - validation commands are run and recorded honestly;
@@ -759,6 +878,7 @@ This checklist is pending in the first draft.
 | Engineering | Permissions are approved. | Pending |
 | Engineering | Audit expectations are approved. | Pending |
 | Engineering | Tenant isolation strategy is approved. | Pending |
+| Engineering | Hosted environment database isolation is verified before hosted migration or generated-document testing. | Pending |
 | Engineering | Storage strategy is approved. | Pending |
 | Engineering | Transaction strategy is approved. | Pending |
 | Engineering | Concurrency strategy is approved. | Pending |
@@ -782,15 +902,17 @@ Release 1.4 intentionally defers:
 - full document management product behavior;
 - migration of existing `LeadDocument` uploads;
 - generic customer document collaboration;
-- external object storage vendor selection unless an ADR proves it is needed now;
+- external object storage until volume, file size, performance, or operating-cost evidence requires it;
 - public anonymous document links;
-- signed URL infrastructure unless secure retrieval ADR approves it;
+- signed URL infrastructure;
 - template editor or customer-authored templates;
 - AI-authored content;
 - OCR and document extraction expansion;
 - bulk or scheduled generation;
 - workflow-triggered automatic generation;
+- workflow history writes for ordinary document generation;
 - notification delivery of generated documents;
+- implemented `DELETED` or `ERASURE_PENDING` document lifecycle states;
 - full retention automation;
 - full document search;
 - folders and sharing between organisations;
@@ -809,7 +931,7 @@ Implementation must account for existing technical debt:
 - `TD-009`: no database row-level security.
 - `TD-011`: `Lead.pipelineStage` remains a workflow compatibility projection.
 - `TD-013`: deployment readiness needs migration status checks.
-- `TD-015`: Preview, Production, Development, and local development currently share one hosted database.
+- `TD-015`: Preview, Production, Development, and local development currently share one hosted database. This is a hard Release 1.4 gate for hosted migrations, preview generation tests, and document-storage tests.
 - `TD-016`: SMS should be removed from intake before wider installer onboarding or commercial scale.
 
 Release 1.4 should not update the technical-debt register merely to track a missing future capability. It should update the register only if implementation introduces, resolves, or accepts material debt.
@@ -820,40 +942,31 @@ This foundation enables later work:
 
 - migration or wrapping of uploaded applicant documents into platform document records;
 - product-configured document checklists;
-- generated quotes, contracts, proposals, and compliance records;
+- governed generated quotes, contracts, proposals, and compliance records;
 - SOLARfarm Pro assessment reports;
 - roofing, HVAC, plumbing, construction, or landscaping proposals and compliance documents;
 - document-aware notifications in Platform Release 1.5 or later;
 - module configuration for document types and checklist values;
 - AI-assisted document summarisation or extraction under AI governance;
 - operational reporting from document generation, upload, review, and download events;
-- object storage adoption if file volume or runtime constraints justify it;
+- object storage adoption if volume, file size, performance, or operating-cost evidence justifies it;
 - retention and deletion automation after privacy and records policy approval.
 
 ## CTO Review
 
 | Field | Value |
 | --- | --- |
-| Status | Pending |
+| Status | Pending Review |
 | Reviewer | CTO |
-| Date | Pending |
-| Notes | Pending |
+| Date | 2026-07-14 |
+| Notes | First CTO review returned Changes Requested. Architecture direction is approved subject to this amendment, so this specification returns to Pending Review and is not approved for merge. |
 
 ### CTO Decisions Still Required
 
-1. Approve generated governed document foundation as the Release 1.4 focus instead of migrating uploaded homeowner documents first.
-2. Approve the minimum domain model and whether `DocumentGenerationRequest` is combined into `Document` for Release 1.4.
-3. Approve the template strategy: repository-defined template source plus immutable DB version registry.
-4. Decide generated output format for the proving slice: stored HTML, stored PDF, or another approved format.
-5. Approve rendering library or explicitly defer PDF generation.
-6. Approve database-backed storage for Release 1.4 or require object storage ADR before implementation.
-7. Approve resource-link model and organisation consistency constraints.
-8. Approve idempotency and concurrency strategy.
-9. Approve permission keys and role mapping, especially whether `document.download` is separate from `document.read`.
-10. Approve audit action names and denied/failure audit policy.
-11. Approve secure download design and whether signed URLs are deferred.
-12. Approve compatibility strategy for `LeadDocument`, portal uploads, application packs, and submission-package exports.
-13. Confirm TD-015 mitigation required before preview or production document generation tests.
+1. Select the PDF renderer/library through the Template Versioning And PDF Rendering ADR.
+2. Approve the exact generated PDF size limit in the Document Generation, Persistence And Storage feature specification.
+3. Approve the exact SolarGRANT Pro assessment summary content, layout, merge fields, and disclaimer wording.
+4. Confirm final member, internal admin, and internal support permission mapping only if implementation evidence requires adjustment from this specification.
 
 ## CEO Approval
 
@@ -866,24 +979,21 @@ This foundation enables later work:
 
 ### CEO Decisions Still Required
 
-1. Confirm business value of generated lead assessment summaries as the proving slice.
-2. Confirm the release should prioritise governed generated documents over upload checklist migration.
-3. Confirm the customer-facing or installer-facing value of the assessment summary.
-4. Confirm acceptable first-slice output format if PDF is deferred or requires extra engineering cost.
-5. Confirm scope deferrals, especially template editor, e-signatures, document delivery, and full records management.
-6. Confirm no new external storage vendor is required for this release unless CTO evidence changes the recommendation.
-7. Confirm commercial risk acceptance around TD-015 until environments are isolated.
+1. Confirm installer-facing value of the SolarGRANT Pro lead assessment summary.
+2. Confirm exact assessment-summary content expectations and product tone.
+3. Confirm required disclaimers and non-binding positioning.
+4. Confirm scope deferrals, including homeowner-upload migration, template editor, e-signatures, public links, document delivery, workflow-triggered generation, and full records management.
+5. Confirm Release 1.4 priority relative to other roadmap work.
 
 ## Release Sign-Off
 
 | Field | Value |
 | --- | --- |
-| Draft PR | Pending |
-| CTO review | Pending |
+| Draft PR | PR #12 draft |
+| CTO review | Pending Review |
 | CEO approval | Pending |
 | Merge commit | Pending |
 | Release tag | Pending |
 | Roadmap update | Pending |
 
 This section must remain pending until release close. This draft does not authorise implementation, merge, release tag, or roadmap completion updates.
-

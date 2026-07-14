@@ -4,12 +4,25 @@ import {
   addUniqueValue,
   createLeadFormErrorVisibilityState,
   removeValue,
+  shouldAcceptLeadFormSubmit,
   shouldShowLeadFormFieldError,
   type LeadFormErrorVisibilityState
 } from '../../lib/lead-form-error-visibility';
 
-type TestField = 'yearBuilt' | 'yearOccupied' | 'dwellingType' | 'roofType';
-type TestStep = 'grant' | 'property' | 'roof';
+type TestField =
+  | 'yearBuilt'
+  | 'yearOccupied'
+  | 'dwellingType'
+  | 'roofType'
+  | 'fullName'
+  | 'email'
+  | 'phone'
+  | 'preferredCallbackWindow'
+  | 'addressLine1'
+  | 'consentToProcess'
+  | 'consentToGrantAssist'
+  | 'consentToContact';
+type TestStep = 'grant' | 'property' | 'roof' | 'contact';
 
 function canShowError(
   visibility: LeadFormErrorVisibilityState<TestField, TestStep>,
@@ -88,4 +101,70 @@ test('lead form error visibility exposes server-returned field errors and clears
 
   assert.equal(canShowError(withServerError, 'yearBuilt', 'grant', true), true);
   assert.equal(canShowError(afterEdit, 'yearBuilt', 'grant', true), false);
+});
+
+test('lead form error visibility keeps Step 6 neutral after a valid Step 5 transition', () => {
+  const visibility = {
+    ...createLeadFormErrorVisibilityState<TestField, TestStep>(),
+    attemptedStepIds: ['grant' as const]
+  };
+
+  for (const field of [
+    'fullName',
+    'email',
+    'phone',
+    'preferredCallbackWindow',
+    'addressLine1',
+    'consentToProcess',
+    'consentToGrantAssist',
+    'consentToContact'
+  ] as const) {
+    assert.equal(canShowError(visibility, field, 'contact', true), false);
+  }
+});
+
+test('lead form submit is ignored during the Step 5 to Step 6 button swap frame', () => {
+  assert.equal(
+    shouldAcceptLeadFormSubmit({
+      isFinalStep: true,
+      finalStepSubmitReady: false,
+      loading: false,
+      submitLocked: false
+    }),
+    false
+  );
+
+  assert.equal(
+    shouldAcceptLeadFormSubmit({
+      isFinalStep: true,
+      finalStepSubmitReady: true,
+      loading: false,
+      submitLocked: false
+    }),
+    true
+  );
+});
+
+test('lead form final submit reveals Step 6 errors and clearing one field preserves the rest', () => {
+  const afterFinalSubmit = {
+    ...createLeadFormErrorVisibilityState<TestField, TestStep>(),
+    attemptedStepIds: ['grant' as const],
+    allFieldsValidationAttempted: true
+  };
+
+  assert.equal(canShowError(afterFinalSubmit, 'fullName', 'contact', true), true);
+  assert.equal(canShowError(afterFinalSubmit, 'email', 'contact', true), true);
+  assert.equal(canShowError(afterFinalSubmit, 'phone', 'contact', true), true);
+  assert.equal(canShowError(afterFinalSubmit, 'fullName', 'contact', false), false);
+  assert.equal(canShowError(afterFinalSubmit, 'email', 'contact', true), true);
+});
+
+test('lead form back and forward after a final submit does not resurrect stale Step 6 errors', () => {
+  const afterBackResetAndGrantForward = {
+    ...createLeadFormErrorVisibilityState<TestField, TestStep>(),
+    attemptedStepIds: ['grant' as const]
+  };
+
+  assert.equal(canShowError(afterBackResetAndGrantForward, 'fullName', 'contact', true), false);
+  assert.equal(canShowError(afterBackResetAndGrantForward, 'email', 'contact', true), false);
 });

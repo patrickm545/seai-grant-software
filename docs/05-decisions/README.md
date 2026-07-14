@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-14 |
 
 Architecture Decision Records (ADRs) capture decisions that materially affect platform architecture, product boundaries, technical standards, data handling, security, automation, or long-term maintainability.
 
@@ -26,6 +26,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0012-workflow-transition-validation-boundary.md](ADR-0012-workflow-transition-validation-boundary.md): define server-side transition validation responsibility.
 - [ADR-0013-workflow-history-model.md](ADR-0013-workflow-history-model.md): define workflow history and audit relationship.
 - [ADR-0014-product-workflow-consumption-boundary.md](ADR-0014-product-workflow-consumption-boundary.md): define how product modules consume workflow foundation.
+- [ADR-0015-document-domain-ownership-and-resource-linking.md](ADR-0015-document-domain-ownership-and-resource-linking.md): define generated-document domain, organisation ownership, product namespacing, resource links, lifecycle, and existing-document compatibility.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

@@ -10,8 +10,8 @@
 | Release | Platform Release 1.4 |
 | Approved baseline | 63b08fa87a61569c6ff4adbda730e75d86a9d31e |
 | Target branch | codex/platform-release-1.4-master-spec |
-| CTO approval | Pending Review |
-| CEO approval | Pending |
+| CTO approval | Approved |
+| CEO approval | Approved |
 
 ## Executive Summary
 
@@ -23,7 +23,7 @@ The release must not treat SolarGRANT Pro as the platform. Clada OS should own t
 
 The first assessment summary is primarily installer-facing. It should help the installer review the lead and prepare for customer follow-up. It must not imply binding quotation, grant approval, technical site survey, financial advice, guaranteed savings, or contract status.
 
-Release 1.4 should not begin implementation until this Master Release Specification receives CTO architecture approval and CEO approval, required ADRs are complete, feature specifications are complete, and sprint scope is approved.
+Although this Master Release Specification has CTO architecture approval and CEO approval, Release 1.4 should not begin implementation until required ADRs are complete, feature specifications are complete, and sprint scope is approved.
 
 ## Business Context
 
@@ -764,8 +764,8 @@ Rollback:
 
 ## Sprint Breakdown
 
-1. Approval gate: CTO reviews and approves architecture decisions in this Master Release Specification.
-2. Approval gate: CEO approves business value, proving slice, scope, cost, timing, and deferrals.
+1. Completed approval gate: CTO approved architecture decisions in this Master Release Specification on 2026-07-14.
+2. Completed approval gate: CEO approved business value, proving slice, scope, cost, timing, and deferrals on 2026-07-14.
 3. Create required ADRs.
 4. Create required feature specifications.
 5. Plan implementation sprint and validation gates.
@@ -780,9 +780,9 @@ Rollback:
 14. Add unit, permission, tenant, audit, storage, migration, renderer, and PostgreSQL integration tests.
 15. Run full validation.
 16. Open implementation draft PR.
-17. Complete CTO review.
-18. Complete CEO approval.
-19. Merge only after approval.
+17. Complete implementation review after the implementation PR is ready.
+18. Complete final release approval after implementation review.
+19. Merge implementation only after approval.
 20. Tag release only after explicit instruction.
 21. Update roadmap only at release close.
 
@@ -855,41 +855,41 @@ Release 1.4 is acceptable for implementation review only when:
 - existing `LeadDocument`, customer portal, application pack, submission package, quote, workflow, and audit behavior remains compatible;
 - tests cover permissions, tenant isolation, audit, idempotency, concurrency, storage, and migration risks;
 - validation commands are run and recorded honestly;
-- draft PR remains unmerged until CTO review and CEO approval complete.
+- draft PR remains unmerged until implementation authorisation, ADR completion, feature-specification completion, and sprint approval are complete.
 
 ## Release Planning Checklist
 
-This checklist is pending in the first draft.
+This checklist records approval status for the Master Release Specification. ADR completion, feature-specification completion, sprint approval, and implementation authorisation remain pending.
 
 | Area | Item | Status |
 | --- | --- | --- |
-| Business | Customer problem is clear. | Pending |
-| Business | Business value is documented. | Pending |
-| Business | Reason for timing is justified. | Pending |
-| Business | Proving-slice value is accepted. | Pending |
-| Business | Commercial or operational risk is understood. | Pending |
-| Platform | Reuse by at least two products is credible. | Pending |
-| Platform | Clada OS ownership is correct. | Pending |
-| Platform | Product isolation is preserved. | Pending |
-| Platform | Compatibility with existing platform foundations is clear. | Pending |
-| Platform | Future capabilities enabled are documented. | Pending |
-| Engineering | Architecture is approved. | Pending |
-| Engineering | Schema approach is approved. | Pending |
-| Engineering | Permissions are approved. | Pending |
-| Engineering | Audit expectations are approved. | Pending |
-| Engineering | Tenant isolation strategy is approved. | Pending |
+| Business | Customer problem is clear. | Approved |
+| Business | Business value is documented. | Approved |
+| Business | Reason for timing is justified. | Approved |
+| Business | Proving-slice value is accepted. | Approved |
+| Business | Commercial or operational risk is understood. | Approved |
+| Platform | Reuse by at least two products is credible. | Approved |
+| Platform | Clada OS ownership is correct. | Approved |
+| Platform | Product isolation is preserved. | Approved |
+| Platform | Compatibility with existing platform foundations is clear. | Approved |
+| Platform | Future capabilities enabled are documented. | Approved |
+| Engineering | Architecture is approved. | Approved |
+| Engineering | Schema approach is approved. | Approved |
+| Engineering | Permissions are approved. | Approved |
+| Engineering | Audit expectations are approved. | Approved |
+| Engineering | Tenant isolation strategy is approved. | Approved |
 | Engineering | Hosted environment database isolation is verified before hosted migration or generated-document testing. | Pending |
-| Engineering | Storage strategy is approved. | Pending |
-| Engineering | Transaction strategy is approved. | Pending |
-| Engineering | Concurrency strategy is approved. | Pending |
-| Engineering | Threat analysis is reviewed. | Pending |
-| Engineering | Migration strategy is approved. | Pending |
-| Engineering | Test strategy is approved. | Pending |
+| Engineering | Storage strategy is approved. | Approved |
+| Engineering | Transaction strategy is approved. | Approved |
+| Engineering | Concurrency strategy is approved. | Approved |
+| Engineering | Threat analysis is reviewed. | Approved |
+| Engineering | Migration strategy is approved. | Approved |
+| Engineering | Test strategy is approved. | Approved |
 | Engineering | Observability expectations are approved. | Pending |
 | Engineering | Rollback limitations are accepted. | Pending |
-| Engineering | Technical debt impact is accepted. | Pending |
-| Approval | CTO architecture approval. | Pending |
-| Approval | CEO specification approval. | Pending |
+| Engineering | Technical debt impact is accepted. | Approved |
+| Approval | CTO architecture approval. | Approved |
+| Approval | CEO specification approval. | Approved |
 | Approval | ADR completion. | Pending |
 | Approval | Feature-specification completion. | Pending |
 | Approval | Sprint approval. | Pending |
@@ -956,10 +956,10 @@ This foundation enables later work:
 
 | Field | Value |
 | --- | --- |
-| Status | Pending Review |
+| Status | Approved |
 | Reviewer | CTO |
 | Date | 2026-07-14 |
-| Notes | First CTO review returned Changes Requested. Architecture direction is approved subject to this amendment, so this specification returns to Pending Review and is not approved for merge. |
+| Notes | The amended architecture is approved. Release 1.4 is limited to the governed generated-document foundation and the installer-facing SolarGRANT Pro lead assessment PDF proving slice. Renderer selection, exact PDF size limit, and detailed assessment design remain approval-gated ADR or feature-specification decisions. |
 
 ### CTO Decisions Still Required
 
@@ -972,26 +972,27 @@ This foundation enables later work:
 
 | Field | Value |
 | --- | --- |
-| Status | Pending |
+| Status | Approved |
 | Approver | CEO |
-| Date | Pending |
-| Notes | Pending |
+| Date | 2026-07-14 |
+| Notes | Business value, installer-facing audience, non-binding positioning, scope, deferrals, and release priority are approved. Exact document content, visual design, merge fields, and final disclaimer wording will be reviewed in Feature Specification 4 before implementation. |
 
-### CEO Decisions Still Required
+### CEO Decisions Recorded
 
-1. Confirm installer-facing value of the SolarGRANT Pro lead assessment summary.
-2. Confirm exact assessment-summary content expectations and product tone.
-3. Confirm required disclaimers and non-binding positioning.
-4. Confirm scope deferrals, including homeowner-upload migration, template editor, e-signatures, public links, document delivery, workflow-triggered generation, and full records management.
-5. Confirm Release 1.4 priority relative to other roadmap work.
+1. The installer-facing SolarGRANT Pro lead assessment summary provides useful business value by giving installers a consistent professional overview before customer follow-up.
+2. The assessment should include approved existing lead, property, energy, recommendation, grant-context, indicative commercial, and next-action information.
+3. The tone must be professional, factual, clear, and non-binding.
+4. The PDF must clearly state that it is not a binding quotation, formal grant approval, technical site survey, financial advice, guaranteed savings statement, or contract.
+5. The documented scope deferrals are approved, including homeowner-upload migration, template editor, e-signatures, public links, document delivery, workflow-triggered generation, and full records management.
+6. Platform Release 1.4 remains the current roadmap priority.
 
 ## Release Sign-Off
 
 | Field | Value |
 | --- | --- |
 | Draft PR | PR #12 draft |
-| CTO review | Pending Review |
-| CEO approval | Pending |
+| CTO review | Approved |
+| CEO approval | Approved |
 | Merge commit | Pending |
 | Release tag | Pending |
 | Roadmap update | Pending |

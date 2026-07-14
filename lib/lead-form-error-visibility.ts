@@ -49,3 +49,17 @@ export function shouldShowLeadFormFieldError<FieldKey extends string, StepId ext
     Boolean(fieldStepId && visibility.attemptedStepIds.includes(fieldStepId))
   );
 }
+
+export function shouldAcceptLeadFormSubmit({
+  isFinalStep,
+  finalStepSubmitReady,
+  loading,
+  submitLocked
+}: {
+  isFinalStep: boolean;
+  finalStepSubmitReady: boolean;
+  loading: boolean;
+  submitLocked: boolean;
+}) {
+  return isFinalStep && finalStepSubmitReady && !loading && !submitLocked;
+}

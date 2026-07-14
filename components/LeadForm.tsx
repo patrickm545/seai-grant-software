@@ -26,6 +26,7 @@ import {
   createLeadFormErrorVisibilityState,
   removeValue,
   removeValues,
+  shouldAcceptLeadFormSubmit,
   shouldShowLeadFormFieldError
 } from '@/lib/lead-form-error-visibility';
 import type { GeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
@@ -429,6 +430,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     createLeadFormErrorVisibilityState<FormFieldKey, LeadFormStepId>()
   );
   const [currentStep, setCurrentStep] = useState(0);
+  const [finalStepSubmitReady, setFinalStepSubmitReady] = useState(false);
   const [hydratedInstallerId, setHydratedInstallerId] = useState<string | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -579,6 +581,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   function continueStep() {
     if (!validateStepFields(activeStep)) return;
 
+    setFinalStepSubmitReady(false);
     setCurrentStep((step) => Math.min(step + 1, formSteps.length - 1));
     scrollFormToTop();
   }
@@ -586,6 +589,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   function backStep() {
     setSubmitError(null);
     setFieldErrorMessages({});
+    setFinalStepSubmitReady(false);
     resetErrorVisibility();
     setCurrentStep((step) => Math.max(step - 1, 0));
     scrollFormToTop();
@@ -604,7 +608,16 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading || submitLockRef.current) return;
+    if (
+      !shouldAcceptLeadFormSubmit({
+        isFinalStep,
+        finalStepSubmitReady,
+        loading,
+        submitLocked: submitLockRef.current
+      })
+    ) {
+      return;
+    }
 
     submitLockRef.current = true;
     const nextInvalidFields = getInvalidFields(form);
@@ -630,6 +643,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setResult(null);
     setSubmitError(null);
     setFieldErrorMessages({});
+    setFinalStepSubmitReady(false);
     resetErrorVisibility();
 
     const applicantDocuments: UploadItem[] = [
@@ -753,10 +767,23 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     setSelectedSystemSize(nextInitialState.selectedSystemSize);
     setCurrentStep(nextInitialState.currentStep);
     setFieldErrorMessages({});
+    setFinalStepSubmitReady(false);
     resetErrorVisibility();
     setSubmitError(null);
     setHydratedInstallerId(installerId);
   }, [installerId]);
+
+  useEffect(() => {
+    if (!isFinalStep) {
+      setFinalStepSubmitReady(false);
+      return;
+    }
+
+    setFinalStepSubmitReady(false);
+    const frameId = requestAnimationFrame(() => setFinalStepSubmitReady(true));
+
+    return () => cancelAnimationFrame(frameId);
+  }, [isFinalStep]);
 
   useEffect(() => {
     if (result || hydratedInstallerId !== installerId) return;
@@ -1527,7 +1554,9 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
             Back
           </button>
           {isFinalStep ? (
-            <button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit and view estimate'}</button>
+            <button type="submit" disabled={loading || !finalStepSubmitReady}>
+              {loading ? 'Submitting...' : 'Submit and view estimate'}
+            </button>
           ) : (
             <button type="button" onClick={continueStep}>Continue</button>
           )}

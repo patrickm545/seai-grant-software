@@ -48,8 +48,11 @@ Code does not override documented architectural decisions. If implementation nee
 nvm use
 corepack enable
 pnpm install
-pnpm prisma:migrate:deploy
-pnpm seed
+cp .env.example .env.local
+pnpm db:fingerprint
+pnpm db:status
+pnpm db:migrate:development
+pnpm db:seed:development
 pnpm dev
 ```
 
@@ -59,10 +62,14 @@ Open `http://localhost:3000`.
 
 Use `.env.example` as your template. Do not commit real `.env` files.
 
-Use a Postgres database URL locally and on Vercel. The easiest setup is to create the database through the Vercel Marketplace and then pull matching values locally with `vercel env pull`.
+Use an isolated Development Postgres database locally. Do not pull or reuse Production credentials. Complete the environment classification and fingerprint contract described in [Database Environment Safety](docs/03-engineering/DATABASE_ENVIRONMENT_SAFETY.md) before running the application or any database command.
 
 ```env
-DATABASE_URL="postgres://USER:PASSWORD@HOST:5432/seai_solar_grants?sslmode=require"
+APP_ENV="development"
+DATABASE_ENVIRONMENT="development"
+DATABASE_URL="postgres://USER:PASSWORD@DEVELOPMENT_HOST:5432/seai_solar_grants?sslmode=require"
+DATABASE_FINGERPRINT="db_..."
+PRODUCTION_DATABASE_FINGERPRINT="db_..."
 ```
 
 Optional email notifications use:
@@ -88,7 +95,9 @@ If `ADMIN_PASSWORD` is not set, the local development fallback password is `admi
 ## Vercel Deploy Notes
 
 - Prisma Client is generated automatically during dependency installation through the `postinstall` script.
-- Run `pnpm prisma:migrate:deploy` against the production database before or during the first live rollout.
+- Preview and Production must use different Neon branches or databases and separately scoped Vercel variables.
+- Use `pnpm db:migrate:preview` on the isolated Preview target.
+- Use the deliberate `pnpm db:migrate:production` procedure in the [Database Operations Runbook](docs/03-engineering/DATABASE_OPERATIONS_RUNBOOK.md); never run reset or seed in Production.
 - Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel before using `/admin`.
 
 ## Contributor Workflow

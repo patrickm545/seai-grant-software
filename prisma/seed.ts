@@ -4,6 +4,7 @@ import { ensureDefaultInstallerWithOrganisation } from '../lib/identity';
 import { defaultInstallerQuotePricing } from '../lib/installer-quote-pricing';
 import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from '../lib/lead-workflow';
 import { ensureWorkflowInstanceForResource } from '../lib/workflow';
+import { assertDatabaseOperationAllowed, formatDatabaseSafetyError } from '../lib/database-safety';
 
 if (!process.env.DATABASE_URL && existsSync('.env')) {
   for (const rawLine of readFileSync('.env', 'utf8').split(/\r?\n/)) {
@@ -21,6 +22,21 @@ if (!process.env.DATABASE_URL && existsSync('.env')) {
       process.env[key] = value;
     }
   }
+}
+
+try {
+  assertDatabaseOperationAllowed({
+    operation: 'seed',
+    appEnvironment: process.env.APP_ENV,
+    databaseEnvironment: process.env.DATABASE_ENVIRONMENT,
+    databaseUrl: process.env.DATABASE_URL,
+    expectedFingerprint: process.env.DATABASE_FINGERPRINT,
+    productionFingerprint: process.env.PRODUCTION_DATABASE_FINGERPRINT,
+    branchId: process.env.DATABASE_BRANCH_ID
+  });
+} catch (error) {
+  console.error(formatDatabaseSafetyError(error));
+  process.exit(1);
 }
 
 const prisma = new PrismaClient();

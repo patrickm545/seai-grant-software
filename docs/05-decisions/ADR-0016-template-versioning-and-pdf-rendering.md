@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0016 |
-| Status | Proposed |
+| Status | Accepted |
 | Owner | Clada Systems Engineering |
 | Review cycle | When template versioning, renderer strategy, or generated-document rendering contracts change |
-| Last reviewed | 2026-07-14 |
+| Last reviewed | 2026-07-15 |
 
 ## Context
 

@@ -28,6 +28,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0014-product-workflow-consumption-boundary.md](ADR-0014-product-workflow-consumption-boundary.md): define how product modules consume workflow foundation.
 - [ADR-0015-document-domain-ownership-and-resource-linking.md](ADR-0015-document-domain-ownership-and-resource-linking.md): define generated-document domain, organisation ownership, product namespacing, resource links, lifecycle, and existing-document compatibility.
 - [ADR-0016-template-versioning-and-pdf-rendering.md](ADR-0016-template-versioning-and-pdf-rendering.md): define template ownership, immutable version snapshots, merge contracts, PDF renderer selection, and renderer independence for governed generated documents.
+- [ADR-0017-generated-file-storage-and-secure-retrieval.md](ADR-0017-generated-file-storage-and-secure-retrieval.md): propose bounded database-backed generated-file storage, immutable integrity evidence, and authenticated organisation-scoped retrieval.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

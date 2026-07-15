@@ -123,6 +123,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0013-workflow-history-model.md](05-decisions/ADR-0013-workflow-history-model.md)
 - [05-decisions/ADR-0014-product-workflow-consumption-boundary.md](05-decisions/ADR-0014-product-workflow-consumption-boundary.md)
 - [05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md](05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md)
+- [05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md](05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md)
 
 ## Sprints
 

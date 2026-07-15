@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-14 |
+| Last reviewed | 2026-07-15 |
 
 ## Purpose
 
@@ -43,6 +43,7 @@ Current platform ADRs:
 | [ADR-0013: Workflow History Model](../05-decisions/ADR-0013-workflow-history-model.md) | Active | Defines product-neutral workflow history and its relationship to audit. |
 | [ADR-0014: Product Workflow Consumption Boundary](../05-decisions/ADR-0014-product-workflow-consumption-boundary.md) | Active | Defines how SolarGRANT Pro consumes workflow foundation without coupling the platform to product rules. |
 | [ADR-0015: Document Domain, Ownership and Resource Linking](../05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md) | Active | Defines the generated-document domain model, organisation ownership, namespacing, resource links, lifecycle states, and existing-document compatibility for Platform Release 1.4. |
+| [ADR-0016: Template Versioning and PDF Rendering](../05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md) | Accepted | Defines template ownership, immutable version snapshots, merge contracts, PDF renderer selection, and renderer independence for Platform Release 1.4. |
 
 Recommended future ADR candidates:
 

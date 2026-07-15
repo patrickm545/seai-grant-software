@@ -181,10 +181,10 @@ Platform Release 1.4's approved specification and ADR-0015/0016/0017 describe in
 - **Problem:** Intake stores an automatic quote snapshot, but it cannot be revised for the lead or converted into an installer-approved, customer-facing proposal.
 - **User impact:** Installers must return to Word, PDF tools or spreadsheets to quote the homeowner—the central commercial handoff.
 - **Repository evidence:** `generatedQuoteJson`; `InstallerQuotePricing`; read-only quote cards; internal `ApplicationPackView`; no proposal/template/generated-document implementation.
-- **Smallest fix:** Build a narrow vertical slice: editable lead quote inputs and line totals, explicit installer approval, a fixed branded proposal view with estimate/grant disclaimers, server-generated PDF, immutable snapshot/version metadata, and organisation-scoped secure download. Do not implement the entire Release 1.4 platform.
+- **Smallest fix:** Build a narrow vertical slice: editable lead quote inputs and line totals, explicit installer approval, a fixed branded proposal view with estimate/grant disclaimers, server-generated PDF, immutable snapshot/version metadata, and organisation-scoped secure download. Implement only the minimum ADR-0015, ADR-0016 and ADR-0017 document foundation required for this proposal slice, not the entire Release 1.4 platform. Generated proposal bytes must use PostgreSQL-backed generated-file storage behind the approved platform-owned, provider-neutral storage abstraction, with organisation ownership, immutable output metadata, final byte size, SHA-256 integrity and authenticated download. Deployed local filesystem storage, unmanaged private paths and public file URLs are not acceptable.
 - **Acceptance criteria:** From an edited qualified lead, installer adjusts and saves a quote, previews exactly what the homeowner sees, generates a PDF, downloads it securely, and the lead timeline records generation and “quote sent” marking. Another organisation cannot fetch it.
 - **Effort:** L.
-- **Dependencies:** P0-1 tenant identity; minimum installer company/contact/branding data; isolated storage/test decision. Local/private persisted storage is acceptable for pilot if backed up and documented.
+- **Dependencies:** P0-1 tenant identity; minimum installer company/contact/branding data; isolated test environment; the narrow ADR-0015/ADR-0016/ADR-0017 foundation using PostgreSQL as the generated-file provider.
 - **Risk if deferred:** No end-to-end lead-to-proposal workflow; spreadsheets/document tools remain primary.
 
 ### P0-5 — Isolated pilot environment and deployment safety gate
@@ -226,7 +226,7 @@ Defer until pilot evidence justifies it:
 - Full installation operations, crew scheduling, inventory, procurement, accounting and payment processing.
 - Complete SEAI submission automation or authoritative SEAI registry integrations.
 - Full Platform Release 1.4 general document/template/version/render/storage platform beyond the narrow proposal slice.
-- Object-storage abstraction and general document management, provided pilot files have a controlled, backed-up storage path.
+- External object-storage providers, storage migration tooling and general document-management features are deferred. The narrow provider-neutral storage abstraction and PostgreSQL-backed generated-file provider required by ADR-0017 remain part of the pilot proposal slice.
 - Discrete task projects, calendar integrations, automated reminders and workflow automation.
 - Digital signatures, customer portal expansion, WhatsApp Business, marketing automation and automated campaigns.
 - Advanced AI qualification/extraction, broad analytics, cohort reporting and forecasting.
@@ -401,7 +401,7 @@ Run this in isolated Preview for every pilot configuration, then run a non-destr
 
 ### PR 6 — Generate and securely download the pilot proposal PDF
 
-- **Scope:** One fixed proposal template, installer identity/logo, disclaimers, server-side PDF, stored version/file metadata, secure organisation-scoped download and generation/sent activity. Implement only the Release 1.4 subset required by this slice.
+- **Scope:** Implement only the Release 1.4 subset required by this vertical slice: one governed `Document` generation attempt; one immutable template/version snapshot, or the narrowest ADR-0016-approved equivalent; one generated-file record containing PostgreSQL-backed PDF bytes, final byte size and SHA-256 checksum; installer identity/logo and disclaimers; authenticated organisation-scoped secure download; and generation/sent activity. Do not add a public link, signed URL, deployed local filesystem, general-purpose document-management UI or external object-storage provider.
 - **User-visible result:** Installer can preview and download a professional homeowner proposal without Word or a spreadsheet.
 - **Dependencies:** PRs 1, 2, 3 and 5; approved content/storage decision.
 - **Validation:** Golden-content/render check, PDF open/print, cross-tenant denial, snapshot immutability, failed-generation recovery and 375 px preview/download.

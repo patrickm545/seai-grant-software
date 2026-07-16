@@ -1,0 +1,47 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pinned package manager
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Disposable PostgreSQL integration tests
+        env:
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_ENVIRONMENT: test
+          TEST_DATABASE_FINGERPRINT: ${{ vars.CI_TEST_DATABASE_FINGERPRINT }}
+          TEST_DATABASE_BRANCH_ID: ${{ vars.CI_TEST_DATABASE_BRANCH_ID }}
+          PRODUCTION_DATABASE_FINGERPRINT: ${{ vars.PRODUCTION_DATABASE_FINGERPRINT }}
+          PREVIEW_DATABASE_FINGERPRINT: ${{ vars.PREVIEW_DATABASE_FINGERPRINT }}
+          DEVELOPMENT_DATABASE_FINGERPRINT: ${{ vars.DEVELOPMENT_DATABASE_FINGERPRINT }}
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/ci_primary_non_test
+        run: |
+          if [ -z "$TEST_DATABASE_URL" ]; then
+            echo "Skipping PostgreSQL integration tests: disposable TEST_DATABASE_URL is not configured."
+            exit 0
+          fi
+          pnpm test:integration:postgres

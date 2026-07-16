@@ -13,12 +13,18 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/platform/*.test.ts",
-    "test:integration:postgres": "node scripts/run-postgres-integration-tests.mjs",
+    "test": "node scripts/run-unit-tests.mjs",
+    "test:integration:postgres": "node --import tsx scripts/run-postgres-integration-tests.ts",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts"
+    "db:fingerprint": "node --import tsx scripts/run-database-command.ts fingerprint",
+    "db:status": "node --import tsx scripts/run-database-command.ts status",
+    "db:migrate:development": "node --import tsx scripts/run-database-command.ts migrate-development",
+    "db:migrate:preview": "node --import tsx scripts/run-database-command.ts migrate-preview",
+    "db:migrate:test": "node --import tsx scripts/run-database-command.ts migrate-test",
+    "db:migrate:production": "node --import tsx scripts/run-database-command.ts migrate-production",
+    "db:reset": "node --import tsx scripts/run-database-command.ts reset",
+    "db:seed:development": "node --import tsx scripts/run-database-command.ts seed-development",
+    "db:seed:test": "node --import tsx scripts/run-database-command.ts seed-test"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

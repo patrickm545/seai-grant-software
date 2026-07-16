@@ -35,6 +35,7 @@ export type SafeDatabaseIdentity = {
 
 type GuardInput = {
   operation: DatabaseOperation;
+  requiredApplicationEnvironment?: ApplicationEnvironment;
   appEnvironment?: string;
   databaseEnvironment?: string;
   databaseUrl?: string;
@@ -272,6 +273,19 @@ export function assertDatabaseOperationAllowed(input: GuardInput) {
     block(
       'DB_ENV_MISMATCH',
       'Application and database environment classifications do not match.',
+      input,
+      identity,
+      appEnvironment,
+      databaseEnvironment
+    );
+  }
+  if (
+    input.requiredApplicationEnvironment &&
+    appEnvironment !== input.requiredApplicationEnvironment
+  ) {
+    block(
+      'DB_OPERATION_NOT_ALLOWED',
+      `This command is restricted to the ${input.requiredApplicationEnvironment} application environment.`,
       input,
       identity,
       appEnvironment,

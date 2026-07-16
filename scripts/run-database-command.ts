@@ -4,6 +4,7 @@ import {
   formatDatabaseSafetyError,
   formatSafeDatabaseIdentity,
   getDatabaseIdentity,
+  type ApplicationEnvironment,
   type DatabaseOperation
 } from '../lib/database-safety';
 
@@ -14,21 +15,45 @@ type CommandDefinition = {
   commandArgs?: string[];
   productionMigrationPath?: boolean;
   resetAcknowledgement?: boolean;
+  requiredEnvironment?: ApplicationEnvironment;
 };
 
 const commandName = process.argv[2];
 const commands: Record<string, CommandDefinition> = {
   status: { operation: 'migration-status', prismaArgs: ['migrate', 'status'] },
-  'migrate-preview': { operation: 'migration-deploy', prismaArgs: ['migrate', 'deploy'] },
-  'migrate-test': { operation: 'migration-deploy', prismaArgs: ['migrate', 'deploy'] },
-  'migrate-development': { operation: 'migration-dev', prismaArgs: ['migrate', 'dev'] },
+  'migrate-preview': {
+    operation: 'migration-deploy',
+    prismaArgs: ['migrate', 'deploy'],
+    requiredEnvironment: 'preview'
+  },
+  'migrate-test': {
+    operation: 'migration-deploy',
+    prismaArgs: ['migrate', 'deploy'],
+    requiredEnvironment: 'test'
+  },
+  'migrate-development': {
+    operation: 'migration-dev',
+    prismaArgs: ['migrate', 'dev'],
+    requiredEnvironment: 'development'
+  },
   'migrate-production': {
     operation: 'migration-deploy',
     prismaArgs: ['migrate', 'deploy'],
-    productionMigrationPath: true
+    productionMigrationPath: true,
+    requiredEnvironment: 'production'
   },
-  'seed-development': { operation: 'seed', command: 'tsx', commandArgs: ['prisma/seed.ts'] },
-  'seed-test': { operation: 'seed', command: 'tsx', commandArgs: ['prisma/seed.ts'] },
+  'seed-development': {
+    operation: 'seed',
+    command: 'tsx',
+    commandArgs: ['prisma/seed.ts'],
+    requiredEnvironment: 'development'
+  },
+  'seed-test': {
+    operation: 'seed',
+    command: 'tsx',
+    commandArgs: ['prisma/seed.ts'],
+    requiredEnvironment: 'test'
+  },
   reset: { operation: 'reset', prismaArgs: ['migrate', 'reset'], resetAcknowledgement: true }
 };
 
@@ -64,6 +89,7 @@ let guarded;
 try {
   guarded = assertDatabaseOperationAllowed({
     operation: definition.operation,
+    requiredApplicationEnvironment: definition.requiredEnvironment,
     appEnvironment: process.env.APP_ENV,
     databaseEnvironment: process.env.DATABASE_ENVIRONMENT,
     databaseUrl: process.env.DATABASE_URL,

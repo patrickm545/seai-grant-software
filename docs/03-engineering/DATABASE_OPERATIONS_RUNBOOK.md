@@ -24,6 +24,8 @@
 
 Raw `prisma migrate`, reset, and seed commands are operationally unsupported. Review one-off mutation scripts against `assertDatabaseOperationAllowed` using the `one-off-mutation` operation before execution.
 
+Environment-specific command names are enforced, not descriptive aliases: Preview, test, Development, and Production migration/seed wrappers refuse to run when `APP_ENV` identifies a different environment, even if that other environment's database metadata is internally consistent.
+
 ## Migration Gate
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.

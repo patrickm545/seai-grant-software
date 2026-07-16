@@ -27,10 +27,12 @@ function guard(args: {
   database?: keyof typeof urls;
   expectedFingerprint?: string;
   productionPath?: boolean;
+  requiredEnvironment?: keyof typeof urls;
 }) {
   const database = args.database ?? args.app;
   return assertDatabaseOperationAllowed({
     operation: args.operation,
+    requiredApplicationEnvironment: args.requiredEnvironment,
     appEnvironment: args.app,
     databaseEnvironment: database,
     databaseUrl: urls[database],
@@ -149,6 +151,15 @@ test('test runner fails closed when persistent identity markers are missing', ()
 test('Preview database is accepted for Preview migrations and smoke testing', () => {
   assert.equal(guard({ operation: 'migration-deploy', app: 'preview' }).databaseEnvironment, 'preview');
   assert.equal(guard({ operation: 'smoke-write', app: 'preview' }).databaseEnvironment, 'preview');
+});
+
+test('named environment commands cannot run against a different matching non-Production environment', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () =>
+    guard({ operation: 'migration-deploy', app: 'test', requiredEnvironment: 'preview' })
+  );
+  expectCode('DB_OPERATION_NOT_ALLOWED', () =>
+    guard({ operation: 'seed', app: 'development', requiredEnvironment: 'test' })
+  );
 });
 
 test('identical DATABASE_URL and TEST_DATABASE_URL identities are rejected even with different credentials', () => {

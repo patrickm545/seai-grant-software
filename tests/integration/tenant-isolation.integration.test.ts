@@ -82,8 +82,8 @@ async function seedTestData() {
   await cleanupTestData();
   await prisma.organisation.createMany({
     data: [
-      { id: orgA, name: 'Tenant Isolation Test A', type: 'INSTALLER' },
-      { id: orgB, name: 'Tenant Isolation Test B', type: 'INSTALLER' }
+      { id: orgA, name: 'Tenant Isolation Test A', slug: `tenant-a-${suffix}`, type: 'INSTALLER' },
+      { id: orgB, name: 'Tenant Isolation Test B', slug: `tenant-b-${suffix}`, type: 'INSTALLER' }
     ]
   });
 

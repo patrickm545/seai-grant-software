@@ -13,6 +13,7 @@ export const databaseOperations = [
   'destructive-test',
   'reset',
   'smoke-write',
+  'pilot-provision',
   'one-off-mutation'
 ] as const;
 export type DatabaseOperation = (typeof databaseOperations)[number];
@@ -45,6 +46,8 @@ type GuardInput = {
   productionMigrationPath?: boolean;
   productionMigrationAcknowledgement?: string;
   productionMigrationChangeId?: string;
+  productionProvisioningAcknowledgement?: string;
+  productionProvisioningChangeId?: string;
 };
 
 const PRODUCTION_MIGRATION_ACKNOWLEDGEMENT = 'APPLY_APPROVED_PRODUCTION_MIGRATIONS';
@@ -322,6 +325,22 @@ export function assertDatabaseOperationAllowed(input: GuardInput) {
       block(
         'DB_OPERATION_NOT_ALLOWED',
         'Production migration requires the dedicated command, exact acknowledgement, and a change identifier.',
+        input,
+        identity,
+        appEnvironment,
+        databaseEnvironment
+      );
+    }
+  }
+
+  if (input.operation === 'pilot-provision' && targetsProduction) {
+    if (
+      input.productionProvisioningAcknowledgement !== 'PROVISION_VERIFIED_PILOT' ||
+      !input.productionProvisioningChangeId?.trim()
+    ) {
+      block(
+        'DB_OPERATION_NOT_ALLOWED',
+        'Production pilot provisioning requires the exact acknowledgement and a change identifier.',
         input,
         identity,
         appEnvironment,

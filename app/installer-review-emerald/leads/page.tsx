@@ -4,7 +4,7 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import type { LeadPipelineStageValue, LeadScoreValue } from '@/lib/crm';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
@@ -52,7 +52,7 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
 }
 
 export default async function InstallerLeadsPage() {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leads: LeadsPageLead[] = await prisma.lead.findMany({
     where: leadOrganisationWhere(organisationContext),
     orderBy: { createdAt: 'desc' },
@@ -69,11 +69,11 @@ export default async function InstallerLeadsPage() {
   const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
   const openBlockers = leads.filter(isNeedsAction).length;
   const liabilityLeads = leads.filter(isLiabilityLead).length;
-  const userName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Patrick McKenna';
-
   return (
     <DashboardShell
-      userName={userName}
+      userName={organisationContext.userName}
+      organisationName={organisationContext.organisationName}
+      role={organisationContext.pilotRole}
       activeNavItem="Leads"
       sidebar={
         <SidebarMetrics

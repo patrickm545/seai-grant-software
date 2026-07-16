@@ -81,4 +81,4 @@ Repository and provider environment isolation mitigate TD-015. TD-015 remains op
 
 ## Known Limitation: Reads That Write
 
-`requireDefaultInstallerOrganisationContext()` currently calls `ensureDefaultInstallerWithOrganisation()`, which upserts the default installer, organisation, internal admin user, and memberships during authenticated dashboard/page reads. Production smoke testing must not open those authenticated data pages until the expected records exist and the next authentication/onboarding PR removes this implicit bootstrap path. This is a named blocker for `Authenticate pilot users into one verified installer organisation`; it is not expanded into identity work here.
+Authenticated dashboard reads no longer bootstrap installer or membership records. Pilot organisations and owners are created only through the guarded `pnpm pilot:provision` command documented in [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md).

@@ -1,5 +1,4 @@
 import type { Organisation, OrganisationMembership, PlatformRole, User, Prisma, PrismaClient } from '@prisma/client';
-import { isAdminAuthenticated } from './admin-auth';
 import { DEFAULT_INSTALLER_ID, getDefaultInstallerSeedData } from './default-installer';
 import { prisma } from './prisma';
 
@@ -78,6 +77,7 @@ export function getInternalOrganisationSeedData() {
   return {
     id: CLADA_INTERNAL_ORGANISATION_ID,
     name: process.env.CLADA_INTERNAL_ORGANISATION_NAME?.trim() || 'Clada Systems',
+    slug: 'clada-systems',
     type: 'CLADA_INTERNAL' as const
   };
 }
@@ -161,13 +161,16 @@ export async function ensureInternalIdentityFoundation(db: DbClient = prisma) {
     where: { id: organisationSeed.id },
     update: {
       name: organisationSeed.name,
+      slug: organisationSeed.slug,
       status: 'ACTIVE'
     },
     create: {
       id: organisationSeed.id,
       name: organisationSeed.name,
+      slug: organisationSeed.slug,
       type: organisationSeed.type,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      verified: true
     }
   });
 
@@ -218,68 +221,32 @@ export async function ensureInstallerOrganisation(args: {
 }) {
   const { db = prisma, installerId, installerName } = args;
   const organisationId = getInstallerOrganisationId(installerId);
+  const slug = `installer-${installerId}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
   return db.organisation.upsert({
     where: { id: organisationId },
     update: {
       name: installerName,
+      slug,
       status: 'ACTIVE'
     },
     create: {
       id: organisationId,
       name: installerName,
+      slug,
       type: 'INSTALLER',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      verified: false
     }
   });
 }
 
-export async function ensureDefaultAdminMembershipForOrganisation(args: {
-  db?: DbClient;
-  organisationId: string;
-  membershipId: string;
-}) {
-  const { db = prisma, organisationId, membershipId } = args;
-  const internalIdentity = await ensureInternalIdentityFoundation(db);
-  await db.organisationMembership.upsert({
-    where: {
-      organisationId_userId: {
-        organisationId,
-        userId: internalIdentity.user.id
-      }
-    },
-    update: {
-      status: 'ACTIVE',
-      role: 'ORGANISATION_ADMIN'
-    },
-    create: {
-      id: membershipId,
-      organisationId,
-      userId: internalIdentity.user.id,
-      status: 'ACTIVE',
-      isOwner: false,
-      role: 'ORGANISATION_ADMIN'
-    }
-  });
-}
-
-export async function ensureDefaultInstallerWithOrganisation(
-  db: DbClient = prisma,
-  options: { ensureDefaultAdminMembership?: boolean } = {}
-) {
+export async function ensureDefaultInstallerWithOrganisation(db: DbClient = prisma) {
   const installerSeed = getDefaultInstallerSeedData();
   const organisation = await ensureInstallerOrganisation({
     db,
     installerId: installerSeed.id,
     installerName: installerSeed.name
   });
-
-  if (options.ensureDefaultAdminMembership !== false) {
-    await ensureDefaultAdminMembershipForOrganisation({
-      db,
-      organisationId: organisation.id,
-      membershipId: `membership_clada_admin_${installerSeed.id}`
-    });
-  }
 
   return db.installer.upsert({
     where: { id: installerSeed.id },
@@ -293,30 +260,6 @@ export async function ensureDefaultInstallerWithOrganisation(
     include: {
       organisation: true
     }
-  });
-}
-
-export async function requireAdminOrganisationContext(organisationId: string) {
-  if (!(await isAdminAuthenticated())) {
-    throw new OrganisationContextError('UNAUTHENTICATED');
-  }
-
-  await ensureInternalIdentityFoundation();
-  return resolveOrganisationContextForUser({
-    userId: DEFAULT_ADMIN_USER_ID,
-    organisationId
-  });
-}
-
-export async function requireDefaultInstallerOrganisationContext() {
-  if (!(await isAdminAuthenticated())) {
-    throw new OrganisationContextError('UNAUTHENTICATED');
-  }
-
-  const installer = await ensureDefaultInstallerWithOrganisation();
-  return resolveOrganisationContextForUser({
-    userId: DEFAULT_ADMIN_USER_ID,
-    organisationId: installer.organisationId
   });
 }
 

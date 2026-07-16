@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
     stage = 'installer_lookup';
     const installer =
       leadInput.installerId === DEFAULT_INSTALLER_ID
-        ? await ensureDefaultInstallerWithOrganisation(prisma, { ensureDefaultAdminMembership: false })
+        ? await ensureDefaultInstallerWithOrganisation(prisma)
         : await prisma.installer.findUnique({
             where: { id: leadInput.installerId },
             include: { organisation: true }

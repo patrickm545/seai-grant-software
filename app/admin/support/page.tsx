@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { DashboardShell } from '@/components/DashboardShell';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { pricingConfig } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
@@ -22,7 +22,7 @@ function isLiabilityLead(lead: { worksStarted: boolean; priorSolarGrantAtMprn: b
 }
 
 export default async function SupportPage() {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leads = await prisma.lead.findMany({
     where: leadOrganisationWhere(organisationContext),
     select: {
@@ -39,12 +39,13 @@ export default async function SupportPage() {
   const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
   const openBlockers = leads.filter(isNeedsAction).length;
   const liabilityLeads = leads.filter(isLiabilityLead).length;
-  const userName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Patrick McKenna';
   const supportEmail = 'support@emeraldsolutions.ie';
 
   return (
     <DashboardShell
-      userName={userName}
+      userName={organisationContext.userName}
+      organisationName={organisationContext.organisationName}
+      role={organisationContext.pilotRole}
       activeNavItem="Support"
       sidebar={
         <SidebarMetrics

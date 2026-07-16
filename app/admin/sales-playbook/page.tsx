@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { DashboardShell } from '@/components/DashboardShell';
 import { RoiCalculator } from '@/components/RoiCalculator';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { formatEuroAmount, pricingConfig } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
@@ -51,7 +51,7 @@ const objections = [
 ];
 
 export default async function SalesPlaybookPage() {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leads = await prisma.lead.findMany({
     where: leadOrganisationWhere(organisationContext),
     select: {
@@ -68,11 +68,11 @@ export default async function SalesPlaybookPage() {
   const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
   const openBlockers = leads.filter(isNeedsAction).length;
   const liabilityLeads = leads.filter(isLiabilityLead).length;
-  const userName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Patrick McKenna';
-
   return (
     <DashboardShell
-      userName={userName}
+      userName={organisationContext.userName}
+      organisationName={organisationContext.organisationName}
+      role={organisationContext.pilotRole}
       activeNavItem="Sales Playbook"
       sidebar={
         <SidebarMetrics

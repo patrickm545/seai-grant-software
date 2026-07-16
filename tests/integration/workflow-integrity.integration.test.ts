@@ -100,8 +100,8 @@ async function seedFixture(fixture: FixtureIds) {
 
   await prisma.organisation.createMany({
     data: [
-      { id: fixture.orgA, name: 'Workflow Integrity A', type: 'INSTALLER' },
-      { id: fixture.orgB, name: 'Workflow Integrity B', type: 'INSTALLER' }
+      { id: fixture.orgA, name: 'Workflow Integrity A', slug: `workflow-a-${fixture.suffix}`, type: 'INSTALLER' },
+      { id: fixture.orgB, name: 'Workflow Integrity B', slug: `workflow-b-${fixture.suffix}`, type: 'INSTALLER' }
     ]
   });
 

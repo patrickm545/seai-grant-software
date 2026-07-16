@@ -5,7 +5,7 @@ import { InstallerQuotePricingForm } from '@/components/InstallerQuotePricingFor
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import { writeAuditLog } from '@/lib/audit';
 import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import {
   defaultInstallerQuotePricing,
   getPricingValuesFromRecord,
@@ -54,7 +54,7 @@ function toPricingUpdateData(values: InstallerQuotePricingValues) {
 async function saveInstallerPricingSettings(formData: FormData) {
   'use server';
 
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const requestedInstallerId = String(formData.get('installerId') || DEFAULT_INSTALLER_ID);
   const pricingAction = String(formData.get('pricingAction') || 'save');
   const installerId = requestedInstallerId || DEFAULT_INSTALLER_ID;
@@ -123,7 +123,7 @@ export default async function QuotePricingPage({
   searchParams: Promise<{ saved?: string; reset?: string }>;
 }) {
   const params = await searchParams;
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const installer = await prisma.installer.findFirst({
     where: {
       id: DEFAULT_INSTALLER_ID,
@@ -162,7 +162,6 @@ export default async function QuotePricingPage({
   const openBlockers = leads.filter(isNeedsAction).length;
   const liabilityLeads = leads.filter(isLiabilityLead).length;
   const pricingValues = getPricingValuesFromRecord(pricing);
-  const userName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Patrick McKenna';
   const statusMessage = params.saved
     ? 'Pricing settings saved. New homeowner quotes will use these values.'
     : params.reset
@@ -171,7 +170,9 @@ export default async function QuotePricingPage({
 
   return (
     <DashboardShell
-      userName={userName}
+      userName={organisationContext.userName}
+      organisationName={organisationContext.organisationName}
+      role={organisationContext.pilotRole}
       activeNavItem="Quote Pricing"
       sidebar={
         <SidebarMetrics

@@ -18,8 +18,10 @@ function activeMembership(overrides: Partial<MembershipWithContext> = {}): Membe
     organisation: {
       id: 'org-a',
       name: 'Installer A',
+      slug: 'installer-a',
       type: 'INSTALLER',
       status: 'ACTIVE',
+      verified: true,
       createdAt: new Date('2026-07-10T00:00:00.000Z'),
       updatedAt: new Date('2026-07-10T00:00:00.000Z')
     },
@@ -27,7 +29,9 @@ function activeMembership(overrides: Partial<MembershipWithContext> = {}): Membe
       id: 'user-a',
       email: 'admin@example.test',
       displayName: 'Admin User',
+      passwordHash: null,
       status: 'ACTIVE',
+      lastLoginAt: null,
       createdAt: new Date('2026-07-10T00:00:00.000Z'),
       updatedAt: new Date('2026-07-10T00:00:00.000Z')
     },

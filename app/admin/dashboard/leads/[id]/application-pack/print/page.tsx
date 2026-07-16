@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { buildApplicationPack } from '@/lib/application-pack';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function PrintApplicationPackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const lead = await prisma.lead.findFirst({
     where: leadOrganisationWhere(organisationContext, { id }),
     include: {

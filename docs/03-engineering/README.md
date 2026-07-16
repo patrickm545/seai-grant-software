@@ -20,6 +20,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [POSTGRES_INTEGRATION_TESTS.md](POSTGRES_INTEGRATION_TESTS.md): disposable PostgreSQL setup for database-backed integration tests.
 - [DATABASE_ENVIRONMENT_SAFETY.md](DATABASE_ENVIRONMENT_SAFETY.md): environment classification, safe fingerprints, and Vercel/Neon isolation contract.
 - [DATABASE_OPERATIONS_RUNBOOK.md](DATABASE_OPERATIONS_RUNBOOK.md): guarded commands, migration gate, recovery verification, and smoke checks.
+- [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md): durable technical debt register for platform and repository risks.
 
 ## Engineering Rule

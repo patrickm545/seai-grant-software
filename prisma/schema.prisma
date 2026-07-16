@@ -128,8 +128,10 @@ enum AuditOutcome {
 model Organisation {
   id                String                   @id @default(cuid())
   name              String
+  slug              String                   @unique
   type              OrganisationType
   status            OrganisationStatus       @default(ACTIVE)
+  verified          Boolean                  @default(false)
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
   installers        Installer[]
@@ -142,13 +144,16 @@ model Organisation {
 }
 
 model User {
-  id          String                   @id @default(cuid())
-  email       String                   @unique
-  displayName String
-  status      UserStatus               @default(ACTIVE)
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-  memberships OrganisationMembership[]
+  id           String                   @id @default(cuid())
+  email        String                   @unique
+  displayName  String
+  passwordHash String?
+  status       UserStatus               @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  memberships  OrganisationMembership[]
+  sessions     AuthSession[]
 
   @@index([status])
 }
@@ -166,9 +171,22 @@ model OrganisationMembership {
   updatedAt      DateTime                     @updatedAt
 
   @@unique([organisationId, userId])
+  @@unique([userId])
   @@index([userId, status])
   @@index([organisationId, status])
   @@index([role])
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
 }
 
 model Installer {

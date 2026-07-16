@@ -24,9 +24,11 @@
     "db:migrate:production": "node --import tsx scripts/run-database-command.ts migrate-production",
     "db:reset": "node --import tsx scripts/run-database-command.ts reset",
     "db:seed:development": "node --import tsx scripts/run-database-command.ts seed-development",
-    "db:seed:test": "node --import tsx scripts/run-database-command.ts seed-test"
+    "db:seed:test": "node --import tsx scripts/run-database-command.ts seed-test",
+    "pilot:provision": "node --import tsx scripts/provision-pilot-user.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "@prisma/client": "^5.22.0",
     "next": "^15.0.0",
     "nodemailer": "^6.10.1",

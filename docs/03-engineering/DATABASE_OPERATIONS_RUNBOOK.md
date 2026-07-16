@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-DATABASE-OPERATIONS-RUNBOOK-001 |
-| Status | Active; provider verification pending |
+| Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; incident and Production execution owner: Patrick or delegated deployment owner |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-15 |
+| Last reviewed | 2026-07-16 |
 
 ## Guarded Commands
 
@@ -73,7 +73,17 @@ Recovery rehearsal (non-Production only):
 5. Record evidence and delete the rehearsal target only after review and according to provider restrictions.
 6. Do not repoint Vercel Production during a rehearsal.
 
-No restore was performed as part of this repository change. Provider verification and rehearsal are manual and pending.
+No restore was performed as part of this repository change. Backup/PITR retention, Production branch protection where available, and a non-Production recovery rehearsal remain manual and pending.
+
+## Provider Verification Record (2026-07-16)
+
+- Vercel project/team: `seai-grant-software` / `patrick-mc-kennas-projects`.
+- Neon project: `seai-grant-db`; Production `main`, persistent `preview`, and persistent `development` branches were present and left unchanged.
+- Safe fingerprints: Production `db_4e1d3bd23cff6801`; Preview `db_31449de1074844bb`; Development `db_04701984b484da4b`. All are distinct.
+- Vercel contains separate Production, Preview, and Development `DATABASE_URL` records plus the required scope-specific identity variables. No broad multi-scope `DATABASE_URL` or `TEST_DATABASE_URL` remains/configured.
+- Clean-cache Preview deployment `seai-grant-software-r25e9dktw-patrick-mc-kennas-projects.vercel.app` became Ready after compilation, type checking, static generation, and serverless packaging.
+- Read-only Preview checks passed for `/`, `/embed`, `/admin`, and unauthenticated denial/redirect from `/admin/dashboard`. No form was submitted and no database read or write diagnostic was run.
+- No Production deployment, migration, seed, reset, smoke write, customer-data read, branch mutation, credential rotation, or restore was performed.
 
 ## Suspected Corruption Or Unsafe Writes
 

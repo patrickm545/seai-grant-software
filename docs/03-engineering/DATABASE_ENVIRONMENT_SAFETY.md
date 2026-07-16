@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-DATABASE-ENVIRONMENT-SAFETY-001 |
-| Status | Active; provider configuration pending |
+| Status | Active; provider isolation configured, recovery evidence pending |
 | Owner | Clada Systems Engineering; Production configuration owner: Patrick or delegated deployment owner |
 | Review cycle | Every database or deployment change |
-| Last reviewed | 2026-07-15 |
+| Last reviewed | 2026-07-16 |
 
 ## Environment Model
 
@@ -64,19 +64,20 @@ When `DATABASE_URL` is present, Prisma client initialisation validates the envir
 
 Failures exit non-zero and include operation, application/database classifications, safe host/database label, and fingerprint. They never include credentials, URL query parameters, or a complete connection URL.
 
-## Provider Configuration Checklist (Manual And Pending)
+## Provider Configuration Evidence
 
-Patrick or the delegated deployment owner must:
+Provider isolation was verified on 2026-07-16 for Vercel project `seai-grant-software` and Neon project `seai-grant-db`:
 
-1. Name and record the Neon Production, Preview, Development, and disposable test branch/database IDs.
-2. Verify Production branch protection and role separation in Neon.
-3. Compute and record each fingerprint from the intended connection target.
-4. Configure the exact Vercel scopes above and remove any multi-scope Production `DATABASE_URL`.
-5. Redeploy Preview and confirm startup succeeds; deliberately test a safe mismatched fingerprint and confirm startup fails before restoring the correct value.
-6. Redeploy Production only after the Production mapping has been reviewed by a second person.
-7. Record screenshots or exported configuration evidence without connection strings or credentials.
+- Neon `main` is the Production branch (`br-cool-wave-abysq3lu`), `preview` is the persistent Preview branch (`br-rough-firefly-abs3tpq4`), and `development` is the persistent Development branch (`br-tiny-feather-ab45i5tq`). No branch was created, reset, deleted, renamed, or recreated during verification.
+- The safe fingerprints are Production `db_4e1d3bd23cff6801`, Preview `db_31449de1074844bb`, and Development `db_04701984b484da4b`. All three were computed through `lib/database-safety.ts`, match their supplied branch URLs, and are distinct.
+- Vercel has one `DATABASE_URL` record per environment. The former multi-scope record was narrowed in place to Production before the separate Preview and Development records were added; the Production value was not overwritten or exposed.
+- The required classification, fingerprint, branch, and positive Production marker variables are configured in each scope. Persistent Preview and Development fingerprint markers are limited to the Development/integration-runner scope. No `TEST_DATABASE_URL` is configured.
+- A clean-cache Preview deployment completed successfully at `seai-grant-software-r25e9dktw-patrick-mc-kennas-projects.vercel.app`. The build compiled, typechecked, generated all pages, and became Ready without `DB_IDENTITY_MISSING`, `DB_ENV_MISMATCH`, `DB_FINGERPRINT_MISMATCH`, or `DB_PRODUCTION_TARGET_FORBIDDEN`.
+- Read-only checks loaded `/`, `/embed`, and `/admin`; unauthenticated `/admin/dashboard` redirected to `/admin`. No form, authentication, database diagnostic, migration, seed, reset, upload, proposal, or Production deployment was attempted.
 
-Repository guardrails mitigate TD-015, but TD-015 remains blocked on this provider configuration and recovery evidence.
+Production branch protection remains unverified where the current Neon plan exposes no enabled protection control. Backup/PITR retention and a non-Production recovery rehearsal also remain pending. A deliberately mismatched live Preview deployment was not created because the repository tests already prove fail-closed mismatch behaviour and changing a live provider value would add avoidable configuration risk. Production must not be redeployed until its mapping is reviewed by a second person.
+
+Repository and provider environment isolation mitigate TD-015. TD-015 remains open as **Mitigated; recovery evidence pending**.
 
 ## Known Limitation: Reads That Write
 

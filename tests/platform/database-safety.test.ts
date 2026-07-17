@@ -27,6 +27,7 @@ function guard(args: {
   database?: keyof typeof urls;
   expectedFingerprint?: string;
   productionPath?: boolean;
+  provisioningPath?: boolean;
   requiredEnvironment?: keyof typeof urls;
 }) {
   const database = args.database ?? args.app;
@@ -42,7 +43,9 @@ function guard(args: {
     productionMigrationAcknowledgement: args.productionPath
       ? 'APPLY_APPROVED_PRODUCTION_MIGRATIONS'
       : undefined,
-    productionMigrationChangeId: args.productionPath ? 'PR-20' : undefined
+    productionMigrationChangeId: args.productionPath ? 'PR-20' : undefined,
+    productionProvisioningAcknowledgement: args.provisioningPath ? 'PROVISION_VERIFIED_PILOT' : undefined,
+    productionProvisioningChangeId: args.provisioningPath ? 'PILOT-001' : undefined
   });
 }
 
@@ -58,6 +61,14 @@ test('Production migration requires the explicit production path', () => {
   expectCode('DB_OPERATION_NOT_ALLOWED', () => guard({ operation: 'migration-deploy', app: 'production' }));
   assert.equal(
     guard({ operation: 'migration-deploy', app: 'production', productionPath: true }).targetsProduction,
+    true
+  );
+});
+
+test('Production pilot provisioning requires an exact acknowledgement and change id', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () => guard({ operation: 'pilot-provision', app: 'production' }));
+  assert.equal(
+    guard({ operation: 'pilot-provision', app: 'production', provisioningPath: true }).targetsProduction,
     true
   );
 });

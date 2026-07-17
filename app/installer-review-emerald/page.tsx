@@ -18,7 +18,7 @@ import {
   type LeadPipelineStageValue,
   type LeadScoreValue
 } from '@/lib/crm';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadActivityOrganisationWhere, leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 
@@ -246,7 +246,7 @@ function RecentActivityPanel({ activities }: { activities: RecentActivity[] }) {
 }
 
 export default async function HiddenAdminPage() {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const [leads, recentActivities] = await Promise.all([
     prisma.lead.findMany({
       where: leadOrganisationWhere(organisationContext),
@@ -306,11 +306,11 @@ export default async function HiddenAdminPage() {
   ];
 
   const recentLeads = leads.length ? leads.map(toRecentLead) : sampleLeads;
-  const userName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Patrick McKenna';
-
   return (
     <DashboardShell
-      userName={userName}
+      userName={organisationContext.userName}
+      organisationName={organisationContext.organisationName}
+      role={organisationContext.pilotRole}
       sidebar={
         <SidebarMetrics
           trackedCounties={trackedCounties || 6}

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0004 |
-| Status | Active |
+| Status | Superseded by ADR-0018 |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before replacing authentication |
 | Last reviewed | 2026-07-10 |

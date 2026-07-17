@@ -15,7 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { adminWorkflowSchema } from '@/lib/validation';
 import { writeAuditLog } from '@/lib/audit';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from '@/lib/installer-quote-pricing';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import {
   deleteLeadInOrganisation,
   leadActivityOrganisationWhere,
@@ -109,7 +109,7 @@ function formatDateTime(value: Date | string | null | undefined) {
 async function updateLeadWorkflow(formData: FormData) {
   'use server';
 
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = String(formData.get('leadId') || '');
   const action = String(formData.get('workflowAction') || 'save');
   const selectedStatus = String(formData.get('status') || 'NEEDS_REVIEW');
@@ -209,7 +209,7 @@ async function updateLeadWorkflow(formData: FormData) {
 async function eraseLeadData(formData: FormData) {
   'use server';
 
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = String(formData.get('leadId') || '');
   const confirmation = String(formData.get('eraseConfirmation') || '').trim();
 
@@ -460,7 +460,7 @@ function LeadField({ label, value }: { label: string; value: ReactNode }) {
 
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const lead: LeadDetail | null = await prisma.lead.findFirst({
     where: leadOrganisationWhere(organisationContext, { id }),
     include: {

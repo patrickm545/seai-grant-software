@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_COOKIE_NAME, verifyAdminSessionValue } from '@/lib/admin-auth';
+
+const PILOT_SESSION_COOKIE_NAME = 'solargrant_session';
 
 function needsAdmin(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,17 +12,15 @@ function needsAdmin(request: NextRequest) {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   if (!needsAdmin(request)) return NextResponse.next();
 
-  const session = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  if (await verifyAdminSessionValue(session)) {
-    return NextResponse.next();
-  }
+  if (request.cookies.has(PILOT_SESSION_COOKIE_NAME)) return NextResponse.next();
 
   const url = request.nextUrl.clone();
-  url.pathname = '/admin';
+  url.pathname = '/login';
   url.search = '';
+  url.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return NextResponse.redirect(url);
 }
 

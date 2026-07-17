@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-16 |
+| Last reviewed | 2026-07-17 |
 
 ## Purpose
 

@@ -79,18 +79,17 @@ EMAIL_USER=""
 EMAIL_PASS=""
 ```
 
-## Admin Login
+## Pilot Installer Login
 
-Open `/admin` in the browser.
+Open `/login` in the browser after applying migrations and provisioning an installer owner.
 
 Set these in `.env`:
 
 ```env
-ADMIN_PASSWORD=admin123
-ADMIN_SESSION_SECRET=replace-this-session-secret
+AUTH_SESSION_PEPPER="generate-a-high-entropy-value-of-at-least-32-characters"
 ```
 
-If `ADMIN_PASSWORD` is not set, the local development fallback password is `admin123`.
+Set the `PILOT_*` variables documented in [Pilot Authentication](docs/03-engineering/PILOT_AUTHENTICATION.md), then run `pnpm pilot:provision`. There is no default login or public registration.
 
 ## Vercel Deploy Notes
 
@@ -98,7 +97,7 @@ If `ADMIN_PASSWORD` is not set, the local development fallback password is `admi
 - Preview and Production must use different Neon branches or databases and separately scoped Vercel variables.
 - Use `pnpm db:migrate:preview` on the isolated Preview target.
 - Use the deliberate `pnpm db:migrate:production` procedure in the [Database Operations Runbook](docs/03-engineering/DATABASE_OPERATIONS_RUNBOOK.md); never run reset or seed in Production.
-- Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel before using `/admin`.
+- Set a distinct `AUTH_SESSION_PEPPER` in each Vercel environment before using `/login`.
 
 ## Contributor Workflow
 

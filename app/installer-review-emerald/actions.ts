@@ -8,7 +8,7 @@ import {
   getDocumentTypeLabel,
   isLeadDocumentStatus
 } from '@/lib/documents';
-import { requireDefaultInstallerOrganisationContext } from '@/lib/identity';
+import { requirePilotContext } from '@/lib/pilot-auth';
 import {
   leadDocumentOrganisationWhere,
   leadOrganisationWhere,
@@ -61,7 +61,7 @@ function getDocumentActivityType(status: LeadDocumentStatus): LeadActivityType {
 }
 
 export async function updateLeadPipelineStage(formData: FormData) {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = getRequiredLeadId(formData);
   const nextStage = String(formData.get('pipelineStage') || '').trim();
 
@@ -78,7 +78,7 @@ export async function updateLeadPipelineStage(formData: FormData) {
 }
 
 export async function setLeadFollowUp(formData: FormData) {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = getRequiredLeadId(formData);
   const nextFollowUpAt = parseOptionalDate(formData.get('nextFollowUpAt'));
 
@@ -134,7 +134,7 @@ export async function setLeadFollowUp(formData: FormData) {
 }
 
 export async function addLeadNote(formData: FormData) {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = getRequiredLeadId(formData);
   const note = String(formData.get('note') || '').trim();
 
@@ -185,7 +185,7 @@ export async function addLeadNote(formData: FormData) {
 }
 
 export async function updateLeadDocumentStatus(formData: FormData) {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = getRequiredLeadId(formData);
   const documentId = getRequiredDocumentId(formData);
   const nextStatus = String(formData.get('status') || '').trim();
@@ -263,7 +263,7 @@ export async function updateLeadDocumentStatus(formData: FormData) {
 }
 
 export async function regenerateLeadPortalTokenAction(formData: FormData) {
-  const organisationContext = await requireDefaultInstallerOrganisationContext();
+  const organisationContext = await requirePilotContext();
   const leadId = getRequiredLeadId(formData);
   await requireLeadInOrganisation(prisma, organisationContext, leadId);
   const updatedLead = await regenerateLeadPortalToken(leadId);

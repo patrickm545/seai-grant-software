@@ -32,6 +32,10 @@ const platform13MigrationSql = readFileSync(
   ),
   'utf8'
 );
+const pilotAuthMigrationSql = readFileSync(
+  join(process.cwd(), 'prisma', 'migrations', '20260716183000_pilot_installer_auth', 'migration.sql'),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -133,4 +137,17 @@ test('platform 1.3 migration backfills workflow instances without fabricated his
   assert.match(platform13MigrationSql, /"Lead"\."pipelineStage"::TEXT/);
   assert.match(platform13MigrationSql, /historyBackfilled', false/);
   assert.doesNotMatch(platform13MigrationSql, /INSERT INTO "WorkflowHistory"/);
+});
+
+test('pilot auth migration adds verification, normalised identity, and durable sessions', () => {
+  assert.match(pilotAuthMigrationSql, /ADD COLUMN "verified" BOOLEAN NOT NULL DEFAULT false/);
+  assert.match(pilotAuthMigrationSql, /"User_email_normalised_check"/);
+  assert.match(pilotAuthMigrationSql, /CREATE TABLE "AuthSession"/);
+  assert.match(pilotAuthMigrationSql, /"AuthSession_userId_fkey"/);
+});
+
+test('pilot auth migration enforces exactly one organisation membership per user', () => {
+  assert.match(pilotAuthMigrationSql, /DELETE FROM "OrganisationMembership" AS membership/);
+  assert.match(pilotAuthMigrationSql, /Cannot enforce one organisation per user/);
+  assert.match(pilotAuthMigrationSql, /CREATE UNIQUE INDEX "OrganisationMembership_userId_key"/);
 });

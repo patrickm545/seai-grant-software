@@ -37,7 +37,7 @@ Environment:
 
 - Use `.env.example` as the template.
 - Do not commit `.env`, secrets, database credentials, API keys, or production data.
-- Set `DATABASE_URL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` for local admin workflows.
+- Set the guarded database variables and `AUTH_SESSION_PEPPER`, then provision a local pilot owner as described in `docs/03-engineering/PILOT_AUTHENTICATION.md`.
 - Optional email, Twilio, and OpenAI values may remain empty unless the workflow being tested needs them.
 
 Common commands:

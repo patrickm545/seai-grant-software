@@ -83,6 +83,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
+- [03-engineering/PILOT_AUTHENTICATION.md](03-engineering/PILOT_AUTHENTICATION.md)
 - [03-engineering/TECHNICAL_DEBT_REGISTER.md](03-engineering/TECHNICAL_DEBT_REGISTER.md)
 
 ## Features
@@ -125,6 +126,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md](05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md)
 - [05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md](05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md)
 - [05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md](05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md)
+- [05-decisions/ADR-0018-pilot-installer-authentication.md](05-decisions/ADR-0018-pilot-installer-authentication.md)
 
 ## Sprints
 

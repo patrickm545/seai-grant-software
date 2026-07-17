@@ -5,6 +5,8 @@ type DashboardShellProps = {
   children: ReactNode;
   sidebar: ReactNode;
   userName: string;
+  organisationName: string;
+  role: string;
   activeNavItem?: string;
 };
 
@@ -16,7 +18,14 @@ const navItems = [
   { label: 'Support', href: '/admin/support' }
 ];
 
-export function DashboardShell({ children, sidebar, userName, activeNavItem = 'Dashboard' }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  sidebar,
+  userName,
+  organisationName,
+  role,
+  activeNavItem = 'Dashboard'
+}: DashboardShellProps) {
   return (
     <div className="installer-pro-shell">
       <header className="installer-pro-topbar">
@@ -40,7 +49,15 @@ export function DashboardShell({ children, sidebar, userName, activeNavItem = 'D
           ))}
         </nav>
 
-        <div className="installer-pro-user">Logged in as {userName}</div>
+        <div className="installer-pro-account">
+          <div className="installer-pro-user">
+            <strong>{userName}</strong>
+            <span>{organisationName} · {role}</span>
+          </div>
+          <form action="/logout" method="POST">
+            <button type="submit" className="installer-pro-logout">Log out</button>
+          </form>
+        </div>
       </header>
 
       <div className="installer-pro-layout">

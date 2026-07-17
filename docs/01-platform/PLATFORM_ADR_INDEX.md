@@ -31,7 +31,7 @@ Current platform ADRs:
 | [ADR-0001: Establish Clada OS Terminology](../05-decisions/ADR-0001-clada-os-terminology.md) | Active | Establishes Clada Systems as company, Clada OS as platform, and SolarGRANT Pro as first product module. |
 | [ADR-0002: Organisation Is The Initial Tenant Boundary](../05-decisions/ADR-0002-organisation-tenant-model.md) | Active | Defines organisation as the first tenant and operational ownership boundary. |
 | [ADR-0003: Minimal Actor And Membership Model](../05-decisions/ADR-0003-actor-and-membership-model.md) | Active | Defines the first user, membership, human actor, service actor, and system actor concepts. |
-| [ADR-0004: Adapt Existing Admin Authentication Into Identity Context](../05-decisions/ADR-0004-existing-authentication-integration.md) | Active | Keeps current authentication while mapping valid sessions into platform user context. |
+| [ADR-0004: Adapt Existing Admin Authentication Into Identity Context](../05-decisions/ADR-0004-existing-authentication-integration.md) | Superseded | Historical shared-password adapter replaced by ADR-0018. |
 | [ADR-0005: Tenant-Aware Data Access Defaults To Denial](../05-decisions/ADR-0005-tenant-aware-data-access.md) | Active | Establishes default-deny tenant scoping for organisation-owned data. |
 | [ADR-0006: Assign Existing SolarGRANT Pro Data To Installer Organisations](../05-decisions/ADR-0006-existing-data-migration.md) | Active | Defines the safe migration rule for existing installer and lead data. |
 | [ADR-0007: Platform Role and Permission Model](../05-decisions/ADR-0007-role-and-permission-model.md) | Active | Defines platform roles, permission naming, role-to-permission mapping, and custom-role deferral. |
@@ -45,6 +45,7 @@ Current platform ADRs:
 | [ADR-0015: Document Domain, Ownership and Resource Linking](../05-decisions/ADR-0015-document-domain-ownership-and-resource-linking.md) | Active | Defines the generated-document domain model, organisation ownership, namespacing, resource links, lifecycle states, and existing-document compatibility for Platform Release 1.4. |
 | [ADR-0016: Template Versioning and PDF Rendering](../05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md) | Accepted | Defines template ownership, immutable version snapshots, merge contracts, PDF renderer selection, and renderer independence for Platform Release 1.4. |
 | [ADR-0017: Generated File Storage and Secure Retrieval](../05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md) | Accepted | Defines bounded PostgreSQL-backed generated-file storage behind a platform abstraction, immutable physical-object and content integrity evidence, active-locator migration rules, and authenticated organisation-scoped PDF retrieval for Platform Release 1.4. |
+| [ADR-0018: Database-Backed Pilot Installer Authentication](../05-decisions/ADR-0018-pilot-installer-authentication.md) | Accepted | Defines verified-installer pilot users, Argon2id credentials, database sessions, and server-derived tenant context. |
 
 Recommended future ADR candidates:
 

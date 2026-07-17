@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-15 |
+| Last reviewed | 2026-07-17 |
 
 ## Purpose
 
@@ -46,6 +46,7 @@ Current platform ADRs:
 | [ADR-0016: Template Versioning and PDF Rendering](../05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md) | Accepted | Defines template ownership, immutable version snapshots, merge contracts, PDF renderer selection, and renderer independence for Platform Release 1.4. |
 | [ADR-0017: Generated File Storage and Secure Retrieval](../05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md) | Accepted | Defines bounded PostgreSQL-backed generated-file storage behind a platform abstraction, immutable physical-object and content integrity evidence, active-locator migration rules, and authenticated organisation-scoped PDF retrieval for Platform Release 1.4. |
 | [ADR-0018: Database-Backed Pilot Installer Authentication](../05-decisions/ADR-0018-pilot-installer-authentication.md) | Accepted | Defines verified-installer pilot users, Argon2id credentials, database sessions, and server-derived tenant context. |
+| [ADR-0019: Standardised Tenant Provisioning and Forced First-Login Password Change](../05-decisions/ADR-0019-standardised-tenant-provisioning.md) | Proposed | Defines the target transactional provisioning command, conflicts, restricted first-login flow, audit, and migration path. |
 
 Recommended future ADR candidates:
 

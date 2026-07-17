@@ -5,7 +5,13 @@
 | Document ID | ENG-PILOT-AUTH-001 |
 | Status | Active |
 | Owner | Clada Systems Engineering |
-| Last reviewed | 2026-07-16 |
+| Last reviewed | 2026-07-17 |
+
+## Current-versus-target notice
+
+This document describes current implemented pilot authentication and the current `pnpm pilot:provision` command. It does not provide forced first-login password change, temporary-credential expiry, dry-run planning, provisioning audit events, or the approved safe credential handoff required for a new external pilot.
+
+The proposed replacement architecture is [Clada OS Tenant Provisioning Architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md), operated through the proposed [SolarGRANT Pro Pilot Organisation Onboarding Runbook](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md). Until its readiness gate passes, planned states and commands must not be treated as implemented.
 
 ## Approach
 
@@ -50,11 +56,12 @@ PILOT_ORGANISATION_NAME="Example Solar Ltd"
 PILOT_ORGANISATION_SLUG="example-solar"
 PILOT_OWNER_NAME="Example Owner"
 PILOT_OWNER_EMAIL="owner@example.ie"
-PILOT_OWNER_PASSWORD="a-unique-password-of-at-least-12-characters"
 PILOT_INSTALLER_SEAI_COMPANY_ID="SEAI-COMPANY-ID"
 PILOT_INSTALLER_WEBSITE_DOMAIN="example.ie"
 PILOT_INSTALLER_COUNTY="Dublin"
 ```
+
+`PILOT_OWNER_PASSWORD` is also required by the current command, but no credential value is shown here. Supply it only through the currently approved secure operator process, do not persist it in a file, and do not allow it to enter terminal history or logs.
 
 Then run:
 
@@ -84,3 +91,5 @@ Set `AUTH_SESSION_PEPPER` separately in every Vercel environment before deployme
 ## Known limitations and deferred work
 
 The pilot has no self-registration, invitations, password reset, MFA, SSO, organisation switching, user-management UI, fine-grained custom roles, or session-management UI. Password changes invalidate neither other sessions nor all devices automatically; an operator can delete the user's sessions when rotating a password. These capabilities are deferred until pilot evidence justifies them.
+
+The current command also has no dry-run, idempotency operation record, credential expiry, forced password change, provisioning audit sequence, or approved non-logged credential-delivery integration. It can update an existing user's password and identity fields during an upsert. These are explicit implementation gaps, not accepted onboarding controls.

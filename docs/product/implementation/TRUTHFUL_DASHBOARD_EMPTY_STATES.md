@@ -19,7 +19,7 @@ The authenticated dashboard no longer substitutes hard-coded homeowner records w
 
 The full eight-stage CRM pipeline workflow is the single retained pipeline-count visualisation. It uses organisation-scoped lead records and shows `0 leads` for an empty stage. The duplicate summary-card row was removed.
 
-An organisation with no leads receives a primary “No leads yet” state explaining that homeowner enquiries arrive through the existing intake form, with safe open and copy-link actions. Those actions include the authenticated organisation's installer ID so a submitted enquiry is stored under the intended tenant. Hot leads, follow-ups, activity, and lead-table panels show neutral empty copy. A filter with no matches shows “No leads match this filter” and a reset action, distinct from the whole-organisation state. No manual lead-creation action is presented.
+An organisation with no leads receives a primary “No leads yet” state explaining that homeowner enquiries arrive through the existing intake form. The page header provides the single open-intake CTA, while the empty-state card provides a secondary copy-link action. Both use the authenticated organisation's installer ID so a submitted enquiry is stored under the intended tenant, and neither is shown without an installer-scoped URL. Hot leads, follow-ups, activity, and lead-table panels show neutral empty copy. A filter with no matches shows “No leads match this filter” and a reset action, distinct from the whole-organisation state. No manual lead-creation action is presented.
 
 ## Tests
 

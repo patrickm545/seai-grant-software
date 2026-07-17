@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 
 export function IntakeLinkActions({ intakePath }: { intakePath: string }) {
@@ -26,8 +25,12 @@ export function IntakeLinkActions({ intakePath }: { intakePath: string }) {
 
   return (
     <div className="dashboard-empty-actions">
-      <Link href={intakePath} className="installer-add-button">Open intake form</Link>
-      <button type="button" className="dashboard-secondary-button" onClick={copyIntakeLink}>
+      <button
+        type="button"
+        className="dashboard-secondary-button"
+        aria-label="Copy tenant intake link"
+        onClick={copyIntakeLink}
+      >
         {copied ? 'Intake link copied' : 'Copy intake link'}
       </button>
     </div>

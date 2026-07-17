@@ -8,6 +8,7 @@ const dashboard = readFileSync(resolve(projectRoot, 'app/installer-review-emeral
 const leadTable = readFileSync(resolve(projectRoot, 'components/RecentLeadsTable.tsx'), 'utf8');
 const sidebar = readFileSync(resolve(projectRoot, 'components/SidebarMetrics.tsx'), 'utf8');
 const embedPage = readFileSync(resolve(projectRoot, 'app/embed/page.tsx'), 'utf8');
+const intakeActions = readFileSync(resolve(projectRoot, 'components/IntakeLinkActions.tsx'), 'utf8');
 
 test('dashboard runtime contains no synthetic leads or positive metric fallbacks', () => {
   assert.doesNotMatch(dashboard, /sampleLeads|isSample|trackedCounties\s*\|\||SEAI Approvals|Pending Docs/);
@@ -37,4 +38,13 @@ test('intake actions use the active organisation installer and never fall back t
   assert.match(dashboard, /: null/);
   assert.match(embedPage, /searchParams/);
   assert.match(embedPage, /<LeadForm installerId={resolvedInstallerId}/);
+});
+
+test('dashboard has one intake-opening CTA and retains copy only when a tenant URL exists', () => {
+  assert.equal(dashboard.match(/href={intakePath}/g)?.length, 1);
+  assert.doesNotMatch(intakeActions, /Open intake form|<Link/);
+  assert.match(intakeActions, /Copy tenant intake link/);
+  assert.match(intakeActions, /Copy intake link/);
+  assert.match(dashboard, /intakePath \? <IntakeLinkActions intakePath={intakePath} \/> : null/);
+  assert.match(dashboard, /intakePath \? <a href={intakePath}/);
 });

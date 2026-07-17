@@ -2591,6 +2591,11 @@ select.field-input-error {
   font-weight: 800;
   cursor: pointer;
 }
+.dashboard-secondary-button:focus-visible,
+.installer-add-button:focus-visible {
+  outline: 3px solid rgba(26, 122, 74, 0.35);
+  outline-offset: 3px;
+}
 .dashboard-table-empty {
   display: grid;
   justify-items: start;
@@ -2684,6 +2689,14 @@ select.field-input-error {
   .installer-panel-header {
     align-items: stretch;
     flex-direction: column;
+  }
+  .dashboard-primary-empty {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .dashboard-empty-actions,
+  .dashboard-secondary-button {
+    width: 100%;
   }
   .installer-add-button,
   .installer-small-select {

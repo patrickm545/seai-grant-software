@@ -292,7 +292,7 @@ export default async function HiddenAdminPage() {
       </div>
 
       <RecentActivityPanel activities={recentActivities} />
-      <RecentLeadsTable leads={recentLeads} basePath={ADMIN_LEAD_BASE_PATH} intakePath={intakePath} updateStageAction={updateLeadPipelineStage} />
+      <RecentLeadsTable leads={recentLeads} basePath={ADMIN_LEAD_BASE_PATH} updateStageAction={updateLeadPipelineStage} />
     </DashboardShell>
   );
 }

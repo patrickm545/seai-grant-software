@@ -2550,6 +2550,63 @@ select.field-input-error {
   font-size: 13px;
   line-height: 1.5;
 }
+.dashboard-primary-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid #cfe1d8;
+  border-radius: 10px;
+  background: #f5faf7;
+}
+.dashboard-primary-empty h2 {
+  margin: 4px 0 8px;
+  color: #1f2937;
+  font-size: 1.3rem;
+}
+.dashboard-primary-empty p,
+.dashboard-table-empty p {
+  margin: 0;
+  color: #536071;
+  line-height: 1.55;
+}
+.dashboard-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dashboard-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #b9ccc3;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #17633f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.dashboard-secondary-button:focus-visible,
+.installer-add-button:focus-visible {
+  outline: 3px solid rgba(26, 122, 74, 0.35);
+  outline-offset: 3px;
+}
+.dashboard-table-empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 0 18px 18px;
+  padding: 20px;
+  border: 1px dashed #cfdcd7;
+  border-radius: 8px;
+  background: #f8faf9;
+  color: #263241;
+}
 .crm-activity-row {
   grid-template-columns: 14px minmax(0, 1fr) auto auto;
 }
@@ -2632,6 +2689,14 @@ select.field-input-error {
   .installer-panel-header {
     align-items: stretch;
     flex-direction: column;
+  }
+  .dashboard-primary-empty {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .dashboard-empty-actions,
+  .dashboard-secondary-button {
+    width: 100%;
   }
   .installer-add-button,
   .installer-small-select {

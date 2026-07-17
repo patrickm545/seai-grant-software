@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Prisma } from '@prisma/client';
 import { updateLeadPipelineStage } from '@/app/installer-review-emerald/actions';
 import { DashboardShell } from '@/components/DashboardShell';
+import { IntakeLinkActions } from '@/components/IntakeLinkActions';
 import { KpiCards, type KpiCard } from '@/components/KpiCards';
 import { PipelineWorkflow, type PipelineStage } from '@/components/PipelineWorkflow';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
@@ -12,12 +13,12 @@ import {
   getLeadScoreLabel,
   getPipelineStageIcon,
   getPipelineStageLabel,
-  getPipelineStageShortLabel,
   isClosedPipelineStage,
   leadPipelineStages,
   type LeadPipelineStageValue,
   type LeadScoreValue
 } from '@/lib/crm';
+import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadActivityOrganisationWhere, leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
@@ -41,58 +42,6 @@ type RecentActivity = Prisma.LeadActivityGetPayload<{
     };
   };
 }>;
-
-const sampleLeads: RecentDashboardLead[] = [
-  {
-    id: 'sample-patrick',
-    applicant: 'Patrick McKenna',
-    email: 'patrick@example.ie',
-    phone: '+353831234567',
-    location: 'Dublin / D01TEST',
-    confidence: 0.94,
-    leadScore: 'HOT',
-    pipelineStage: 'QUALIFIED',
-    lastActivityAt: null,
-    isSample: true
-  },
-  {
-    id: 'sample-sarah',
-    applicant: 'Sarah Byrne',
-    email: 'sarah@example.ie',
-    phone: '+353851234567',
-    location: 'Cork / T12DEMO',
-    confidence: 0.74,
-    leadScore: 'WARM',
-    pipelineStage: 'CONTACTED',
-    lastActivityAt: null,
-    isSample: true
-  },
-  {
-    id: 'sample-aoife',
-    applicant: 'Aoife Walsh',
-    email: 'aoife@example.ie',
-    phone: '+353891234567',
-    location: 'Galway / H91DEMO',
-    confidence: 0.7,
-    leadScore: 'COLD',
-    pipelineStage: 'NEW_LEAD',
-    lastActivityAt: null,
-    isSample: true
-  }
-];
-
-function isNeedsAction(lead: DashboardLead) {
-  return (
-    lead.status === 'NEEDS_REVIEW' ||
-    lead.status === 'HOMEOWNER_REVIEW_PENDING' ||
-    lead.worksStarted ||
-    lead.likelyEligible === false
-  );
-}
-
-function isLiabilityLead(lead: DashboardLead) {
-  return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
-}
 
 function getLastActivityAt(lead: DashboardLead) {
   return lead.activities[0]?.createdAt ?? lead.updatedAt ?? lead.createdAt;
@@ -160,19 +109,6 @@ function sortByRecentActivity(a: DashboardLead, b: DashboardLead) {
   return getLastActivityAt(b).getTime() - getLastActivityAt(a).getTime();
 }
 
-function PipelineSummaryCards({ leads }: { leads: DashboardLead[] }) {
-  return (
-    <section className="crm-pipeline-summary-grid" aria-label="CRM pipeline summary">
-      {leadPipelineStages.map((stage) => (
-        <article key={stage} className={`crm-pipeline-summary-card crm-pipeline-summary-${stage.toLowerCase().replaceAll('_', '-')}`}>
-          <span>{getPipelineStageShortLabel(stage)}</span>
-          <strong>{getPipelineCount(stage, leads)}</strong>
-        </article>
-      ))}
-    </section>
-  );
-}
-
 function LeadMiniList({
   title,
   subtitle,
@@ -238,7 +174,7 @@ function RecentActivityPanel({ activities }: { activities: RecentActivity[] }) {
             <em>{getActivityTypeLabel(activity.type)}</em>
           </Link>
         )) : (
-          <div className="crm-empty-panel">CRM activity will appear after stage changes, notes, follow-ups, and new intake submissions.</div>
+          <div className="crm-empty-panel"><strong>No recent activity</strong><br />Activity will appear after intake submissions and CRM updates.</div>
         )}
       </div>
     </section>
@@ -247,11 +183,10 @@ function RecentActivityPanel({ activities }: { activities: RecentActivity[] }) {
 
 export default async function HiddenAdminPage() {
   const organisationContext = await requirePilotContext();
-  const [leads, recentActivities] = await Promise.all([
+  const [leads, recentActivities, installer] = await Promise.all([
     prisma.lead.findMany({
       where: leadOrganisationWhere(organisationContext),
       orderBy: { createdAt: 'desc' },
-      take: 50,
       include: {
         installer: true,
         documents: true,
@@ -275,16 +210,16 @@ export default async function HiddenAdminPage() {
           }
         }
       }
+    }),
+    prisma.installer.findFirst({
+      where: { organisationId: organisationContext.organisationId },
+      select: { id: true }
     })
   ]);
 
-  const activePipelines = leads.filter((lead) => !isClosedPipelineStage(lead.pipelineStage)).length;
-  const highPriorityLeads = leads.filter((lead) => lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage)).length;
-  const seaiApprovals = leads.filter((lead) => lead.status === 'SUBMITTED' || lead.status === 'COMPLETED').length;
-  const pendingDocs = leads.filter((lead) => lead.status === 'PAYMENT_DOCS_PENDING' || lead.documents.length === 0).length;
-  const openBlockers = leads.filter(isNeedsAction).length;
-  const liabilityLeads = leads.filter(isLiabilityLead).length;
-  const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
+  const intakePath = installer ? `/embed?installerId=${encodeURIComponent(installer.id)}` : null;
+
+  const metrics = getDashboardMetrics(leads);
   const hotLeads = leads
     .filter((lead) => lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage))
     .sort(sortByRecentActivity)
@@ -299,13 +234,13 @@ export default async function HiddenAdminPage() {
     .slice(0, 5);
 
   const kpiCards: KpiCard[] = [
-    { label: 'Active Pipeline', value: activePipelines, icon: 'P', tone: 'green' },
-    { label: 'Hot Leads', value: highPriorityLeads, icon: 'H', tone: 'amber' },
-    { label: 'SEAI Approvals', value: seaiApprovals, icon: 'OK', tone: 'green' },
-    { label: 'Pending Docs', value: pendingDocs, icon: 'D', tone: 'blue' }
+    { label: 'Active Leads', value: metrics.activeLeads, icon: 'P', tone: 'green' },
+    { label: 'Hot Leads', value: metrics.hotLeads, icon: 'H', tone: 'amber' },
+    { label: 'Applications Submitted', value: metrics.applicationsSubmitted, icon: 'S', tone: 'green' },
+    { label: 'Leads Without Documents', value: metrics.leadsWithoutDocuments, icon: 'D', tone: 'blue' }
   ];
 
-  const recentLeads = leads.length ? leads.map(toRecentLead) : sampleLeads;
+  const recentLeads = leads.map(toRecentLead);
   return (
     <DashboardShell
       userName={organisationContext.userName}
@@ -313,9 +248,8 @@ export default async function HiddenAdminPage() {
       role={organisationContext.pilotRole}
       sidebar={
         <SidebarMetrics
-          trackedCounties={trackedCounties || 6}
-          openBlockers={openBlockers}
-          liabilityLeads={liabilityLeads}
+          openBlockers={metrics.openBlockers}
+          eligibilityConcerns={metrics.eligibilityConcerns}
         />
       }
     >
@@ -325,11 +259,21 @@ export default async function HiddenAdminPage() {
           <h1>Installer operations dashboard</h1>
           <p className="small">Pipeline, follow-up, lead quality, grant readiness, and recent sales activity.</p>
         </div>
-        <a href="/embed" className="installer-add-button">Open intake</a>
+        {intakePath ? <a href={intakePath} className="installer-add-button">Open intake</a> : null}
       </div>
 
+      {leads.length === 0 ? (
+        <section className="dashboard-primary-empty" data-empty-state="organisation">
+          <div>
+            <div className="eyebrow">Getting started</div>
+            <h2>No leads yet</h2>
+            <p>New homeowner enquiries will appear here when they complete your SolarGRANT Pro intake form.</p>
+          </div>
+          {intakePath ? <IntakeLinkActions intakePath={intakePath} /> : null}
+        </section>
+      ) : null}
+
       <KpiCards cards={kpiCards} />
-      <PipelineSummaryCards leads={leads} />
       <PipelineWorkflow stages={buildPipelineStages(leads)} />
 
       <div className="crm-dashboard-grid">
@@ -337,13 +281,13 @@ export default async function HiddenAdminPage() {
           title="Hot leads"
           subtitle="Highest-priority active opportunities"
           leads={hotLeads}
-          emptyText="No hot active leads right now."
+          emptyText={leads.length === 0 ? 'No hot leads. Hot leads will appear here after homeowner enquiries arrive.' : 'No hot leads match the current priority criteria.'}
         />
         <LeadMiniList
           title="Follow-up needed"
           subtitle="Due follow-ups or leads without recent contact"
           leads={followUpLeads}
-          emptyText="No overdue follow-ups right now."
+          emptyText={leads.length === 0 ? 'No follow-ups due. Follow-ups will appear here after homeowner enquiries arrive.' : 'No follow-ups are due.'}
         />
       </div>
 

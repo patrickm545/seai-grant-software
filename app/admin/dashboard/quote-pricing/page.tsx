@@ -15,6 +15,7 @@ import {
   type InstallerQuotePricingValues
 } from '@/lib/installer-quote-pricing';
 import { leadOrganisationWhere } from '@/lib/lead-access';
+import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -104,19 +105,6 @@ async function saveInstallerPricingSettings(formData: FormData) {
   redirect(`/admin/dashboard/quote-pricing?${pricingAction === 'reset' ? 'reset=1' : 'saved=1'}`);
 }
 
-function isNeedsAction(lead: { status: string; worksStarted: boolean; likelyEligible: boolean | null }) {
-  return (
-    lead.status === 'NEEDS_REVIEW' ||
-    lead.status === 'HOMEOWNER_REVIEW_PENDING' ||
-    lead.worksStarted ||
-    lead.likelyEligible === false
-  );
-}
-
-function isLiabilityLead(lead: { worksStarted: boolean; priorSolarGrantAtMprn: boolean; likelyEligible: boolean | null }) {
-  return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
-}
-
 export default async function QuotePricingPage({
   searchParams
 }: {
@@ -151,16 +139,16 @@ export default async function QuotePricingPage({
         status: true,
         worksStarted: true,
         priorSolarGrantAtMprn: true,
-        likelyEligible: true
+        likelyEligible: true,
+        pipelineStage: true,
+        leadScore: true,
+        documents: { select: { id: true } }
       },
-      take: 50,
       orderBy: { createdAt: 'desc' }
     })
   ]);
 
-  const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
-  const openBlockers = leads.filter(isNeedsAction).length;
-  const liabilityLeads = leads.filter(isLiabilityLead).length;
+  const metrics = getDashboardMetrics(leads);
   const pricingValues = getPricingValuesFromRecord(pricing);
   const statusMessage = params.saved
     ? 'Pricing settings saved. New homeowner quotes will use these values.'
@@ -176,9 +164,8 @@ export default async function QuotePricingPage({
       activeNavItem="Quote Pricing"
       sidebar={
         <SidebarMetrics
-          trackedCounties={trackedCounties || 6}
-          openBlockers={openBlockers}
-          liabilityLeads={liabilityLeads}
+          openBlockers={metrics.openBlockers}
+          eligibilityConcerns={metrics.eligibilityConcerns}
         />
       }
     >

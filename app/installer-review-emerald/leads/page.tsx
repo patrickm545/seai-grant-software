@@ -4,6 +4,7 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import type { LeadPipelineStageValue, LeadScoreValue } from '@/lib/crm';
+import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
@@ -15,19 +16,6 @@ const ADMIN_LEAD_BASE_PATH = '/installer-review-emerald/leads';
 type LeadsPageLead = Prisma.LeadGetPayload<{
   include: { documents: true; activities: true };
 }>;
-
-function isNeedsAction(lead: LeadsPageLead) {
-  return (
-    lead.status === 'NEEDS_REVIEW' ||
-    lead.status === 'HOMEOWNER_REVIEW_PENDING' ||
-    lead.worksStarted ||
-    lead.likelyEligible === false
-  );
-}
-
-function isLiabilityLead(lead: LeadsPageLead) {
-  return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
-}
 
 function getLastActivityAt(lead: LeadsPageLead) {
   return lead.activities[0]?.createdAt ?? lead.updatedAt ?? lead.createdAt;
@@ -53,22 +41,26 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
 
 export default async function InstallerLeadsPage() {
   const organisationContext = await requirePilotContext();
-  const leads: LeadsPageLead[] = await prisma.lead.findMany({
-    where: leadOrganisationWhere(organisationContext),
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-    include: {
-      documents: true,
-      activities: {
-        orderBy: { createdAt: 'desc' },
-        take: 1
+  const [leads, installer]: [LeadsPageLead[], { id: string } | null] = await Promise.all([
+    prisma.lead.findMany({
+      where: leadOrganisationWhere(organisationContext),
+      orderBy: { createdAt: 'desc' },
+      include: {
+        documents: true,
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
       }
-    }
-  });
+    }),
+    prisma.installer.findFirst({
+      where: { organisationId: organisationContext.organisationId },
+      select: { id: true }
+    })
+  ]);
 
-  const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
-  const openBlockers = leads.filter(isNeedsAction).length;
-  const liabilityLeads = leads.filter(isLiabilityLead).length;
+  const metrics = getDashboardMetrics(leads);
+  const intakePath = installer ? `/embed?installerId=${encodeURIComponent(installer.id)}` : null;
   return (
     <DashboardShell
       userName={organisationContext.userName}
@@ -77,9 +69,8 @@ export default async function InstallerLeadsPage() {
       activeNavItem="Leads"
       sidebar={
         <SidebarMetrics
-          trackedCounties={trackedCounties || 6}
-          openBlockers={openBlockers}
-          liabilityLeads={liabilityLeads}
+          openBlockers={metrics.openBlockers}
+          eligibilityConcerns={metrics.eligibilityConcerns}
         />
       }
     >
@@ -89,7 +80,7 @@ export default async function InstallerLeadsPage() {
           <h1>Leads</h1>
           <p className="small">Open homeowner records, update sales stages, review scores, and manage grant-readiness workflow.</p>
         </div>
-        <a href="/embed" className="installer-add-button">Open intake</a>
+        {intakePath ? <a href={intakePath} className="installer-add-button">Open intake</a> : null}
       </div>
 
       <RecentLeadsTable

@@ -5,9 +5,11 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import {
   OrganisationRecordAccessError,
   deleteLeadInOrganisation,
+  leadActivityOrganisationWhere,
   leadOrganisationWhere,
   updateLeadInOrganisation
 } from '../../lib/lead-access';
+import { getDashboardMetrics } from '../../lib/dashboard-metrics';
 
 const prisma = new PrismaClient();
 const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
@@ -124,6 +126,18 @@ async function seedTestData() {
       })
     ]
   });
+
+  await prisma.lead.update({
+    where: { id: leadB },
+    data: { leadScore: 'HOT', pipelineStage: 'QUALIFIED', status: 'SUBMITTED' }
+  });
+
+  await prisma.leadActivity.createMany({
+    data: [
+      { leadId: leadA, type: 'LEAD_CREATED', title: 'Tenant A activity' },
+      { leadId: leadB, type: 'LEAD_CREATED', title: 'Tenant B activity' }
+    ]
+  });
 }
 
 test('database-backed tenant isolation rejects cross-organisation lead access', async (t) => {
@@ -190,4 +204,29 @@ test('database constraint rejects lead installer ownership mismatch', async (t) 
   );
 
   await cleanupTestData();
+});
+
+test('dashboard records, metrics, and activity remain organisation scoped', async (t) => {
+  await seedTestData();
+  t.after(cleanupTestData);
+
+  const [tenantALeads, tenantAActivities] = await Promise.all([
+    prisma.lead.findMany({
+      where: leadOrganisationWhere(scopeA),
+      include: { documents: true }
+    }),
+    prisma.leadActivity.findMany({
+      where: leadActivityOrganisationWhere(scopeA)
+    })
+  ]);
+
+  assert.deepEqual(tenantALeads.map((lead) => lead.id), [leadA]);
+  assert.deepEqual(tenantAActivities.map((activity) => activity.title), ['Tenant A activity']);
+
+  const metrics = getDashboardMetrics(tenantALeads);
+  assert.equal(metrics.activeLeads, 1);
+  assert.equal(metrics.hotLeads, 0);
+  assert.equal(metrics.applicationsSubmitted, 0);
+  assert.equal(metrics.pipelineCounts.NEW_LEAD, 1);
+  assert.equal(metrics.pipelineCounts.QUALIFIED, 0);
 });

@@ -9,7 +9,14 @@ const benefits = [
   'Get a clear solar quote estimate'
 ];
 
-export default function EmbedPage() {
+export default async function EmbedPage({
+  searchParams
+}: {
+  searchParams: Promise<{ installerId?: string }>;
+}) {
+  const { installerId } = await searchParams;
+  const resolvedInstallerId = installerId?.trim() || DEFAULT_INSTALLER_ID;
+
   return (
     <main className="container grid public-shell home-public-shell">
       <section className="assessment-intro" aria-labelledby="embed-assessment-title">
@@ -31,7 +38,7 @@ export default function EmbedPage() {
         </div>
       </section>
       <div id="lead-form" className="lead-form-anchor">
-        <LeadForm installerId={DEFAULT_INSTALLER_ID} />
+        <LeadForm installerId={resolvedInstallerId} />
       </div>
       <div className="support-links">
         <Link href="/">Return to overview</Link>

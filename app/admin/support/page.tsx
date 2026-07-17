@@ -63,33 +63,33 @@ export default async function SupportPage() {
         <Link href="/admin/dashboard" className="installer-add-button">Back to Dashboard</Link>
       </div>
 
-      <section className="sales-playbook-card-grid">
-        <div className="installer-panel sales-playbook-panel">
+      <section className="installer-support-card-grid">
+        <div className="installer-panel installer-support-panel">
           <div className="installer-panel-header">
             <h2>Contact Support</h2>
           </div>
-          <div className="sales-playbook-body">
+          <div className="installer-support-body">
             <p>{pricingConfig.support.earlyClientSupport} {pricingConfig.support.liveWorkflowBugs}</p>
             <a href={`mailto:${supportEmail}`} className="installer-add-button support-email-button">Email Support</a>
           </div>
         </div>
 
-        <div className="installer-panel sales-playbook-panel">
+        <div className="installer-panel installer-support-panel">
           <div className="installer-panel-header">
             <h2>Workflow Help</h2>
           </div>
-          <div className="sales-playbook-body">
+          <div className="installer-support-body">
             <p>
               For a lead issue, include the homeowner name, lead status, and what changed before the problem appeared.
             </p>
           </div>
         </div>
 
-        <div className="installer-panel sales-playbook-panel">
+        <div className="installer-panel installer-support-panel">
           <div className="installer-panel-header">
             <h2>Quote Pricing Help</h2>
           </div>
-          <div className="sales-playbook-body">
+          <div className="installer-support-body">
             <p>
               For quote pricing issues, include the saved pricing values, expected quote total, and the affected lead.
             </p>

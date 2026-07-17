@@ -121,7 +121,7 @@ Platform Release 1.4's approved specification and ADR-0015/0016/0017 describe in
 | Data portability | CSV export | NOT_STARTED | P1 | NO | M | HIGH | `lead.export` permission exists but no route/service/UI/export tests |
 | Data portability | Pilot data/document exit | INCOMPLETE | P1 | NO | S | MEDIUM | Founding team can perform controlled DB export and portal document retrieval; no customer-operable export bundle/runbook |
 | Support | Manual onboarding runbook | NOT_STARTED | P0 | YES | S | HIGH | README covers one default admin/installer only; no repeatable 5–10 tenant pilot procedure |
-| Support | In-product support/training | NEEDS_POLISH | P1 | NO | S | HIGH | `/admin/support` and sales playbook exist; no installer-specific onboarding checklist or known-limitations guide |
+| Support | In-product support/training | NEEDS_POLISH | P1 | NO | S | HIGH | `/admin/support` exists; no installer-specific onboarding checklist or known-limitations guide |
 | Release 1.4 | Full approved document architecture implementation | DEFERRED | DEFER | NO | XL | HIGH | Master specification and ADR-0015/0016/0017 exist; no runtime/schema/tests/dependencies implement them; only the narrow proposal slice is pilot-critical |
 
 ## D. End-to-end journey audit

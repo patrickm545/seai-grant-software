@@ -7,7 +7,6 @@ function needsAdmin(request: NextRequest) {
   return (
     pathname.startsWith('/admin/dashboard') ||
     pathname.startsWith('/admin/leads') ||
-    pathname.startsWith('/admin/sales-playbook') ||
     pathname.startsWith('/installer-review-emerald')
   );
 }

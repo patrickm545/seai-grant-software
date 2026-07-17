@@ -19,7 +19,7 @@ This release proves the foundation through the smallest useful SolarGRANT Pro sl
 Repository review on 2026-07-10 found:
 
 - Authentication is a lightweight admin password and signed cookie flow in `lib/admin-auth.ts`.
-- Middleware protects `/admin/dashboard`, `/admin/leads`, `/admin/sales-playbook`, and `/installer-review-emerald`, but API routes also need server-side checks.
+- Middleware protects the active authenticated installer routes, but API routes also need server-side checks.
 - The current user model is implicit. There is no reusable `User`, `Organisation`, membership, role, or actor persistence model.
 - The database uses Prisma with Postgres configured in `prisma/schema.prisma`.
 - SolarGRANT Pro data ownership currently flows through `Installer` and `Lead.installerId`.

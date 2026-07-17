@@ -2218,97 +2218,26 @@ select.field-input-error {
 .installer-panel-header p {
   margin: 4px 0 0;
 }
-.sales-playbook-grid,
-.sales-playbook-card-grid {
+.installer-support-card-grid {
   display: grid;
   gap: 14px;
-}
-.sales-playbook-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.sales-playbook-card-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.sales-playbook-panel {
+.installer-support-panel {
   overflow: hidden;
 }
-.sales-playbook-body {
+.installer-support-body {
   display: grid;
   gap: 8px;
   padding: 0 18px 18px;
 }
-.sales-playbook-body h3,
-.sales-playbook-card h3 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 1rem;
-  line-height: 1.3;
-}
-.sales-playbook-body p,
-.sales-playbook-card p {
+.installer-support-body p {
   margin: 0;
   color: #536071;
   line-height: 1.6;
 }
-.sales-playbook-detail-list,
-.sales-playbook-objection-grid {
-  display: grid;
-  gap: 12px;
-  padding: 0 18px 18px;
-}
-.sales-playbook-detail-list > div,
-.sales-playbook-card,
-.sales-playbook-panel .roi-grid div {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border: 1px solid #e2ebe7;
-  border-radius: 8px;
-  background: #f8faf9;
-}
-.sales-playbook-detail-list > div {
-  grid-template-columns: minmax(120px, 0.48fr) minmax(0, 1fr);
-  align-items: center;
-  column-gap: 12px;
-}
-.sales-playbook-detail-list span,
-.sales-playbook-panel .roi-grid span {
-  min-width: 0;
-  color: #536071;
-  font-size: 12px;
-  font-weight: 850;
-}
-.sales-playbook-detail-list strong,
-.sales-playbook-panel .roi-grid strong {
-  min-width: 0;
-  color: #1f2937;
-  overflow-wrap: anywhere;
-}
-.sales-playbook-detail-list strong {
-  justify-self: end;
-  text-align: right;
-}
-.sales-playbook-objection-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.sales-playbook-panel .roi-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 0 18px 18px;
-}
-.sales-playbook-note {
-  padding: 0 18px 18px;
-  margin: 0;
-}
 @media (max-width: 1100px) {
-  .sales-playbook-grid,
-  .sales-playbook-card-grid,
-  .sales-playbook-objection-grid,
-  .sales-playbook-panel .roi-grid {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 620px) {
-  .sales-playbook-detail-list > div {
+  .installer-support-card-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -2794,11 +2723,46 @@ select.field-input-error {
   font-weight: 760;
 }
 .pilot-login-field input {
+  width: 100%;
   min-height: 48px;
   border: 1px solid #bdcdc3;
   border-radius: 9px;
   background: #ffffff;
   color: #182c22;
+}
+.pilot-password-input {
+  position: relative;
+}
+.pilot-password-input input {
+  padding-right: 52px;
+}
+.pilot-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 40px;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #536b5e;
+}
+.pilot-password-toggle:hover {
+  background: #edf4ef;
+  color: #17633f;
+}
+.pilot-password-toggle svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .pilot-login-field input:focus-visible,
 .pilot-login-form button:focus-visible,
@@ -2807,13 +2771,13 @@ select.field-input-error {
   outline-offset: 2px;
   border-color: #1a7a4a;
 }
-.pilot-login-form button {
+.pilot-login-form > button {
   min-height: 48px;
   border-radius: 9px;
   background: #17633f;
   font-weight: 800;
 }
-.pilot-login-form button:disabled {
+.pilot-login-form > button:disabled {
   cursor: wait;
   opacity: 0.68;
 }

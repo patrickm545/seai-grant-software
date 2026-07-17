@@ -14,7 +14,6 @@ const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Leads', href: '/installer-review-emerald/leads' },
   { label: 'Quote Pricing', href: '/admin/dashboard/quote-pricing' },
-  { label: 'Sales Playbook', href: '/admin/sales-playbook' },
   { label: 'Support', href: '/admin/support' }
 ];
 

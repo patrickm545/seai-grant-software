@@ -20,7 +20,6 @@ export type RecentDashboardLead = {
   leadScore: LeadScoreValue;
   pipelineStage: LeadPipelineStageValue;
   lastActivityAt: string | null;
-  isSample?: boolean;
 };
 
 const filterOptions = [
@@ -55,12 +54,14 @@ export function RecentLeadsTable({
   leads,
   basePath,
   updateStageAction,
+  intakePath,
   title = 'Recent leads',
   subtitle = 'Homeowner pipeline'
 }: {
   leads: RecentDashboardLead[];
   basePath: string;
   updateStageAction?: (formData: FormData) => void | Promise<void>;
+  intakePath?: string | null;
   title?: string;
   subtitle?: string;
 }) {
@@ -90,6 +91,19 @@ export function RecentLeadsTable({
         </select>
       </div>
 
+      {leads.length === 0 ? (
+        <div className="dashboard-table-empty" data-empty-state="organisation">
+          <strong>No leads yet</strong>
+          <p>New homeowner enquiries will appear here when they complete your SolarGRANT Pro intake form.</p>
+          {intakePath ? <Link href={intakePath} className="dashboard-secondary-button">Open intake form</Link> : null}
+        </div>
+      ) : filteredLeads.length === 0 ? (
+        <div className="dashboard-table-empty" data-empty-state="filter">
+          <strong>No leads match this filter</strong>
+          <p>Choose another filter or reset the table to see all leads.</p>
+          <button type="button" className="dashboard-secondary-button" onClick={() => setFilter('ALL')}>Reset filter</button>
+        </div>
+      ) : (
       <div className="installer-table-wrap">
         <table className="installer-leads-table">
           <thead>
@@ -104,7 +118,7 @@ export function RecentLeadsTable({
           </thead>
           <tbody>
             {filteredLeads.map((lead) => {
-              const leadHref = lead.isSample ? '#' : `${basePath}/${lead.id}`;
+              const leadHref = `${basePath}/${lead.id}`;
               const phoneHref = lead.phone ? `tel:${lead.phone}` : leadHref;
 
               return (
@@ -118,7 +132,7 @@ export function RecentLeadsTable({
                     <span className={`installer-badge installer-stage-${lead.pipelineStage.toLowerCase().replaceAll('_', '-')}`}>
                       {getPipelineStageLabel(lead.pipelineStage)}
                     </span>
-                    {updateStageAction && !lead.isSample ? (
+                    {updateStageAction ? (
                       <form action={updateStageAction} className="installer-inline-stage-form">
                         <input type="hidden" name="leadId" value={lead.id} />
                         <select name="pipelineStage" defaultValue={lead.pipelineStage} aria-label={`Update stage for ${lead.applicant}`}>
@@ -153,6 +167,7 @@ export function RecentLeadsTable({
           </tbody>
         </table>
       </div>
+      )}
     </section>
   );
 }

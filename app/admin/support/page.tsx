@@ -3,23 +3,11 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
+import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { pricingConfig } from '@/lib/pricing';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
-
-function isNeedsAction(lead: { status: string; worksStarted: boolean; likelyEligible: boolean | null }) {
-  return (
-    lead.status === 'NEEDS_REVIEW' ||
-    lead.status === 'HOMEOWNER_REVIEW_PENDING' ||
-    lead.worksStarted ||
-    lead.likelyEligible === false
-  );
-}
-
-function isLiabilityLead(lead: { worksStarted: boolean; priorSolarGrantAtMprn: boolean; likelyEligible: boolean | null }) {
-  return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
-}
 
 export default async function SupportPage() {
   const organisationContext = await requirePilotContext();
@@ -30,15 +18,15 @@ export default async function SupportPage() {
       status: true,
       worksStarted: true,
       priorSolarGrantAtMprn: true,
-      likelyEligible: true
+      likelyEligible: true,
+      pipelineStage: true,
+      leadScore: true,
+      documents: { select: { id: true } }
     },
-    take: 50,
     orderBy: { createdAt: 'desc' }
   });
 
-  const trackedCounties = new Set(leads.map((lead) => lead.county).filter(Boolean)).size;
-  const openBlockers = leads.filter(isNeedsAction).length;
-  const liabilityLeads = leads.filter(isLiabilityLead).length;
+  const metrics = getDashboardMetrics(leads);
   const supportEmail = 'support@emeraldsolutions.ie';
 
   return (
@@ -49,9 +37,8 @@ export default async function SupportPage() {
       activeNavItem="Support"
       sidebar={
         <SidebarMetrics
-          trackedCounties={trackedCounties || 6}
-          openBlockers={openBlockers}
-          liabilityLeads={liabilityLeads}
+          openBlockers={metrics.openBlockers}
+          eligibilityConcerns={metrics.eligibilityConcerns}
         />
       }
     >

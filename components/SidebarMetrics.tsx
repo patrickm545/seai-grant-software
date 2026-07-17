@@ -1,12 +1,11 @@
 import Link from 'next/link';
 
 type SidebarMetricsProps = {
-  trackedCounties: number;
   openBlockers: number;
-  liabilityLeads: number;
+  eligibilityConcerns: number;
 };
 
-export function SidebarMetrics({ trackedCounties, openBlockers, liabilityLeads }: SidebarMetricsProps) {
+export function SidebarMetrics({ openBlockers, eligibilityConcerns }: SidebarMetricsProps) {
   return (
     <aside className="installer-sidebar" aria-label="Dashboard summary">
       <Link href="/admin/dashboard" className="installer-sidebar-nav installer-sidebar-nav-active">
@@ -15,17 +14,13 @@ export function SidebarMetrics({ trackedCounties, openBlockers, liabilityLeads }
       </Link>
 
       <div className="sidebar-metric-group">
-        <div className="sidebar-metric">
-          <span>Tracked Counties</span>
-          <strong>{trackedCounties}</strong>
-        </div>
         <div className="sidebar-metric sidebar-metric-warning">
           <span>Open Blockers</span>
           <strong>{openBlockers}</strong>
         </div>
         <div className="sidebar-metric">
-          <span>Liability Leads</span>
-          <strong>{liabilityLeads || '-'}</strong>
+          <span>Eligibility Concerns</span>
+          <strong>{eligibilityConcerns}</strong>
         </div>
       </div>
     </aside>

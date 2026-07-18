@@ -88,13 +88,25 @@ enum OrganisationType {
 }
 
 enum OrganisationStatus {
+  PROVISIONING
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum UserStatus {
+  INVITED
   ACTIVE
   INACTIVE
 }
 
-enum UserStatus {
-  ACTIVE
-  INACTIVE
+enum ProvisioningOperationStatus {
+  PENDING
+  VALIDATING
+  READY
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
 enum OrganisationMembershipStatus {
@@ -126,34 +138,38 @@ enum AuditOutcome {
 }
 
 model Organisation {
-  id                String                   @id @default(cuid())
-  name              String
-  slug              String                   @unique
-  type              OrganisationType
-  status            OrganisationStatus       @default(ACTIVE)
-  verified          Boolean                  @default(false)
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  installers        Installer[]
-  leads             Lead[]
-  memberships       OrganisationMembership[]
-  workflowInstances WorkflowInstance[]
-  workflowHistories WorkflowHistory[]
+  id                     String                   @id @default(cuid())
+  name                   String
+  slug                   String                   @unique
+  type                   OrganisationType
+  status                 OrganisationStatus       @default(ACTIVE)
+  verified               Boolean                  @default(false)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  installers             Installer[]
+  leads                  Lead[]
+  memberships            OrganisationMembership[]
+  provisioningOperations ProvisioningOperation[]
+  workflowInstances      WorkflowInstance[]
+  workflowHistories      WorkflowHistory[]
 
   @@index([type, status])
 }
 
 model User {
-  id           String                   @id @default(cuid())
-  email        String                   @unique
-  displayName  String
-  passwordHash String?
-  status       UserStatus               @default(ACTIVE)
-  lastLoginAt  DateTime?
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  memberships  OrganisationMembership[]
-  sessions     AuthSession[]
+  id                             String                   @id @default(cuid())
+  email                          String                   @unique
+  displayName                    String
+  passwordHash                   String?
+  status                         UserStatus               @default(ACTIVE)
+  mustChangePassword             Boolean                  @default(false)
+  temporaryCredentialExpiresAt   DateTime?
+  lastLoginAt                    DateTime?
+  createdAt                      DateTime                 @default(now())
+  updatedAt                      DateTime                 @updatedAt
+  memberships                    OrganisationMembership[]
+  sessions                       AuthSession[]
+  approvedProvisioningOperations ProvisioningOperation[]  @relation("ProvisioningApprovedBy")
 
   @@index([status])
 }
@@ -194,6 +210,7 @@ model Installer {
   organisationId String
   organisation   Organisation           @relation(fields: [organisationId], references: [id])
   name           String
+  slug           String                 @unique @default(cuid())
   seaiCompanyId  String
   websiteDomain  String?
   county         String?
@@ -204,6 +221,26 @@ model Installer {
 
   @@unique([id, organisationId])
   @@index([organisationId])
+}
+
+model ProvisioningOperation {
+  id             String                      @id @default(cuid())
+  idempotencyKey String                      @unique
+  inputHash      String
+  status         ProvisioningOperationStatus @default(PENDING)
+  organisationId String?
+  organisation   Organisation?               @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  approvedBy     String?
+  approver       User?                       @relation("ProvisioningApprovedBy", fields: [approvedBy], references: [id], onDelete: Restrict)
+  approvedAt     DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  auditLogs      AuditLog[]
+
+  @@index([status, createdAt])
+  @@index([organisationId])
+  @@index([approvedBy])
 }
 
 model Lead {
@@ -348,21 +385,23 @@ model LeadActivity {
 }
 
 model AuditLog {
-  id                String            @id @default(cuid())
-  leadId            String?
-  organisationId    String?
-  action            String
-  actor             String
-  actorType         AuditActorType?
-  userId            String?
-  membershipId      String?
-  resourceType      String?
-  resourceId        String?
-  source            String?
-  outcome           AuditOutcome      @default(SUCCEEDED)
-  createdAt         DateTime          @default(now())
-  metadataJson      Json?
-  workflowHistories WorkflowHistory[]
+  id                      String                 @id @default(cuid())
+  leadId                  String?
+  organisationId          String?
+  action                  String
+  actor                   String
+  actorType               AuditActorType?
+  userId                  String?
+  membershipId            String?
+  resourceType            String?
+  resourceId              String?
+  source                  String?
+  outcome                 AuditOutcome           @default(SUCCEEDED)
+  createdAt               DateTime               @default(now())
+  metadataJson            Json?
+  provisioningOperationId String?
+  provisioningOperation   ProvisioningOperation? @relation(fields: [provisioningOperationId], references: [id], onDelete: SetNull)
+  workflowHistories       WorkflowHistory[]
 
   @@index([leadId])
   @@index([organisationId, createdAt])
@@ -372,6 +411,7 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([outcome])
   @@index([createdAt])
+  @@index([provisioningOperationId, createdAt])
 }
 
 model WorkflowDefinition {

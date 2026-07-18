@@ -31,6 +31,8 @@ function activeMembership(overrides: Partial<MembershipWithContext> = {}): Membe
       displayName: 'Admin User',
       passwordHash: null,
       status: 'ACTIVE',
+      mustChangePassword: false,
+      temporaryCredentialExpiresAt: null,
       lastLoginAt: null,
       createdAt: new Date('2026-07-10T00:00:00.000Z'),
       updatedAt: new Date('2026-07-10T00:00:00.000Z')

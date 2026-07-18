@@ -32,7 +32,9 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({
-    redirectTo: safePilotRedirect(typeof input.next === 'string' ? input.next : null)
+    redirectTo: result.sessionKind === 'RESTRICTED_FIRST_LOGIN'
+      ? '/first-login/password'
+      : safePilotRedirect(typeof input.next === 'string' ? input.next : null)
   });
   response.cookies.set({
     name: PILOT_SESSION_COOKIE_NAME,

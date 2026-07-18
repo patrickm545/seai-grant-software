@@ -7,7 +7,8 @@ function needsAdmin(request: NextRequest) {
   return (
     pathname.startsWith('/admin/dashboard') ||
     pathname.startsWith('/admin/leads') ||
-    pathname.startsWith('/installer-review-emerald')
+    pathname.startsWith('/installer-review-emerald') ||
+    pathname.startsWith('/first-login/password')
   );
 }
 
@@ -24,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/installer-review-emerald/:path*']
+  matcher: ['/admin/:path*', '/installer-review-emerald/:path*', '/first-login/password']
 };

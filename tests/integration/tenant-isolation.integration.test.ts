@@ -95,12 +95,14 @@ async function seedTestData() {
         id: installerA,
         organisationId: orgA,
         name: 'Installer Test A',
+        slug: `tenant-installer-a-${suffix}`,
         seaiCompanyId: `SEAI-A-${suffix}`
       },
       {
         id: installerB,
         organisationId: orgB,
         name: 'Installer Test B',
+        slug: `tenant-installer-b-${suffix}`,
         seaiCompanyId: `SEAI-B-${suffix}`
       }
     ]

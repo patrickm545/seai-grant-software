@@ -210,7 +210,7 @@ model Installer {
   organisationId String
   organisation   Organisation           @relation(fields: [organisationId], references: [id])
   name           String
-  slug           String                 @unique @default(cuid())
+  slug           String                 @unique
   seaiCompanyId  String
   websiteDomain  String?
   county         String?

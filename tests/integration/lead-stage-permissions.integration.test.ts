@@ -143,12 +143,14 @@ async function seedTestData() {
         id: installerA,
         organisationId: orgA,
         name: 'Permission Installer A',
+        slug: `permission-installer-a-${suffix}`,
         seaiCompanyId: `SEAI-PA-${suffix}`
       },
       {
         id: installerB,
         organisationId: orgB,
         name: 'Permission Installer B',
+        slug: `permission-installer-b-${suffix}`,
         seaiCompanyId: `SEAI-PB-${suffix}`
       }
     ]

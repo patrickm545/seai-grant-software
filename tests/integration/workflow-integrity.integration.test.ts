@@ -18,7 +18,7 @@ test.after(async () => {
 });
 
 function ids(label: string) {
-  const suffix = `${label}_${randomUUID().replaceAll('-', '').slice(0, 10)}`;
+  const suffix = `${label}-${randomUUID().replaceAll('-', '').slice(0, 10)}`;
   return {
     suffix,
     orgA: `org_workflow_a_${suffix}`,
@@ -110,6 +110,7 @@ async function seedFixture(fixture: FixtureIds) {
       id: fixture.installerA,
       organisationId: fixture.orgA,
       name: 'Workflow Integrity Installer',
+      slug: `workflow-installer-${fixture.suffix}`,
       seaiCompanyId: `SEAI-WF-${fixture.suffix}`
     }
   });

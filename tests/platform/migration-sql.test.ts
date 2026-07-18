@@ -36,6 +36,10 @@ const pilotAuthMigrationSql = readFileSync(
   join(process.cwd(), 'prisma', 'migrations', '20260716183000_pilot_installer_auth', 'migration.sql'),
   'utf8'
 );
+const tenantProvisioningMigrationSql = readFileSync(
+  join(process.cwd(), 'prisma', 'migrations', '20260718130000_tenant_provisioning_data_model', 'migration.sql'),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -150,4 +154,38 @@ test('pilot auth migration enforces exactly one organisation membership per user
   assert.match(pilotAuthMigrationSql, /DELETE FROM "OrganisationMembership" AS membership/);
   assert.match(pilotAuthMigrationSql, /Cannot enforce one organisation per user/);
   assert.match(pilotAuthMigrationSql, /CREATE UNIQUE INDEX "OrganisationMembership_userId_key"/);
+});
+
+test('tenant provisioning migration adds lifecycle and first-login credential state safely', () => {
+  assert.match(tenantProvisioningMigrationSql, /ALTER TYPE "OrganisationStatus" ADD VALUE 'PROVISIONING'/);
+  assert.match(tenantProvisioningMigrationSql, /ALTER TYPE "OrganisationStatus" ADD VALUE 'ARCHIVED'/);
+  assert.match(tenantProvisioningMigrationSql, /ALTER TYPE "UserStatus" ADD VALUE 'INVITED'/);
+  assert.match(tenantProvisioningMigrationSql, /"mustChangePassword" BOOLEAN NOT NULL DEFAULT false/);
+  assert.match(tenantProvisioningMigrationSql, /"temporaryCredentialExpiresAt" TIMESTAMP\(3\)/);
+  assert.match(tenantProvisioningMigrationSql, /"User_invited_credential_state_check"/);
+});
+
+test('tenant provisioning migration backfills and constrains a unique installer slug', () => {
+  const slugBackfillIndex = tenantProvisioningMigrationSql.indexOf('UPDATE "Installer" AS installer');
+  const slugNotNullIndex = tenantProvisioningMigrationSql.indexOf('ALTER COLUMN "slug" SET NOT NULL');
+
+  assert.ok(slugBackfillIndex > -1, 'installer slug backfill is present');
+  assert.ok(slugNotNullIndex > slugBackfillIndex, 'installer slug is required only after backfill');
+  assert.match(tenantProvisioningMigrationSql, /"Installer_slug_format_check"/);
+  assert.match(tenantProvisioningMigrationSql, /CREATE UNIQUE INDEX "Installer_slug_key"/);
+});
+
+test('tenant provisioning migration persists idempotency, approval, and audit correlation', () => {
+  assert.match(tenantProvisioningMigrationSql, /CREATE TABLE "ProvisioningOperation"/);
+  assert.match(tenantProvisioningMigrationSql, /"idempotencyKey" TEXT NOT NULL/);
+  assert.match(tenantProvisioningMigrationSql, /"ProvisioningOperation_idempotencyKey_key"/);
+  assert.match(tenantProvisioningMigrationSql, /"approvedBy" TEXT/);
+  assert.match(tenantProvisioningMigrationSql, /"approvedAt" TIMESTAMP\(3\)/);
+  assert.match(tenantProvisioningMigrationSql, /"ProvisioningOperation_approvedBy_fkey"/);
+  assert.match(tenantProvisioningMigrationSql, /"AuditLog_provisioningOperationId_fkey"/);
+});
+
+test('tenant provisioning migration preserves the single-organisation membership constraint', () => {
+  assert.doesNotMatch(tenantProvisioningMigrationSql, /DROP INDEX "OrganisationMembership_userId_key"/);
+  assert.doesNotMatch(tenantProvisioningMigrationSql, /DROP CONSTRAINT.*OrganisationMembership/);
 });

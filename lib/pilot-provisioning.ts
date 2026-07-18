@@ -87,6 +87,7 @@ export async function provisionPilotOrganisation(db: PrismaClient, input: PilotP
       update: {
         organisationId: organisation.id,
         name: input.organisationName,
+        slug: input.organisationSlug,
         seaiCompanyId: input.seaiCompanyId,
         websiteDomain: input.websiteDomain || null,
         county: input.county || null
@@ -95,6 +96,7 @@ export async function provisionPilotOrganisation(db: PrismaClient, input: PilotP
         id: installerId,
         organisationId: organisation.id,
         name: input.organisationName,
+        slug: input.organisationSlug,
         seaiCompanyId: input.seaiCompanyId,
         websiteDomain: input.websiteDomain || null,
         county: input.county || null

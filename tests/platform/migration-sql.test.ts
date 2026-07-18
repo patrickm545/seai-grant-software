@@ -40,6 +40,10 @@ const tenantProvisioningMigrationSql = readFileSync(
   join(process.cwd(), 'prisma', 'migrations', '20260718130000_tenant_provisioning_data_model', 'migration.sql'),
   'utf8'
 );
+const tenantFirstLoginMigrationSql = readFileSync(
+  join(process.cwd(), 'prisma', 'migrations', '20260718150000_tenant_first_login_activation', 'migration.sql'),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -188,4 +192,11 @@ test('tenant provisioning migration persists idempotency, approval, and audit co
 test('tenant provisioning migration preserves the single-organisation membership constraint', () => {
   assert.doesNotMatch(tenantProvisioningMigrationSql, /DROP INDEX "OrganisationMembership_userId_key"/);
   assert.doesNotMatch(tenantProvisioningMigrationSql, /DROP CONSTRAINT.*OrganisationMembership/);
+});
+
+test('tenant first-login migration types restricted sessions without changing existing session behaviour', () => {
+  assert.match(tenantFirstLoginMigrationSql, /CREATE TYPE "AuthSessionType" AS ENUM \('NORMAL', 'RESTRICTED_FIRST_LOGIN'\)/);
+  assert.match(tenantFirstLoginMigrationSql, /"sessionType" "AuthSessionType" NOT NULL DEFAULT 'NORMAL'/);
+  assert.match(tenantFirstLoginMigrationSql, /"AuthSession_userId_sessionType_expiresAt_idx"/);
+  assert.doesNotMatch(tenantFirstLoginMigrationSql, /DROP TABLE|DROP COLUMN|DELETE FROM/);
 });

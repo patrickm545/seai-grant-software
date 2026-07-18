@@ -10,7 +10,7 @@
 
 ## Status and prerequisites
 
-This is the target operator runbook. The target command, forced password change, expiry, recovery commands, and secure secret handoff are not implemented. Do not onboard an external pilot with this process until every [readiness gate](#pilot-readiness-gate) passes. The currently implemented `pnpm pilot:provision` is described in [pilot authentication](PILOT_AUTHENTICATION.md) and is not a substitute.
+The dry-run-first `pnpm tenant:provision` service and command, canonical idempotency, strict conflicts, transactional tenant creation, fixed credential expiry state, fake/test delivery adapter, and secret-free audit/output contract are implemented. Real transactional email, Production execution, forced password change, restricted sessions, recovery commands, and end-to-end smoke validation remain deferred. Do not onboard an external pilot until every [readiness gate](#pilot-readiness-gate) passes. The legacy `pnpm pilot:provision` command is described in [pilot authentication](PILOT_AUTHENTICATION.md) and is not a substitute.
 
 Provisioning is a Clada OS capability; this runbook defines its SolarGRANT Pro product use. Architecture and security rules live in [Clada OS tenant provisioning architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md).
 

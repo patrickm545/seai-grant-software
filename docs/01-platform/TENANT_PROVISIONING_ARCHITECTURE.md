@@ -43,16 +43,16 @@ The current schema is the source of truth for implemented behaviour.
 
 | Area | Implemented now | Approved target; not implemented |
 | --- | --- | --- |
-| Organisation | `Organisation` has unique slug, `INSTALLER`/`CLADA_INTERNAL`, `ACTIVE`/`INACTIVE`, and `verified`. | `PROVISIONING`, `ACTIVE`, `SUSPENDED`, `ARCHIVED`; explicit lifecycle enforcement. |
-| User | Unique normalised email, display name, optional Argon2id hash, `ACTIVE`/`INACTIVE`, last login. | `INVITED`, `ACTIVE`, `SUSPENDED`; first-login and credential-expiry fields. |
+| Organisation | Unique slug, `INSTALLER`/`CLADA_INTERNAL`, `PROVISIONING`/`ACTIVE`/`INACTIVE`/`ARCHIVED`, and `verified`. Provisioning creates installer tenants as unverified `PROVISIONING`. | `SUSPENDED` and the first-login activation transition remain deferred. |
+| User | Unique normalised email, display name, Argon2id hash, `INVITED`/`ACTIVE`/`INACTIVE`, `mustChangePassword`, credential expiry, and last login. Provisioning creates the owner as `INVITED` with a fixed 24-hour temporary-credential expiry. | Forced replacement, restricted sessions, expiry enforcement at login, and `SUSPENDED` remain deferred. |
 | Membership | Unique `(organisationId,userId)`, status, `isOwner`, platform role. A separate unique `userId` enforces exactly one membership per user. | Pilot retains the globally unique `userId` and one-organisation-per-user rule; multi-organisation membership and tenant selection are deferred. |
-| Installer | Belongs to an organisation; ID is currently deterministic in pilot provisioning. No Installer slug field exists. | Persistent unique lowercase kebab-case Installer slug, distinct from the internal ID; one or more product tenants per organisation remain a later platform capability. |
+| Installer | Belongs to an organisation and has an application-assigned persistent unique lowercase kebab-case slug distinct from its internal ID. | One or more product tenants per organisation remain a later platform capability. |
 | Session | Opaque random token, HMAC-SHA-256 digest in `AuthSession`, 12-hour expiry, server-side context checks, logout deletion. | Restricted first-login session, rotation after password change, and all-session invalidation rules. |
-| Audit | `AuditLog` supports actor, organisation, resource, outcome, timestamp, and sanitised metadata. | Provisioning/credential lifecycle event catalogue and operation correlation. |
-| Provisioning | `pnpm pilot:provision` uses guarded environment variables and one Prisma transaction with upserts. | Dry-run-first command, operation record, strict conflict plan, audit, credential expiry, safe delivery, retries, and smoke tests. |
+| Audit | `AuditLog` supports actor, organisation, resource, outcome, timestamp, sanitised metadata, provisioning-operation correlation, and the PR 2 provisioning/delivery events. | First-login and recovery event implementation remains deferred. |
+| Provisioning | `pnpm tenant:provision` provides strict canonical input, dry-run planning, deterministic idempotency, conflict refusal, durable approval, transactional writes, a fake/test delivery adapter, safe receipts, and secret-free output. Production execution is deliberately unavailable without a real approved adapter. | Real transactional email, Production execution, first-login activation, recovery commands, and smoke-test automation remain deferred. |
 | Password | Argon2id; minimum 12 characters; generic invalid-login response. | Maximum length, weak/compromised-password checks, rate limiting, reset, forced change, and rotation. |
 
-The current provisioning command can update an existing organisation, identity, password, membership, and installer. It accepts plaintext input through an environment variable. It has no dry-run, `mustChangePassword`, credential expiry, provisioning operation, or provisioning audit sequence. It must not be used as evidence that this target feature is ready.
+The legacy `pnpm pilot:provision` command can still update existing pilot records and accepts plaintext input through an environment variable. It is retained for compatibility but is not the standard tenant-provisioning boundary and must not be used for a new external pilot. The new command never accepts plaintext credentials from its input or arguments.
 
 ## Domain model
 

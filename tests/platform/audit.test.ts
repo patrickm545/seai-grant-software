@@ -36,6 +36,9 @@ test('sanitises sensitive audit metadata recursively', () => {
     portalToken: 'secret-token',
     nested: {
       password: 'hidden',
+      temporaryCredential: 'hidden',
+      passwordHash: 'hidden',
+      authorizationHeader: 'hidden',
       value: 'visible',
       documentContents: 'full document text'
     },

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-14 |
+| Last reviewed | 2026-07-17 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -59,6 +59,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [01-platform/PLATFORM_EVOLUTION_POLICY.md](01-platform/PLATFORM_EVOLUTION_POLICY.md)
 - [01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](01-platform/PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md)
 - [01-platform/PLATFORM_ADR_INDEX.md](01-platform/PLATFORM_ADR_INDEX.md)
+- [01-platform/TENANT_PROVISIONING_ARCHITECTURE.md](01-platform/TENANT_PROVISIONING_ARCHITECTURE.md)
 
 ## Product
 
@@ -84,6 +85,8 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
 - [03-engineering/PILOT_AUTHENTICATION.md](03-engineering/PILOT_AUTHENTICATION.md)
+- [03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md](03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md)
+- [03-engineering/TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md](03-engineering/TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md)
 - [03-engineering/TECHNICAL_DEBT_REGISTER.md](03-engineering/TECHNICAL_DEBT_REGISTER.md)
 
 ## Features
@@ -127,6 +130,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md](05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md)
 - [05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md](05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md)
 - [05-decisions/ADR-0018-pilot-installer-authentication.md](05-decisions/ADR-0018-pilot-installer-authentication.md)
+- [05-decisions/ADR-0019-standardised-tenant-provisioning.md](05-decisions/ADR-0019-standardised-tenant-provisioning.md)
 
 ## Sprints
 

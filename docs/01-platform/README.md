@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-09 |
+| Last reviewed | 2026-07-17 |
 
 ## Purpose
 
@@ -76,6 +76,7 @@ The operating sequence is:
 - [PLATFORM_EVOLUTION_POLICY.md](PLATFORM_EVOLUTION_POLICY.md): how platform capabilities change over time.
 - [PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md](PLATFORM_EXECUTION_MODEL_AND_ROADMAP.md): Platform Release 1.x execution model, MVP definition, build order, maturity model, release roadmap, risk register, and decision gates.
 - [PLATFORM_ADR_INDEX.md](PLATFORM_ADR_INDEX.md): platform decision index and recommended ADR candidates.
+- [TENANT_PROVISIONING_ARCHITECTURE.md](TENANT_PROVISIONING_ARCHITECTURE.md): proposed reusable organisation provisioning, identity lifecycle, first-login security, tenant isolation, audit, and recovery architecture.
 
 ## Related Documents
 

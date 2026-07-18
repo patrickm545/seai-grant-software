@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
-import { getCurrentPilotContext, safePilotRedirect } from '@/lib/pilot-auth';
+import { getCurrentPilotSessionState, safePilotRedirect } from '@/lib/pilot-auth';
 import { LoginForm } from './LoginForm';
 
 export default async function PilotLoginPage({
@@ -9,7 +9,9 @@ export default async function PilotLoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
-  if (await getCurrentPilotContext()) redirect(safePilotRedirect(params.next));
+  const session = await getCurrentPilotSessionState();
+  if (session?.kind === 'NORMAL') redirect(safePilotRedirect(params.next));
+  if (session?.kind === 'RESTRICTED_FIRST_LOGIN') redirect('/first-login/password');
 
   return (
     <main className="pilot-login-page">

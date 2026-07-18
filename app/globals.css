@@ -2774,6 +2774,36 @@ select.field-input-error {
   color: #647168;
   line-height: 1.55;
 }
+.pilot-first-login-card {
+  width: min(100%, 520px);
+}
+.pilot-password-guidance {
+  padding: 14px 16px;
+  border: 1px solid #d6e4da;
+  border-radius: 9px;
+  background: #f3f8f5;
+  color: #40594b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.pilot-password-guidance ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.pilot-first-login-logout {
+  display: flex;
+  justify-content: center;
+}
+.pilot-first-login-logout button {
+  width: auto;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid #c9d8cf;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17633f;
+  font-weight: 750;
+}
 .pilot-login-form,
 .pilot-login-field {
   display: grid;
@@ -2799,13 +2829,13 @@ select.field-input-error {
   position: relative;
 }
 .pilot-password-input input {
-  padding-right: 52px;
+  padding-right: 64px;
 }
 .pilot-password-toggle {
   position: absolute;
   top: 50%;
   right: 6px;
-  width: 40px;
+  width: 52px;
   min-height: 40px;
   display: grid;
   place-items: center;
@@ -2815,6 +2845,8 @@ select.field-input-error {
   border-radius: 7px;
   background: transparent;
   color: #536b5e;
+  font-size: 12px;
+  font-weight: 750;
 }
 .pilot-password-toggle:hover {
   background: #edf4ef;

@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentPilotContext } from '@/lib/pilot-auth';
+import { getCurrentPilotSessionState } from '@/lib/pilot-auth';
 
 export default async function ProtectedAdminLayout({ children }: { children: ReactNode }) {
-  if (!(await getCurrentPilotContext())) redirect('/login');
+  const session = await getCurrentPilotSessionState();
+  if (session?.kind === 'RESTRICTED_FIRST_LOGIN') redirect('/first-login/password');
+  if (session?.kind !== 'NORMAL') redirect('/login');
   return children;
 }

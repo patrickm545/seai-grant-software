@@ -20,10 +20,12 @@ Dependencies: approved domain model and migration/backfill plan. Migration risk 
 
 ## PR 2: Provisioning service and command
 
+Status: implemented in PR #28 for non-Production execution with a fake/test delivery adapter. Real transactional-email delivery and Production execution remain explicitly deferred.
+
 Scope includes:
 
 - canonical validation, safe plans, dry-run default, immutable input digest, idempotency, strict conflicts, one transaction, create/reuse rules, owner membership, secure credential generation, fixed 24-hour expiry, in-transaction audit, and safe exit/output;
-- the `CredentialDeliveryAdapter` interface and intended Production transactional-email implementation;
+- the `CredentialDeliveryAdapter` interface; the intended Production transactional-email implementation remains deferred until provider selection;
 - a fake adapter for deterministic tests;
 - provider payload and log-redaction tests plus general no-secret output tests;
 - audit of safe provider delivery ID/status only;

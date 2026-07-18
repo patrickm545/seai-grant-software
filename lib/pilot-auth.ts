@@ -1,8 +1,10 @@
 import { createHmac, randomBytes } from 'node:crypto';
-import { hash, verify } from '@node-rs/argon2';
+import { verify } from '@node-rs/argon2';
 import type { Organisation, OrganisationMembership, PlatformRole, Prisma, PrismaClient, User } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
+
+export { hashPilotPassword } from './password-hashing';
 
 export const PILOT_SESSION_COOKIE_NAME = 'solargrant_session';
 export const PILOT_SESSION_TTL_SECONDS = 60 * 60 * 12;
@@ -10,13 +12,6 @@ export const GENERIC_LOGIN_ERROR = 'Email or password is incorrect, or this acco
 
 const DUMMY_PASSWORD_HASH =
   '$argon2id$v=19$m=19456,t=2,p=1$hpMB+hVoKhULyh0uSi5t6w$w8Pm9XibmLlVU8LPcwA6kZRqTnzU+QlmD+oqiel36p8';
-
-const passwordHashOptions = {
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-  outputLen: 32
-} as const;
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
@@ -78,14 +73,6 @@ export function safePilotRedirect(value?: string | null) {
   } catch {
     return '/admin/dashboard';
   }
-}
-
-export async function hashPilotPassword(password: string) {
-  if (password.length < 12) {
-    throw new Error('Pilot passwords must contain at least 12 characters.');
-  }
-
-  return hash(password, passwordHashOptions);
 }
 
 function getSessionPepper() {

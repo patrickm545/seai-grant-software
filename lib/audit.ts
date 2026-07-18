@@ -6,7 +6,8 @@ export type AuditActor = 'homeowner' | 'admin' | 'system';
 type AuditMetadata = Prisma.InputJsonValue | undefined;
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
-const sensitiveMetadataKeyPattern = /(password|secret|token|contentbytes|documentcontent|fulldocument|rawdocument)/i;
+const sensitiveMetadataKeyPattern =
+  /(password|credential|secret|token|authorization|cookie|api.?key|databaseurl|connectionstring|hash|contentbytes|documentcontent|fulldocument|rawdocument)/i;
 
 function legacyActorType(actor: string): AuditActorType {
   const normalizedActor = actor.trim().toLowerCase();
@@ -76,6 +77,7 @@ export async function writeAuditEvent(
     membershipId?: string | null;
     resourceType?: string | null;
     resourceId?: string | null;
+    provisioningOperationId?: string | null;
     source?: string | null;
     outcome?: AuditOutcome;
     metadata?: Prisma.InputJsonValue;
@@ -98,6 +100,7 @@ export async function writeAuditEvent(
       membershipId: input.membershipId ?? actorFromContext?.membershipId ?? null,
       resourceType,
       resourceId,
+      provisioningOperationId: input.provisioningOperationId ?? null,
       source: input.source ?? null,
       outcome: input.outcome ?? 'SUCCEEDED',
       metadataJson: sanitizedMetadata
@@ -116,6 +119,7 @@ export async function writeAuditLog(
     actorType?: AuditActorType;
     resourceType?: string | null;
     resourceId?: string | null;
+    provisioningOperationId?: string | null;
     source?: string | null;
     outcome?: AuditOutcome;
     metadata?: Prisma.InputJsonValue;

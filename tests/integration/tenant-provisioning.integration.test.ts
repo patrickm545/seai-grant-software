@@ -7,6 +7,7 @@ import {
 } from '../../lib/credential-delivery';
 import {
   executeTenantProvisioning,
+  planTenantProvisioning,
   TenantProvisioningError,
   type TenantProvisioningInput
 } from '../../lib/tenant-provisioning';
@@ -165,14 +166,152 @@ test('delivery failure revokes the credential and records safe failed state', as
   assert.equal(operation.completedAt, null);
   const owner = await prisma.user.findUniqueOrThrow({ where: { email: input.ownerEmail } });
   assert.equal(owner.status, 'INVITED');
-  assert.equal(owner.passwordHash, null);
-  assert.equal(owner.temporaryCredentialExpiresAt, null);
+  assert.ok(owner.passwordHash?.startsWith('$argon2'));
+  assert.equal(owner.mustChangePassword, true);
+  assert.ok(owner.temporaryCredentialExpiresAt);
+  assert.ok(owner.temporaryCredentialExpiresAt <= new Date());
   const organisation = await prisma.organisation.findUniqueOrThrow({ where: { slug: input.organisationSlug } });
   assert.equal(organisation.status, 'PROVISIONING');
   const audit = await prisma.auditLog.findFirstOrThrow({
     where: { provisioningOperationId: operation.id, action: 'TEMPORARY_CREDENTIAL_DELIVERY_FAILED' }
   });
-  assert.deepEqual(audit.metadataJson, { reasonCode: 'DELIVERY_FAILED', credentialRevoked: true });
+  assert.deepEqual(audit.metadataJson, { reasonCode: 'DELIVERY_FAILED', accessRevoked: true });
+});
+
+test('idempotency mismatch is rejected without changing the completed tenant', async () => {
+  const suffix = `idempotency-mismatch-${Date.now()}`;
+  const input = uniqueInput(suffix);
+  await seedApprover(input);
+  const original = await executeTenantProvisioning({
+    db: prisma,
+    input,
+    deliveryAdapter: new FakeCredentialDeliveryAdapter(),
+    loginUrl: 'https://solargrant.example/login'
+  });
+
+  await assert.rejects(
+    executeTenantProvisioning({
+      db: prisma,
+      input: { ...input, county: 'Mayo' },
+      deliveryAdapter: new FakeCredentialDeliveryAdapter(),
+      loginUrl: 'https://solargrant.example/login'
+    }),
+    (error: unknown) =>
+      error instanceof TenantProvisioningError &&
+      error.code === 'PROVISIONING_CONFLICT' &&
+      error.details?.conflicts?.some(({ code }) => code === 'IDEMPOTENCY_KEY_MISMATCH') === true
+  );
+  assert.equal(await prisma.provisioningOperation.count({ where: { idempotencyKey: input.idempotencyKey } }), 1);
+  assert.equal(await prisma.organisation.count({ where: { id: original.organisation.id } }), 1);
+  assert.equal(await prisma.installer.count({ where: { id: original.installer.id } }), 1);
+  assert.equal(await prisma.user.count({ where: { id: original.owner.id } }), 1);
+});
+
+test('database-backed organisation, installer, SEAI identity, and owner conflicts are explicit', async () => {
+  const suffix = `conflicts-${Date.now()}`;
+  const existingInput = uniqueInput(`${suffix}-existing`);
+  await seedApprover(existingInput);
+  await executeTenantProvisioning({
+    db: prisma,
+    input: existingInput,
+    deliveryAdapter: new FakeCredentialDeliveryAdapter(),
+    loginUrl: 'https://solargrant.example/login'
+  });
+
+  const candidates: Array<{ input: TenantProvisioningInput; expectedCode: string }> = [
+    {
+      input: {
+        ...uniqueInput(`${suffix}-organisation`),
+        approverUserId: existingInput.approverUserId,
+        organisationSlug: existingInput.organisationSlug
+      },
+      expectedCode: 'ORGANISATION_SLUG_CONFLICT'
+    },
+    {
+      input: {
+        ...uniqueInput(`${suffix}-installer`),
+        approverUserId: existingInput.approverUserId,
+        installerSlug: existingInput.installerSlug
+      },
+      expectedCode: 'INSTALLER_SLUG_CONFLICT'
+    },
+    {
+      input: {
+        ...uniqueInput(`${suffix}-seai`),
+        approverUserId: existingInput.approverUserId,
+        seaiCompanyId: existingInput.seaiCompanyId
+      },
+      expectedCode: 'SEAI_COMPANY_ID_CONFLICT'
+    },
+    {
+      input: {
+        ...uniqueInput(`${suffix}-owner`),
+        approverUserId: existingInput.approverUserId,
+        ownerEmail: existingInput.ownerEmail
+      },
+      expectedCode: 'OWNER_EMAIL_CONFLICT'
+    }
+  ];
+
+  for (const candidate of candidates) {
+    const plan = await planTenantProvisioning(prisma, candidate.input);
+    assert.equal(plan.safeToExecute, false);
+    assert.ok(plan.conflicts.some(({ code }) => code === candidate.expectedCode));
+  }
+});
+
+test('missing, inactive, and unauthorised approvers fail against persisted identities', async () => {
+  const suffix = `approver-${Date.now()}`;
+  const missingInput = uniqueInput(`${suffix}-missing`);
+  await assert.rejects(
+    planTenantProvisioning(prisma, missingInput),
+    (error: unknown) => error instanceof TenantProvisioningError && error.code === 'APPROVER_NOT_AUTHORISED'
+  );
+
+  const inactiveInput = uniqueInput(`${suffix}-inactive`);
+  await prisma.user.create({
+    data: {
+      id: inactiveInput.approverUserId,
+      email: `${inactiveInput.approverUserId}@clada.example`,
+      displayName: 'Inactive Approver',
+      status: 'INACTIVE'
+    }
+  });
+  await assert.rejects(
+    planTenantProvisioning(prisma, inactiveInput),
+    (error: unknown) => error instanceof TenantProvisioningError && error.code === 'APPROVER_NOT_AUTHORISED'
+  );
+
+  const unauthorisedInput = uniqueInput(`${suffix}-unauthorised`);
+  const customerOrganisation = await prisma.organisation.create({
+    data: {
+      name: `Unauthorised Customer ${suffix}`,
+      slug: `unauthorised-customer-${suffix}`,
+      type: 'INSTALLER',
+      status: 'ACTIVE',
+      verified: true
+    }
+  });
+  await prisma.user.create({
+    data: {
+      id: unauthorisedInput.approverUserId,
+      email: `${unauthorisedInput.approverUserId}@customer.example`,
+      displayName: 'Customer Owner',
+      status: 'ACTIVE',
+      memberships: {
+        create: {
+          organisationId: customerOrganisation.id,
+          status: 'ACTIVE',
+          role: 'ORGANISATION_OWNER',
+          isOwner: true
+        }
+      }
+    }
+  });
+  await assert.rejects(
+    planTenantProvisioning(prisma, unauthorisedInput),
+    (error: unknown) => error instanceof TenantProvisioningError && error.code === 'APPROVER_NOT_AUTHORISED'
+  );
 });
 
 test.after(async () => {

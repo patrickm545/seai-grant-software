@@ -449,12 +449,16 @@ async function readCompletedResult(
 
 async function recordDeliveryFailure(
   db: PrismaClient,
-  records: { operationId: string; organisationId: string; userId: string; approver: SafeApproverIdentity }
+  records: { operationId: string; organisationId: string; userId: string; approver: SafeApproverIdentity },
+  failedAt: Date
 ) {
+  let revocationCredential: string | undefined = generateTemporaryCredential();
+  const revokedPasswordHash = await hashPilotPassword(revocationCredential);
+  revocationCredential = undefined;
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: records.userId },
-      data: { passwordHash: null, temporaryCredentialExpiresAt: null }
+      data: { passwordHash: revokedPasswordHash, temporaryCredentialExpiresAt: failedAt }
     });
     await tx.provisioningOperation.update({
       where: { id: records.operationId },
@@ -471,7 +475,7 @@ async function recordDeliveryFailure(
       resourceId: records.userId,
       source: 'tenant-provisioning-service',
       outcome: 'FAILED',
-      metadata: { reasonCode: 'DELIVERY_FAILED', credentialRevoked: true }
+      metadata: { reasonCode: 'DELIVERY_FAILED', accessRevoked: true }
     });
     await writeAuditEvent(tx, {
       action: 'PROVISIONING_FAILED',
@@ -646,7 +650,7 @@ export async function executeTenantProvisioning(args: {
   } catch {
     temporaryCredential = undefined;
     try {
-      await recordDeliveryFailure(args.db, records);
+      await recordDeliveryFailure(args.db, records, now);
     } catch {
       throw new TenantProvisioningError(
         'DELIVERY_FAILED',

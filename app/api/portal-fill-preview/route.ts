@@ -21,6 +21,9 @@ export async function GET(request: NextRequest) {
     const payload = buildPortalFillPreview(lead, lead.installer);
     return NextResponse.json(payload);
   } catch (error) {
+    if (isPilotAuthenticationError(error) && error.code === 'PASSWORD_CHANGE_REQUIRED') {
+      return NextResponse.json({ error: 'Password change required', code: error.code }, { status: 403 });
+    }
     if (isPilotAuthenticationError(error)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

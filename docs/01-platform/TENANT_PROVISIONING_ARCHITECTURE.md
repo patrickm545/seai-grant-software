@@ -6,7 +6,7 @@
 | Status | Proposed |
 | Owner | Clada Systems Architecture |
 | Review cycle | Before each provisioning or identity release |
-| Last reviewed | 2026-07-17 |
+| Last reviewed | 2026-07-18 |
 
 ## Purpose and authority
 
@@ -45,8 +45,8 @@ The current schema is the source of truth for implemented behaviour.
 | --- | --- | --- |
 | Organisation | `Organisation` has unique slug, `INSTALLER`/`CLADA_INTERNAL`, `ACTIVE`/`INACTIVE`, and `verified`. | `PROVISIONING`, `ACTIVE`, `SUSPENDED`, `ARCHIVED`; explicit lifecycle enforcement. |
 | User | Unique normalised email, display name, optional Argon2id hash, `ACTIVE`/`INACTIVE`, last login. | `INVITED`, `ACTIVE`, `SUSPENDED`; first-login and credential-expiry fields. |
-| Membership | Unique `(organisationId,userId)`, status, `isOwner`, platform role. A separate unique `userId` enforces exactly one membership per user. | A user may belong to multiple organisations; active-owner invariant; membership lifecycle and tenant selection. |
-| Installer | Belongs to an organisation; ID is currently deterministic in pilot provisioning. No installer slug field exists. | Validated product-tenant identity/slug or a documented mapping; one or more product tenants per organisation. |
+| Membership | Unique `(organisationId,userId)`, status, `isOwner`, platform role. A separate unique `userId` enforces exactly one membership per user. | Pilot retains the globally unique `userId` and one-organisation-per-user rule; multi-organisation membership and tenant selection are deferred. |
+| Installer | Belongs to an organisation; ID is currently deterministic in pilot provisioning. No Installer slug field exists. | Persistent unique lowercase kebab-case Installer slug, distinct from the internal ID; one or more product tenants per organisation remain a later platform capability. |
 | Session | Opaque random token, HMAC-SHA-256 digest in `AuthSession`, 12-hour expiry, server-side context checks, logout deletion. | Restricted first-login session, rotation after password change, and all-session invalidation rules. |
 | Audit | `AuditLog` supports actor, organisation, resource, outcome, timestamp, and sanitised metadata. | Provisioning/credential lifecycle event catalogue and operation correlation. |
 | Provisioning | `pnpm pilot:provision` uses guarded environment variables and one Prisma transaction with upserts. | Dry-run-first command, operation record, strict conflict plan, audit, credential expiry, safe delivery, retries, and smoke tests. |
@@ -69,17 +69,17 @@ erDiagram
     ORGANISATION ||--o{ AUDIT_EVENT : scopes
 ```
 
-Target cardinality permits one user to have many memberships and one organisation to have many users. One membership joins exactly one user and one organisation. An organisation may own multiple product-specific tenant entities; SolarGRANT Pro initially uses `Installer`. Normal operation requires at least one active `ORGANISATION_OWNER`. Owner semantics remain on membership (`role`, with `isOwner` retained only while compatibility requires it). Leads remain attached to their organisation and installer through user and owner changes.
+The long-term domain permits one user to have many memberships, but the pilot deliberately retains the current database rule that a user has exactly one membership. Multi-organisation membership and tenant selection are beyond the pilot release. One organisation may have many users, and each membership joins exactly one user and one organisation. An organisation may eventually own multiple product-specific tenant entities; SolarGRANT Pro initially uses `Installer`. Normal operation requires at least one active `ORGANISATION_OWNER`. Owner semantics remain on membership (`role`, with `isOwner` retained only while compatibility requires it). Leads remain attached to their organisation and Installer through user and owner changes.
 
-Migration implications are deferred to the implementation PR: lifecycle columns/enums, credential state, a provisioning-operation model, audit correlation, and suitable uniqueness/index constraints are required. The global unique membership `userId` must be deliberately removed before multi-organisation membership is enabled. No schema change is made by this document.
+Migration implications are deferred to the implementation PR: lifecycle columns/enums, credential state, a provisioning-operation model, persistent unique Installer slug, audit correlation, and suitable uniqueness/index constraints are required. The global unique membership `userId` must remain in the pilot migration. Its removal requires a future approved multi-organisation and tenant-selection design. No schema change is made by this document.
 
 ## Proposed lifecycles
 
 ```mermaid
 stateDiagram-v2
     [*] --> PROVISIONING
-    PROVISIONING --> ACTIVE: atomic provisioning completes
-    PROVISIONING --> ARCHIVED: cancelled and retained
+    PROVISIONING --> ACTIVE: first owner activates
+    PROVISIONING --> ARCHIVED: activation cancelled or expires operationally
     ACTIVE --> SUSPENDED: access disabled
     SUSPENDED --> ACTIVE: authorised reactivation
     ACTIVE --> ARCHIVED: authorised closure
@@ -107,7 +107,16 @@ stateDiagram-v2
     FAILED --> VALIDATING: reviewed retry with same operation
 ```
 
-`INVITED` with `mustChangePassword=true` becomes `ACTIVE` only after a successful password change sets `mustChangePassword=false` and clears credential expiry. `ACTIVE -> INVITED`, `ARCHIVED -> ACTIVE`, `COMPLETED -> READY`, and silent owner removal that leaves zero active owners are invalid. Reopening archived tenants, changing a completed operation's inputs, or repairing owner invariants requires explicit review and a separately audited recovery operation.
+Provisioning completion does not activate the organisation. The coordinated state is:
+
+| Moment | Organisation | First owner | First-login control |
+| --- | --- | --- | --- |
+| Provisioning transaction committed | `PROVISIONING` | `INVITED` | `mustChangePassword=true`; expiry populated |
+| Password replacement committed | `ACTIVE` | `ACTIVE` | `mustChangePassword=false`; expiry cleared |
+
+The password-replacement transaction activates both the first owner and organisation only after all credential, session, and audit writes succeed. If the first owner never activates, credential expiry leaves the organisation `PROVISIONING`. An authorised reissue may keep it in `PROVISIONING`; cancellation revokes credentials and sessions, suspends the invited user/membership as applicable, records the reason, and moves the organisation to `ARCHIVED`. No tenant product access is available while the organisation remains `PROVISIONING`.
+
+`ACTIVE -> INVITED`, `ARCHIVED -> ACTIVE`, `COMPLETED -> READY`, and silent owner removal that leaves zero active owners are invalid. Reopening an archived tenant, changing a completed operation's inputs, or repairing owner invariants is a high-risk recovery action requiring Patrick McKenna's explicit approval until delegated authority is implemented, plus a separately audited recovery operation.
 
 ## Provisioning transaction
 
@@ -121,13 +130,14 @@ The standard service must:
 6. Require explicit Production confirmation of that exact plan.
 7. Begin one database transaction.
 8. Create the organisation and Installer, or reuse only records approved by the plan.
-9. Create or safely reuse the user and create the owner membership.
-10. Create invitation state or generate a cryptographically secure temporary credential, hash it, set `mustChangePassword=true`, and set expiry.
+9. Create the organisation as `PROVISIONING`, create or safely reuse the user as `INVITED`, and create the owner membership.
+10. Generate a cryptographically secure temporary credential in process memory, store it as the user's only password hash, set `mustChangePassword=true`, and set the 24-hour expiry and any credential-version invalidation state.
 11. Write transaction-critical audit events and mark the operation completed.
 12. Commit and return a secret-free result.
-13. Run read-only smoke tests.
+13. Deliver the in-memory credential directly through the approved outbound adapter and retain only its safe delivery receipt.
+14. Run read-only smoke tests.
 
-All database changes are atomic. Any database or transaction-critical audit failure rolls back the operation. Post-commit notification or credential-delivery failure must not roll back identity data; it records a non-secret failure and leaves the credential undisclosed or revoked, then uses an audited reset/reissue operation. A transactional outbox is preferred when notifications are automated. For the first pilot, audit records that prove the database mutation belong inside the main Prisma transaction; delivery events may follow through an outbox.
+All database changes are atomic. Any database or transaction-critical audit failure rolls back the operation. Delivery occurs after commit because a provider call cannot participate in the database transaction. Delivery failure records a non-secret failure, revokes/replaces the credential through an audited reissue operation, and leaves the organisation `PROVISIONING`; the command never falls back to plaintext output. A transactional outbox is preferred when notification orchestration is automated. For the first pilot, audit records proving database mutation belong inside the main Prisma transaction; the safe provider receipt is audited after delivery.
 
 ## Idempotency and conflict policy
 
@@ -138,7 +148,7 @@ The operation ID should be an operator-supplied idempotency key or a determinist
 | New email and all names/identifiers free | Create. |
 | Email exists with no membership | Stop for review; reuse only after identity verification. |
 | Email exists in same organisation with exact active owner membership | No-op if the completed operation matches; otherwise review. |
-| Email exists in another customer organisation | Stop for review; multi-organisation access is not a pilot default. |
+| Email exists in another customer organisation | Stop; multi-organisation membership is outside pilot scope. |
 | Email belongs to Clada internal account | Stop; never add automatically to a customer organisation. |
 | Organisation name exists but identity is not exact | Stop for review. |
 | Organisation slug exists for the exact target | Reuse/no-op only if all ownership attributes match. |
@@ -160,15 +170,15 @@ pnpm provision:organisation -- \
   --owner-email "aoife@harbour-solar.example" \
   --installer-name "Harbour Solar" \
   --installer-slug "harbour-solar" \
-  --approved-by "approved-operator-id" \
+  --approved-by "clada-internal-user-id" \
   --environment "production" \
   --idempotency-key "pilot-2026-001" \
   --dry-run
 ```
 
-Required: organisation name, owner full name, owner email, installer display name, explicit or deterministically generated installer slug, approved-by identifier, environment, and Production idempotency key. Optional: phone, external customer reference, cohort, non-sensitive notes, and credential expiry. Safety flags are `--dry-run`, `--confirm-production`, and `--idempotency-key`.
+Required: organisation name, owner full name, owner email, Installer display name, persistent Installer slug, `approvedBy`, environment, and Production idempotency key. Optional: phone, external customer reference, cohort, and non-sensitive notes. Safety flags are `--dry-run`, `--confirm-production`, and `--idempotency-key`.
 
-Names are trimmed, bounded, and checked for control characters; email is trimmed, lower-cased, and validated; slugs are lower-case kebab-case and bounded; environment is an allow-listed value; approvals use durable operator identifiers, not display names. Credential expiry defaults to 24 hours and cannot exceed an approved pilot maximum without a reason.
+Names are trimmed, bounded, and checked for control characters; email is trimmed, lower-cased, and validated; Installer slug is persistent, unique, lower-case kebab-case, bounded, and distinct from the internal ID; environment is an allow-listed value. `approvedBy` must resolve to a durable authenticated Clada internal user ID. Patrick McKenna is the initial business approver, and high-risk recovery actions require his explicit approval until delegated authority is implemented. Credential expiry is fixed at 24 hours for pilot scope; there is no routine 72-hour exception.
 
 The command defaults to dry-run. Production writes require a matching prior plan, `--confirm-production`, database fingerprint verification, and an approved change/reference. It must refuse interactive ambiguity and must not read secrets from ordinary command arguments.
 
@@ -187,16 +197,35 @@ Retries use the same idempotency key and immutable inputs. A changed request use
 
 ## Temporary credential policy
 
-Temporary passwords are an interim pilot mechanism. A credential is generated from a cryptographically secure source, meets the password policy, is hashed before storage, expires by default after 24 hours, and becomes invalid after password change, reset, suspension, or expiry. A 72-hour exception may reduce operator reissues but increases exposure and requires an approved reason. Login attempts must be rate-limited.
+Temporary passwords are an interim pilot mechanism. A credential is generated from a cryptographically secure source, meets the password policy, is hashed before storage, expires after 24 hours, and becomes invalid after password change, reset, suspension, or expiry. No routine 72-hour exception is approved. Login attempts must be rate-limited.
 
-Plaintext credentials must never enter source, PRs, commits, documentation examples, chat/Codex summaries, audit/application/CI/deployment logs, screenshots, or persisted terminal output. Email may carry the login URL and account email, while the credential uses a separate approved channel such as a verified phone call or controlled secure message.
+Plaintext credentials must never enter source, PRs, commits, documentation examples, chat/Codex context or summaries, audit/application/CI/deployment logs, screenshots, or persisted terminal output. Codex must never receive, print, return, or log the credential.
 
-The repository currently has no approved non-logged secret handoff integration. Production execution is therefore blocked until implementation provides one of:
+### Credential delivery adapter
 
-- direct write to an approved one-time secret-delivery service, returning only a non-secret delivery receipt; or
-- an operator-controlled, non-recorded interactive handoff whose process has been security-approved and tested.
+The approved Production direction for the first pilot is a transactional-email adapter behind this conceptual interface; provider and package selection remain implementation details:
 
-The command must never print the credential as a fallback. The preferred replacement is a one-time, time-limited signed invitation that lets the user choose a password and exposes no password to the operator.
+```text
+CredentialDeliveryAdapter.deliverTemporaryCredential({
+  recipientEmail,
+  recipientName,
+  organisationName,
+  loginUrl,
+  temporaryCredential,
+  expiresAt,
+  operationId
+}) -> { providerDeliveryId, status }
+```
+
+The adapter receives the credential only in process memory, never persists or logs the payload, never returns the credential, and returns only a safe provider delivery identifier and delivery status. It reports failure without echoing the request, supports a fake implementation for deterministic tests, and is replaceable by an invitation-link adapter. The provider delivery identifier and status may be audited; plaintext may not. The command has no plaintext fallback.
+
+The preferred replacement remains a one-time, time-limited signed invitation that lets the user choose a password and exposes no password to the operator.
+
+### Temporary password storage
+
+For pilot scope, the temporary credential becomes the user's normal `passwordHash`; there is no second simultaneously valid password hash. Proposed fields are `mustChangePassword`, `temporaryCredentialExpiresAt`, and, if implementation needs it, `credentialVersion` or equivalent invalidation state. Exact schema names remain proposed until PR 1.
+
+Reissue atomically replaces `passwordHash`, resets the 24-hour expiry, advances invalidation state where used, and revokes all sessions. Successful password replacement replaces `passwordHash` again, clears expiry, sets `mustChangePassword=false`, activates the user and organisation, and revokes the restricted session before issuing a normal session.
 
 ## First-login authentication flow
 
@@ -221,11 +250,11 @@ sequenceDiagram
     D-->>P: Truthful empty tenant data
 ```
 
-After credential verification, authentication checks user, organisation, and membership status plus expiry and `mustChangePassword`. It issues only a restricted session and redirects to a dedicated password-change route. Dashboard, leads, quotes, admin, intake-management, API, and session-refresh routes reject restricted users; HTML routes redirect and protected APIs return a generic `403` code such as `PASSWORD_CHANGE_REQUIRED` without tenant data. Only logout, password change, and narrowly required session endpoints are allowed.
+After credential verification, authentication checks user, organisation, membership, expiry, and `mustChangePassword`. `PROVISIONING` is accepted only for this restricted first-login path. It issues a 30-minute restricted session and redirects to a dedicated password-change route. Dashboard, leads, quotes, admin, intake-management, protected APIs, and session-refresh routes reject restricted users; HTML routes redirect and protected APIs return a generic `403` code such as `PASSWORD_CHANGE_REQUIRED` without tenant data. Only logout and password change are allowed. Restricted-session refresh is not required for pilot scope and can never convert a restricted session to a normal one.
 
-Password change verifies the current credential, new policy, and confirmation; replaces the hash; clears the flag and expiry; activates the invited user; revokes prior sessions; rotates to a new normal session; and writes audit events. Manual URLs cannot bypass a server-side guard.
+Password change verifies the current credential, new policy, and confirmation; replaces the hash; clears the flag and expiry; atomically activates the invited user and `PROVISIONING` organisation; revokes prior sessions; issues a new normal 12-hour session; and writes audit events. Manual URLs cannot bypass a server-side guard.
 
-Expired credentials fail generically and require audited reissue. Suspended user, membership, or organisation fails generically and creates no session. Closing the browser leaves the restricted state and permits resumption only while credential/session is valid. Validation errors retain no new password and reveal clear policy guidance. Session expiry requires re-authentication. A replaced temporary credential never works again.
+Expired credentials fail generically and require audited reissue. Suspended user, membership, or organisation fails generically and creates no session. Closing the browser leaves the restricted state. If the restricted session expires, the owner signs in again with the still-valid temporary credential; no restricted refresh is performed. Validation errors retain no new password and reveal clear policy guidance. A replaced temporary credential never works again.
 
 ## Password and session policy
 
@@ -255,9 +284,9 @@ Tests must cover guessed IDs, cross-tenant reads/writes/exports, child resources
 
 ## Audit architecture
 
-Required event types are `PROVISIONING_REQUESTED`, `PROVISIONING_DRY_RUN_COMPLETED`, `ORGANISATION_CREATED`, `INSTALLER_CREATED`, `USER_CREATED`, `USER_REUSED`, `MEMBERSHIP_CREATED`, `OWNER_ASSIGNED`, `TEMPORARY_CREDENTIAL_CREATED`, `INVITATION_CREATED`, `PROVISIONING_COMPLETED`, `PROVISIONING_FAILED`, `FIRST_LOGIN_COMPLETED`, `PASSWORD_CHANGED`, `USER_ACTIVATED`, `CREDENTIAL_EXPIRED`, `CREDENTIAL_RESET`, `USER_SUSPENDED`, `USER_REACTIVATED`, `ORGANISATION_SUSPENDED`, `ORGANISATION_REACTIVATED`, and `ORGANISATION_ARCHIVED`.
+Required event types are `PROVISIONING_REQUESTED`, `PROVISIONING_DRY_RUN_COMPLETED`, `ORGANISATION_CREATED`, `INSTALLER_CREATED`, `USER_CREATED`, `USER_REUSED`, `MEMBERSHIP_CREATED`, `OWNER_ASSIGNED`, `TEMPORARY_CREDENTIAL_CREATED`, `TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED`, `TEMPORARY_CREDENTIAL_DELIVERY_FAILED`, `INVITATION_CREATED`, `PROVISIONING_COMPLETED`, `PROVISIONING_FAILED`, `FIRST_LOGIN_COMPLETED`, `PASSWORD_CHANGED`, `USER_ACTIVATED`, `ORGANISATION_ACTIVATED`, `CREDENTIAL_EXPIRED`, `CREDENTIAL_RESET`, `USER_SUSPENDED`, `USER_REACTIVATED`, `ORGANISATION_SUSPENDED`, `ORGANISATION_REACTIVATED`, and `ORGANISATION_ARCHIVED`.
 
-Events carry type, timestamp, actor, target organisation/Installer/user, operation ID, result, reason code, resource IDs, and minimal non-secret metadata. They never carry plaintext credentials, hashes, cookies, tokens, keys, URLs with secrets, database URLs, or full sensitive request payloads. Database-mutation events are written inside the main transaction for pilot scope. Notification delivery should move to a transactional outbox when automated.
+Events carry type, timestamp, actor, target organisation/Installer/user, operation ID, result, reason code, resource IDs, and minimal non-secret metadata. Delivery events may include the provider delivery identifier and normalised status. They never carry plaintext credentials, provider payloads, hashes, cookies, tokens, keys, URLs with secrets, database URLs, or full sensitive request payloads. Database-mutation events are written inside the main transaction for pilot scope. Delivery orchestration may move to a transactional outbox without ever persisting the credential payload.
 
 ## Failure, rollback, and recovery
 

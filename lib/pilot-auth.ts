@@ -312,7 +312,6 @@ export async function authenticatePilotCredentials(args: {
   }
 
   const sessionToken = randomBytes(32).toString('base64url');
-  const sessionType = restrictedContext ? 'RESTRICTED_FIRST_LOGIN' : 'NORMAL';
   const sessionTtl = restrictedContext ? RESTRICTED_SESSION_TTL_SECONDS : PILOT_SESSION_TTL_SECONDS;
   const requestedExpiry = new Date(now.getTime() + sessionTtl * 1000);
   const expiresAt = restrictedContext && restrictedContext.temporaryCredentialExpiresAt < requestedExpiry
@@ -339,7 +338,12 @@ export async function authenticatePilotCredentials(args: {
 
         await tx.user.update({ where: { id: user.id }, data: { lastLoginAt: now } });
         await tx.authSession.create({
-          data: { userId: user.id, tokenHash, sessionType, expiresAt }
+          data: {
+            userId: user.id,
+            tokenHash,
+            sessionType: 'RESTRICTED_FIRST_LOGIN',
+            expiresAt
+          }
         });
 
         const auditBase = {
@@ -369,7 +373,12 @@ export async function authenticatePilotCredentials(args: {
     await db.$transaction(async (tx) => {
       await tx.user.update({ where: { id: user.id }, data: { lastLoginAt: now } });
       await tx.authSession.create({
-        data: { userId: user.id, tokenHash, sessionType, expiresAt }
+        data: {
+          userId: user.id,
+          tokenHash,
+          sessionType: 'NORMAL',
+          expiresAt
+        }
       });
     });
   }

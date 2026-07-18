@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { verify } from '@node-rs/argon2';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import {
   authenticatePilotCredentials,
   completePilotFirstLogin,
@@ -158,6 +158,18 @@ test('valid invited-owner credentials create only a 30-minute restricted session
   assert.equal(state?.context.organisationId, fixture.organisation.id);
   const stored = await prisma.authSession.findUniqueOrThrow({ where: { tokenHash: hashSessionToken(result.sessionToken) } });
   assert.equal(stored.sessionType, 'RESTRICTED_FIRST_LOGIN');
+});
+
+test('the database rejects AuthSession rows without an explicit session type', async () => {
+  const fixture = await createInvitedOwner('missing-session-type');
+  const tokenHash = hashSessionToken(`missing-session-type-${suffix}`);
+  await assert.rejects(
+    prisma.$executeRaw`
+      INSERT INTO "AuthSession" ("id", "userId", "tokenHash", "expiresAt", "createdAt")
+      VALUES (${`session-missing-type-${suffix}`}, ${fixture.user.id}, ${tokenHash}, ${new Date(baseNow.getTime() + 60_000)}, ${baseNow})
+    `,
+    (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2010' && error.message.includes('23502')
+  );
 });
 
 test('expired temporary credentials fail generically and create no session', async () => {

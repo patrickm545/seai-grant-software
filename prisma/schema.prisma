@@ -202,7 +202,7 @@ model AuthSession {
   id          String          @id @default(cuid())
   userId      String
   tokenHash   String          @unique
-  sessionType AuthSessionType @default(NORMAL)
+  sessionType AuthSessionType
   expiresAt   DateTime
   createdAt   DateTime        @default(now())
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)

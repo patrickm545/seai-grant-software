@@ -196,7 +196,16 @@ test('tenant provisioning migration preserves the single-organisation membership
 
 test('tenant first-login migration types restricted sessions without changing existing session behaviour', () => {
   assert.match(tenantFirstLoginMigrationSql, /CREATE TYPE "AuthSessionType" AS ENUM \('NORMAL', 'RESTRICTED_FIRST_LOGIN'\)/);
-  assert.match(tenantFirstLoginMigrationSql, /"sessionType" "AuthSessionType" NOT NULL DEFAULT 'NORMAL'/);
+  assert.match(tenantFirstLoginMigrationSql, /ADD COLUMN "sessionType" "AuthSessionType";/);
+  assert.match(tenantFirstLoginMigrationSql, /UPDATE "AuthSession"\s+SET "sessionType" = 'NORMAL'\s+WHERE "sessionType" IS NULL;/);
+  assert.match(tenantFirstLoginMigrationSql, /ALTER COLUMN "sessionType" SET NOT NULL;/);
+  assert.doesNotMatch(tenantFirstLoginMigrationSql, /sessionType[^\n]*DEFAULT/);
   assert.match(tenantFirstLoginMigrationSql, /"AuthSession_userId_sessionType_expiresAt_idx"/);
   assert.doesNotMatch(tenantFirstLoginMigrationSql, /DROP TABLE|DROP COLUMN|DELETE FROM/);
+});
+
+test('Prisma AuthSession schema requires an explicit session type with no default', () => {
+  const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
+  assert.match(schema, /sessionType AuthSessionType\s*\n/);
+  assert.doesNotMatch(schema, /sessionType\s+AuthSessionType\s+@default/);
 });

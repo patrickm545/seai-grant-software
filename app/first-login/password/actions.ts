@@ -10,12 +10,18 @@ import {
 
 export async function replaceTemporaryCredential(formData: FormData) {
   const cookieStore = await cookies();
-  const result = await completePilotFirstLogin({
-    sessionToken: cookieStore.get(PILOT_SESSION_COOKIE_NAME)?.value,
-    currentCredential: String(formData.get('currentCredential') ?? ''),
-    newPassword: String(formData.get('newPassword') ?? ''),
-    confirmation: String(formData.get('confirmation') ?? '')
-  });
+  const result = await (async () => {
+    try {
+      return await completePilotFirstLogin({
+        sessionToken: cookieStore.get(PILOT_SESSION_COOKIE_NAME)?.value,
+        currentCredential: String(formData.get('currentCredential') ?? ''),
+        newPassword: String(formData.get('newPassword') ?? ''),
+        confirmation: String(formData.get('confirmation') ?? '')
+      });
+    } catch {
+      return { ok: false as const, code: 'ACTIVATION_UNAVAILABLE' as const };
+    }
+  })();
 
   if (!result.ok) redirect(`/first-login/password?error=${encodeURIComponent(result.code)}`);
 

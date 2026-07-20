@@ -201,7 +201,8 @@ function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryStat
   if (org.type !== 'INSTALLER' || org.installers.length !== 1) return 'MANUAL_REVIEW_REQUIRED';
   if (org.status === 'INACTIVE') return 'ORGANISATION_SUSPENDED';
   const membership = ownerMembership(target);
-  if (!membership || membership.status !== 'ACTIVE') return 'ACTIVATION_STATE_DRIFT';
+  if (!membership) return 'MANUAL_REVIEW_REQUIRED';
+  if (membership.status !== 'ACTIVE') return 'ACTIVATION_STATE_DRIFT';
   const user = membership.user;
   if (user.status === 'INACTIVE') return 'USER_SUSPENDED';
   const latest = org.provisioningOperations[0];

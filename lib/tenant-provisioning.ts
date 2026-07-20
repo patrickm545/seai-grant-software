@@ -547,6 +547,7 @@ export async function executeTenantProvisioning(args: {
           data: {
             idempotencyKey: input.idempotencyKey,
             inputHash: transactionPlan.inputHash,
+            operationType: 'PROVISIONING',
             status: 'PENDING'
           }
         });

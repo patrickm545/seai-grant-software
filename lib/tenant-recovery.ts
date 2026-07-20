@@ -1,0 +1,576 @@
+import { createHash } from 'node:crypto';
+import type {
+  Prisma,
+  PrismaClient,
+  ProvisioningOperationType,
+  ProvisioningOperationStatus
+} from '@prisma/client';
+import { writeAuditEvent } from './audit';
+import type { CredentialDeliveryAdapter, CredentialDeliveryReceipt } from './credential-delivery';
+import { generateTemporaryCredential } from './tenant-provisioning';
+import { hashPilotPassword } from './password-hashing';
+
+type DbClient = PrismaClient | Prisma.TransactionClient;
+
+const TEMPORARY_CREDENTIAL_TTL_MS = 24 * 60 * 60 * 1000;
+const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+const SAFE_RECEIPT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
+
+export const RECOVERY_STATES = [
+  'HEALTHY_ACTIVE',
+  'INVITED_CREDENTIAL_VALID',
+  'INVITED_CREDENTIAL_EXPIRED',
+  'DELIVERY_FAILED',
+  'PROVISIONING_INCOMPLETE',
+  'USER_SUSPENDED',
+  'ORGANISATION_SUSPENDED',
+  'ACTIVATION_STATE_DRIFT',
+  'MANUAL_REVIEW_REQUIRED'
+] as const;
+export type TenantRecoveryState = (typeof RECOVERY_STATES)[number];
+
+export type RecoveryOperationType =
+  | 'RECOVERY_CREDENTIAL_REISSUE'
+  | 'RECOVERY_SUSPEND_USER'
+  | 'RECOVERY_SUSPEND_ORGANISATION'
+  | 'RECOVERY_REACTIVATE_USER'
+  | 'RECOVERY_REACTIVATE_ORGANISATION';
+
+export class TenantRecoveryError extends Error {
+  constructor(
+    public readonly code:
+      | 'INPUT_INVALID'
+      | 'APPROVER_NOT_AUTHORISED'
+      | 'TARGET_NOT_FOUND'
+      | 'RECOVERY_REFUSED'
+      | 'IDEMPOTENCY_KEY_MISMATCH'
+      | 'IDEMPOTENCY_OPERATION_INCOMPLETE'
+      | 'DELIVERY_FAILED'
+      | 'PRODUCTION_DISABLED'
+      | 'TRANSACTION_FAILED',
+    message: string
+  ) {
+    super(message);
+    this.name = 'TenantRecoveryError';
+  }
+}
+
+export type RecoveryInspection = {
+  state: TenantRecoveryState;
+  safe: true;
+  organisation: { id: string; name: string; slug: string; status: string; type: string };
+  installer: { id: string; name: string; slug: string } | null;
+  owner: {
+    id: string;
+    displayName: string;
+    email: string;
+    status: string;
+    membershipId: string;
+    membershipStatus: string;
+    role: string;
+    isOwner: boolean;
+  } | null;
+  credential: { state: 'VALID' | 'EXPIRED' | 'NOT_USABLE' | 'NOT_APPLICABLE'; expiresAt: Date | null; mustChangePassword: boolean };
+  sessions: { active: number; restricted: number; normal: number };
+  provisioning: { id: string; status: ProvisioningOperationStatus; operationType: ProvisioningOperationType } | null;
+  audit: { count: number; recentActions: string[] };
+};
+
+export type RecoveryInput = {
+  organisationId: string;
+  installerId?: string;
+  ownerUserId: string;
+  approverUserId: string;
+  idempotencyKey: string;
+  reason: string;
+  environment: 'development' | 'test' | 'preview' | 'production';
+};
+
+export type RecoveryPlan = {
+  safeToExecute: boolean;
+  operationType: RecoveryOperationType;
+  state: TenantRecoveryState;
+  operationId: string | null;
+  completedAt?: Date | null;
+  completedResult?: RecoveryResult;
+  idempotency: 'NEW' | 'COMPLETED_MATCH' | 'MISMATCH' | 'INCOMPLETE';
+  intendedDatabaseActions: string[];
+  refusalReason?: string;
+  target: { organisationId: string; userId: string | null };
+};
+
+export type RecoveryResult = {
+  idempotentReplay: boolean;
+  operation: { id: string; operationType: RecoveryOperationType; status: ProvisioningOperationStatus; completedAt: Date | null };
+  state: TenantRecoveryState;
+  organisationId: string;
+  userId: string | null;
+  revokedSessionCount: number;
+  delivery?: CredentialDeliveryReceipt;
+};
+
+type RecoveryResultSnapshot = Omit<RecoveryResult, 'idempotentReplay' | 'operation'> & {
+  operationType: RecoveryOperationType;
+  completedAt: string;
+  delivery?: CredentialDeliveryReceipt;
+};
+
+type RecoveryTarget = {
+  organisation: {
+    id: string;
+    name: string;
+    slug: string;
+    type: string;
+    status: string;
+    verified: boolean;
+    installers: Array<{ id: string; name: string; slug: string }>;
+    memberships: Array<{
+      id: string;
+      userId: string;
+      status: string;
+      isOwner: boolean;
+      role: string;
+      user: {
+        id: string;
+        email: string;
+        displayName: string;
+        status: string;
+        mustChangePassword: boolean;
+        passwordHash: string | null;
+        temporaryCredentialExpiresAt: Date | null;
+        sessions: Array<{ id: string; sessionType: string; expiresAt: Date; createdAt: Date }>;
+      };
+    }>;
+    provisioningOperations: Array<{
+      id: string;
+      status: ProvisioningOperationStatus;
+      operationType: ProvisioningOperationType;
+      approvedBy: string | null;
+      approvedAt: Date | null;
+      completedAt: Date | null;
+      createdAt: Date;
+    }>;
+    auditLogs: Array<{ action: string; outcome: string; createdAt: Date }>;
+  };
+};
+
+async function loadRecoveryTarget(db: DbClient, organisationId: string): Promise<RecoveryTarget> {
+  if (!SAFE_IDENTIFIER.test(organisationId)) throw new TenantRecoveryError('INPUT_INVALID', 'Organisation ID is invalid.');
+  const organisation = await db.organisation.findUnique({
+    where: { id: organisationId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      type: true,
+      status: true,
+      verified: true,
+      installers: { select: { id: true, name: true, slug: true } },
+      memberships: {
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          isOwner: true,
+          role: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+              status: true,
+              mustChangePassword: true,
+              passwordHash: true,
+              temporaryCredentialExpiresAt: true,
+              sessions: { select: { id: true, sessionType: true, expiresAt: true, createdAt: true } }
+            }
+          }
+        }
+      },
+      provisioningOperations: {
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+        select: { id: true, status: true, operationType: true, approvedBy: true, approvedAt: true, completedAt: true, createdAt: true }
+      }
+    }
+  });
+  if (!organisation) throw new TenantRecoveryError('TARGET_NOT_FOUND', 'The target organisation was not found.');
+  const auditLogs = await db.auditLog.findMany({
+    where: { organisationId },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: { action: true, outcome: true, createdAt: true }
+  });
+  return { organisation: { ...organisation, auditLogs } } as RecoveryTarget;
+}
+
+function ownerMembership(target: RecoveryTarget) {
+  const owners = target.organisation.memberships.filter((membership) => membership.isOwner && membership.role === 'ORGANISATION_OWNER');
+  return owners.length === 1 ? owners[0] : null;
+}
+
+function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryState {
+  const org = target.organisation;
+  if (org.type !== 'INSTALLER' || org.installers.length !== 1) return 'MANUAL_REVIEW_REQUIRED';
+  if (org.status === 'INACTIVE') return 'ORGANISATION_SUSPENDED';
+  const membership = ownerMembership(target);
+  if (!membership) return 'MANUAL_REVIEW_REQUIRED';
+  if (membership.status !== 'ACTIVE') return 'ACTIVATION_STATE_DRIFT';
+  const user = membership.user;
+  if (user.status === 'INACTIVE') return 'USER_SUSPENDED';
+  const latest = org.provisioningOperations[0];
+  if (org.status === 'PROVISIONING') {
+    if (latest?.status === 'FAILED' && ['PROVISIONING', 'RECOVERY_CREDENTIAL_REISSUE'].includes(latest.operationType)) return 'DELIVERY_FAILED';
+    if (user.status !== 'INVITED' || !user.mustChangePassword || !user.temporaryCredentialExpiresAt) return 'ACTIVATION_STATE_DRIFT';
+    if (!user.passwordHash) return 'PROVISIONING_INCOMPLETE';
+    if (user.temporaryCredentialExpiresAt <= now) return 'INVITED_CREDENTIAL_EXPIRED';
+    if (latest && ['PENDING', 'VALIDATING', 'READY'].includes(latest.status)) return 'PROVISIONING_INCOMPLETE';
+    return 'INVITED_CREDENTIAL_VALID';
+  }
+  if (org.status === 'ACTIVE' && user.status === 'ACTIVE' && !user.mustChangePassword && membership.status === 'ACTIVE') return 'HEALTHY_ACTIVE';
+  return 'ACTIVATION_STATE_DRIFT';
+}
+
+export async function inspectTenantRecovery(args: { db: DbClient; organisationId: string; now?: Date } | { db: DbClient; input: { organisationId: string }; now?: Date }): Promise<RecoveryInspection> {
+  const organisationId = 'input' in args ? args.input.organisationId : args.organisationId;
+  const target = await loadRecoveryTarget(args.db, organisationId);
+  const now = args.now ?? new Date();
+  const membership = ownerMembership(target);
+  const owner = membership?.user ?? null;
+  const activeSessions = owner?.sessions.filter((session) => session.expiresAt > now) ?? [];
+  const latest = target.organisation.provisioningOperations[0] ?? null;
+  const credentialState = !owner || owner.status === 'ACTIVE'
+    ? 'NOT_APPLICABLE'
+    : owner.temporaryCredentialExpiresAt && owner.temporaryCredentialExpiresAt > now && owner.mustChangePassword
+      ? 'VALID'
+      : owner.mustChangePassword ? 'EXPIRED' : 'NOT_USABLE';
+  const result: RecoveryInspection = {
+    safe: true,
+    state: classifyRecovery(target, now),
+    organisation: { id: target.organisation.id, name: target.organisation.name, slug: target.organisation.slug, status: target.organisation.status, type: target.organisation.type },
+    installer: target.organisation.installers.length === 1 ? target.organisation.installers[0] : null,
+    owner: membership && owner ? { id: owner.id, displayName: owner.displayName, email: owner.email, status: owner.status, membershipId: membership.id, membershipStatus: membership.status, role: membership.role, isOwner: membership.isOwner } : null,
+    credential: { state: credentialState, expiresAt: owner?.temporaryCredentialExpiresAt ?? null, mustChangePassword: owner?.mustChangePassword ?? false },
+    sessions: { active: activeSessions.length, restricted: activeSessions.filter((session) => session.sessionType === 'RESTRICTED_FIRST_LOGIN').length, normal: activeSessions.filter((session) => session.sessionType === 'NORMAL').length },
+    provisioning: latest ? { id: latest.id, status: latest.status, operationType: latest.operationType } : null,
+    audit: { count: target.organisation.auditLogs.length, recentActions: target.organisation.auditLogs.slice(0, 20).map((event) => event.action) }
+  };
+  await writeAuditEvent(args.db, {
+    actor: 'system',
+    actorType: 'SYSTEM',
+    organisationId: target.organisation.id,
+    source: 'tenant-recovery',
+    action: 'RECOVERY_INSPECTION_PERFORMED',
+    resourceType: 'organisation',
+    resourceId: target.organisation.id,
+    metadata: { state: result.state }
+  });
+  return result;
+}
+
+async function resolveApprover(db: DbClient, approverUserId: string, targetUserId?: string) {
+  if (!SAFE_IDENTIFIER.test(approverUserId)) throw new TenantRecoveryError('INPUT_INVALID', 'Approver ID is invalid.');
+  const approver = await db.user.findUnique({ where: { id: approverUserId }, select: { id: true, displayName: true, status: true, memberships: { select: { status: true, role: true, organisation: { select: { type: true, status: true } } } } } });
+  const authorised = approver?.memberships.some(
+    (membership) =>
+      membership.status === 'ACTIVE' &&
+      membership.organisation.type === 'CLADA_INTERNAL' &&
+      membership.organisation.status === 'ACTIVE' &&
+      ['CLADA_INTERNAL_ADMIN', 'CLADA_INTERNAL_SUPPORT'].includes(membership.role)
+  );
+  if (!approver || approver.status !== 'ACTIVE' || !authorised || approver.id === targetUserId) {
+    throw new TenantRecoveryError('APPROVER_NOT_AUTHORISED', 'The approver is not an active Clada internal operator.');
+  }
+  return { id: approver.id, displayName: approver.displayName };
+}
+
+function validateRecoveryInput(input: RecoveryInput) {
+  if (!SAFE_IDENTIFIER.test(input.organisationId) || !SAFE_IDENTIFIER.test(input.ownerUserId) || !SAFE_IDENTIFIER.test(input.approverUserId) || !SAFE_IDENTIFIER.test(input.idempotencyKey)) throw new TenantRecoveryError('INPUT_INVALID', 'Recovery identifiers are invalid.');
+  if (!input.reason || input.reason.trim().length < 3 || input.reason.length > 500 || CONTROL_CHARACTERS.test(input.reason)) throw new TenantRecoveryError('INPUT_INVALID', 'A bounded recovery reason is required.');
+  if (!['development', 'test', 'preview', 'production'].includes(input.environment)) throw new TenantRecoveryError('INPUT_INVALID', 'A supported recovery environment is required.');
+  if (input.environment === 'production') throw new TenantRecoveryError('PRODUCTION_DISABLED', 'Production recovery execution remains disabled.');
+}
+
+function canonicalRecoveryInput(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {
+  // The idempotency key identifies the operation record; it is deliberately
+  // excluded from the canonical request digest so a new key can represent
+  // the same reviewed request without changing its content hash.
+  return JSON.stringify({ type, organisationId: input.organisationId, installerId: input.installerId ?? null, userId, approverUserId: input.approverUserId, environment: input.environment, reason: input.reason.trim() });
+}
+
+function recoveryInputHash(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {
+  return createHash('sha256').update(canonicalRecoveryInput(type, input, userId)).digest('hex');
+}
+
+function buildRecoveryResultSnapshot(result: RecoveryResult): RecoveryResultSnapshot {
+  const snapshot: RecoveryResultSnapshot = {
+    operationType: result.operation.operationType,
+    state: result.state,
+    organisationId: result.organisationId,
+    userId: result.userId,
+    revokedSessionCount: result.revokedSessionCount,
+    completedAt: (result.operation.completedAt ?? new Date(0)).toISOString()
+  };
+  if (result.delivery) snapshot.delivery = { providerDeliveryId: result.delivery.providerDeliveryId, status: result.delivery.status };
+  return snapshot;
+}
+
+function parseRecoveryResultSnapshot(value: Prisma.JsonValue | null): RecoveryResultSnapshot | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.operationType !== 'string' || !['RECOVERY_CREDENTIAL_REISSUE', 'RECOVERY_SUSPEND_USER', 'RECOVERY_SUSPEND_ORGANISATION', 'RECOVERY_REACTIVATE_USER', 'RECOVERY_REACTIVATE_ORGANISATION'].includes(record.operationType)) return null;
+  if (typeof record.state !== 'string' || !RECOVERY_STATES.includes(record.state as TenantRecoveryState)) return null;
+  if (typeof record.organisationId !== 'string' || !SAFE_IDENTIFIER.test(record.organisationId)) return null;
+  if (record.userId !== null && (typeof record.userId !== 'string' || !SAFE_IDENTIFIER.test(record.userId))) return null;
+  if (typeof record.revokedSessionCount !== 'number' || !Number.isSafeInteger(record.revokedSessionCount) || record.revokedSessionCount < 0) return null;
+  if (typeof record.completedAt !== 'string' || Number.isNaN(Date.parse(record.completedAt))) return null;
+  let delivery: CredentialDeliveryReceipt | undefined;
+  if (record.delivery !== undefined) {
+    if (!record.delivery || typeof record.delivery !== 'object' || Array.isArray(record.delivery)) return null;
+    const receipt = record.delivery as Record<string, unknown>;
+    if (typeof receipt.providerDeliveryId !== 'string' || !SAFE_RECEIPT_ID.test(receipt.providerDeliveryId) || !['ACCEPTED', 'DELIVERED'].includes(String(receipt.status))) return null;
+    delivery = { providerDeliveryId: receipt.providerDeliveryId, status: receipt.status as CredentialDeliveryReceipt['status'] };
+  }
+  return {
+    operationType: record.operationType as RecoveryOperationType,
+    state: record.state as TenantRecoveryState,
+    organisationId: record.organisationId,
+    userId: record.userId as string | null,
+    revokedSessionCount: record.revokedSessionCount,
+    completedAt: record.completedAt,
+    ...(delivery ? { delivery } : {})
+  };
+}
+
+async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, input: RecoveryInput, now: Date): Promise<RecoveryPlan> {
+  validateRecoveryInput(input);
+  const target = await loadRecoveryTarget(db, input.organisationId);
+  const membership = ownerMembership(target);
+  const userId = membership?.userId ?? null;
+  if (input.installerId !== undefined && (!SAFE_IDENTIFIER.test(input.installerId) || target.organisation.installers.length !== 1 || target.organisation.installers[0].id !== input.installerId)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The Installer target does not match the organisation.');
+  }
+  if (input.ownerUserId !== undefined && (!SAFE_IDENTIFIER.test(input.ownerUserId) || input.ownerUserId !== userId)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The owner target does not match the organisation membership.');
+  }
+  await resolveApprover(db, input.approverUserId, userId ?? undefined);
+  const state = classifyRecovery(target, now);
+  const hash = recoveryInputHash(type, input, userId);
+  const operation = await db.provisioningOperation.findUnique({ where: { idempotencyKey: input.idempotencyKey }, select: { id: true, inputHash: true, status: true, operationType: true, completedAt: true, resultSnapshot: true } });
+  if (operation && operation.inputHash !== hash) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'MISMATCH', intendedDatabaseActions: [], refusalReason: 'Idempotency key is bound to different recovery input.', target: { organisationId: input.organisationId, userId } };
+  if (operation && operation.operationType !== type) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'MISMATCH', intendedDatabaseActions: [], refusalReason: 'Idempotency key is bound to a different operation type.', target: { organisationId: input.organisationId, userId } };
+  if (operation?.status === 'COMPLETED') {
+    const snapshot = parseRecoveryResultSnapshot(operation.resultSnapshot);
+    if (!snapshot || snapshot.operationType !== type || snapshot.organisationId !== input.organisationId || snapshot.userId !== userId) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'INCOMPLETE', intendedDatabaseActions: [], refusalReason: 'Completed recovery evidence is missing or invalid; manual review is required.', target: { organisationId: input.organisationId, userId } };
+    const completedResult: RecoveryResult = { idempotentReplay: true, operation: { id: operation.id, operationType: type, status: 'COMPLETED', completedAt: new Date(snapshot.completedAt) }, state: snapshot.state, organisationId: snapshot.organisationId, userId: snapshot.userId, revokedSessionCount: snapshot.revokedSessionCount, ...(snapshot.delivery ? { delivery: snapshot.delivery } : {}) };
+    return { safeToExecute: true, operationType: type, state, operationId: operation.id, completedAt: operation.completedAt, completedResult, idempotency: 'COMPLETED_MATCH', intendedDatabaseActions: [], target: { organisationId: input.organisationId, userId } };
+  }
+  if (operation) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'INCOMPLETE', intendedDatabaseActions: [], refusalReason: 'An incomplete recovery operation requires manual review.', target: { organisationId: input.organisationId, userId } };
+
+  const allowed = type === 'RECOVERY_CREDENTIAL_REISSUE'
+    ? ['INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
+    : type === 'RECOVERY_SUSPEND_USER' ? ['HEALTHY_ACTIVE', 'INVITED_CREDENTIAL_VALID', 'INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
+      : type === 'RECOVERY_SUSPEND_ORGANISATION' ? state !== 'MANUAL_REVIEW_REQUIRED'
+        : type === 'RECOVERY_REACTIVATE_USER' ? state === 'USER_SUSPENDED' && membership?.user.status === 'INACTIVE' && !membership?.user.mustChangePassword
+          : state === 'ORGANISATION_SUSPENDED';
+  if (!allowed || !membership) return { safeToExecute: false, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: [], refusalReason: 'Current lifecycle state is not an approved recovery transition.', target: { organisationId: input.organisationId, userId } };
+  return { safeToExecute: true, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: ['create durable recovery operation', 'validate active internal approver', ...(type === 'RECOVERY_CREDENTIAL_REISSUE' ? ['replace credential hash and expiry', 'invalidate owner sessions', 'deliver through configured fake/test adapter'] : type === 'RECOVERY_SUSPEND_USER' ? ['set owner user INACTIVE', 'invalidate owner sessions'] : type === 'RECOVERY_SUSPEND_ORGANISATION' ? ['set organisation INACTIVE', 'invalidate all tenant sessions'] : ['restore approved lifecycle state', 'invalidate stale sessions']), 'write secret-free audit events'], target: { organisationId: input.organisationId, userId } };
+}
+
+export async function planTenantCredentialReissue(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_CREDENTIAL_REISSUE', args.input, args.now ?? new Date()); }
+export async function planTenantUserSuspension(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_SUSPEND_USER', args.input, args.now ?? new Date()); }
+export async function planTenantOrganisationSuspension(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_SUSPEND_ORGANISATION', args.input, args.now ?? new Date()); }
+export async function planTenantUserReactivation(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_REACTIVATE_USER', args.input, args.now ?? new Date()); }
+export async function planTenantOrganisationReactivation(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_REACTIVATE_ORGANISATION', args.input, args.now ?? new Date()); }
+
+type ValidatedRecoveryMutation = {
+  target: RecoveryTarget;
+  membership: NonNullable<ReturnType<typeof ownerMembership>>;
+  userId: string;
+  approver: { id: string; displayName: string };
+  state: TenantRecoveryState;
+};
+
+function transitionIsApproved(type: RecoveryOperationType, target: RecoveryTarget, state: TenantRecoveryState, membership: NonNullable<ReturnType<typeof ownerMembership>>) {
+  if (target.organisation.type !== 'INSTALLER' || target.organisation.installers.length !== 1 || membership.status !== 'ACTIVE' || !membership.isOwner || membership.role !== 'ORGANISATION_OWNER') return false;
+  if (type === 'RECOVERY_CREDENTIAL_REISSUE') return target.organisation.status === 'PROVISIONING' && ['INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state) && membership.user.status === 'INVITED' && membership.user.mustChangePassword;
+  if (type === 'RECOVERY_SUSPEND_USER') return ['HEALTHY_ACTIVE', 'INVITED_CREDENTIAL_VALID', 'INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state);
+  if (type === 'RECOVERY_SUSPEND_ORGANISATION') return ['HEALTHY_ACTIVE', 'USER_SUSPENDED', 'INVITED_CREDENTIAL_VALID', 'INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state) && ['ACTIVE', 'PROVISIONING'].includes(target.organisation.status);
+  if (type === 'RECOVERY_REACTIVATE_USER') return target.organisation.status === 'ACTIVE' && state === 'USER_SUSPENDED' && membership.user.status === 'INACTIVE' && !membership.user.mustChangePassword;
+  return target.organisation.status === 'INACTIVE' && state === 'ORGANISATION_SUSPENDED' && membership.user.status === 'ACTIVE' && !membership.user.mustChangePassword;
+}
+
+async function revalidateRecoveryMutation(db: DbClient, type: RecoveryOperationType, input: RecoveryInput, now: Date, expectedState: TenantRecoveryState): Promise<ValidatedRecoveryMutation> {
+  const target = await loadRecoveryTarget(db, input.organisationId);
+  const membership = ownerMembership(target);
+  const userId = membership?.userId ?? null;
+  if (!membership || !userId || target.organisation.installers.length !== 1 || (input.installerId !== undefined && target.organisation.installers[0].id !== input.installerId) || (input.ownerUserId !== undefined && input.ownerUserId !== userId)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The recovery target changed or is ambiguous; obtain a fresh inspection.');
+  }
+  const approver = await resolveApprover(db, input.approverUserId, userId);
+  const state = classifyRecovery(target, now);
+  if (state !== expectedState || !transitionIsApproved(type, target, state, membership)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The recovery lifecycle state changed; obtain a fresh inspection.');
+  }
+  return { target, membership, userId, approver, state };
+}
+
+async function executeRecoveryOperation(args: { db: PrismaClient; type: RecoveryOperationType; input: RecoveryInput; now: Date; deliveryAdapter?: CredentialDeliveryAdapter; loginUrl?: string }): Promise<RecoveryResult> {
+  if (!['development', 'test'].includes(args.input.environment)) throw new TenantRecoveryError('PRODUCTION_DISABLED', 'Recovery execution is enabled only in Development and test.');
+  const plan = await planRecoveryOperation(args.db, args.type, args.input, args.now);
+  if (plan.idempotency === 'COMPLETED_MATCH' && plan.operationId && plan.completedResult) return plan.completedResult;
+  if (!plan.safeToExecute) throw new TenantRecoveryError(plan.idempotency === 'MISMATCH' ? 'IDEMPOTENCY_KEY_MISMATCH' : plan.idempotency === 'INCOMPLETE' ? 'IDEMPOTENCY_OPERATION_INCOMPLETE' : 'RECOVERY_REFUSED', plan.refusalReason ?? 'Recovery operation refused.');
+  const target = await loadRecoveryTarget(args.db, args.input.organisationId);
+  const membership = ownerMembership(target);
+  if (!membership) throw new TenantRecoveryError('RECOVERY_REFUSED', 'The target has no unambiguous owner membership.');
+  const userId = membership.userId;
+  const operationHash = recoveryInputHash(args.type, args.input, userId);
+  const approver = await resolveApprover(args.db, args.input.approverUserId, userId);
+  let targetForDelivery = target;
+  let membershipForDelivery = membership;
+  let approverForDelivery = approver;
+  let operationId = '';
+  let revokedSessionCount = 0;
+  let credential: string | undefined;
+  let expiresAt: Date | undefined;
+  if (args.type === 'RECOVERY_CREDENTIAL_REISSUE') {
+    if (!args.deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
+    credential = generateTemporaryCredential();
+    const passwordHash = await hashPilotPassword(credential);
+    expiresAt = new Date(args.now.getTime() + TEMPORARY_CREDENTIAL_TTL_MS);
+    try {
+      operationId = await args.db.$transaction(async (tx) => {
+        const transactionContext = await revalidateRecoveryMutation(tx, args.type, args.input, args.now, plan.state);
+        targetForDelivery = transactionContext.target;
+        membershipForDelivery = transactionContext.membership;
+        approverForDelivery = transactionContext.approver;
+        const op = await tx.provisioningOperation.create({ data: { idempotencyKey: args.input.idempotencyKey, inputHash: operationHash, operationType: args.type, status: 'READY', approvedBy: transactionContext.approver.id, approvedAt: args.now, organisationId: args.input.organisationId } });
+        const updated = await tx.user.updateMany({ where: { id: transactionContext.userId, status: 'INVITED', mustChangePassword: true }, data: { passwordHash, status: 'INVITED', mustChangePassword: true, temporaryCredentialExpiresAt: expiresAt } });
+        if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'Owner state changed; obtain a fresh inspection.');
+        const sessions = await tx.authSession.deleteMany({ where: { userId: transactionContext.userId } });
+        revokedSessionCount = sessions.count;
+        const base = { actor: transactionContext.approver.displayName, actorType: 'HUMAN_USER' as const, userId: transactionContext.approver.id, organisationId: args.input.organisationId, provisioningOperationId: op.id, source: 'tenant-recovery' };
+        await writeAuditEvent(tx, { ...base, action: 'CREDENTIAL_REISSUE_STARTED', resourceType: 'user', resourceId: transactionContext.userId, metadata: { reasonCode: 'OPERATOR_REISSUE' } });
+        await writeAuditEvent(tx, { ...base, action: 'PREVIOUS_CREDENTIAL_REVOKED', resourceType: 'user', resourceId: transactionContext.userId, metadata: { reasonCode: 'OPERATOR_REISSUE' } });
+        await writeAuditEvent(tx, { ...base, action: 'CREDENTIAL_RESET', resourceType: 'user', resourceId: transactionContext.userId, metadata: { reasonCode: 'OPERATOR_REISSUE_REQUESTED' } });
+        await writeAuditEvent(tx, { ...base, action: 'SESSIONS_INVALIDATED', resourceType: 'auth_session', metadata: { revokedSessionCount } });
+        return op.id;
+      }, { isolationLevel: 'Serializable' });
+    } catch (error) { credential = undefined; if (error instanceof TenantRecoveryError) throw error; throw new TenantRecoveryError('TRANSACTION_FAILED', 'Recovery transaction failed.'); }
+    try {
+      const receipt = await args.deliveryAdapter.deliverTemporaryCredential({ recipientEmail: membershipForDelivery.user.email, recipientName: membershipForDelivery.user.displayName, organisationName: targetForDelivery.organisation.name, loginUrl: args.loginUrl ?? '', temporaryCredential: credential, expiresAt, operationId });
+      credential = undefined;
+      if (!SAFE_RECEIPT_ID.test(receipt.providerDeliveryId) || !['ACCEPTED', 'DELIVERED'].includes(receipt.status)) {
+        throw new Error('Credential delivery returned an invalid safe receipt.');
+      }
+      const safeReceipt = { providerDeliveryId: receipt.providerDeliveryId, status: receipt.status };
+      const completedResult: RecoveryResult = { idempotentReplay: false, operation: { id: operationId, operationType: args.type, status: 'COMPLETED', completedAt: args.now }, state: plan.state, organisationId: args.input.organisationId, userId, revokedSessionCount, delivery: safeReceipt };
+      await args.db.$transaction(async (tx) => {
+        await tx.provisioningOperation.update({ where: { id: operationId }, data: { status: 'COMPLETED', completedAt: args.now, resultSnapshot: buildRecoveryResultSnapshot(completedResult) as Prisma.InputJsonValue } });
+        await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'CREDENTIAL_REISSUE_DELIVERED', resourceType: 'user', resourceId: userId, metadata: safeReceipt });
+        await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', resourceType: 'user', resourceId: userId, metadata: safeReceipt });
+        await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'RECOVERY_OPERATION_COMPLETED', resourceType: 'provisioning_operation', resourceId: operationId });
+      });
+      return completedResult;
+    } catch {
+      credential = undefined;
+      try {
+        const revocationHash = await hashPilotPassword(generateTemporaryCredential());
+        await args.db.$transaction(async (tx) => {
+          await tx.user.update({ where: { id: userId }, data: { passwordHash: revocationHash, status: 'INVITED', mustChangePassword: true, temporaryCredentialExpiresAt: args.now } });
+          await tx.provisioningOperation.update({ where: { id: operationId }, data: { status: 'FAILED', completedAt: null } });
+          await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'PREVIOUS_CREDENTIAL_REVOKED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED', accessRevoked: true } });
+          await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'CREDENTIAL_REISSUE_FAILED', outcome: 'FAILED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED' } });
+          await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'TEMPORARY_CREDENTIAL_DELIVERY_FAILED', outcome: 'FAILED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED', accessRevoked: true } });
+          await writeAuditEvent(tx, { actor: approverForDelivery.displayName, actorType: 'HUMAN_USER', userId: approverForDelivery.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'RECOVERY_OPERATION_FAILED', outcome: 'FAILED', resourceType: 'provisioning_operation', resourceId: operationId, metadata: { reasonCode: 'DELIVERY_FAILED' } });
+        });
+      } catch { /* recovery failure is surfaced without secrets */ }
+      throw new TenantRecoveryError('DELIVERY_FAILED', 'Credential delivery failed; the credential was revoked safely.');
+    }
+  }
+
+  try {
+    const result = await args.db.$transaction(async (tx) => {
+      const transactionContext = await revalidateRecoveryMutation(tx, args.type, args.input, args.now, plan.state);
+      const op = await tx.provisioningOperation.create({ data: { idempotencyKey: args.input.idempotencyKey, inputHash: operationHash, operationType: args.type, status: 'PENDING', approvedBy: transactionContext.approver.id, approvedAt: args.now, organisationId: args.input.organisationId } });
+      const base = { actor: transactionContext.approver.displayName, actorType: 'HUMAN_USER' as const, userId: transactionContext.approver.id, organisationId: args.input.organisationId, provisioningOperationId: op.id, source: 'tenant-recovery' };
+      if (args.type === 'RECOVERY_SUSPEND_USER') {
+        const updated = await tx.user.updateMany({ where: { id: transactionContext.userId, status: { in: ['ACTIVE', 'INVITED'] } }, data: { status: 'INACTIVE' } });
+        if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'The owner state changed; obtain a fresh inspection.');
+        const sessions = await tx.authSession.deleteMany({ where: { userId: transactionContext.userId } }); revokedSessionCount = sessions.count;
+        await writeAuditEvent(tx, { ...base, action: 'USER_SUSPENDED', resourceType: 'user', resourceId: transactionContext.userId, metadata: { reasonCode: 'OPERATOR_SUSPENSION', revokedSessionCount } });
+      } else if (args.type === 'RECOVERY_SUSPEND_ORGANISATION') {
+        const updated = await tx.organisation.updateMany({ where: { id: args.input.organisationId, status: { in: ['ACTIVE', 'PROVISIONING'] }, type: 'INSTALLER' }, data: { status: 'INACTIVE' } });
+        if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'The organisation state changed; obtain a fresh inspection.');
+        const sessions = await tx.authSession.deleteMany({ where: { user: { memberships: { some: { organisationId: args.input.organisationId } } } } }); revokedSessionCount = sessions.count;
+        await writeAuditEvent(tx, { ...base, action: 'ORGANISATION_SUSPENDED', resourceType: 'organisation', resourceId: args.input.organisationId, metadata: { reasonCode: 'OPERATOR_SUSPENSION', revokedSessionCount } });
+      } else if (args.type === 'RECOVERY_REACTIVATE_USER') {
+        const updated = await tx.user.updateMany({ where: { id: transactionContext.userId, status: 'INACTIVE', mustChangePassword: false }, data: { status: 'ACTIVE' } });
+        if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'The owner state changed; obtain a fresh inspection.');
+        const sessions = await tx.authSession.deleteMany({ where: { userId: transactionContext.userId } }); revokedSessionCount = sessions.count;
+        await writeAuditEvent(tx, { ...base, action: 'USER_REACTIVATED', resourceType: 'user', resourceId: transactionContext.userId, metadata: { reasonCode: 'OPERATOR_REACTIVATION', revokedSessionCount } });
+      } else {
+        const updated = await tx.organisation.updateMany({ where: { id: args.input.organisationId, type: 'INSTALLER', status: 'INACTIVE' }, data: { status: 'ACTIVE' } });
+        if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'The organisation state changed; obtain a fresh inspection.');
+        const sessions = await tx.authSession.deleteMany({ where: { user: { memberships: { some: { organisationId: args.input.organisationId } } } } }); revokedSessionCount = sessions.count;
+        await writeAuditEvent(tx, { ...base, action: 'ORGANISATION_REACTIVATED', resourceType: 'organisation', resourceId: args.input.organisationId, metadata: { reasonCode: 'OPERATOR_REACTIVATION', revokedSessionCount } });
+      }
+      const completedResult: RecoveryResult = { idempotentReplay: false, operation: { id: op.id, operationType: args.type, status: 'COMPLETED', completedAt: args.now }, state: transactionContext.state, organisationId: args.input.organisationId, userId: transactionContext.userId, revokedSessionCount };
+      await tx.provisioningOperation.update({ where: { id: op.id }, data: { status: 'COMPLETED', completedAt: args.now, resultSnapshot: buildRecoveryResultSnapshot(completedResult) as Prisma.InputJsonValue } });
+      await writeAuditEvent(tx, { ...base, action: 'RECOVERY_OPERATION_COMPLETED', resourceType: 'provisioning_operation', resourceId: op.id });
+      return completedResult;
+    }, { isolationLevel: 'Serializable' });
+    return result;
+  } catch (error) { if (error instanceof TenantRecoveryError) throw error; throw new TenantRecoveryError('TRANSACTION_FAILED', 'Recovery transaction failed.'); }
+}
+
+export async function executeTenantCredentialReissue(args: { db: PrismaClient; input: RecoveryInput; deliveryAdapter: CredentialDeliveryAdapter; loginUrl?: string; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_CREDENTIAL_REISSUE', now: args.now ?? new Date() }); }
+export async function executeTenantUserSuspension(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_SUSPEND_USER', now: args.now ?? new Date() }); }
+export async function executeTenantOrganisationSuspension(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_SUSPEND_ORGANISATION', now: args.now ?? new Date() }); }
+export async function executeTenantUserReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_USER', now: args.now ?? new Date() }); }
+export async function executeTenantOrganisationReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_ORGANISATION', now: args.now ?? new Date() }); }
+
+type RecoveryCommandArgs = {
+  db: PrismaClient;
+  input: RecoveryInput & { targetType?: 'user' | 'organisation'; loginUrl?: string };
+  mode?: 'dry-run' | 'execute';
+  deliveryAdapter?: CredentialDeliveryAdapter;
+  now?: Date;
+  environment?: string;
+};
+
+export async function inspectTenantRecoveryState(args: RecoveryCommandArgs) {
+  return inspectTenantRecovery({ db: args.db, organisationId: args.input.organisationId, now: args.now });
+}
+
+export async function reissueTenantCredential(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantCredentialReissue(args);
+  const deliveryAdapter = args.deliveryAdapter;
+  if (!deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
+  return executeTenantCredentialReissue({ db: args.db, input: args.input, deliveryAdapter, loginUrl: args.input.loginUrl, now: args.now });
+}
+
+export async function suspendTenantUser(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantUserSuspension(args);
+  return executeTenantUserSuspension(args);
+}
+
+export async function suspendTenantOrganisation(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantOrganisationSuspension(args);
+  return executeTenantOrganisationSuspension(args);
+}
+
+export async function reactivateTenantRecovery(args: RecoveryCommandArgs) {
+  const targetType = args.input.targetType ?? 'user';
+  if (targetType === 'organisation') {
+    if (args.mode !== 'execute') return planTenantOrganisationReactivation(args);
+    return executeTenantOrganisationReactivation(args);
+  }
+  if (args.mode !== 'execute') return planTenantUserReactivation(args);
+  return executeTenantUserReactivation(args);
+}
+
+export const inspectTenantRecoveryForOrganisation = inspectTenantRecovery;
+export const reactivateTenantUser = executeTenantUserReactivation;
+export const reactivateTenantOrganisation = executeTenantOrganisationReactivation;

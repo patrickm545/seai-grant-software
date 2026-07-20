@@ -72,6 +72,7 @@ async function createInvitedOwner(label: string, input?: { credentialExpiresAt?:
     data: {
       idempotencyKey: `${suffix}-${label}`,
       inputHash: randomBytes(32).toString('hex'),
+      operationType: 'PROVISIONING',
       status: 'COMPLETED',
       organisationId: organisation.id,
       approvedBy: approverId,

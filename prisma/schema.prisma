@@ -114,6 +114,15 @@ enum ProvisioningOperationStatus {
   CANCELLED
 }
 
+enum ProvisioningOperationType {
+  PROVISIONING
+  RECOVERY_CREDENTIAL_REISSUE
+  RECOVERY_SUSPEND_USER
+  RECOVERY_SUSPEND_ORGANISATION
+  RECOVERY_REACTIVATE_USER
+  RECOVERY_REACTIVATE_ORGANISATION
+}
+
 enum OrganisationMembershipStatus {
   ACTIVE
   INACTIVE
@@ -234,6 +243,7 @@ model ProvisioningOperation {
   id             String                      @id @default(cuid())
   idempotencyKey String                      @unique
   inputHash      String
+  operationType  ProvisioningOperationType
   status         ProvisioningOperationStatus @default(PENDING)
   organisationId String?
   organisation   Organisation?               @relation(fields: [organisationId], references: [id], onDelete: SetNull)
@@ -241,6 +251,7 @@ model ProvisioningOperation {
   approver       User?                       @relation("ProvisioningApprovedBy", fields: [approvedBy], references: [id], onDelete: Restrict)
   approvedAt     DateTime?
   completedAt    DateTime?
+  resultSnapshot Json?
   createdAt      DateTime                    @default(now())
   updatedAt      DateTime                    @updatedAt
   auditLogs      AuditLog[]

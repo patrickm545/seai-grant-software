@@ -419,8 +419,9 @@ export async function inspectTenantRecoveryState(args: RecoveryCommandArgs) {
 
 export async function reissueTenantCredential(args: RecoveryCommandArgs) {
   if (args.mode !== 'execute') return planTenantCredentialReissue(args);
-  if (!args.deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
-  return executeTenantCredentialReissue({ ...args, deliveryAdapter: args.deliveryAdapter, loginUrl: args.input.loginUrl });
+  const deliveryAdapter = args.deliveryAdapter;
+  if (!deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
+  return executeTenantCredentialReissue({ ...args, deliveryAdapter, loginUrl: args.input.loginUrl });
 }
 
 export async function suspendTenantUser(args: RecoveryCommandArgs) {

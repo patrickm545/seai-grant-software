@@ -89,6 +89,7 @@ export type RecoveryPlan = {
   operationType: RecoveryOperationType;
   state: TenantRecoveryState;
   operationId: string | null;
+  completedAt?: Date | null;
   idempotency: 'NEW' | 'COMPLETED_MATCH' | 'MISMATCH' | 'INCOMPLETE';
   intendedDatabaseActions: string[];
   refusalReason?: string;
@@ -217,8 +218,9 @@ function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryStat
   return 'ACTIVATION_STATE_DRIFT';
 }
 
-export async function inspectTenantRecovery(args: { db: DbClient; organisationId: string; now?: Date }): Promise<RecoveryInspection> {
-  const target = await loadRecoveryTarget(args.db, args.organisationId);
+export async function inspectTenantRecovery(args: { db: DbClient; organisationId: string; now?: Date } | { db: DbClient; input: { organisationId: string }; now?: Date }): Promise<RecoveryInspection> {
+  const organisationId = 'input' in args ? args.input.organisationId : args.organisationId;
+  const target = await loadRecoveryTarget(args.db, organisationId);
   const now = args.now ?? new Date();
   const membership = ownerMembership(target);
   const owner = membership?.user ?? null;
@@ -274,10 +276,10 @@ async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, 
   await resolveApprover(db, input.approverUserId, userId ?? undefined);
   const state = classifyRecovery(target, now);
   const hash = recoveryInputHash(type, input, userId);
-  const operation = await db.provisioningOperation.findUnique({ where: { idempotencyKey: input.idempotencyKey }, select: { id: true, inputHash: true, status: true, operationType: true } });
+  const operation = await db.provisioningOperation.findUnique({ where: { idempotencyKey: input.idempotencyKey }, select: { id: true, inputHash: true, status: true, operationType: true, completedAt: true } });
   if (operation && operation.inputHash !== hash) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'MISMATCH', intendedDatabaseActions: [], refusalReason: 'Idempotency key is bound to different recovery input.', target: { organisationId: input.organisationId, userId } };
   if (operation && operation.operationType !== type) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'MISMATCH', intendedDatabaseActions: [], refusalReason: 'Idempotency key is bound to a different operation type.', target: { organisationId: input.organisationId, userId } };
-  if (operation?.status === 'COMPLETED') return { safeToExecute: true, operationType: type, state, operationId: operation.id, idempotency: 'COMPLETED_MATCH', intendedDatabaseActions: [], target: { organisationId: input.organisationId, userId } };
+  if (operation?.status === 'COMPLETED') return { safeToExecute: true, operationType: type, state, operationId: operation.id, completedAt: operation.completedAt, idempotency: 'COMPLETED_MATCH', intendedDatabaseActions: [], target: { organisationId: input.organisationId, userId } };
   if (operation) return { safeToExecute: false, operationType: type, state, operationId: operation.id, idempotency: 'INCOMPLETE', intendedDatabaseActions: [], refusalReason: 'An incomplete recovery operation requires manual review.', target: { organisationId: input.organisationId, userId } };
 
   const allowed = type === 'RECOVERY_CREDENTIAL_REISSUE'
@@ -298,7 +300,7 @@ export async function planTenantOrganisationReactivation(args: { db: DbClient; i
 
 async function executeRecoveryOperation(args: { db: PrismaClient; type: RecoveryOperationType; input: RecoveryInput; now: Date; deliveryAdapter?: CredentialDeliveryAdapter; loginUrl?: string }): Promise<RecoveryResult> {
   const plan = await planRecoveryOperation(args.db, args.type, args.input, args.now);
-  if (plan.idempotency === 'COMPLETED_MATCH' && plan.operationId) return { idempotentReplay: true, operation: { id: plan.operationId, operationType: args.type, status: 'COMPLETED', completedAt: null }, state: plan.state, organisationId: args.input.organisationId, userId: plan.target.userId, revokedSessionCount: 0 };
+  if (plan.idempotency === 'COMPLETED_MATCH' && plan.operationId) return { idempotentReplay: true, operation: { id: plan.operationId, operationType: args.type, status: 'COMPLETED', completedAt: plan.completedAt ?? null }, state: plan.state, organisationId: args.input.organisationId, userId: plan.target.userId, revokedSessionCount: 0 };
   if (!plan.safeToExecute) throw new TenantRecoveryError(plan.idempotency === 'MISMATCH' ? 'IDEMPOTENCY_KEY_MISMATCH' : plan.idempotency === 'INCOMPLETE' ? 'IDEMPOTENCY_OPERATION_INCOMPLETE' : 'RECOVERY_REFUSED', plan.refusalReason ?? 'Recovery operation refused.');
   const target = await loadRecoveryTarget(args.db, args.input.organisationId);
   const membership = ownerMembership(target);
@@ -391,10 +393,45 @@ export async function executeTenantOrganisationSuspension(args: { db: PrismaClie
 export async function executeTenantUserReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_USER', now: args.now ?? new Date() }); }
 export async function executeTenantOrganisationReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_ORGANISATION', now: args.now ?? new Date() }); }
 
-// Concise aliases for command adapters and future internal callers.
-export const inspectTenantRecoveryState = inspectTenantRecovery;
-export const reissueTenantCredential = executeTenantCredentialReissue;
-export const suspendTenantUser = executeTenantUserSuspension;
-export const suspendTenantOrganisation = executeTenantOrganisationSuspension;
+type RecoveryCommandArgs = {
+  db: PrismaClient;
+  input: RecoveryInput & { targetType?: 'user' | 'organisation'; loginUrl?: string };
+  mode?: 'dry-run' | 'execute';
+  deliveryAdapter?: CredentialDeliveryAdapter;
+  now?: Date;
+  environment?: string;
+};
+
+export async function inspectTenantRecoveryState(args: RecoveryCommandArgs) {
+  return inspectTenantRecovery({ db: args.db, organisationId: args.input.organisationId, now: args.now });
+}
+
+export async function reissueTenantCredential(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantCredentialReissue(args);
+  if (!args.deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
+  return executeTenantCredentialReissue({ ...args, deliveryAdapter: args.deliveryAdapter, loginUrl: args.input.loginUrl });
+}
+
+export async function suspendTenantUser(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantUserSuspension(args);
+  return executeTenantUserSuspension(args);
+}
+
+export async function suspendTenantOrganisation(args: RecoveryCommandArgs) {
+  if (args.mode !== 'execute') return planTenantOrganisationSuspension(args);
+  return executeTenantOrganisationSuspension(args);
+}
+
+export async function reactivateTenantRecovery(args: RecoveryCommandArgs) {
+  const targetType = args.input.targetType ?? 'user';
+  if (targetType === 'organisation') {
+    if (args.mode !== 'execute') return planTenantOrganisationReactivation(args);
+    return executeTenantOrganisationReactivation(args);
+  }
+  if (args.mode !== 'execute') return planTenantUserReactivation(args);
+  return executeTenantUserReactivation(args);
+}
+
+export const inspectTenantRecoveryForOrganisation = inspectTenantRecovery;
 export const reactivateTenantUser = executeTenantUserReactivation;
 export const reactivateTenantOrganisation = executeTenantOrganisationReactivation;

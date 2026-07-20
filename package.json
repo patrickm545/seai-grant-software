@@ -26,7 +26,8 @@
     "db:seed:development": "node --import tsx scripts/run-database-command.ts seed-development",
     "db:seed:test": "node --import tsx scripts/run-database-command.ts seed-test",
     "pilot:provision": "node --import tsx scripts/provision-pilot-user.ts",
-    "tenant:provision": "node --import tsx scripts/tenant-provision.ts"
+    "tenant:provision": "node --import tsx scripts/tenant-provision.ts",
+    "tenant:recover": "node --import tsx scripts/tenant-recover.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

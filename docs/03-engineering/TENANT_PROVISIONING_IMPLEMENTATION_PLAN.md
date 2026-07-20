@@ -45,7 +45,14 @@ Dependencies: PRs 1-2. Migration risk is low; authentication bypass/lockout risk
 
 ## PR 4: Operator recovery commands
 
-Scope: credential reissue, user and organisation suspend/reactivate, metadata correction, owner replacement, second-owner preparation where approved, safe audit output, and documented no-delete defaults.
+Status: implemented in PR #30 as the dry-run-first `pnpm tenant:recover` operator boundary. Inspection, credential reissue, user/organisation suspension, and safe reactivation are durable, approval-linked, idempotent, serializable, and secret-free. Owner replacement and second-owner preparation remain inspection/refusal-only because their authority and lifecycle are not fully specified.
+
+Scope delivered:
+
+- `inspect`, `reissue-credential`, `suspend-user`, `suspend-organisation`, and `reactivate` subcommands; all mutations require an active Clada internal approver, reason, idempotency key, and explicit `--execute`;
+- safe classifications including `HEALTHY_ACTIVE`, `INVITED_CREDENTIAL_VALID`, `INVITED_CREDENTIAL_EXPIRED`, `DELIVERY_FAILED`, `PROVISIONING_INCOMPLETE`, `USER_SUSPENDED`, `ORGANISATION_SUSPENDED`, `ACTIVATION_STATE_DRIFT`, and `MANUAL_REVIEW_REQUIRED`;
+- Argon2id credential reissue with a new 24-hour expiry, all-session invalidation, fake/test delivery only, and failure revocation that leaves onboarding in `PROVISIONING`;
+- no-delete suspension/reactivation, refusal of unsafe lifecycle drift or ambiguous targeting, canonical non-secret input digests, exact replay, mismatch refusal, and safe audit evidence.
 
 Dependencies: prior service boundaries and authority model. Migration risk is none/low; security risk is privilege escalation or wrong-target operation. Tests cover dry-run, confirmation, target fingerprinting, zero-owner prevention, session revocation, idempotency, and audit. Production acceptance requires rehearsing each command on disposable data and validating the support table.
 

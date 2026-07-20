@@ -4,8 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { PrismaClient } from '@prisma/client';
 import {
   assertDatabaseOperationAllowed,
-  formatDatabaseSafetyError,
-  formatSafeDatabaseIdentity
+  formatDatabaseSafetyError
 } from '../lib/database-safety';
 import { FakeCredentialDeliveryAdapter } from '../lib/credential-delivery';
 
@@ -177,7 +176,7 @@ function scrubSafeOutput(value: unknown): unknown {
 
 function serviceExportName(subcommand: RecoverySubcommand) {
   return {
-    inspect: 'inspectTenantRecovery',
+    inspect: 'inspectTenantRecoveryState',
     'reissue-credential': 'reissueTenantCredential',
     'suspend-user': 'suspendTenantUser',
     'suspend-organisation': 'suspendTenantOrganisation',
@@ -263,10 +262,11 @@ async function main() {
     return;
   }
 
+  // Report only environment classifications. Host, database name, and
+  // fingerprints are intentionally not part of recovery command output.
   const environment = {
     application: guarded.appEnvironment,
-    database: guarded.databaseEnvironment,
-    identity: formatSafeDatabaseIdentity(guarded.identity)
+    database: guarded.databaseEnvironment
   };
   const db = new PrismaClient();
   try {

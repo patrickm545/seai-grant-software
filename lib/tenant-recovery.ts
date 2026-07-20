@@ -256,7 +256,10 @@ function validateRecoveryInput(input: RecoveryInput) {
 }
 
 function canonicalRecoveryInput(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {
-  return JSON.stringify({ type, organisationId: input.organisationId, userId, approverUserId: input.approverUserId, idempotencyKey: input.idempotencyKey, reason: input.reason.trim() });
+  // The idempotency key identifies the operation record; it is deliberately
+  // excluded from the canonical request digest so a new key can represent
+  // the same reviewed request without changing its content hash.
+  return JSON.stringify({ type, organisationId: input.organisationId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
 }
 
 function recoveryInputHash(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {

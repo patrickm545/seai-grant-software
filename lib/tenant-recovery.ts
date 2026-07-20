@@ -296,7 +296,7 @@ async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, 
     ? ['INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
     : type === 'RECOVERY_SUSPEND_USER' ? ['HEALTHY_ACTIVE', 'INVITED_CREDENTIAL_VALID', 'INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
       : type === 'RECOVERY_SUSPEND_ORGANISATION' ? state !== 'MANUAL_REVIEW_REQUIRED'
-        : type === 'RECOVERY_REACTIVATE_USER' ? state === 'USER_SUSPENDED'
+        : type === 'RECOVERY_REACTIVATE_USER' ? state === 'USER_SUSPENDED' && Boolean(membership?.user && !membership.user.mustChangePassword)
           : state === 'ORGANISATION_SUSPENDED';
   if (!allowed || !membership) return { safeToExecute: false, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: [], refusalReason: 'Current lifecycle state is not an approved recovery transition.', target: { organisationId: input.organisationId, userId } };
   return { safeToExecute: true, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: ['create durable recovery operation', 'validate active internal approver', ...(type === 'RECOVERY_CREDENTIAL_REISSUE' ? ['replace credential hash and expiry', 'invalidate owner sessions', 'deliver through configured fake/test adapter'] : type === 'RECOVERY_SUSPEND_USER' ? ['set owner user INACTIVE', 'invalidate owner sessions'] : type === 'RECOVERY_SUSPEND_ORGANISATION' ? ['set organisation INACTIVE', 'invalidate all tenant sessions'] : ['restore approved lifecycle state', 'invalidate stale sessions']), 'write secret-free audit events'], target: { organisationId: input.organisationId, userId } };

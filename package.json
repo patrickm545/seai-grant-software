@@ -26,6 +26,7 @@
     "db:seed:development": "node --import tsx scripts/run-database-command.ts seed-development",
     "db:seed:test": "node --import tsx scripts/run-database-command.ts seed-test",
     "pilot:provision": "node --import tsx scripts/provision-pilot-user.ts",
+    "pilot:rehearsal": "node --import tsx scripts/pilot-rehearsal.ts",
     "tenant:provision": "node --import tsx scripts/tenant-provision.ts",
     "tenant:recover": "node --import tsx scripts/tenant-recover.ts"
   },

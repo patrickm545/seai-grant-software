@@ -6,7 +6,7 @@
 | Status | Proposed |
 | Owner | Clada Systems Engineering |
 | Review cycle | At every implementation PR |
-| Last reviewed | 2026-07-18 |
+| Last reviewed | 2026-07-20 |
 
 ## Purpose
 
@@ -57,6 +57,8 @@ Scope delivered:
 Dependencies: prior service boundaries and authority model. Migration risk is none/low; security risk is privilege escalation or wrong-target operation. Tests cover dry-run, confirmation, target fingerprinting, zero-owner prevention, session revocation, idempotency, and audit. Production acceptance requires rehearsing each command on disposable data and validating the support table.
 
 ## PR 5: Pilot Production validation
+
+Status: validation harness implemented in PR #31 as `pnpm pilot:rehearsal`. The harness runs a synthetic end-to-end onboarding, first-login, tenant-isolation, suspension, recovery, credential-expiry/reissue, rollback, audit and cleanup rehearsal only against a positively identified local disposable PostgreSQL database. This evidence does not enable Production execution, real email delivery, or external pilot onboarding.
 
 Scope: approved disposable organisation, end-to-end onboarding, tenant isolation, failure/rollback and recovery rehearsal, operator runbook validation, and cleanup/archive through approved commands. No real customer is used for the first exercise.
 

@@ -242,10 +242,16 @@ export async function inspectTenantRecovery(args: { db: DbClient; organisationId
 async function resolveApprover(db: DbClient, approverUserId: string, targetUserId?: string) {
   if (!SAFE_IDENTIFIER.test(approverUserId)) throw new TenantRecoveryError('INPUT_INVALID', 'Approver ID is invalid.');
   const approver = await db.user.findUnique({ where: { id: approverUserId }, select: { id: true, displayName: true, status: true, memberships: { select: { status: true, role: true, organisation: { select: { type: true, status: true } } } } } });
-  const internal = approver?.memberships.some((membership) => membership.status === 'ACTIVE' && membership.role === 'CLADA_INTERNAL_ADMIN' || membership.status === 'ACTIVE' && membership.role === 'CLADA_INTERNAL_SUPPORT' && membership.organisation.type === 'CLADA_INTERNAL' && membership.organisation.status === 'ACTIVE');
-  // Keep the organisation check explicit for both supported roles.
-  const authorised = approver?.memberships.some((membership) => membership.status === 'ACTIVE' && membership.organisation.type === 'CLADA_INTERNAL' && membership.organisation.status === 'ACTIVE' && ['CLADA_INTERNAL_ADMIN', 'CLADA_INTERNAL_SUPPORT'].includes(membership.role));
-  if (!approver || approver.status !== 'ACTIVE' || !internal || !authorised || approver.id === targetUserId) throw new TenantRecoveryError('APPROVER_NOT_AUTHORISED', 'The approver is not an active Clada internal operator.');
+  const authorised = approver?.memberships.some(
+    (membership) =>
+      membership.status === 'ACTIVE' &&
+      membership.organisation.type === 'CLADA_INTERNAL' &&
+      membership.organisation.status === 'ACTIVE' &&
+      ['CLADA_INTERNAL_ADMIN', 'CLADA_INTERNAL_SUPPORT'].includes(membership.role)
+  );
+  if (!approver || approver.status !== 'ACTIVE' || !authorised || approver.id === targetUserId) {
+    throw new TenantRecoveryError('APPROVER_NOT_AUTHORISED', 'The approver is not an active Clada internal operator.');
+  }
   return { id: approver.id, displayName: approver.displayName };
 }
 

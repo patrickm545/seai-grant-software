@@ -196,15 +196,16 @@ async function invokeRecovery(db: PrismaClient, options: CommandOptions, input: 
   }
 
   const approverUserId = input.approverUserId;
+  const ownerUserId = input.ownerUserId;
   const idempotencyKey = input.idempotencyKey;
   const reason = input.reason;
-  if (typeof approverUserId !== 'string' || typeof idempotencyKey !== 'string' || typeof reason !== 'string') {
-    throw new Error('approverUserId, idempotencyKey, and reason are required for mutations.');
+  if (typeof ownerUserId !== 'string' || typeof approverUserId !== 'string' || typeof idempotencyKey !== 'string' || typeof reason !== 'string') {
+    throw new Error('ownerUserId, approverUserId, idempotencyKey, and reason are required for mutations.');
   }
   const recoveryInput = {
     organisationId,
     installerId: typeof input.installerId === 'string' ? input.installerId : undefined,
-    ownerUserId: typeof input.ownerUserId === 'string' ? input.ownerUserId : undefined,
+    ownerUserId,
     approverUserId,
     idempotencyKey,
     reason,

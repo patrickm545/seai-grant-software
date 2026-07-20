@@ -243,7 +243,7 @@ model ProvisioningOperation {
   id             String                      @id @default(cuid())
   idempotencyKey String                      @unique
   inputHash      String
-  operationType  ProvisioningOperationType   @default(PROVISIONING)
+  operationType  ProvisioningOperationType
   status         ProvisioningOperationStatus @default(PENDING)
   organisationId String?
   organisation   Organisation?               @relation(fields: [organisationId], references: [id], onDelete: SetNull)
@@ -251,6 +251,7 @@ model ProvisioningOperation {
   approver       User?                       @relation("ProvisioningApprovedBy", fields: [approvedBy], references: [id], onDelete: Restrict)
   approvedAt     DateTime?
   completedAt    DateTime?
+  resultSnapshot Json?
   createdAt      DateTime                    @default(now())
   updatedAt      DateTime                    @updatedAt
   auditLogs      AuditLog[]

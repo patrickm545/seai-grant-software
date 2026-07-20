@@ -10,7 +10,15 @@ CREATE TYPE "ProvisioningOperationType" AS ENUM (
 );
 
 ALTER TABLE "ProvisioningOperation"
-  ADD COLUMN "operationType" "ProvisioningOperationType" NOT NULL DEFAULT 'PROVISIONING';
+  ADD COLUMN "operationType" "ProvisioningOperationType",
+  ADD COLUMN "resultSnapshot" JSONB;
+
+UPDATE "ProvisioningOperation"
+SET "operationType" = 'PROVISIONING'
+WHERE "operationType" IS NULL;
+
+ALTER TABLE "ProvisioningOperation"
+  ALTER COLUMN "operationType" SET NOT NULL;
 
 CREATE INDEX "ProvisioningOperation_operationType_status_idx"
   ON "ProvisioningOperation"("operationType", "status");

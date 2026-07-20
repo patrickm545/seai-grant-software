@@ -111,10 +111,22 @@ test('credential reissue is dry-run first, expires in 24 hours, invalidates sess
   assert.equal(owner.status, 'INVITED');
   assert.equal(owner.mustChangePassword, true);
   assert.equal((await prisma.organisation.findUniqueOrThrow({ where: { id: tenant.organisation.id } })).status, 'PROVISIONING');
+  const storedOperation = await prisma.provisioningOperation.findUniqueOrThrow({ where: { id: result.operation.id } });
+  assert.deepEqual(storedOperation.resultSnapshot, {
+    operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+    state: 'INVITED_CREDENTIAL_EXPIRED',
+    organisationId: tenant.organisation.id,
+    userId: tenant.owner.id,
+    revokedSessionCount: 2,
+    completedAt: now.toISOString(),
+    delivery: { providerDeliveryId: result.delivery?.providerDeliveryId, status: 'DELIVERED' }
+  });
 
   const replay = await executeTenantCredentialReissue({ db: prisma, input, deliveryAdapter: adapter, now: new Date(now.getTime() + 1_000), loginUrl: 'https://solargrant.example/login' });
   assert.equal(replay.idempotentReplay, true);
   assert.equal(adapter.safeDeliveryCount, 1);
+  assert.equal(replay.revokedSessionCount, result.revokedSessionCount);
+  assert.deepEqual(replay.delivery, result.delivery);
   await assert.rejects(
     executeTenantCredentialReissue({ db: prisma, input: { ...input, reason: 'Different approved reason' }, deliveryAdapter: adapter, now }),
     (error: unknown) => error instanceof TenantRecoveryError && error.code === 'IDEMPOTENCY_KEY_MISMATCH'
@@ -143,6 +155,34 @@ test('delivery failure revokes the replacement credential and keeps onboarding i
   assert.doesNotMatch(JSON.stringify(audit), /passwordHash|temporaryCredential|tokenHash/i);
 });
 
+test('credential reissue revalidates lifecycle state inside the serializable transaction', async () => {
+  const tenant = await seedTenant('stale-state');
+  const now = new Date('2026-07-20T14:00:00.000Z');
+  await prisma.user.update({ where: { id: tenant.owner.id }, data: { temporaryCredentialExpiresAt: new Date(now.getTime() - 1_000) } });
+  const input = recoveryInput(tenant, `stale-state-${tenant.owner.id}`);
+  let injected = false;
+  const raceDb = prisma.$extends({
+    query: {
+      provisioningOperation: {
+        async findUnique({ args, query }) {
+          const result = await query(args);
+          if (!injected && args.where.idempotencyKey === input.idempotencyKey) {
+            injected = true;
+            await prisma.user.update({ where: { id: tenant.owner.id }, data: { status: 'ACTIVE', mustChangePassword: false, temporaryCredentialExpiresAt: null } });
+          }
+          return result;
+        }
+      }
+    }
+  });
+  await assert.rejects(
+    executeTenantCredentialReissue({ db: raceDb as unknown as PrismaClient, input, deliveryAdapter: new FakeCredentialDeliveryAdapter(), now }),
+    (error: unknown) => error instanceof TenantRecoveryError && error.code === 'RECOVERY_REFUSED'
+  );
+  assert.equal(await prisma.provisioningOperation.count({ where: { idempotencyKey: input.idempotencyKey } }), 0);
+  assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: tenant.owner.id } })).status, 'ACTIVE');
+});
+
 test('user and organisation suspension/re-activation revoke sessions without deleting tenant data', async () => {
   const userTenant = await seedTenant('suspend-user');
   await prisma.organisation.update({ where: { id: userTenant.organisation.id }, data: { status: 'ACTIVE' } });
@@ -167,4 +207,12 @@ test('user and organisation suspension/re-activation revoke sessions without del
   await executeTenantOrganisationReactivation({ db: prisma, input: recoveryInput(organisationTenant, `reactivate-org-${organisationTenant.organisation.id}`) });
   assert.equal((await prisma.organisation.findUniqueOrThrow({ where: { id: organisationTenant.organisation.id } })).status, 'ACTIVE');
   assert.equal(await prisma.installer.count({ where: { organisationId: organisationTenant.organisation.id } }), 1);
+});
+
+test('ProvisioningOperation requires an explicit operation type at the database boundary', async () => {
+  const id = `omission-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await assert.rejects(
+    prisma.$executeRawUnsafe(`INSERT INTO "ProvisioningOperation" ("id", "idempotencyKey", "inputHash", "status") VALUES ('${id}', '${id}', 'safe-test-hash', 'PENDING'::"ProvisioningOperationStatus")`),
+    /23502|Failing row|not-null|operationType/i
+  );
 });

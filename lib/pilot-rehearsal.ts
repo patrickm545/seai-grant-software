@@ -3,6 +3,7 @@ const sensitiveValuePattern = /(postgres(?:ql)?:\/\/|^\$argon2|eyJ[A-Za-z0-9_-]+
 
 export type RehearsalAuditRecord = {
   action: string;
+  createdAt: Date | string;
   metadataJson: unknown;
 };
 
@@ -29,15 +30,41 @@ export function assertRehearsalSecretFree(value: unknown) {
 
 export function assertAuditEventChain(
   audits: readonly RehearsalAuditRecord[],
-  expectedActions: readonly string[]
+  expectedActions: readonly string[],
+  expectedCounts: Readonly<Record<string, number>> = {}
 ) {
-  const present = new Set(audits.map((audit) => audit.action));
-  const missing = expectedActions.filter((action) => !present.has(action));
-  if (missing.length > 0) throw new Error(`Audit event chain is incomplete: ${missing.join(', ')}.`);
   audits.forEach((audit) => assertRehearsalSecretFree(audit.metadataJson));
+  const ordered = audits
+    .map((audit, index) => {
+      const timestamp = new Date(audit.createdAt).getTime();
+      if (!Number.isFinite(timestamp)) throw new Error(`Audit event ${audit.action} has an invalid createdAt timestamp.`);
+      return { audit, index, timestamp };
+    })
+    .sort((left, right) => {
+      return left.timestamp - right.timestamp || left.index - right.index;
+    })
+    .map(({ audit }) => audit);
+  let cursor = 0;
+  for (const expectedAction of expectedActions) {
+    const next = ordered.findIndex((audit, index) => index >= cursor && audit.action === expectedAction);
+    if (next < 0) throw new Error(`Audit event chain is incomplete or out of order: ${expectedAction}.`);
+    cursor = next + 1;
+  }
+  const actualCounts = ordered.reduce<Record<string, number>>((counts, audit) => {
+    counts[audit.action] = (counts[audit.action] ?? 0) + 1;
+    return counts;
+  }, {});
+  for (const [action, expectedCount] of Object.entries(expectedCounts)) {
+    const actualCount = actualCounts[action] ?? 0;
+    if (actualCount !== expectedCount) {
+      throw new Error(`Audit event count for ${action} was ${actualCount}; expected ${expectedCount}.`);
+    }
+  }
   return {
-    count: audits.length,
-    actions: [...new Set(audits.map((audit) => audit.action))].sort()
+    count: ordered.length,
+    actions: [...new Set(ordered.map((audit) => audit.action))].sort(),
+    orderedActions: ordered.map((audit) => audit.action),
+    counts: actualCounts
   };
 }
 
@@ -47,6 +74,12 @@ export function buildRehearsalMarkdown(report: {
   status: 'PASSED' | 'FAILED';
   stages: Array<{ name: string; status: 'PASSED' | 'FAILED'; details?: Record<string, string | number | boolean> }>;
   readinessGaps: string[];
+  cleanup?: {
+    discoveredRecordCount: number;
+    deletedRecordCount: number;
+    remainingRecordCount: number;
+    verificationPassed: boolean;
+  };
 }) {
   assertRehearsalSecretFree(report);
   const lines = [
@@ -62,6 +95,17 @@ export function buildRehearsalMarkdown(report: {
   for (const stage of report.stages) {
     const detail = stage.details ? ` — ${Object.entries(stage.details).map(([key, value]) => `${key}=${value}`).join(', ')}` : '';
     lines.push(`- ${stage.status}: ${stage.name}${detail}`);
+  }
+  if (report.cleanup) {
+    lines.push(
+      '',
+      '## Cleanup verification',
+      '',
+      `- Discovered records: ${report.cleanup.discoveredRecordCount}`,
+      `- Deleted records: ${report.cleanup.deletedRecordCount}`,
+      `- Remaining records: ${report.cleanup.remainingRecordCount}`,
+      `- Verification passed: ${report.cleanup.verificationPassed}`
+    );
   }
   lines.push('', '## Remaining readiness gaps', '');
   for (const gap of report.readinessGaps) lines.push(`- ${gap}`);

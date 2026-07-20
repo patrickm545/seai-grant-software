@@ -16,18 +16,38 @@ test('pilot rehearsal command is guarded, disposable and dry-run first', () => {
   assert.match(script, /Production execution remains disabled/);
   assert.match(script, /FakeCredentialDeliveryAdapter/);
   assert.match(script, /\.tools.*pilot-rehearsal/);
+  assert.match(script, /would be discovered by rehearsal ID/);
 });
 
 test('rehearsal audit helper requires the safe event chain and rejects secret fields', () => {
+  const base = new Date('2026-07-20T10:00:00.000Z').getTime();
   const summary = assertAuditEventChain(
     [
-      { action: 'PROVISIONING_COMPLETED', metadataJson: { reasonCode: 'SYNTHETIC' } },
-      { action: 'RECOVERY_OPERATION_COMPLETED', metadataJson: { operationId: 'safe-operation' } }
+      { action: 'PROVISIONING_COMPLETED', createdAt: new Date(base), metadataJson: { reasonCode: 'SYNTHETIC' } },
+      { action: 'UNRELATED_SAFE_EVENT', createdAt: new Date(base + 1), metadataJson: { reasonCode: 'SYNTHETIC' } },
+      { action: 'RECOVERY_OPERATION_COMPLETED', createdAt: new Date(base + 2), metadataJson: { operationId: 'safe-operation' } }
     ],
-    ['PROVISIONING_COMPLETED', 'RECOVERY_OPERATION_COMPLETED']
+    ['PROVISIONING_COMPLETED', 'RECOVERY_OPERATION_COMPLETED'],
+    { PROVISIONING_COMPLETED: 1, RECOVERY_OPERATION_COMPLETED: 1 }
   );
-  assert.equal(summary.count, 2);
-  assert.throws(() => assertAuditEventChain([{ action: 'PROVISIONING_COMPLETED', metadataJson: {} }], ['FIRST_LOGIN_COMPLETED']), /incomplete/i);
+  assert.equal(summary.count, 3);
+  assert.deepEqual(summary.orderedActions, ['PROVISIONING_COMPLETED', 'UNRELATED_SAFE_EVENT', 'RECOVERY_OPERATION_COMPLETED']);
+  assert.throws(() => assertAuditEventChain([{ action: 'PROVISIONING_COMPLETED', createdAt: new Date(base), metadataJson: {} }], ['FIRST_LOGIN_COMPLETED']), /incomplete/i);
+  assert.throws(() => assertAuditEventChain([
+    { action: 'RECOVERY_OPERATION_COMPLETED', createdAt: new Date(base), metadataJson: {} },
+    { action: 'PROVISIONING_COMPLETED', createdAt: new Date(base + 1), metadataJson: {} }
+  ], ['PROVISIONING_COMPLETED', 'RECOVERY_OPERATION_COMPLETED']), /incomplete or out of order/i);
+  assert.doesNotThrow(() => assertAuditEventChain([
+    { action: 'PROVISIONING_COMPLETED', createdAt: new Date(base), metadataJson: {} },
+    { action: 'UNRELATED_SAFE_EVENT', createdAt: new Date(base + 1), metadataJson: {} },
+    { action: 'UNRELATED_SAFE_EVENT', createdAt: new Date(base + 2), metadataJson: {} },
+    { action: 'RECOVERY_OPERATION_COMPLETED', createdAt: new Date(base + 3), metadataJson: {} }
+  ], ['PROVISIONING_COMPLETED', 'RECOVERY_OPERATION_COMPLETED']));
+  assert.throws(() => assertAuditEventChain([
+    { action: 'PROVISIONING_COMPLETED', createdAt: new Date(base), metadataJson: {} },
+    { action: 'TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', createdAt: new Date(base + 1), metadataJson: {} },
+    { action: 'TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', createdAt: new Date(base + 2), metadataJson: {} }
+  ], ['PROVISIONING_COMPLETED', 'TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED'], { TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED: 1 }), /event count/i);
   assert.throws(() => assertRehearsalSecretFree({ metadata: { passwordHash: 'hidden' } }), /secret-like/i);
 });
 

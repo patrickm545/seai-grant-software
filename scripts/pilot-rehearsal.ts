@@ -12,6 +12,12 @@ import {
   buildRehearsalMarkdown
 } from '../lib/pilot-rehearsal';
 import {
+  cleanupSyntheticData,
+  SyntheticCleanupError,
+  type SyntheticCleanupSummary,
+  type SyntheticCleanupTrackedIds
+} from '../lib/pilot-rehearsal-cleanup';
+import {
   FailingCredentialDeliveryAdapter,
   FakeCredentialDeliveryAdapter,
   type CredentialDeliveryAdapter
@@ -142,18 +148,18 @@ function rehearsalId() {
   return `pilot-rehearsal-${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
-function safeSuffix(id: string) {
-  return id.replace(/[^a-z0-9-]/gi, '').toLowerCase().slice(-20);
+function marker(id: string) {
+  return id.replace(/[^a-z0-9-]/gi, '').toLowerCase();
 }
 
 function syntheticInput(label: string, id: string, approverUserId: string): TenantProvisioningInput {
-  const suffix = safeSuffix(id);
+  const suffix = marker(id);
   const lowerLabel = label.toLowerCase();
   return {
     organisationName: `Synthetic Rehearsal ${label}`,
     organisationSlug: `rehearsal-${lowerLabel}-${suffix}`,
     installerName: `Synthetic Installer ${label}`,
-    installerSlug: `rehearsal-installer-${lowerLabel}-${suffix}`,
+    installerSlug: `installer-${lowerLabel}-${suffix}`,
     seaiCompanyId: `SEAI-REHEARSAL-${lowerLabel}-${suffix}`,
     websiteDomain: `${lowerLabel}-${suffix}.pilot-rehearsal.example.test`,
     county: 'Synthetic County',
@@ -178,15 +184,16 @@ function recoveryInput(tenant: Tenant, approverUserId: string, idempotencyKey: s
 }
 
 function passwordFor(label: string) {
-  return `Northwind!Pilot!${label}!${randomBytes(12).toString('base64url')}`;
+  return `Northwind!Secure!${label}!${randomBytes(12).toString('base64url')}`;
 }
 
 async function createOperator(db: PrismaClient, id: string) {
   return db.$transaction(async (tx) => {
+    const durableMarker = marker(id);
     const organisation = await tx.organisation.create({
       data: {
         name: `Synthetic Clada Internal ${id}`,
-        slug: `rehearsal-internal-${safeSuffix(id)}`,
+        slug: `rehearsal-internal-${durableMarker}`,
         type: 'CLADA_INTERNAL',
         status: 'ACTIVE',
         verified: true
@@ -194,8 +201,8 @@ async function createOperator(db: PrismaClient, id: string) {
     });
     const user = await tx.user.create({
       data: {
-        id: `rehearsal-operator-${safeSuffix(id)}`,
-        email: `operator-${safeSuffix(id)}@pilot-rehearsal.example.test`,
+        id: `rehearsal-operator-${durableMarker}`,
+        email: `operator-${durableMarker}@pilot-rehearsal.example.test`,
         displayName: 'Synthetic Clada Operator',
         status: 'ACTIVE'
       }
@@ -288,7 +295,7 @@ async function addSyntheticLead(db: PrismaClient, tenant: Tenant, id: string) {
       organisationId: tenant.result.organisation.id,
       installerId: tenant.result.installer.id,
       fullName: `Synthetic Homeowner ${tenant.label}`,
-      email: `homeowner-${tenant.label.toLowerCase()}-${safeSuffix(id)}@pilot-rehearsal.example.test`,
+      email: `homeowner-${tenant.label.toLowerCase()}-${marker(id)}@pilot-rehearsal.example.test`,
       phone: '+353000000000',
       addressLine1: `Synthetic Street ${tenant.label}`,
       county: 'Synthetic County',
@@ -303,18 +310,23 @@ async function addSyntheticLead(db: PrismaClient, tenant: Tenant, id: string) {
     }
   });
   await db.leadActivity.create({
-    data: { leadId: lead.id, type: 'LEAD_CREATED', title: `Synthetic ${tenant.label} lead created` }
+      data: { leadId: lead.id, type: 'LEAD_CREATED', title: `Synthetic ${tenant.label} lead created ${marker(id)}` }
   });
   return lead.id;
 }
 
-async function auditSummary(db: PrismaClient, organisationId: string, expected: string[]) {
+async function auditSummary(
+  db: PrismaClient,
+  organisationId: string,
+  expected: string[],
+  expectedCounts: Readonly<Record<string, number>> = {}
+) {
   const audits = await db.auditLog.findMany({
     where: { organisationId },
-    select: { action: true, metadataJson: true },
+    select: { action: true, createdAt: true, metadataJson: true },
     orderBy: { createdAt: 'asc' }
   });
-  return assertAuditEventChain(audits, expected);
+  return assertAuditEventChain(audits, expected, expectedCounts);
 }
 
 type RehearsalData = {
@@ -325,28 +337,8 @@ type RehearsalData = {
   operationIds: string[];
   auditCounts: Record<string, number>;
   status: 'PASSED' | 'FAILED';
+  cleanup?: SyntheticCleanupSummary;
 };
-
-async function cleanup(db: PrismaClient, organisationIds: string[], userIds: string[], leadIds: string[]) {
-  if (organisationIds.length || userIds.length) {
-    await db.auditLog.deleteMany({
-      where: {
-        OR: [
-          ...(organisationIds.length ? [{ organisationId: { in: organisationIds } }] : []),
-          ...(userIds.length ? [{ userId: { in: userIds } }] : [])
-        ]
-      }
-    });
-  }
-  if (userIds.length) await db.authSession.deleteMany({ where: { userId: { in: userIds } } });
-  if (leadIds.length) await db.leadActivity.deleteMany({ where: { leadId: { in: leadIds } } });
-  if (leadIds.length) await db.lead.deleteMany({ where: { id: { in: leadIds } } });
-  if (organisationIds.length) await db.provisioningOperation.deleteMany({ where: { organisationId: { in: organisationIds } } });
-  if (userIds.length) await db.organisationMembership.deleteMany({ where: { userId: { in: userIds } } });
-  if (organisationIds.length) await db.installer.deleteMany({ where: { organisationId: { in: organisationIds } } });
-  if (userIds.length) await db.user.deleteMany({ where: { id: { in: userIds } } });
-  if (organisationIds.length) await db.organisation.deleteMany({ where: { id: { in: organisationIds } } });
-}
 
 async function runRehearsal(db: PrismaClient, id: string): Promise<RehearsalData> {
   const stages: Stage[] = [];
@@ -527,9 +519,42 @@ async function runRehearsal(db: PrismaClient, id: string): Promise<RehearsalData
     await assertRejectsCode(() => planTenantUserSuspension({ db, input: { ...mismatchInput, installerId: tenantB!.result.installer.id, ownerUserId: tenantB!.result.owner.id }, now }), 'RECOVERY_REFUSED');
     pass('stale lifecycle, inactive approver and cross-tenant recovery refusal');
 
-    const auditA = await auditSummary(db, tenantA.result.organisation.id, ['PROVISIONING_COMPLETED', 'INVITED_LOGIN_SUCCEEDED', 'RESTRICTED_SESSION_CREATED', 'FIRST_LOGIN_ACTIVATION_FAILED', 'PASSWORD_CHANGED', 'USER_ACTIVATED', 'ORGANISATION_ACTIVATED', 'NORMAL_SESSION_CREATED', 'USER_SUSPENDED', 'USER_REACTIVATED', 'ORGANISATION_SUSPENDED', 'ORGANISATION_REACTIVATED', 'RECOVERY_INSPECTION_PERFORMED']);
-    const auditC = await auditSummary(db, tenantC.result.organisation.id, ['PROVISIONING_COMPLETED', 'CREDENTIAL_EXPIRED', 'RECOVERY_INSPECTION_PERFORMED', 'CREDENTIAL_REISSUE_STARTED', 'PREVIOUS_CREDENTIAL_REVOKED', 'CREDENTIAL_REISSUE_DELIVERED', 'RECOVERY_OPERATION_COMPLETED']);
-    const auditD = await auditSummary(db, tenantD.result.organisation.id, ['PROVISIONING_COMPLETED', 'CREDENTIAL_REISSUE_STARTED', 'CREDENTIAL_REISSUE_FAILED', 'TEMPORARY_CREDENTIAL_DELIVERY_FAILED', 'RECOVERY_OPERATION_FAILED']);
+    const auditA = await auditSummary(
+      db,
+      tenantA.result.organisation.id,
+      ['TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', 'PROVISIONING_COMPLETED', 'INVITED_LOGIN_SUCCEEDED', 'RESTRICTED_SESSION_CREATED', 'FIRST_LOGIN_ACTIVATION_FAILED', 'PASSWORD_CHANGED', 'USER_ACTIVATED', 'ORGANISATION_ACTIVATED', 'NORMAL_SESSION_CREATED', 'USER_SUSPENDED', 'RECOVERY_INSPECTION_PERFORMED', 'USER_REACTIVATED', 'ORGANISATION_SUSPENDED', 'RECOVERY_INSPECTION_PERFORMED', 'ORGANISATION_REACTIVATED'],
+      {
+        PROVISIONING_COMPLETED: 1,
+        TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED: 1,
+        RESTRICTED_SESSION_CREATED: 1,
+        NORMAL_SESSION_CREATED: 1,
+        RECOVERY_INSPECTION_PERFORMED: 2
+      }
+    );
+    const auditC = await auditSummary(
+      db,
+      tenantC.result.organisation.id,
+      ['TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', 'PROVISIONING_COMPLETED', 'CREDENTIAL_EXPIRED', 'RECOVERY_INSPECTION_PERFORMED', 'CREDENTIAL_REISSUE_STARTED', 'PREVIOUS_CREDENTIAL_REVOKED', 'SESSIONS_INVALIDATED', 'CREDENTIAL_REISSUE_DELIVERED', 'RECOVERY_OPERATION_COMPLETED'],
+      {
+        PROVISIONING_COMPLETED: 1,
+        TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED: 2,
+        CREDENTIAL_REISSUE_DELIVERED: 1,
+        RECOVERY_OPERATION_COMPLETED: 1
+      }
+    );
+    const auditD = await auditSummary(
+      db,
+      tenantD.result.organisation.id,
+      ['TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', 'PROVISIONING_COMPLETED', 'CREDENTIAL_REISSUE_STARTED', 'PREVIOUS_CREDENTIAL_REVOKED', 'CREDENTIAL_REISSUE_FAILED', 'TEMPORARY_CREDENTIAL_DELIVERY_FAILED', 'RECOVERY_OPERATION_FAILED'],
+      {
+        PROVISIONING_COMPLETED: 1,
+        TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED: 1,
+        CREDENTIAL_REISSUE_DELIVERED: 0,
+        CREDENTIAL_REISSUE_FAILED: 1,
+        TEMPORARY_CREDENTIAL_DELIVERY_FAILED: 1,
+        RECOVERY_OPERATION_FAILED: 1
+      }
+    );
     auditCounts.A = auditA.count;
     auditCounts.C = auditC.count;
     auditCounts.D = auditD.count;
@@ -657,7 +682,7 @@ async function main() {
       mode: 'dry-run',
       databaseFingerprint: guarded.identity.fingerprint,
       plannedStages: plannedStages(),
-      cleanup: 'Synthetic rows would be removed after rehearsal; reports would be written only under ignored .tools/pilot-rehearsal.'
+      cleanup: 'If executed, synthetic rows would be discovered by rehearsal ID, removed in foreign-key-safe order, and verified absent; reports would be written only under ignored .tools/pilot-rehearsal.'
     }, null, 2));
     return;
   }
@@ -678,13 +703,16 @@ async function main() {
     failureCode = safeErrorCode(error);
     rehearsal = (error as { rehearsalContext?: RehearsalData }).rehearsalContext;
   }
-  const cleanupIds = rehearsal ? rehearsal : { organisationIds: [], userIds: [], leadIds: [] };
+  const cleanupIds: SyntheticCleanupTrackedIds = rehearsal ?? { organisationIds: [], userIds: [], leadIds: [] };
   let cleanupSucceeded = false;
+  let cleanupSummary: SyntheticCleanupSummary | undefined;
   try {
-    await cleanup(db, cleanupIds.organisationIds, cleanupIds.userIds, cleanupIds.leadIds);
-    cleanupSucceeded = true;
-  } catch {
+    cleanupSummary = await cleanupSyntheticData(db, id, cleanupIds);
+    cleanupSucceeded = cleanupSummary.verificationPassed;
+    if (!cleanupSucceeded) failureCode = failureCode ?? 'CLEANUP_VERIFICATION_FAILED';
+  } catch (error) {
     failureCode = failureCode ?? 'CLEANUP_FAILED';
+    if (error instanceof SyntheticCleanupError) cleanupSummary = error.summary;
   } finally {
     await db.$disconnect();
   }
@@ -701,6 +729,12 @@ async function main() {
     syntheticLeadIds: rehearsal?.leadIds ?? [],
     safeOperationIds: rehearsal?.operationIds ?? [],
     auditEventCounts: rehearsal?.auditCounts ?? {},
+    cleanup: cleanupSummary ?? {
+      discoveredRecordCount: 0,
+      deletedRecordCount: 0,
+      remainingRecordCount: 0,
+      verificationPassed: false
+    },
     readinessGaps: [
       'Production execution remains disabled.',
       'Real transactional email remains disabled; the rehearsal uses fake/test delivery only.',
@@ -724,12 +758,13 @@ async function main() {
       stagesPassed: report.stages.filter((stage) => stage.status === 'PASSED').length,
       stagesTotal: report.stages.length,
       cleanupSucceeded: report.cleanupSucceeded,
+      failureCode: failureCode ?? null,
       reportFiles: [relative(process.cwd(), jsonPath), relative(process.cwd(), markdownPath)],
       readinessGaps: report.readinessGaps
     }
   };
   console.log(JSON.stringify(output, null, 2));
-  if (!output.ok) process.exitCode = failureCode === 'CLEANUP_FAILED' ? 5 : 1;
+  if (!output.ok) process.exitCode = failureCode?.startsWith('CLEANUP') ? 5 : 1;
 }
 
 void main();

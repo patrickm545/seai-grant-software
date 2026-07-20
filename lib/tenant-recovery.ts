@@ -76,7 +76,7 @@ export type RecoveryInspection = {
   audit: { count: number; recentActions: string[] };
 };
 
-type RecoveryInput = {
+export type RecoveryInput = {
   organisationId: string;
   approverUserId: string;
   idempotencyKey: string;
@@ -179,12 +179,17 @@ async function loadRecoveryTarget(db: DbClient, organisationId: string): Promise
         orderBy: { createdAt: 'desc' },
         take: 25,
         select: { id: true, status: true, operationType: true, approvedBy: true, approvedAt: true, completedAt: true, createdAt: true }
-      },
-      auditLogs: { orderBy: { createdAt: 'desc' }, take: 100, select: { action: true, outcome: true, createdAt: true } }
+      }
     }
   });
   if (!organisation) throw new TenantRecoveryError('TARGET_NOT_FOUND', 'The target organisation was not found.');
-  return { organisation } as RecoveryTarget;
+  const auditLogs = await db.auditLog.findMany({
+    where: { organisationId },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: { action: true, outcome: true, createdAt: true }
+  });
+  return { organisation: { ...organisation, auditLogs } } as RecoveryTarget;
 }
 
 function ownerMembership(target: RecoveryTarget) {

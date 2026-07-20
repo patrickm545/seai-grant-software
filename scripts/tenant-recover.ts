@@ -174,35 +174,64 @@ function scrubSafeOutput(value: unknown): unknown {
   return output;
 }
 
-function serviceExportName(subcommand: RecoverySubcommand) {
-  return {
-    inspect: 'inspectTenantRecoveryState',
-    'reissue-credential': 'reissueTenantCredential',
-    'suspend-user': 'suspendTenantUser',
-    'suspend-organisation': 'suspendTenantOrganisation',
-    reactivate: 'reactivateTenantRecovery'
-  }[subcommand];
-}
-
 async function invokeRecovery(db: PrismaClient, options: CommandOptions, input: RecoveryInput, environment: string) {
-  const service = (await import('../lib/tenant-recovery')) as unknown as Record<string, unknown>;
-  const exportName = serviceExportName(options.subcommand!);
-  const implementation = service[exportName];
-  if (typeof implementation !== 'function') {
-    const error = new Error('Recovery service is not available.') as Error & { code?: string };
-    error.code = 'RECOVERY_NOT_AVAILABLE';
+  const service = await import('../lib/tenant-recovery');
+  const organisationId = input.organisationId;
+  if (typeof organisationId !== 'string' || !organisationId.trim()) {
+    throw new Error('organisationId is required.');
+  }
+  if (options.subcommand === 'inspect') {
+    return service.inspectTenantRecovery({ db, organisationId });
+  }
+
+  const approverUserId = input.approverUserId;
+  const idempotencyKey = input.idempotencyKey;
+  const reason = input.reason;
+  if (typeof approverUserId !== 'string' || typeof idempotencyKey !== 'string' || typeof reason !== 'string') {
+    throw new Error('approverUserId, idempotencyKey, and reason are required for mutations.');
+  }
+  const recoveryInput = {
+    organisationId,
+    approverUserId,
+    idempotencyKey,
+    reason,
+    environment: environment as 'development' | 'test' | 'preview' | 'production'
+  };
+  if (options.execute && !['development', 'test'].includes(environment)) {
+    const error = new Error('Only Development and test recovery execution is enabled.') as Error & { code?: string };
+    error.code = 'PRODUCTION_EXECUTION_DISABLED';
     throw error;
   }
-  const deliveryAdapter = options.execute && ['development', 'test'].includes(environment)
-    ? new FakeCredentialDeliveryAdapter()
-    : undefined;
-  return implementation({
-    db,
-    input,
-    mode: options.execute ? 'execute' : 'dry-run',
-    deliveryAdapter,
-    environment
-  });
+
+  const deliveryAdapter = options.execute ? new FakeCredentialDeliveryAdapter() : undefined;
+  if (options.subcommand === 'reissue-credential') {
+    return options.execute
+      ? service.reissueTenantCredential({ db, input: recoveryInput, deliveryAdapter: deliveryAdapter!, loginUrl: input.loginUrl as string | undefined })
+      : service.planTenantCredentialReissue({ db, input: recoveryInput });
+  }
+  if (options.subcommand === 'suspend-user') {
+    return options.execute
+      ? service.suspendTenantUser({ db, input: recoveryInput })
+      : service.planTenantUserSuspension({ db, input: recoveryInput });
+  }
+  if (options.subcommand === 'suspend-organisation') {
+    return options.execute
+      ? service.suspendTenantOrganisation({ db, input: recoveryInput })
+      : service.planTenantOrganisationSuspension({ db, input: recoveryInput });
+  }
+
+  const targetType = input.targetType;
+  if (targetType === 'user') {
+    return options.execute
+      ? service.reactivateTenantUser({ db, input: recoveryInput })
+      : service.planTenantUserReactivation({ db, input: recoveryInput });
+  }
+  if (targetType === 'organisation') {
+    return options.execute
+      ? service.reactivateTenantOrganisation({ db, input: recoveryInput })
+      : service.planTenantOrganisationReactivation({ db, input: recoveryInput });
+  }
+  throw new Error('reactivate requires targetType set to user or organisation.');
 }
 
 async function main() {

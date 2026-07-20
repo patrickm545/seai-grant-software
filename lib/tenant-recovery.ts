@@ -127,6 +127,7 @@ type RecoveryTarget = {
         displayName: string;
         status: string;
         mustChangePassword: boolean;
+        passwordHash: string | null;
         temporaryCredentialExpiresAt: Date | null;
         sessions: Array<{ id: string; sessionType: string; expiresAt: Date; createdAt: Date }>;
       };
@@ -170,6 +171,7 @@ async function loadRecoveryTarget(db: DbClient, organisationId: string): Promise
               displayName: true,
               status: true,
               mustChangePassword: true,
+              passwordHash: true,
               temporaryCredentialExpiresAt: true,
               sessions: { select: { id: true, sessionType: true, expiresAt: true, createdAt: true } }
             }
@@ -210,6 +212,7 @@ function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryStat
   if (org.status === 'PROVISIONING') {
     if (latest?.operationType === 'PROVISIONING' && latest.status === 'FAILED') return 'DELIVERY_FAILED';
     if (user.status !== 'INVITED' || !user.mustChangePassword || !user.temporaryCredentialExpiresAt) return 'ACTIVATION_STATE_DRIFT';
+    if (!user.passwordHash) return 'PROVISIONING_INCOMPLETE';
     if (user.temporaryCredentialExpiresAt <= now) return 'INVITED_CREDENTIAL_EXPIRED';
     if (latest && ['PENDING', 'VALIDATING', 'READY'].includes(latest.status)) return 'PROVISIONING_INCOMPLETE';
     return 'INVITED_CREDENTIAL_VALID';

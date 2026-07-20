@@ -1,10 +1,9 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PrismaClient } from '@prisma/client';
 import {
-  assertDatabaseOperationAllowed,
-  formatDatabaseSafetyError
+  assertDatabaseOperationAllowed
 } from '../lib/database-safety';
 import { FakeCredentialDeliveryAdapter } from '../lib/credential-delivery';
 
@@ -31,7 +30,7 @@ Subcommands:
   reissue-credential     Reissue an expired/failed temporary credential
   suspend-user           Suspend the positively identified owner user
   suspend-organisation   Suspend the positively identified installer organisation
-  reactivate             Reactivate one approved user or organisation state
+  reactivate             Reactivate one approved user or organisation state (input targetType: user|organisation)
 
 All mutations default to --dry-run. --execute is required to write. Input is
 non-secret JSON in a Git-ignored file inside this repository; plaintext
@@ -50,6 +49,13 @@ const SAFE_ERROR_CODES = new Set([
   'DATABASE_GUARD_DENIED',
   'RECOVERY_NOT_AVAILABLE',
   'RECOVERY_REFUSED',
+  'APPROVER_NOT_AUTHORISED',
+  'TARGET_NOT_FOUND',
+  'IDEMPOTENCY_KEY_MISMATCH',
+  'IDEMPOTENCY_OPERATION_INCOMPLETE',
+  'DELIVERY_FAILED',
+  'TRANSACTION_FAILED',
+  'PRODUCTION_DISABLED',
   'RECOVERY_FAILED',
   'PRODUCTION_EXECUTION_DISABLED'
 ]);
@@ -108,7 +114,7 @@ function parseArguments(argv: string[]): CommandOptions {
 }
 
 function isSensitiveKey(key: string) {
-  return /(plaintext|password(hash)?|session(token|hash)?|cookie|authorization|database(url)?|connection(string)?|api[-_]?key|provider[-_]?secret)/i.test(key);
+  return /(plaintext|password|credential|hash|token|cookie|authorization|database|connection|string|api[-_]?key|provider[-_]?secret)/i.test(key);
 }
 
 function assertSecretFreeInput(value: unknown, path = 'input') {
@@ -126,7 +132,7 @@ function assertSecretFreeInput(value: unknown, path = 'input') {
 }
 
 function readApprovedInput(inputPath: string): RecoveryInput {
-  const repositoryRoot = resolve(process.cwd());
+  const repositoryRoot = realpathSync(resolve(process.cwd()));
   const absolutePath = resolve(repositoryRoot, inputPath);
   const repositoryRelativePath = relative(repositoryRoot, absolutePath);
   if (!repositoryRelativePath || repositoryRelativePath.startsWith('..')) {
@@ -134,6 +140,11 @@ function readApprovedInput(inputPath: string): RecoveryInput {
   }
   if (!absolutePath.toLowerCase().endsWith('.json') || !existsSync(absolutePath) || !statSync(absolutePath).isFile()) {
     throw new Error('The input path must identify an existing JSON file.');
+  }
+  const realInputPath = realpathSync(absolutePath);
+  const realRelativePath = relative(repositoryRoot, realInputPath);
+  if (!realRelativePath || realRelativePath.startsWith('..') || /^[A-Za-z]:[\\/]/.test(realRelativePath)) {
+    throw new Error('The input file must resolve inside this repository.');
   }
   const ignored = spawnSync('git', ['check-ignore', '--quiet', '--', repositoryRelativePath], {
     cwd: repositoryRoot,
@@ -192,10 +203,14 @@ async function invokeRecovery(db: PrismaClient, options: CommandOptions, input: 
   }
   const recoveryInput = {
     organisationId,
+    installerId: typeof input.installerId === 'string' ? input.installerId : undefined,
+    ownerUserId: typeof input.ownerUserId === 'string' ? input.ownerUserId : undefined,
     approverUserId,
     idempotencyKey,
     reason,
-    environment: environment as 'development' | 'test' | 'preview' | 'production'
+    environment: environment as 'development' | 'test' | 'preview' | 'production',
+    targetType: input.targetType === 'organisation' ? 'organisation' as const : input.targetType === 'user' ? 'user' as const : undefined,
+    loginUrl: typeof input.loginUrl === 'string' ? input.loginUrl : undefined
   };
   if (options.execute && !['development', 'test'].includes(environment)) {
     const error = new Error('Only Development and test recovery execution is enabled.') as Error & { code?: string };
@@ -206,7 +221,7 @@ async function invokeRecovery(db: PrismaClient, options: CommandOptions, input: 
   const deliveryAdapter = options.execute ? new FakeCredentialDeliveryAdapter() : undefined;
   if (options.subcommand === 'reissue-credential') {
     return options.execute
-      ? service.reissueTenantCredential({ db, input: recoveryInput, deliveryAdapter: deliveryAdapter!, loginUrl: input.loginUrl as string | undefined })
+      ? service.reissueTenantCredential({ db, input: recoveryInput, deliveryAdapter: deliveryAdapter! })
       : service.planTenantCredentialReissue({ db, input: recoveryInput });
   }
   if (options.subcommand === 'suspend-user') {
@@ -279,8 +294,8 @@ async function main() {
       productionFingerprint: process.env.PRODUCTION_DATABASE_FINGERPRINT,
       branchId: process.env.DATABASE_BRANCH_ID
     });
-  } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: { code: 'DATABASE_GUARD_DENIED', message: formatDatabaseSafetyError(error) } }));
+  } catch {
+    console.error(JSON.stringify({ ok: false, error: { code: 'DATABASE_GUARD_DENIED', message: 'Database safety guard denied the requested operation.' } }));
     process.exit(4);
     return;
   }
@@ -303,7 +318,8 @@ async function main() {
     console.log(JSON.stringify(scrubSafeOutput({ ok: true, mode: options.execute ? 'execute' : 'dry-run', environment, result }), null, 2));
   } catch (error) {
     console.error(JSON.stringify(safeErrorPayload(error), null, 2));
-    process.exitCode = 4;
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+    process.exitCode = code === 'INPUT_INVALID' || code === 'INPUT_REQUIRED' ? 2 : code === 'TRANSACTION_FAILED' ? 5 : code === 'DELIVERY_FAILED' ? 6 : 4;
   } finally {
     await db.$disconnect();
   }

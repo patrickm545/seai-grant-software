@@ -70,7 +70,7 @@ Mobile layout must support password managers, visibility toggles, touch targets,
 
 ## Support and recovery
 
-All actions require positive target identification, correct environment verification, an active Clada internal approver, dry-run first, audit evidence, and secret-free output. The implemented command is `pnpm tenant:recover <subcommand> --input <ignored-file.json> [--dry-run|--execute]`; mutations default to dry-run and reject Production. Inputs contain only non-secret identifiers, reason, approver ID, and idempotency key. Owner replacement is inspection/refusal-only and returns `MANUAL_REVIEW_REQUIRED`.
+All actions require positive target identification, correct environment verification, an active Clada internal approver, dry-run first, audit evidence, and secret-free output. The implemented command is `pnpm tenant:recover <subcommand> --input <ignored-file.json> [--dry-run|--execute]`; mutations default to dry-run and reject Production. Inputs contain only non-secret organisation/Installer/owner identifiers, reason, approver ID, and idempotency key; `reactivate` additionally requires `targetType` set to `user` or `organisation`. Owner replacement is inspection/refusal-only and returns `MANUAL_REVIEW_REQUIRED`.
 
 | Case | Authority and intended action | Audit event | Data/access impact and recovery | Never do |
 | --- | --- | --- | --- | --- |

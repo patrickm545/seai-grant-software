@@ -79,10 +79,12 @@ export type RecoveryInspection = {
 
 export type RecoveryInput = {
   organisationId: string;
+  installerId?: string;
+  ownerUserId?: string;
   approverUserId: string;
   idempotencyKey: string;
   reason: string;
-  environment?: 'development' | 'test' | 'preview' | 'production';
+  environment: 'development' | 'test' | 'preview' | 'production';
 };
 
 export type RecoveryPlan = {
@@ -206,12 +208,13 @@ function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryStat
   if (org.type !== 'INSTALLER' || org.installers.length !== 1) return 'MANUAL_REVIEW_REQUIRED';
   if (org.status === 'INACTIVE') return 'ORGANISATION_SUSPENDED';
   const membership = ownerMembership(target);
-  if (!membership || membership.status !== 'ACTIVE') return 'ACTIVATION_STATE_DRIFT';
+  if (!membership) return 'MANUAL_REVIEW_REQUIRED';
+  if (membership.status !== 'ACTIVE') return 'ACTIVATION_STATE_DRIFT';
   const user = membership.user;
   if (user.status === 'INACTIVE') return 'USER_SUSPENDED';
   const latest = org.provisioningOperations[0];
   if (org.status === 'PROVISIONING') {
-    if (latest?.operationType === 'PROVISIONING' && latest.status === 'FAILED') return 'DELIVERY_FAILED';
+    if (latest?.status === 'FAILED' && ['PROVISIONING', 'RECOVERY_CREDENTIAL_REISSUE'].includes(latest.operationType)) return 'DELIVERY_FAILED';
     if (user.status !== 'INVITED' || !user.mustChangePassword || !user.temporaryCredentialExpiresAt) return 'ACTIVATION_STATE_DRIFT';
     if (!user.passwordHash) return 'PROVISIONING_INCOMPLETE';
     if (user.temporaryCredentialExpiresAt <= now) return 'INVITED_CREDENTIAL_EXPIRED';
@@ -235,7 +238,7 @@ export async function inspectTenantRecovery(args: { db: DbClient; organisationId
     : owner.temporaryCredentialExpiresAt && owner.temporaryCredentialExpiresAt > now && owner.mustChangePassword
       ? 'VALID'
       : owner.mustChangePassword ? 'EXPIRED' : 'NOT_USABLE';
-  return {
+  const result: RecoveryInspection = {
     safe: true,
     state: classifyRecovery(target, now),
     organisation: { id: target.organisation.id, name: target.organisation.name, slug: target.organisation.slug, status: target.organisation.status, type: target.organisation.type },
@@ -246,6 +249,17 @@ export async function inspectTenantRecovery(args: { db: DbClient; organisationId
     provisioning: latest ? { id: latest.id, status: latest.status, operationType: latest.operationType } : null,
     audit: { count: target.organisation.auditLogs.length, recentActions: target.organisation.auditLogs.slice(0, 20).map((event) => event.action) }
   };
+  await writeAuditEvent(args.db, {
+    actor: 'system',
+    actorType: 'SYSTEM',
+    organisationId: target.organisation.id,
+    source: 'tenant-recovery',
+    action: 'RECOVERY_INSPECTION_PERFORMED',
+    resourceType: 'organisation',
+    resourceId: target.organisation.id,
+    metadata: { state: result.state }
+  });
+  return result;
 }
 
 async function resolveApprover(db: DbClient, approverUserId: string, targetUserId?: string) {
@@ -267,6 +281,7 @@ async function resolveApprover(db: DbClient, approverUserId: string, targetUserI
 function validateRecoveryInput(input: RecoveryInput) {
   if (!SAFE_IDENTIFIER.test(input.organisationId) || !SAFE_IDENTIFIER.test(input.approverUserId) || !SAFE_IDENTIFIER.test(input.idempotencyKey)) throw new TenantRecoveryError('INPUT_INVALID', 'Recovery identifiers are invalid.');
   if (!input.reason || input.reason.trim().length < 3 || input.reason.length > 500 || CONTROL_CHARACTERS.test(input.reason)) throw new TenantRecoveryError('INPUT_INVALID', 'A bounded recovery reason is required.');
+  if (!['development', 'test', 'preview', 'production'].includes(input.environment)) throw new TenantRecoveryError('INPUT_INVALID', 'A supported recovery environment is required.');
   if (input.environment === 'production') throw new TenantRecoveryError('PRODUCTION_DISABLED', 'Production recovery execution remains disabled.');
 }
 
@@ -274,7 +289,7 @@ function canonicalRecoveryInput(type: RecoveryOperationType, input: RecoveryInpu
   // The idempotency key identifies the operation record; it is deliberately
   // excluded from the canonical request digest so a new key can represent
   // the same reviewed request without changing its content hash.
-  return JSON.stringify({ type, organisationId: input.organisationId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
+  return JSON.stringify({ type, organisationId: input.organisationId, installerId: input.installerId ?? null, userId, approverUserId: input.approverUserId, environment: input.environment, reason: input.reason.trim() });
 }
 
 function recoveryInputHash(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {
@@ -286,6 +301,12 @@ async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, 
   const target = await loadRecoveryTarget(db, input.organisationId);
   const membership = ownerMembership(target);
   const userId = membership?.userId ?? null;
+  if (input.installerId !== undefined && (!SAFE_IDENTIFIER.test(input.installerId) || target.organisation.installers.length !== 1 || target.organisation.installers[0].id !== input.installerId)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The Installer target does not match the organisation.');
+  }
+  if (input.ownerUserId !== undefined && (!SAFE_IDENTIFIER.test(input.ownerUserId) || input.ownerUserId !== userId)) {
+    throw new TenantRecoveryError('RECOVERY_REFUSED', 'The owner target does not match the organisation membership.');
+  }
   await resolveApprover(db, input.approverUserId, userId ?? undefined);
   const state = classifyRecovery(target, now);
   const hash = recoveryInputHash(type, input, userId);
@@ -299,7 +320,7 @@ async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, 
     ? ['INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
     : type === 'RECOVERY_SUSPEND_USER' ? ['HEALTHY_ACTIVE', 'INVITED_CREDENTIAL_VALID', 'INVITED_CREDENTIAL_EXPIRED', 'DELIVERY_FAILED', 'PROVISIONING_INCOMPLETE'].includes(state)
       : type === 'RECOVERY_SUSPEND_ORGANISATION' ? state !== 'MANUAL_REVIEW_REQUIRED'
-        : type === 'RECOVERY_REACTIVATE_USER' ? state === 'USER_SUSPENDED'
+        : type === 'RECOVERY_REACTIVATE_USER' ? state === 'USER_SUSPENDED' && membership?.user.status === 'INACTIVE' && !membership?.user.mustChangePassword
           : state === 'ORGANISATION_SUSPENDED';
   if (!allowed || !membership) return { safeToExecute: false, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: [], refusalReason: 'Current lifecycle state is not an approved recovery transition.', target: { organisationId: input.organisationId, userId } };
   return { safeToExecute: true, operationType: type, state, operationId: null, idempotency: 'NEW', intendedDatabaseActions: ['create durable recovery operation', 'validate active internal approver', ...(type === 'RECOVERY_CREDENTIAL_REISSUE' ? ['replace credential hash and expiry', 'invalidate owner sessions', 'deliver through configured fake/test adapter'] : type === 'RECOVERY_SUSPEND_USER' ? ['set owner user INACTIVE', 'invalidate owner sessions'] : type === 'RECOVERY_SUSPEND_ORGANISATION' ? ['set organisation INACTIVE', 'invalidate all tenant sessions'] : ['restore approved lifecycle state', 'invalidate stale sessions']), 'write secret-free audit events'], target: { organisationId: input.organisationId, userId } };
@@ -312,6 +333,7 @@ export async function planTenantUserReactivation(args: { db: DbClient; input: Re
 export async function planTenantOrganisationReactivation(args: { db: DbClient; input: RecoveryInput; now?: Date }) { return planRecoveryOperation(args.db, 'RECOVERY_REACTIVATE_ORGANISATION', args.input, args.now ?? new Date()); }
 
 async function executeRecoveryOperation(args: { db: PrismaClient; type: RecoveryOperationType; input: RecoveryInput; now: Date; deliveryAdapter?: CredentialDeliveryAdapter; loginUrl?: string }): Promise<RecoveryResult> {
+  if (!['development', 'test'].includes(args.input.environment)) throw new TenantRecoveryError('PRODUCTION_DISABLED', 'Recovery execution is enabled only in Development and test.');
   const plan = await planRecoveryOperation(args.db, args.type, args.input, args.now);
   if (plan.idempotency === 'COMPLETED_MATCH' && plan.operationId) return { idempotentReplay: true, operation: { id: plan.operationId, operationType: args.type, status: 'COMPLETED', completedAt: plan.completedAt ?? null }, state: plan.state, organisationId: args.input.organisationId, userId: plan.target.userId, revokedSessionCount: 0 };
   if (!plan.safeToExecute) throw new TenantRecoveryError(plan.idempotency === 'MISMATCH' ? 'IDEMPOTENCY_KEY_MISMATCH' : plan.idempotency === 'INCOMPLETE' ? 'IDEMPOTENCY_OPERATION_INCOMPLETE' : 'RECOVERY_REFUSED', plan.refusalReason ?? 'Recovery operation refused.');
@@ -333,6 +355,11 @@ async function executeRecoveryOperation(args: { db: PrismaClient; type: Recovery
     try {
       operationId = await args.db.$transaction(async (tx) => {
         const op = await tx.provisioningOperation.create({ data: { idempotencyKey: args.input.idempotencyKey, inputHash: operationHash, operationType: args.type, status: 'READY', approvedBy: approver.id, approvedAt: args.now, organisationId: args.input.organisationId } });
+        const currentOrganisation = await tx.organisation.findUnique({ where: { id: args.input.organisationId }, select: { status: true, type: true } });
+        const currentMembership = await tx.organisationMembership.findUnique({ where: { id: membership.id }, select: { organisationId: true, userId: true, status: true, isOwner: true, role: true } });
+        if (currentOrganisation?.type !== 'INSTALLER' || currentOrganisation.status !== 'PROVISIONING' || currentMembership?.organisationId !== args.input.organisationId || currentMembership.userId !== userId || currentMembership.status !== 'ACTIVE' || !currentMembership.isOwner || currentMembership.role !== 'ORGANISATION_OWNER') {
+          throw new TenantRecoveryError('RECOVERY_REFUSED', 'Owner or organisation state changed; obtain a fresh inspection.');
+        }
         const updated = await tx.user.updateMany({ where: { id: userId, status: 'INVITED', mustChangePassword: true }, data: { passwordHash, status: 'INVITED', mustChangePassword: true, temporaryCredentialExpiresAt: expiresAt } });
         if (updated.count !== 1) throw new TenantRecoveryError('RECOVERY_REFUSED', 'Owner state changed; obtain a fresh inspection.');
         const sessions = await tx.authSession.deleteMany({ where: { userId } });
@@ -431,7 +458,7 @@ export async function reissueTenantCredential(args: RecoveryCommandArgs) {
   if (args.mode !== 'execute') return planTenantCredentialReissue(args);
   const deliveryAdapter = args.deliveryAdapter;
   if (!deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
-  return executeTenantCredentialReissue({ ...args, deliveryAdapter, loginUrl: args.input.loginUrl });
+  return executeTenantCredentialReissue({ db: args.db, input: args.input, deliveryAdapter, loginUrl: args.input.loginUrl, now: args.now });
 }
 
 export async function suspendTenantUser(args: RecoveryCommandArgs) {

@@ -338,6 +338,8 @@ async function executeRecoveryOperation(args: { db: PrismaClient; type: Recovery
         const sessions = await tx.authSession.deleteMany({ where: { userId } });
         revokedSessionCount = sessions.count;
         const base = { actor: approver.displayName, actorType: 'HUMAN_USER' as const, userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: op.id, source: 'tenant-recovery' };
+        await writeAuditEvent(tx, { ...base, action: 'CREDENTIAL_REISSUE_STARTED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'OPERATOR_REISSUE' } });
+        await writeAuditEvent(tx, { ...base, action: 'PREVIOUS_CREDENTIAL_REVOKED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'OPERATOR_REISSUE' } });
         await writeAuditEvent(tx, { ...base, action: 'CREDENTIAL_RESET', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'OPERATOR_REISSUE_REQUESTED' } });
         await writeAuditEvent(tx, { ...base, action: 'SESSIONS_INVALIDATED', resourceType: 'auth_session', metadata: { revokedSessionCount } });
         return op.id;
@@ -352,6 +354,7 @@ async function executeRecoveryOperation(args: { db: PrismaClient; type: Recovery
       const safeReceipt = { providerDeliveryId: receipt.providerDeliveryId, status: receipt.status };
       await args.db.$transaction(async (tx) => {
         await tx.provisioningOperation.update({ where: { id: operationId }, data: { status: 'COMPLETED', completedAt: args.now } });
+        await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'CREDENTIAL_REISSUE_DELIVERED', resourceType: 'user', resourceId: userId, metadata: safeReceipt });
         await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'TEMPORARY_CREDENTIAL_DELIVERY_SUCCEEDED', resourceType: 'user', resourceId: userId, metadata: safeReceipt });
         await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'RECOVERY_OPERATION_COMPLETED', resourceType: 'provisioning_operation', resourceId: operationId });
       });
@@ -363,6 +366,8 @@ async function executeRecoveryOperation(args: { db: PrismaClient; type: Recovery
         await args.db.$transaction(async (tx) => {
           await tx.user.update({ where: { id: userId }, data: { passwordHash: revocationHash, status: 'INVITED', mustChangePassword: true, temporaryCredentialExpiresAt: args.now } });
           await tx.provisioningOperation.update({ where: { id: operationId }, data: { status: 'FAILED', completedAt: null } });
+          await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'PREVIOUS_CREDENTIAL_REVOKED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED', accessRevoked: true } });
+          await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'CREDENTIAL_REISSUE_FAILED', outcome: 'FAILED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED' } });
           await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'TEMPORARY_CREDENTIAL_DELIVERY_FAILED', outcome: 'FAILED', resourceType: 'user', resourceId: userId, metadata: { reasonCode: 'DELIVERY_FAILED', accessRevoked: true } });
           await writeAuditEvent(tx, { actor: approver.displayName, actorType: 'HUMAN_USER', userId: approver.id, organisationId: args.input.organisationId, provisioningOperationId: operationId, source: 'tenant-recovery', action: 'RECOVERY_OPERATION_FAILED', outcome: 'FAILED', resourceType: 'provisioning_operation', resourceId: operationId, metadata: { reasonCode: 'DELIVERY_FAILED' } });
         });

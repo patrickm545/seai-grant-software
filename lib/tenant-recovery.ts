@@ -82,7 +82,7 @@ export type RecoveryInput = {
   approverUserId: string;
   idempotencyKey: string;
   reason: string;
-  environment?: 'development' | 'test' | 'preview' | 'production';
+  environment: 'development' | 'test' | 'preview' | 'production';
 };
 
 export type RecoveryPlan = {
@@ -262,6 +262,7 @@ async function resolveApprover(db: DbClient, approverUserId: string, targetUserI
 function validateRecoveryInput(input: RecoveryInput) {
   if (!SAFE_IDENTIFIER.test(input.organisationId) || !SAFE_IDENTIFIER.test(input.approverUserId) || !SAFE_IDENTIFIER.test(input.idempotencyKey)) throw new TenantRecoveryError('INPUT_INVALID', 'Recovery identifiers are invalid.');
   if (!input.reason || input.reason.trim().length < 3 || input.reason.length > 500 || CONTROL_CHARACTERS.test(input.reason)) throw new TenantRecoveryError('INPUT_INVALID', 'A bounded recovery reason is required.');
+  if (!input.environment) throw new TenantRecoveryError('INPUT_INVALID', 'Recovery environment is required.');
   if (input.environment === 'production') throw new TenantRecoveryError('PRODUCTION_DISABLED', 'Production recovery execution remains disabled.');
 }
 
@@ -411,42 +412,50 @@ export async function executeTenantOrganisationReactivation(args: { db: PrismaCl
 
 type RecoveryCommandArgs = {
   db: PrismaClient;
-  input: RecoveryInput & { targetType?: 'user' | 'organisation'; loginUrl?: string };
+  input: Omit<RecoveryInput, 'environment'> & { environment?: RecoveryInput['environment']; targetType?: 'user' | 'organisation'; loginUrl?: string };
   mode?: 'dry-run' | 'execute';
   deliveryAdapter?: CredentialDeliveryAdapter;
   now?: Date;
   environment?: string;
 };
 
+function commandInput(args: RecoveryCommandArgs): RecoveryInput {
+  return { ...args.input, environment: args.input.environment ?? (args.environment as RecoveryInput['environment']) };
+}
+
 export async function inspectTenantRecoveryState(args: RecoveryCommandArgs) {
   return inspectTenantRecovery({ db: args.db, organisationId: args.input.organisationId, now: args.now });
 }
 
 export async function reissueTenantCredential(args: RecoveryCommandArgs) {
-  if (args.mode !== 'execute') return planTenantCredentialReissue(args);
+  const input = commandInput(args);
+  if (args.mode !== 'execute') return planTenantCredentialReissue({ ...args, input });
   const deliveryAdapter = args.deliveryAdapter;
   if (!deliveryAdapter) throw new TenantRecoveryError('DELIVERY_FAILED', 'A configured fake/test delivery adapter is required.');
-  return executeTenantCredentialReissue({ ...args, deliveryAdapter, loginUrl: args.input.loginUrl });
+  return executeTenantCredentialReissue({ ...args, input, deliveryAdapter, loginUrl: args.input.loginUrl });
 }
 
 export async function suspendTenantUser(args: RecoveryCommandArgs) {
-  if (args.mode !== 'execute') return planTenantUserSuspension(args);
-  return executeTenantUserSuspension(args);
+  const input = commandInput(args);
+  if (args.mode !== 'execute') return planTenantUserSuspension({ ...args, input });
+  return executeTenantUserSuspension({ ...args, input });
 }
 
 export async function suspendTenantOrganisation(args: RecoveryCommandArgs) {
-  if (args.mode !== 'execute') return planTenantOrganisationSuspension(args);
-  return executeTenantOrganisationSuspension(args);
+  const input = commandInput(args);
+  if (args.mode !== 'execute') return planTenantOrganisationSuspension({ ...args, input });
+  return executeTenantOrganisationSuspension({ ...args, input });
 }
 
 export async function reactivateTenantRecovery(args: RecoveryCommandArgs) {
+  const input = commandInput(args);
   const targetType = args.input.targetType ?? 'user';
   if (targetType === 'organisation') {
-    if (args.mode !== 'execute') return planTenantOrganisationReactivation(args);
-    return executeTenantOrganisationReactivation(args);
+    if (args.mode !== 'execute') return planTenantOrganisationReactivation({ ...args, input });
+    return executeTenantOrganisationReactivation({ ...args, input });
   }
-  if (args.mode !== 'execute') return planTenantUserReactivation(args);
-  return executeTenantUserReactivation(args);
+  if (args.mode !== 'execute') return planTenantUserReactivation({ ...args, input });
+  return executeTenantUserReactivation({ ...args, input });
 }
 
 export const inspectTenantRecoveryForOrganisation = inspectTenantRecovery;

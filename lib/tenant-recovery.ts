@@ -14,6 +14,7 @@ type DbClient = PrismaClient | Prisma.TransactionClient;
 
 const TEMPORARY_CREDENTIAL_TTL_MS = 24 * 60 * 60 * 1000;
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+const SAFE_RECEIPT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 
 export const RECOVERY_STATES = [
@@ -340,6 +341,9 @@ async function executeRecoveryOperation(args: { db: PrismaClient; type: Recovery
     try {
       const receipt = await args.deliveryAdapter.deliverTemporaryCredential({ recipientEmail: membership.user.email, recipientName: membership.user.displayName, organisationName: target.organisation.name, loginUrl: args.loginUrl ?? '', temporaryCredential: credential, expiresAt, operationId });
       credential = undefined;
+      if (!SAFE_RECEIPT_ID.test(receipt.providerDeliveryId) || !['ACCEPTED', 'DELIVERED'].includes(receipt.status)) {
+        throw new Error('Credential delivery returned an invalid safe receipt.');
+      }
       const safeReceipt = { providerDeliveryId: receipt.providerDeliveryId, status: receipt.status };
       await args.db.$transaction(async (tx) => {
         await tx.provisioningOperation.update({ where: { id: operationId }, data: { status: 'COMPLETED', completedAt: args.now } });

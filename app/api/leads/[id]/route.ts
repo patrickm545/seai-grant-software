@@ -17,6 +17,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     return NextResponse.json(lead);
   } catch (error) {
+    if (isPilotAuthenticationError(error) && error.code === 'PASSWORD_CHANGE_REQUIRED') {
+      return NextResponse.json({ error: 'Password change required', code: error.code }, { status: 403 });
+    }
     if (isPilotAuthenticationError(error)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

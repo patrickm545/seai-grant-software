@@ -5,13 +5,13 @@
 | Document ID | ENG-PILOT-AUTH-001 |
 | Status | Active |
 | Owner | Clada Systems Engineering |
-| Last reviewed | 2026-07-17 |
+| Last reviewed | 2026-07-18 |
 
 ## Current-versus-target notice
 
-This document describes current implemented pilot authentication and the current `pnpm pilot:provision` command. It does not provide forced first-login password change, temporary-credential expiry, dry-run planning, provisioning audit events, or the approved safe credential handoff required for a new external pilot.
+This document describes current implemented pilot authentication and the legacy `pnpm pilot:provision` command. PR #29 adds temporary-credential expiry enforcement, a typed 30-minute restricted session, forced first-login password replacement, atomic owner/organisation activation, all-session rotation, and safe lifecycle audit. PR #28 provides the separate dry-run-first `pnpm tenant:provision` boundary and provisioning audit.
 
-The proposed replacement architecture is [Clada OS Tenant Provisioning Architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md), operated through the proposed [SolarGRANT Pro Pilot Organisation Onboarding Runbook](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md). Until its readiness gate passes, planned states and commands must not be treated as implemented.
+Real transactional-email delivery, Production provisioning execution, recovery/reissue commands, and end-to-end Production onboarding validation remain deferred. The implemented flow is governed by [Clada OS Tenant Provisioning Architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md) and the [SolarGRANT Pro Pilot Organisation Onboarding Runbook](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md). No external pilot may be onboarded until that runbook's readiness gate passes.
 
 ## Approach
 
@@ -90,6 +90,6 @@ Set `AUTH_SESSION_PEPPER` separately in every Vercel environment before deployme
 
 ## Known limitations and deferred work
 
-The pilot has no self-registration, invitations, password reset, MFA, SSO, organisation switching, user-management UI, fine-grained custom roles, or session-management UI. Password changes invalidate neither other sessions nor all devices automatically; an operator can delete the user's sessions when rotating a password. These capabilities are deferred until pilot evidence justifies them.
+The pilot has no self-registration, one-time invitations, general password reset, MFA, SSO, organisation switching, user-management UI, fine-grained custom roles, or session-management UI. Successful first-login replacement invalidates every existing user session and creates one rotated normal session; general recovery and password reset remain deferred.
 
-The current command also has no dry-run, idempotency operation record, credential expiry, forced password change, provisioning audit sequence, or approved non-logged credential-delivery integration. It can update an existing user's password and identity fields during an upsert. These are explicit implementation gaps, not accepted onboarding controls.
+The legacy `pnpm pilot:provision` command still has no dry-run, idempotency operation record, temporary-credential lifecycle, or approved non-logged credential-delivery integration. It can update an existing user's password and identity fields during an upsert and is not an accepted onboarding control. The standard `pnpm tenant:provision` command and first-login path now implement the reviewed database lifecycle, but real delivery, Production execution, and recovery remain explicit readiness gaps.

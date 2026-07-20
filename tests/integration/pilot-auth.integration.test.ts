@@ -113,6 +113,7 @@ test('logout invalidates the database session and expired sessions fail closed',
     data: {
       userId: user.id,
       tokenHash: hashSessionToken(expiredToken),
+      sessionType: 'NORMAL',
       expiresAt: new Date('2020-01-01T00:00:00.000Z')
     }
   });
@@ -141,6 +142,7 @@ test('tenant context comes only from the authenticated membership and missing me
     data: {
       userId: noMembershipUser.id,
       tokenHash: hashSessionToken(orphanToken),
+      sessionType: 'NORMAL',
       expiresAt: new Date(Date.now() + 60_000)
     }
   });

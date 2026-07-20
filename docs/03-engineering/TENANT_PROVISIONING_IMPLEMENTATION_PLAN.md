@@ -37,6 +37,8 @@ Dependencies: PR 1 and selection/configuration of the transactional-email provid
 
 ## PR 3: Forced first-login password change
 
+Status: implemented in PR #29 with a typed 30-minute restricted session, server-only route/API guards, current-credential and target-policy validation, serializable activation and session rotation, secret-safe audit, an accessible password-replacement page, and disposable PostgreSQL integration coverage. Production execution and external onboarding remain blocked by the later readiness gates.
+
 Scope: 30-minute non-refreshable restricted session, server-side route and API guard, password-change UI/endpoint, current-credential verification, target policy, coordinated owner/organisation activation, credential invalidation, all-session revocation, new normal 12-hour session, audit, accessible mobile/error states, and tests.
 
 Dependencies: PRs 1-2. Migration risk is low; authentication bypass/lockout risk is high. Tests cover every protected surface, manually entered URLs, expired/suspended states, browser close/resume, validation failures, session expiry, old credential rejection, concurrency, generic errors, and accessibility. Production acceptance requires an end-to-end disposable user, no route bypass, session rotation evidence, and clean logs.

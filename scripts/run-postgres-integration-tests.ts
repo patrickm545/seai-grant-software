@@ -62,4 +62,7 @@ function run(command: string, args: string[]) {
 }
 
 run('prisma', ['migrate', 'deploy']);
-run('node', ['--import', 'tsx', '--test', 'tests/integration/**/*.test.ts']);
+// Integration files share one disposable schema. Run files serially so their
+// fixture transactions cannot create false serializable conflicts; individual
+// tests still exercise real concurrent transactions where required.
+run('node', ['--import', 'tsx', '--test', '--test-concurrency=1', 'tests/integration/**/*.test.ts']);

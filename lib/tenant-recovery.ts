@@ -207,7 +207,7 @@ function classifyRecovery(target: RecoveryTarget, now: Date): TenantRecoveryStat
   if (user.status === 'INACTIVE') return 'USER_SUSPENDED';
   const latest = org.provisioningOperations[0];
   if (org.status === 'PROVISIONING') {
-    if (latest?.operationType === 'PROVISIONING' && latest.status === 'FAILED') return 'DELIVERY_FAILED';
+    if (latest && latest.status === 'FAILED' && ['PROVISIONING', 'RECOVERY_CREDENTIAL_REISSUE'].includes(latest.operationType)) return 'DELIVERY_FAILED';
     if (user.status !== 'INVITED' || !user.mustChangePassword || !user.temporaryCredentialExpiresAt) return 'ACTIVATION_STATE_DRIFT';
     if (!user.passwordHash) return 'PROVISIONING_INCOMPLETE';
     if (user.temporaryCredentialExpiresAt <= now) return 'INVITED_CREDENTIAL_EXPIRED';

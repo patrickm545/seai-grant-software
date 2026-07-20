@@ -79,6 +79,8 @@ export type RecoveryInspection = {
 
 export type RecoveryInput = {
   organisationId: string;
+  installerId?: string;
+  ownerUserId?: string;
   approverUserId: string;
   idempotencyKey: string;
   reason: string;
@@ -271,7 +273,7 @@ function canonicalRecoveryInput(type: RecoveryOperationType, input: RecoveryInpu
   // The idempotency key identifies the operation record; it is deliberately
   // excluded from the canonical request digest so a new key can represent
   // the same reviewed request without changing its content hash.
-  return JSON.stringify({ type, organisationId: input.organisationId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
+  return JSON.stringify({ type, organisationId: input.organisationId, installerId: input.installerId ?? null, ownerUserId: input.ownerUserId ?? userId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
 }
 
 function recoveryInputHash(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {
@@ -283,6 +285,8 @@ async function planRecoveryOperation(db: DbClient, type: RecoveryOperationType, 
   const target = await loadRecoveryTarget(db, input.organisationId);
   const membership = ownerMembership(target);
   const userId = membership?.userId ?? null;
+  if (input.installerId && (!SAFE_IDENTIFIER.test(input.installerId) || target.organisation.installers.length !== 1 || target.organisation.installers[0].id !== input.installerId)) throw new TenantRecoveryError('RECOVERY_REFUSED', 'Installer identity does not match the target organisation.');
+  if (input.ownerUserId && (!SAFE_IDENTIFIER.test(input.ownerUserId) || input.ownerUserId !== userId)) throw new TenantRecoveryError('RECOVERY_REFUSED', 'Owner identity does not match the target organisation.');
   await resolveApprover(db, input.approverUserId, userId ?? undefined);
   const state = classifyRecovery(target, now);
   const hash = recoveryInputHash(type, input, userId);

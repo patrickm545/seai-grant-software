@@ -10,7 +10,7 @@
 
 ## Status and prerequisites
 
-The dry-run-first `pnpm tenant:provision` service and command, canonical idempotency, strict conflicts, transactional tenant creation, fixed credential expiry state, fake/test delivery adapter, secret-free audit/output contract, 30-minute restricted first-login session, forced password replacement, atomic owner/organisation activation, and all-session rotation are implemented. Real transactional email, Production execution, recovery commands, and end-to-end Production smoke validation remain deferred. Do not onboard an external pilot until every [readiness gate](#pilot-readiness-gate) passes. The legacy `pnpm pilot:provision` command is described in [pilot authentication](PILOT_AUTHENTICATION.md) and is not a substitute.
+The dry-run-first `pnpm tenant:provision` service and command, canonical idempotency, strict conflicts, transactional tenant creation, fixed credential expiry state, fake/test delivery adapter, secret-free audit/output contract, 30-minute restricted first-login session, forced password replacement, atomic owner/organisation activation, and all-session rotation are implemented. PR #30 adds the dry-run-first `pnpm tenant:recover` inspection, credential-reissue, suspension, and reactivation commands. Real transactional email, Production execution, owner replacement, and end-to-end Production smoke validation remain deferred. Do not onboard an external pilot until every [readiness gate](#pilot-readiness-gate) passes. The legacy `pnpm pilot:provision` command is described in [pilot authentication](PILOT_AUTHENTICATION.md) and is not a substitute.
 
 Provisioning is a Clada OS capability; this runbook defines its SolarGRANT Pro product use. Architecture and security rules live in [Clada OS tenant provisioning architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md).
 
@@ -70,22 +70,22 @@ Mobile layout must support password managers, visibility toggles, touch targets,
 
 ## Support and recovery
 
-All actions require positive target identification, correct environment verification, an authorised approver, dry-run where supported, audit evidence, and secret-free output. Intended future command names below are contracts, not implemented commands.
+All actions require positive target identification, correct environment verification, an active Clada internal approver, dry-run first, audit evidence, and secret-free output. The implemented command is `pnpm tenant:recover <subcommand> --input <ignored-file.json> [--dry-run|--execute]`; mutations default to dry-run and reject Production. Inputs contain only non-secret identifiers, reason, approver ID, and idempotency key. Owner replacement is inspection/refusal-only and returns `MANUAL_REVIEW_REQUIRED`.
 
 | Case | Authority and intended action | Audit event | Data/access impact and recovery | Never do |
 | --- | --- | --- | --- | --- |
-| Credential expired/lost | Patrick explicitly approves `credential reissue --dry-run`, then confirmed reissue through the outbound adapter. | `CREDENTIAL_EXPIRED`, `CREDENTIAL_RESET` plus delivery receipt | Replace the only hash, revoke sessions, keep organisation `PROVISIONING`, and set a new 24-hour expiry. | Reveal/reset by SQL, print secret, or use a plaintext fallback. |
+| Credential expired/lost | Patrick or an approved Clada internal operator runs `pnpm tenant:recover reissue-credential` in dry-run, then confirms the exact idempotent plan with `--execute`. | `CREDENTIAL_EXPIRED`, `CREDENTIAL_RESET` plus delivery receipt | Replace the only hash, revoke sessions, keep organisation `PROVISIONING`, and set a new 24-hour expiry. Delivery failure revokes the undelivered credential and records failed recovery. | Reveal/reset by SQL, print secret, or use a plaintext fallback. |
 | Wrong email before activation | Approver verifies identity, revokes credential, runs reviewed identity correction/replacement. | reset plus user/membership repair event | Preserve tenant data; old identity loses access. | Mutate an ambiguous existing identity. |
 | Forgotten new password/account locked | Verify requester and run password-reset/unlock workflow; revoke sessions. | `CREDENTIAL_RESET` or lock/recovery event | Data unchanged; access restored only after verification. | Assign a known shared password. |
 | Organisation/Installer name correction | Customer authority plus operator runs metadata-update dry-run. | resource-updated event | Display metadata only; stable IDs/ownership remain. | Recreate tenant or move leads. |
 | Owner replacement | Organisation authority; add/verify replacement owner before suspending/removing former owner. | `OWNER_ASSIGNED`, suspension event | Never leave zero active owners; data remains tenant-owned. | Transfer leads or silently move membership. |
 | Second owner later | Organisation authority; use invite/add-owner command after role scope is approved. | `MEMBERSHIP_CREATED`, `OWNER_ASSIGNED` | Adds access; no ownership move. | Public membership creation. |
-| User suspension/reactivation | Organisation/Clada authorised operator uses user status command and revokes sessions. | `USER_SUSPENDED`/`USER_REACTIVATED` | Blocks/restores access; preserves data. | Delete user to revoke access. |
-| Organisation suspension/reactivation | Clada authorised operator uses organisation status command and revokes member sessions. | `ORGANISATION_SUSPENDED`/`ORGANISATION_REACTIVATED` | Blocks/restores all tenant access; preserves data. | Toggle verification or edit DB ad hoc. |
+| User suspension/reactivation | Clada internal operator runs `suspend-user` or `reactivate` with an active approver, reason, idempotency key, and explicit execution. | `USER_SUSPENDED`/`USER_REACTIVATED`, sessions invalidated | Blocks/restores only approved lifecycle states; preserves data and never bypasses first login. | Delete user, target an unrelated tenant, or activate an expired invitation directly. |
+| Organisation suspension/reactivation | Clada internal operator runs `suspend-organisation` or `reactivate` with positive target verification. | `ORGANISATION_SUSPENDED`/`ORGANISATION_REACTIVATED`, sessions invalidated | Blocks/restores all tenant access only when owner and tenant state are valid; preserves data. | Toggle verification, use `ARCHIVED` as a substitute, or edit DB ad hoc. |
 | Pilot cancellation/archive | Patrick approves suspension, then archive when obligations permit. | suspension, `ORGANISATION_ARCHIVED` | Access off; records retained under policy. | Cascade-delete the organisation. |
 | Customer deletion request | Privacy/legal authority performs identity verification, retention/legal-hold review, scoped export/erasure plan. | privacy-request events | May require irreversible erasure after approval; document recovery limits. | Promise or run immediate deletion from support chat. |
 
-Restricted-session or password-change failure leaves the owner `INVITED` and organisation `PROVISIONING`; retry after validation or re-authenticate with the still-valid credential after the 30-minute session expires. Deployment or Production smoke-test failure stops onboarding, revokes/suspends access if exposure is possible, preserves evidence, and follows the release incident process. Patrick's explicit approval is required for credential reissue, owner replacement, suspension/reactivation, archival, identity repair, cross-organisation/internal-account conflicts, and deletion escalation until delegated authority is implemented.
+Restricted-session or password-change failure leaves the owner `INVITED` and organisation `PROVISIONING`; retry after validation or use the reviewed credential-reissue flow while the 24-hour credential remains valid. Deployment or Production smoke-test failure stops onboarding, revokes/suspends access if exposure is possible, preserves evidence, and follows the release incident process. Every mutating recovery operation is serializable and idempotent: exact completed replay returns the safe prior result, while changed input, incomplete replay, or lifecycle drift is refused. Patrick's explicit approval remains required for owner replacement, archival, identity repair, cross-organisation/internal-account conflicts, and deletion escalation until delegated authority is implemented.
 
 ## Pilot readiness gate
 
@@ -96,7 +96,7 @@ The first external pilot is blocked until:
 - secure generation, approved non-logged credential delivery, expiry, and log-redaction tests exist;
 - forced password change and non-bypass route/API guards work;
 - session rotation, tenant-isolation tests, and truthful empty dashboard pass;
-- recovery commands/procedures exist;
+- recovery commands/procedures exist and have passed disposable-data rehearsal;
 - a disposable organisation completes end-to-end onboarding and rollback/recovery rehearsal;
 - Production smoke tests and this runbook are validated.
 

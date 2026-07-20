@@ -273,7 +273,7 @@ function canonicalRecoveryInput(type: RecoveryOperationType, input: RecoveryInpu
   // The idempotency key identifies the operation record; it is deliberately
   // excluded from the canonical request digest so a new key can represent
   // the same reviewed request without changing its content hash.
-  return JSON.stringify({ type, organisationId: input.organisationId, installerId: input.installerId ?? null, ownerUserId: input.ownerUserId ?? userId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
+  return JSON.stringify({ type, environment: input.environment, organisationId: input.organisationId, installerId: input.installerId ?? null, ownerUserId: input.ownerUserId ?? userId, userId, approverUserId: input.approverUserId, reason: input.reason.trim() });
 }
 
 function recoveryInputHash(type: RecoveryOperationType, input: RecoveryInput, userId: string | null) {

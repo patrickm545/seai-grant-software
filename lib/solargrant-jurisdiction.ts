@@ -91,7 +91,7 @@ const countyByNormalisedName = new Map<string, SolarGrantCounty>(
 );
 
 const eircodeCharacter = '0-9AC-FHKNPRTV-Y';
-const eircodePattern = new RegExp(`^[AC-FHKNPRTV-Y][${eircodeCharacter}]{2}[${eircodeCharacter}]{4}$`);
+const eircodePattern = new RegExp(`^(?:[AC-FHKNPRTV-Y][0-9]{2}|D6W)[${eircodeCharacter}]{4}$`);
 const northernIrelandPostcodePattern = /^BT\d{1,2}\d[A-Z]{2}$/;
 
 export function normalizeSolarGrantCounty(value: unknown): SolarGrantCounty | null {

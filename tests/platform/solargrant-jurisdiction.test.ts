@@ -80,12 +80,43 @@ test('missing and unknown county remain unknown ordinary input', () => {
   assert.equal(classifySolarGrantJurisdiction({ county: 'Synthetic County' }).reason, 'UNKNOWN_COUNTY');
 });
 
-test('blank optional Eircode and reviewed formats are accepted', () => {
-  for (const eircode of ['', 'D01 F5P2', 'D6W F5P2', 'A65F4E2', 'H91 F4E2']) {
+test('blank optional Eircode and reviewed structural formats are accepted', () => {
+  for (const [eircode, normalised] of [
+    ['', null],
+    ['D01 F5P2', 'D01 F5P2'],
+    ['D6W F5P2', 'D6W F5P2'],
+    ['A65 F4E2', 'A65 F4E2'],
+    ['H91 F4E2', 'H91 F4E2'],
+    ['d01f5p2', 'D01 F5P2'],
+    [' d6w   f5p2 ', 'D6W F5P2'],
+    ['a65f4e2', 'A65 F4E2'],
+    [' h91  f4e2 ', 'H91 F4E2']
+  ] as const) {
     const result = classifySolarGrantJurisdiction({ county: 'Dublin', eircode });
     assert.equal(result.isSupported, true, eircode);
+    assert.equal(result.eircode, normalised, eircode);
   }
-  assert.equal(isReviewedEircode('D01 TEST'), false);
+});
+
+test('structurally invalid seven-character Eircodes are rejected', () => {
+  for (const eircode of [
+    'AAA AAAA',
+    'ABC DEFG',
+    'DZZ ZZZZ',
+    'A6W F5P2',
+    'D0A F5P2',
+    'D01 G5P2',
+    'D01 I5P2',
+    'D01 F5P',
+    'D01 F5P22'
+  ]) {
+    assert.equal(isReviewedEircode(eircode), false, eircode);
+    assert.equal(
+      classifySolarGrantJurisdiction({ county: 'Dublin', eircode }).reason,
+      'INVALID_EIRCODE',
+      eircode
+    );
+  }
 });
 
 test('malformed Eircode, BT signal, and conflicting explicit signals classify safely', () => {

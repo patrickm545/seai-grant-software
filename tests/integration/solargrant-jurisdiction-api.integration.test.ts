@@ -74,7 +74,7 @@ test.after(async () => {
   await db.$disconnect();
 });
 
-test('ROI intake succeeds while NI rejection creates no lead-scoped side effect', async (t) => {
+test('ROI intake succeeds while NI and malformed-Eircode rejections create no lead-scoped side effect', async (t) => {
   await cleanup();
   t.after(cleanup);
   await db.organisation.create({
@@ -105,7 +105,17 @@ test('ROI intake succeeds while NI rejection creates no lead-scoped side effect'
   assert.equal(await db.workflowInstance.count({ where: { organisationId } }), 0);
   assert.equal(await db.auditLog.count({ where: { organisationId } }), 0);
 
-  const accepted = await intakePost(request(payload()));
+  const malformed = await intakePost(request(payload({ eircode: 'AAA AAAA' })));
+  const malformedBody = await malformed.json();
+  assert.equal(malformed.status, 400);
+  assert.equal(malformedBody.error, 'Please review the highlighted fields.');
+  assert.equal(malformedBody.fieldErrors.eircode, 'Enter a valid Eircode or leave this field blank.');
+  assert.equal(await db.lead.count({ where: { organisationId } }), 0);
+  assert.equal(await db.installerQuotePricing.count({ where: { installerId } }), 0);
+  assert.equal(await db.workflowInstance.count({ where: { organisationId } }), 0);
+  assert.equal(await db.auditLog.count({ where: { organisationId } }), 0);
+
+  const accepted = await intakePost(request(payload({ eircode: 'D6W F5P2' })));
   const acceptedBody = await accepted.json();
   assert.equal(accepted.status, 200);
   assert.equal(typeof acceptedBody.leadId, 'string');

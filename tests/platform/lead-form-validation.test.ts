@@ -117,12 +117,20 @@ test('lead form schema normalises county and Eircode values', () => {
   }
 });
 
+test('lead form schema accepts and normalises the special D6W routing key', () => {
+  const result = leadFormSchema.safeParse(buildValidSubmission({ eircode: ' d6w   f5p2 ' }));
+  assert.equal(result.success, true);
+  if (result.success) assert.equal(result.data.eircode, 'D6W F5P2');
+});
+
 test('lead form schema rejects malformed supplied Eircodes with a structured field error', () => {
-  const result = leadFormSchema.safeParse(buildValidSubmission({ eircode: 'not-an-eircode' }));
-  assert.equal(result.success, false);
-  if (!result.success) {
-    const failure = formatLeadFormValidationFailure(result.error);
-    assert.equal(failure.fieldErrors?.eircode, 'Enter a valid Eircode or leave this field blank.');
-    assert.equal(failure.firstErrorStepId, 'property');
+  for (const eircode of ['not-an-eircode', 'AAA AAAA', 'ABC DEFG', 'DZZ ZZZZ', 'A6W F5P2']) {
+    const result = leadFormSchema.safeParse(buildValidSubmission({ eircode }));
+    assert.equal(result.success, false, eircode);
+    if (!result.success) {
+      const failure = formatLeadFormValidationFailure(result.error);
+      assert.equal(failure.fieldErrors?.eircode, 'Enter a valid Eircode or leave this field blank.');
+      assert.equal(failure.firstErrorStepId, 'property');
+    }
   }
 });

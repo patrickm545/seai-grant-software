@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import test from 'node:test';
 import { NextRequest } from 'next/server';
 import { POST as intakePost } from '../../app/api/intake/route';
 import { POST as eligibilityPost } from '../../app/api/ai/eligibility/route';
 import { prisma } from '../../lib/prisma';
+
+const intakeRouteSource = readFileSync(resolve(process.cwd(), 'app/api/intake/route.ts'), 'utf8');
+const eligibilityRouteSource = readFileSync(resolve(process.cwd(), 'app/api/ai/eligibility/route.ts'), 'utf8');
 
 function validPayload(overrides: Record<string, unknown> = {}) {
   return {
@@ -96,11 +101,60 @@ test('conflicting intake and eligibility requests share the stable ambiguity con
 });
 
 test('unknown counties and malformed supplied Eircodes retain structured 400 validation', async () => {
-  for (const overrides of [{ county: 'Synthetic County' }, { eircode: 'invalid' }]) {
+  for (const overrides of [{ county: 'Synthetic County' }, { eircode: 'invalid' }, { eircode: 'AAA AAAA' }]) {
     const response = await eligibilityPost(request('/api/ai/eligibility', validPayload(overrides)));
     const body = await response.json();
     assert.equal(response.status, 400);
     assert.equal(body.error, 'Please review the highlighted fields.');
     assert.equal(body.firstErrorStepId, 'property');
   }
+});
+
+test('structurally malformed Eircode returns 400 before lookup, calculation, AI, persistence, or notifications', async () => {
+  const installer = prisma.installer as unknown as { findUnique: (...args: unknown[]) => unknown };
+  const originalFindUnique = installer.findUnique;
+  let lookupCalls = 0;
+  installer.findUnique = async () => {
+    lookupCalls += 1;
+    throw new Error('request-shape validation was bypassed');
+  };
+  const originalWarn = console.warn;
+  console.warn = () => undefined;
+
+  try {
+    const response = await intakePost(request('/api/intake', validPayload({ eircode: 'AAA AAAA' })));
+    const body = await response.json();
+    assert.equal(response.status, 400);
+    assert.equal(body.error, 'Please review the highlighted fields.');
+    assert.equal(body.fieldErrors.eircode, 'Enter a valid Eircode or leave this field blank.');
+    assert.equal(body.firstErrorField, 'eircode');
+    assert.equal(body.firstErrorStepId, 'property');
+    assert.equal(lookupCalls, 0);
+    assert.equal(JSON.stringify(body).includes('AAA AAAA'), false);
+  } finally {
+    installer.findUnique = originalFindUnique;
+    console.warn = originalWarn;
+  }
+
+  const intakeValidationBoundary = intakeRouteSource.indexOf('if (!validationResult.success)');
+  assert.ok(intakeValidationBoundary >= 0);
+  for (const downstreamBoundary of [
+    "stage = 'installer_lookup'",
+    "stage = 'duplicate_lookup'",
+    'buildSolarQuoteEstimate(',
+    'generateEligibilityAnalysis(',
+    'prisma.$transaction(',
+    'runLeadNotificationTasks('
+  ]) {
+    assert.ok(
+      intakeRouteSource.indexOf(downstreamBoundary, intakeValidationBoundary) > intakeValidationBoundary,
+      downstreamBoundary
+    );
+  }
+
+  const eligibilityValidationBoundary = eligibilityRouteSource.indexOf('if (!validation.success)');
+  assert.ok(eligibilityValidationBoundary >= 0);
+  assert.ok(
+    eligibilityRouteSource.indexOf('generateEligibilityAnalysis(', eligibilityValidationBoundary) > eligibilityValidationBoundary
+  );
 });

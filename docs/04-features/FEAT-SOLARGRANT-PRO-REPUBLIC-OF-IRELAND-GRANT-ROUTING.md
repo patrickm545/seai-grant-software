@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-SGP-ROI-GRANT-ROUTING-001 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | SolarGRANT Pro Product and Engineering |
 | Review cycle | Per feature milestone |
 | Last reviewed | 2026-07-21 |
@@ -15,7 +15,7 @@
 
 SolarGRANT Pro must route a property through its SEAI grant-assistance workflow only when the property is in the Republic of Ireland. The current public intake and eligibility API accept a shared list of all 32 counties, while the deterministic eligibility and quote calculations do not inspect location. A Northern Ireland property can therefore receive a positive SEAI eligibility summary, an estimated SEAI grant deduction, a generated quote, persistence as a grant lead, notifications, and downstream grant documents.
 
-This specification defines the smallest safe correction. SolarGRANT Pro will own a deterministic property-jurisdiction classifier. County will be the required primary routing input; an optional Eircode will be a supporting format and conflict signal, not a county lookup. Northern Ireland will receive a clear unsupported-route outcome before eligibility, quote, persistence, notification, or AI work. Clada OS intake, tenant, audit, and storage capabilities remain region-neutral.
+This specification defines the smallest safe correction and is approved for implementation in a separate application PR. SolarGRANT Pro will own a deterministic property-jurisdiction classifier. County will be the required primary routing input; an optional Eircode will be a supporting format and conflict signal, not a county lookup. Northern Ireland will receive a clear unsupported-route outcome before eligibility, quote, persistence, notification, or AI work. Clada OS intake, tenant, audit, and storage capabilities remain region-neutral.
 
 This is a documentation and implementation-design deliverable only. Application code is not changed by this specification.
 
@@ -169,7 +169,7 @@ Production data was not queried and must not be queried as part of this document
 
 ## Approved Product Behaviour
 
-The following behaviour is approved by this specification once its status becomes Active.
+The following behaviour is approved for implementation. It becomes Active product behaviour only after the application implementation is shipped and verified.
 
 | Situation | Required behaviour |
 | --- | --- |
@@ -213,12 +213,15 @@ These are correction messages, not eligibility conclusions.
 
 ### Interaction requirements
 
+- Retain all 32 counties in one selector, separated into clearly labelled Republic of Ireland and Northern Ireland groups.
+- Label the Northern Ireland group as not currently supported by the SolarGRANT Pro SEAI grant assistant. Selecting an NI county must produce the dedicated unsupported-route explanation rather than a generic invalid-field message.
 - Show the unsupported state on the first property step before grant previews or later contact/consent collection.
 - Preserve focus and error-summary behaviour used by the current form.
 - Announce the unsupported state to assistive technology.
 - Do not use colour alone to communicate it.
 - Keep the action and explanation readable without horizontal scrolling at 375 px.
 - A restored draft must not flash an SEAI grant estimate before the jurisdiction is classified.
+- Keep the approved guidance text-only. Provide the primary **Change county** action and do not add an external advice-service link in this feature.
 
 ## Technical Design
 
@@ -303,6 +306,8 @@ If implementation proves that every downstream consumer cannot safely derive thi
 - Authenticated lead API responses that are consumed as product views must include the derived jurisdiction-safe state or use the same presentation adapter; raw historical fields must not be mistaken for a current SEAI conclusion.
 - Application pack, lead detail, portal, dashboard/list status, and future proposal/report consumers must use the jurisdiction-safe view. Raw location may remain visible to authorised users for correction, but positive SEAI claims must be suppressed.
 - CRM scoring must not award grant-readiness or positive-eligibility points to unsupported/unknown records. Whether the record remains a commercial solar lead is outside this PR; historical records should be visibly held for manual handling.
+- The single jurisdiction-safe presentation adapter and every grant-bearing downstream consumer must ship atomically. Do not deploy intake rejection while any current portal, pack, export, API, scoring, reporting, or notification path can still repeat an unsafe historical SEAI conclusion.
+- If complete read-time coverage cannot be made safe within this design, stop and return for architecture review. Do not introduce a schema migration or partial workaround without approval.
 
 ### Audit and operational evidence
 
@@ -310,7 +315,20 @@ New unsupported public submissions are deliberately not persisted, so no lead-sc
 
 Reading a historical unsupported record does not mutate it and therefore does not require an audit write. A later user correction feature should audit old/new jurisdiction-relevant fields and the recalculation outcome, but lead editing is outside this implementation.
 
-Before rollout, an authorised operator may run a read-only aggregate count of exact NI county values in isolated Development and Preview. Any Production check requires the existing Production operations process and is not part of this feature PR.
+Implement a dedicated narrow command named `pnpm solargrant:jurisdiction-audit` for historical-record evidence. Do not add this aggregate check to `db:status` or another unrelated database command.
+
+The command must:
+
+- use the repository's existing database identity, fingerprint, branch, and environment guardrails;
+- be read-only and perform no updates, corrections, migrations, or record recalculation;
+- refuse ambiguous, unclassified, or mismatched database targets before connecting or querying;
+- support isolated Development and Preview targets;
+- require the established Production operations acknowledgement and change ID before any Production execution;
+- return aggregate counts only, grouped only by safe environment, organisation identifier, and jurisdiction classification where needed;
+- never return or print homeowner names, addresses, Eircodes, MPRNs, emails, phone numbers, lead notes, or full records;
+- remain a fixed-purpose jurisdiction audit and not accept arbitrary tables, fields, filters, SQL, or general-purpose query input.
+
+Production execution remains outside the implementation PR unless separately and explicitly authorised. Before rollout, an authorised operator should run the command against isolated Development and Preview only.
 
 ### Backward compatibility
 
@@ -383,7 +401,7 @@ Use only an isolated Development database for any persistence verification. Do n
 
 ## Smallest Safe Implementation Plan
 
-Implement one focused PR after CTO approval.
+Implement one focused application PR after this approved documentation is accepted through final review.
 
 ### Likely files to add or change
 
@@ -395,8 +413,9 @@ Implement one focused PR after CTO approval.
 | Eligibility and quotes | `lib/eligibility.ts`, `lib/quote-estimate.ts`, `lib/ai.ts`. |
 | Historical safe view | A focused jurisdiction-safe adapter plus direct consumers in `lib/application-pack.ts`, `lib/submission-package.ts`, lead/dashboard/list pages, and `app/portal/[token]/page.tsx`. Prefer one adapter over repeated conditionals. |
 | Scoring/reporting | `lib/crm.ts`, `lib/dashboard-metrics.ts` if current positive eligibility would otherwise survive for historical unsupported records. |
+| Historical audit command | Add a narrow `scripts/solargrant-jurisdiction-audit.ts` entry point and `solargrant:jurisdiction-audit` package script using existing database safety helpers; add command-contract and guardrail tests. |
 | Tests | Add `tests/platform/solargrant-jurisdiction.test.ts`; amend `lead-form-validation.test.ts`; add focused eligibility/quote/API boundary tests; add only the integration fixture needed to prove no cross-tenant impact. |
-| Documentation | Activate this specification after approval and update relevant current-state documentation when implementation ships. |
+| Documentation | Mark this specification Active and update relevant current-state documentation only when implementation ships. |
 
 ### Sequence
 
@@ -404,14 +423,15 @@ Implement one focused PR after CTO approval.
 2. Add server validation and stable 400/422 contracts before every side effect in both APIs.
 3. Gate client progression and grant previews; support old drafts.
 4. Make eligibility, quote, and AI functions fail closed.
-5. Add one jurisdiction-safe adapter for stored records and apply it to every grant-bearing downstream output.
-6. Add direct API, side-effect, historical compatibility, tenant, and browser tests.
-7. Run the existing repository validation plus targeted manual desktop/mobile verification in isolated Development.
+5. Add one jurisdiction-safe adapter for stored records and apply it atomically to every grant-bearing downstream output.
+6. Add the dedicated guarded, read-only `solargrant:jurisdiction-audit` command.
+7. Add direct API, side-effect, historical compatibility, audit-command, tenant, and browser tests.
+8. Run the existing repository validation plus targeted manual desktop/mobile verification in isolated Development.
 
 ### Rollout
 
 - Deploy to isolated Preview first.
-- Run a read-only aggregate check for historical NI county values through the approved environment-safe database process; do not export personal fields.
+- Run `pnpm solargrant:jurisdiction-audit` against isolated Development and Preview; do not execute it against Production without separate explicit authorisation.
 - Verify both a supported new intake and a synthetic historical unsupported record in Preview.
 - Confirm optional AI is not called for blocked requests.
 - Review server metrics for the stable unsupported/ambiguous outcome codes without logging property data.
@@ -427,7 +447,7 @@ Implement one focused PR after CTO approval.
 | AI reintroduces a positive conclusion | Never call AI for unsupported/unknown input and do not permit AI to override jurisdiction. |
 | Stored snapshots keep leaking old grant deductions | Use scalar location facts and one jurisdiction-safe read/export adapter; test every grant-bearing downstream surface. |
 | Eircode is treated as a county database | Validate structure/conflict only; do not infer county without approved reference data. |
-| Historical NI count is unknown | Perform an authorised, aggregate-only environment check during rollout; preserve records regardless of count. |
+| Historical NI count is unknown | Use only the dedicated guarded, aggregate-only jurisdiction audit command during rollout; preserve records regardless of count. |
 | New module rule leaks into Clada OS | Keep constants, codes, and copy under SolarGRANT Pro ownership. |
 
 ### Explicit non-goals
@@ -441,30 +461,35 @@ Implement one focused PR after CTO approval.
 - editing existing lead facts;
 - changing tenant identity, authentication, provisioning, recovery, or database environment configuration.
 
-## Unresolved Review Decisions
+## Approved Decision Record
 
-The implementation does not need these decisions to change the approved safety boundary, but CTO review should confirm:
+| Decision | Approved outcome |
+| --- | --- |
+| Public county selector | Retain all 32 counties and separate them into clearly labelled Republic of Ireland and Northern Ireland groups. Label NI as not currently supported by the SolarGRANT Pro SEAI grant assistant. An NI selection receives the dedicated unsupported-route explanation, never a generic invalid-field outcome. |
+| Northern Ireland next step | Use text-only neutral guidance, the plain-language explanation, and the primary **Change county** action. Do not add an external advice-service link or imply support for NI services or grant schemes. An external link requires separate future content review. |
+| Historical-record audit | Add the dedicated, narrow `pnpm solargrant:jurisdiction-audit` command with existing database identity and environment guardrails, aggregate-only output, explicit Production controls, no personal data, no writes, and no general-query capability. Production execution is not authorised by this implementation plan. |
 
-1. Whether the public county selector should show the six NI counties in one list or in a visibly labelled unsupported group. The recommended option is a labelled group so users can select their actual county and receive the dedicated explanation.
-2. Whether an external neutral energy-advice link is desirable. The smallest implementation uses text only and makes no external-service commitment.
-3. Which existing non-production operational command should own the aggregate historical-record check. It must inherit the repository database safety guardrails and must not become an unguarded general query script.
+These decisions were approved by CTO direction on 2026-07-21. They resolve the design choices previously listed for review and do not activate application behaviour.
 
 ## Acceptance Criteria
 
-This feature is ready for implementation review when:
+The approved implementation must satisfy all of the following:
 
 - the county-based Republic of Ireland boundary and optional Eircode supporting role are approved;
 - server enforcement precedes duplicate lookup and all calculations/side effects;
 - NI and ambiguous requests have stable safe contracts and no persistence;
 - all downstream outputs have an explicit historical-record rule;
 - no schema migration or platform generalisation is introduced;
+- one jurisdiction-safe presentation adapter covers all grant-bearing downstream consumers in the same atomic implementation;
+- the dedicated jurisdiction audit command satisfies its environment, Production-control, aggregate-output, no-PII, and read-only contract;
+- implementation returns for architecture review if safe read-time coverage proves impractical;
 - the test plan proves ROI behaviour, direct bypass refusal, draft compatibility, existing-record safety, tenant isolation, and desktop/mobile UX.
 
 ## Documentation Updates
 
 - Add this specification to [Feature Specifications](README.md) and the [Clada Operating Manual Summary](../SUMMARY.md).
-- When implementation is approved and merged, change this document from Proposed to Active and update [SolarGRANT Pro Module](../01-product/SOLARGRANT_PRO_MODULE.md) and [Architecture Overview](../03-engineering/ARCHITECTURE_OVERVIEW.md) to describe the enforced route.
-- Do not update the active sprint or begin implementation until CTO review approves the work.
+- When application implementation is merged and verified, change this document from Approved to Active and update [SolarGRANT Pro Module](../01-product/SOLARGRANT_PRO_MODULE.md) and [Architecture Overview](../03-engineering/ARCHITECTURE_OVERVIEW.md) to describe the enforced route.
+- Do not update the active sprint or implement application changes in this documentation PR.
 
 ## Related Documents
 
@@ -478,4 +503,4 @@ This feature is ready for implementation review when:
 
 ## What Next
 
-CTO reviews this Proposed specification. After approval, activate it and implement the smallest safe PR described above. Do not build the application changes from this documentation PR.
+Complete final documentation review and merge this Approved specification when ready. Application work belongs in the separate smallest safe implementation PR described above. Do not build application changes from this documentation PR.

@@ -6,7 +6,7 @@
 | Status | Proposed |
 | Owner | Clada Systems Engineering and Operations |
 | Review cycle | Before every pilot onboarding and after any incident |
-| Last reviewed | 2026-07-18 |
+| Last reviewed | 2026-07-20 |
 
 ## Status and prerequisites
 
@@ -86,6 +86,42 @@ All actions require positive target identification, correct environment verifica
 | Customer deletion request | Privacy/legal authority performs identity verification, retention/legal-hold review, scoped export/erasure plan. | privacy-request events | May require irreversible erasure after approval; document recovery limits. | Promise or run immediate deletion from support chat. |
 
 Restricted-session or password-change failure leaves the owner `INVITED` and organisation `PROVISIONING`; retry after validation or use the reviewed credential-reissue flow while the 24-hour credential remains valid. Deployment or Production smoke-test failure stops onboarding, revokes/suspends access if exposure is possible, preserves evidence, and follows the release incident process. Every mutating recovery operation is serializable and idempotent: exact completed replay returns the safe prior result, while changed input, incomplete replay, or lifecycle drift is refused. Patrick's explicit approval remains required for owner replacement, archival, identity repair, cross-organisation/internal-account conflicts, and deletion escalation until delegated authority is implemented.
+
+## Disposable pilot rehearsal (PR #31)
+
+The repeatable `pnpm pilot:rehearsal` harness validates the complete onboarding and recovery lifecycle without enabling Production. It uses synthetic `.example.test` identities, the existing fake/test delivery adapter, and a positively identified local disposable PostgreSQL database. It never connects to Preview, Staging, shared Development, or Production.
+
+### Prerequisites
+
+- `APP_ENV=test` and `DATABASE_ENVIRONMENT=test`.
+- `DATABASE_URL` points to the local disposable PostgreSQL database used only for this rehearsal.
+- `DATABASE_FINGERPRINT` matches the database URL, and the known Production, Preview, and Development fingerprints are supplied.
+- `DATABASE_BRANCH_ID` identifies the disposable branch; `AUTH_SESSION_PEPPER` is a test-only value of at least 32 characters.
+- All migrations are applied before execution. Do not use real installer, homeowner, phone, email, credential, or Production data.
+
+### Command and expected result
+
+Run the safety-only plan first:
+
+```bash
+pnpm pilot:rehearsal --dry-run
+```
+
+After reviewing the safe plan, run the disposable rehearsal:
+
+```bash
+pnpm pilot:rehearsal --execute
+```
+
+The command returns structured secret-free output and writes JSON/Markdown evidence only under the Git-ignored `.tools/pilot-rehearsal/` directory. Reports contain the rehearsal ID, disposable fingerprint, synthetic IDs, completed stages, safe operation IDs, audit counts, cleanup status, and remaining readiness gaps. They never contain credentials, hashes, tokens, cookies, connection strings, or environment values.
+
+### Lifecycle stages
+
+The rehearsal creates one synthetic Clada internal operator and installer organisations A and B, provisions owners through `tenant:provision`, verifies the 24-hour hash-backed temporary credential, authenticates the restricted first-login session, confirms normal access is blocked, completes password replacement and activation, and creates synthetic tenant-owned records. It then proves both directions of tenant isolation, restricted-session isolation, suspended-user and inactive-organisation denial, stale-session invalidation, user/organisation suspension and approved reactivation, credential expiry, 24-hour credential reissue, restricted re-login, exact replay, delivery failure revocation, transaction rollback, duplicate and idempotency conflicts, stale lifecycle refusal, inactive-approver refusal, cross-tenant target refusal, and the safe audit chain. Synthetic rows are removed in cleanup even when a rehearsal stage fails; cleanup failure is itself a failed result.
+
+### Evidence and prohibitions
+
+Retain only the sanitised rehearsal report and pass/fail summary needed for readiness review. Never retain a temporary credential, password, password hash, session token, cookie, database URL, provider secret, or environment file. Production execution, real transactional email, owner transfer, GDPR workflows, and external pilot onboarding remain prohibited until the separate pilot-readiness approval is recorded.
 
 ## Pilot readiness gate
 

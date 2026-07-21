@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-21 |
 
 Feature specifications define the problem, evidence, scope, design, architecture, risks, and verification plan before major implementation.
 
@@ -42,6 +42,10 @@ Use [FEATURE_SPEC_TEMPLATE.md](FEATURE_SPEC_TEMPLATE.md) for new feature specs.
 - [FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md](FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md)
 - [FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md](FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md)
 - [FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md](FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md)
+
+## Approved Feature Specifications
+
+- [FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md](FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md)
 
 ## Feature Spec Rule
 

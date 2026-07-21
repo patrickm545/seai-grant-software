@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-17 |
+| Last reviewed | 2026-07-21 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -81,6 +81,8 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 - [03-engineering/README.md](03-engineering/README.md)
 - [03-engineering/ARCHITECTURE_OVERVIEW.md](03-engineering/ARCHITECTURE_OVERVIEW.md)
+- [03-engineering/DATABASE_ENVIRONMENT_SAFETY.md](03-engineering/DATABASE_ENVIRONMENT_SAFETY.md)
+- [03-engineering/DATABASE_OPERATIONS_RUNBOOK.md](03-engineering/DATABASE_OPERATIONS_RUNBOOK.md)
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
@@ -107,6 +109,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [04-features/FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md](04-features/FEAT-PLATFORM-1-3-TRANSITION-VALIDATION.md)
 - [04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md](04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md)
 - [04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md](04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md)
+- [04-features/FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md](04-features/FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md)
 
 ## Decisions
 

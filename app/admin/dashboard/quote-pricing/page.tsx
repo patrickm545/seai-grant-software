@@ -136,6 +136,7 @@ export default async function QuotePricingPage({
       where: leadOrganisationWhere(organisationContext),
       select: {
         county: true,
+        eircode: true,
         status: true,
         worksStarted: true,
         priorSolarGrantAtMprn: true,

@@ -71,7 +71,8 @@ export const leadFormFieldLabels: Record<LeadFormFieldKey, string> = {
 };
 
 export const leadFormFriendlyFieldMessages: Partial<Record<LeadFormFieldKey, string>> = {
-  county: 'Please choose your county.',
+  county: 'Choose the county where the property is located.',
+  eircode: 'Enter a valid Eircode or leave this field blank.',
   mprn: 'MPRN must be 11 digits.',
   dwellingType: 'Please choose your dwelling type.',
   monthlyElectricityBillRange: 'Please choose your monthly electricity bill range.',

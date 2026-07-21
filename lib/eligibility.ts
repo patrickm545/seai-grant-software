@@ -1,11 +1,13 @@
 import type { LeadFormInput, EligibilityAnalysis, LeadTemperature } from './types';
 import { inferQuoteLeadTemperature } from './quote-estimate';
+import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 function inferLeadTemperature(input: LeadFormInput, likelyEligible: boolean): LeadTemperature {
   return inferQuoteLeadTemperature(input, likelyEligible);
 }
 
 export function runRulesBasedEligibility(input: LeadFormInput): EligibilityAnalysis {
+  requireSupportedSolarGrantJurisdiction(input);
   const missingItems: string[] = [];
   const risks: string[] = [];
 

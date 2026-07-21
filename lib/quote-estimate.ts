@@ -8,6 +8,7 @@ import type {
   RoofType,
   ShadingLevel
 } from './types';
+import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 export const quoteAssumptions = {
   panelSizeWatts: 450,
@@ -22,6 +23,8 @@ export const quoteAssumptions = {
 export type SystemSizeVariant = 'smaller' | 'recommended' | 'larger';
 
 export type SolarQuoteInput = {
+  county?: string;
+  eircode?: string | null;
   monthlyElectricityBillRange?: BillRange | '';
   dwellingType?: DwellingType | '';
   roofType?: RoofType | '';
@@ -277,6 +280,7 @@ export function buildSolarQuoteEstimate(
   input: SolarQuoteInput,
   selectedVariant: SystemSizeVariant = 'recommended'
 ): SolarQuoteEstimate {
+  requireSupportedSolarGrantJurisdiction(input);
   const options = getSystemSizeOptions(input);
   const selectedOption = options.find((option) => option.variant === selectedVariant) ?? options[1];
   const recommendedOption = options.find((option) => option.variant === 'recommended') ?? selectedOption;

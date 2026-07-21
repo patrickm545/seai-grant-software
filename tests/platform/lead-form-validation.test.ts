@@ -12,7 +12,7 @@ function buildValidSubmission(overrides: Record<string, unknown> = {}) {
     addressLine1: '1 Reliability Road',
     addressLine2: '',
     county: 'Dublin',
-    eircode: 'D01TEST',
+    eircode: 'D01 F5P2',
     propertyOwner: true,
     privateLandlord: false,
     dwellingType: 'DETACHED',
@@ -105,5 +105,24 @@ test('lead form schema rejects unknown injected fields', () => {
     assert.equal(failure.error, 'Please remove unsupported fields and try again.');
     assert.deepEqual(failure.formErrors, ['Please remove unsupported fields and try again.']);
     assert.equal(failure.fieldErrors, undefined);
+  }
+});
+
+test('lead form schema normalises county and Eircode values', () => {
+  const result = leadFormSchema.safeParse(buildValidSubmission({ county: '  dUbLiN ', eircode: 'd01f5p2' }));
+  assert.equal(result.success, true);
+  if (result.success) {
+    assert.equal(result.data.county, 'Dublin');
+    assert.equal(result.data.eircode, 'D01 F5P2');
+  }
+});
+
+test('lead form schema rejects malformed supplied Eircodes with a structured field error', () => {
+  const result = leadFormSchema.safeParse(buildValidSubmission({ eircode: 'not-an-eircode' }));
+  assert.equal(result.success, false);
+  if (!result.success) {
+    const failure = formatLeadFormValidationFailure(result.error);
+    assert.equal(failure.fieldErrors?.eircode, 'Enter a valid Eircode or leave this field blank.');
+    assert.equal(failure.firstErrorStepId, 'property');
   }
 });

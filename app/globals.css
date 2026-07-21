@@ -12,6 +12,42 @@
   --info: #1d4ed8;
 }
 
+.jurisdiction-route-panel,
+.jurisdiction-conflict-panel {
+  border: 1px solid #c27a26;
+  border-radius: 14px;
+  background: #fff8eb;
+  color: #3f2a14;
+  padding: 18px;
+  overflow-wrap: anywhere;
+}
+
+.jurisdiction-route-panel:focus {
+  outline: 3px solid rgba(30, 102, 73, 0.35);
+  outline-offset: 3px;
+}
+
+.jurisdiction-route-panel h3,
+.jurisdiction-conflict-panel p {
+  margin: 6px 0 10px;
+}
+
+.jurisdiction-route-panel button {
+  width: auto;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .jurisdiction-route-panel,
+  .jurisdiction-conflict-panel {
+    padding: 14px;
+  }
+
+  .jurisdiction-route-panel button {
+    width: 100%;
+  }
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-21 |
 
 This document summarises the current architecture and the direction for evolving SolarGRANT Pro into a module on Clada OS.
 
@@ -24,10 +24,10 @@ This document summarises the current architecture and the direction for evolving
 ## Current Public Flow
 
 1. Homeowner visits an installer or module-facing page.
-2. Intake form posts to `/api/intake`.
-3. Rules-based eligibility checks run immediately.
-4. AI may enhance the eligibility summary when configured.
-5. A lead is stored and marked for application readiness or review.
+2. The SolarGRANT Pro client classifies the property county and optional Eircode before previews or later intake steps.
+3. Intake posts to `/api/intake`, where the same deterministic jurisdiction guard runs immediately after request-shape parsing and before lookups or side effects.
+4. Supported Republic of Ireland input proceeds to rules-based eligibility and quote calculation; AI may enhance the summary when configured.
+5. A supported lead is stored and marked for application readiness or review. Northern Ireland receives the unsupported route and contradictory explicit signals require correction without creating a lead.
 
 ## Current Admin Flow
 
@@ -89,6 +89,14 @@ The workflow slice introduces:
 - a SolarGRANT Pro proving slice that routes lead pipeline-stage changes through the workflow service.
 
 SolarGRANT Pro keeps lead-specific labels and `Lead.pipelineStage` as a compatibility projection during this release. The generic workflow service must not import SolarGRANT Pro business rules.
+
+## SolarGRANT Pro Jurisdiction Boundary
+
+Republic of Ireland SEAI routing is implemented as a SolarGRANT Pro domain boundary, not a Clada OS regional capability. A canonical classifier owns county sets, normalisation, reviewed location-code formats, typed outcomes, and reason codes. API routes and calculation/AI services require a supported classifier result before grant-bearing work.
+
+Stored scalar county and Eircode facts remain the jurisdiction source. A single read-time adapter treats stored eligibility, quote, and export JSON as historical snapshots, suppresses unsafe conclusions, and exposes an unsupported or location-review state without changing tenant ownership or source values. Current tenant-scoped APIs, dashboards, lead views, portal, application pack, submission and portal-fill outputs, scoring, reporting, and notification boundaries consume this rule. No persistence field or migration is required.
+
+Operational evidence for rejected public requests contains only safe request, installer, outcome, and reason identifiers. Historical evidence is available through a fixed read-only aggregate command protected by the existing database identity and Production acknowledgement controls.
 
 Do not prematurely split the application into services. Extract reusable boundaries when there is a clear maintenance, reliability, or product reason.
 

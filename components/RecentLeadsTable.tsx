@@ -17,6 +17,8 @@ export type RecentDashboardLead = {
   phone: string | null;
   location: string;
   confidence: number | null;
+  jurisdictionStatus: 'SUPPORTED' | 'UNSUPPORTED' | 'LOCATION_REVIEW';
+  jurisdictionLabel: string;
   leadScore: LeadScoreValue;
   pipelineStage: LeadPipelineStageValue;
   lastActivityAt: string | null;
@@ -150,7 +152,7 @@ export function RecentLeadsTable({
                     <span className="installer-table-muted">{formatLastActivity(lead.lastActivityAt)}</span>
                   </td>
                   <td>
-                    {confidenceLabel(lead.confidence)}
+                    {lead.jurisdictionStatus === 'SUPPORTED' ? confidenceLabel(lead.confidence) : lead.jurisdictionLabel}
                   </td>
                   <td>
                     <div className="installer-table-actions">

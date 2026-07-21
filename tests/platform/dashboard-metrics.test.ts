@@ -10,6 +10,8 @@ function lead(overrides: Partial<Parameters<typeof getDashboardMetrics>[0][numbe
     worksStarted: false,
     priorSolarGrantAtMprn: false,
     likelyEligible: null,
+    county: 'Dublin',
+    eircode: null,
     documents: [],
     ...overrides
   };

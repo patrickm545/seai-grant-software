@@ -4,7 +4,6 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   billRanges,
   callbackWindows,
-  counties,
   daytimeUsages,
   dwellingTypes,
   installTimelines,
@@ -13,6 +12,14 @@ import {
   shadingLevels,
   type EligibilityAnalysis
 } from '@/lib/types';
+import {
+  classifySolarGrantJurisdiction,
+  isReviewedSolarGrantLocationCode,
+  normalizeSolarGrantCounty,
+  solarGrantCountyGroups,
+  SOLARGRANT_CONFLICT_MESSAGE,
+  SOLARGRANT_UNSUPPORTED_MESSAGE
+} from '@/lib/solargrant-jurisdiction';
 import {
   buildSolarQuoteEstimate,
   getSystemSizeOptions,
@@ -96,6 +103,7 @@ type IntakeResult = {
 
 type IntakeErrorResult = LeadFormValidationFailure & {
   error?: string;
+  code?: string;
 };
 
 type RuntimeInitialState = {
@@ -124,7 +132,12 @@ const validationChecks: Array<{
   { key: 'phone', isInvalid: (form) => form.phone.trim().length < 7, message: 'Please enter a valid phone number.' },
   { key: 'preferredCallbackWindow', isInvalid: (form) => !form.preferredCallbackWindow, message: 'Please choose Best callback time.' },
   { key: 'addressLine1', isInvalid: (form) => form.addressLine1.trim().length < 5, message: 'Please enter address line 1.' },
-  { key: 'county', isInvalid: (form) => !form.county, message: 'Please choose County.' },
+  { key: 'county', isInvalid: (form) => !normalizeSolarGrantCounty(form.county), message: 'Choose a county from the list.' },
+  {
+    key: 'eircode',
+    isInvalid: (form) => !isReviewedSolarGrantLocationCode(form.eircode),
+    message: 'Enter a valid Eircode or leave this field blank.'
+  },
   { key: 'mprn', isInvalid: (form) => form.mprn.length !== 11, message: 'MPRN must be 11 digits.' },
   { key: 'dwellingType', isInvalid: (form) => !form.dwellingType, message: 'Please choose Dwelling type.' },
   {
@@ -173,7 +186,7 @@ const formSteps: Array<{
     id: 'property',
     title: 'Quick property check',
     helper: 'A few simple property details help us start the grant and suitability check.',
-    fields: ['county', 'mprn', 'dwellingType']
+    fields: ['county', 'eircode', 'mprn', 'dwellingType']
   },
   {
     id: 'usage',
@@ -281,7 +294,9 @@ function getInvalidFieldErrors(form: FormState, fields?: FormFieldKey[]) {
     .filter((check) => !fields || fields.includes(check.key))
     .filter((check) => check.isInvalid(form))
     .reduce<Partial<Record<FormFieldKey, string>>>((errors, check) => {
-      errors[check.key] = check.message;
+      errors[check.key] = check.key === 'county' && !form.county.trim()
+        ? 'Choose the county where the property is located.'
+        : check.message;
       return errors;
     }, {});
 }
@@ -290,12 +305,17 @@ function getValidationError(form: FormState, fields?: FormFieldKey[]) {
   const firstInvalid = validationChecks
     .filter((check) => !fields || fields.includes(check.key))
     .find((check) => check.isInvalid(form));
+  if (firstInvalid?.key === 'county' && !form.county.trim()) {
+    return 'Choose the county where the property is located.';
+  }
   return firstInvalid?.message ?? null;
 }
 
 function getFieldValidationMessage(form: FormState, field: FormFieldKey) {
   const check = validationChecks.find((item) => item.key === field);
-  return check?.isInvalid(form) ? check.message : null;
+  if (!check?.isInvalid(form)) return null;
+  if (field === 'county' && !form.county.trim()) return 'Choose the county where the property is located.';
+  return check.message;
 }
 
 function getStepIndexForField(field: FormFieldKey) {
@@ -363,14 +383,19 @@ function readRuntimeInitialState(installerId: string): RuntimeInitialState {
 
     if (parsed.version !== draftStorageVersion || !parsed.form) return fallback;
 
+    const restoredForm = {
+      ...fallback.form,
+      ...parsed.form,
+      installerId
+    };
+    const restoredJurisdiction = classifySolarGrantJurisdiction(restoredForm);
+
     return {
       form: {
-        ...fallback.form,
-        ...parsed.form,
-        installerId
+        ...restoredForm
       },
       selectedSystemSize: parsed.selectedSystemSize ?? fallback.selectedSystemSize,
-      currentStep: normalizeDraftStep(parsed.currentStep)
+      currentStep: restoredJurisdiction.isSupported ? normalizeDraftStep(parsed.currentStep) : 0
     };
   } catch {
     return fallback;
@@ -439,6 +464,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   const roofInputRef = useRef<HTMLInputElement | null>(null);
   const successRef = useRef<HTMLDivElement | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const jurisdictionMessageRef = useRef<HTMLDivElement | null>(null);
   const submitLockRef = useRef(false);
 
   const uploadSummary = useMemo(() => {
@@ -449,11 +475,17 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
     ];
   }, [billFiles, meterPhotoFiles, roofPhotoFiles]);
 
+  const jurisdiction = useMemo(
+    () => classifySolarGrantJurisdiction({ county: form.county, eircode: form.eircode }),
+    [form.county, form.eircode]
+  );
+  const isUnsupportedJurisdiction = jurisdiction.jurisdiction === 'NORTHERN_IRELAND';
+  const isConflictingJurisdiction = jurisdiction.reason === 'CONFLICTING_LOCATION';
   const systemSizeOptions = useMemo(() => getSystemSizeOptions(form as SolarQuoteInput), [form]);
 
   const estimate = useMemo(
-    () => buildSolarQuoteEstimate(form as SolarQuoteInput, selectedSystemSize),
-    [form, selectedSystemSize]
+    () => jurisdiction.isSupported ? buildSolarQuoteEstimate(form as SolarQuoteInput, selectedSystemSize) : null,
+    [form, jurisdiction.isSupported, selectedSystemSize]
   );
 
   const activeStep = formSteps[currentStep] ?? formSteps[0];
@@ -579,6 +611,21 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }
 
   function continueStep() {
+    if (activeStep.id === 'property' && isUnsupportedJurisdiction) {
+      setSubmitError(null);
+      requestAnimationFrame(() => jurisdictionMessageRef.current?.focus());
+      return;
+    }
+    if (activeStep.id === 'property' && isConflictingJurisdiction) {
+      setFieldErrorMessages((current) => ({ ...current, eircode: SOLARGRANT_CONFLICT_MESSAGE }));
+      setErrorVisibility((current) => ({
+        ...current,
+        attemptedStepIds: addUniqueValue(current.attemptedStepIds, 'property')
+      }));
+      setSubmitError(SOLARGRANT_CONFLICT_MESSAGE);
+      focusFirstInvalidField('eircode');
+      return;
+    }
     if (!validateStepFields(activeStep)) return;
 
     setFinalStepSubmitReady(false);
@@ -774,6 +821,12 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }, [installerId]);
 
   useEffect(() => {
+    if (!isUnsupportedJurisdiction || hydratedInstallerId !== installerId) return;
+    if (currentStep !== 0) setCurrentStep(0);
+    requestAnimationFrame(() => jurisdictionMessageRef.current?.focus());
+  }, [currentStep, hydratedInstallerId, installerId, isUnsupportedJurisdiction]);
+
+  useEffect(() => {
     if (!isFinalStep) {
       setFinalStepSubmitReady(false);
       return;
@@ -795,6 +848,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
   }, [currentStep, form, hydratedInstallerId, installerId, result, selectedSystemSize]);
 
   function renderEstimatePreview(includeGrant = false) {
+    if (!estimate) return null;
     const grantCopy = estimate.grantLikely
       ? `You may be eligible for up to ${formatEuro(estimate.potentialSeaiGrant)} in SEAI support, subject to SEAI approval.`
       : 'SEAI support needs manual review before a grant deduction is treated as likely.';
@@ -852,19 +906,28 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   required
                 >
                   <option value="">Select county</option>
-                  {counties.map((county) => <option key={county} value={county}>{county}</option>)}
+                  {solarGrantCountyGroups.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.counties.map((county) => <option key={county} value={county}>{county}</option>)}
+                    </optgroup>
+                  ))}
                 </select>
                 {renderFieldError('county')}
               </div>
-              <div>
+              <div data-field="eircode">
                 <label htmlFor="eircode">{optionalLabel('Eircode')}</label>
                 <input
                   id="eircode"
+                  className={isFieldInvalid('eircode') || isConflictingJurisdiction ? 'field-input-error' : undefined}
+                  aria-invalid={isFieldInvalid('eircode') || isConflictingJurisdiction}
+                  aria-describedby={isFieldInvalid('eircode') || isConflictingJurisdiction ? 'eircode-error' : undefined}
                   value={form.eircode}
                   onChange={(e) => update('eircode', e.target.value.toUpperCase())}
                   placeholder="Optional"
                 />
+                {isConflictingJurisdiction ? <p id="eircode-error" className="field-error-message">{SOLARGRANT_CONFLICT_MESSAGE}</p> : renderFieldError('eircode')}
               </div>
+              {!isUnsupportedJurisdiction ? <>
               <div data-field="mprn">
                 <label htmlFor="mprn" className={isFieldInvalid('mprn') ? 'field-label-error' : undefined}>
                   {requiredLabel('MPRN Number')}
@@ -905,8 +968,37 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 </select>
                 {renderFieldError('dwellingType')}
               </div>
+              </> : null}
             </div>
-            <div className="toggle-grid">
+            {isUnsupportedJurisdiction ? (
+              <div
+                ref={jurisdictionMessageRef}
+                className="jurisdiction-route-panel"
+                role="alert"
+                aria-live="assertive"
+                tabIndex={-1}
+              >
+                <div className="eyebrow">This SEAI route is not available</div>
+                <h3>Property in Northern Ireland</h3>
+                <p>{SOLARGRANT_UNSUPPORTED_MESSAGE}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    update('county', '');
+                    requestAnimationFrame(() => document.getElementById('county')?.focus());
+                  }}
+                >
+                  Change county
+                </button>
+              </div>
+            ) : null}
+            {isConflictingJurisdiction ? (
+              <div className="jurisdiction-conflict-panel" role="alert" aria-live="polite">
+                <strong>Check the property location</strong>
+                <p>{SOLARGRANT_CONFLICT_MESSAGE}</p>
+              </div>
+            ) : null}
+            {!isUnsupportedJurisdiction ? <div className="toggle-grid">
               <label className="toggle-card">
                 <input type="checkbox" checked={form.propertyOwner} onChange={(e) => update('propertyOwner', e.target.checked)} />
                 I own the property
@@ -915,7 +1007,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 <input type="checkbox" checked={form.privateLandlord} onChange={(e) => update('privateLandlord', e.target.checked)} />
                 I am a private landlord
               </label>
-            </div>
+            </div> : null}
           </section>
         );
 
@@ -1077,7 +1169,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                 {renderFieldError('installTimeline')}
               </div>
             </div>
-            <div className="estimate-calculator step-estimate-calculator">
+            {estimate ? <div className="estimate-calculator step-estimate-calculator">
               <div className="estimate-options" role="group" aria-label="Select a solar system size">
                 {systemSizeOptions.map((option) => (
                   <button
@@ -1116,7 +1208,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
                   </div>
                 </div>
               </div>
-            </div>
+            </div> : null}
             {renderEstimatePreview()}
           </section>
         );
@@ -1549,7 +1641,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
 
         {submitError && <div ref={errorRef} className="error-banner" role="alert">{submitError}</div>}
 
-        <div className="step-actions">
+        {!isUnsupportedJurisdiction ? <div className="step-actions">
           <button type="button" className="secondary" onClick={backStep} disabled={isFirstStep || loading}>
             Back
           </button>
@@ -1560,7 +1652,7 @@ export function LeadForm({ installerId = fallbackInitialState.installerId }: { i
           ) : (
             <button type="button" onClick={continueStep}>Continue</button>
           )}
-        </div>
+        </div> : null}
       </form>
     </div>
   );

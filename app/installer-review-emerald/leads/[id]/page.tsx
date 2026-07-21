@@ -39,6 +39,7 @@ import {
   getPipelineStageTone,
   leadPipelineStages
 } from '@/lib/crm';
+import { adaptSolarGrantLeadForPresentation } from '@/lib/solargrant-jurisdiction-safe-view';
 
 const ADMIN_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
@@ -461,7 +462,7 @@ function LeadField({ label, value }: { label: string; value: ReactNode }) {
 export default async function HiddenLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const organisationContext = await requirePilotContext();
-  const lead: LeadDetail | null = await prisma.lead.findFirst({
+  const storedLead: LeadDetail | null = await prisma.lead.findFirst({
     where: leadOrganisationWhere(organisationContext, { id }),
     include: {
       installer: true,
@@ -471,11 +472,18 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     }
   });
 
-  if (!lead) return notFound();
+  if (!storedLead) return notFound();
+  const lead = adaptSolarGrantLeadForPresentation(storedLead);
 
-  const portalAccess = await ensureLeadPortalToken(lead.id);
+  const portalAccess = lead.jurisdictionView.canPresentSeaiConclusions
+    ? await ensureLeadPortalToken(lead.id)
+    : {
+        portalToken: lead.portalToken,
+        portalTokenCreatedAt: lead.portalTokenCreatedAt,
+        portalLastAccessedAt: lead.portalLastAccessedAt
+      };
   const portalToken = portalAccess.portalToken;
-  if (!portalToken) {
+  if (!portalToken && lead.jurisdictionView.canPresentSeaiConclusions) {
     throw new Error('Portal token could not be created');
   }
 
@@ -555,7 +563,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const lastActivityLabel = lastActivity ? formatDateTime(lastActivity.createdAt) : formatDateTime(lead.updatedAt);
   const nextFollowUpDate = lead.nextFollowUpAt ?? lead.followUpDate;
   const documentChecklist = buildDocumentChecklist(lead.documents);
-  const portalUrl = buildPortalUrl(portalToken);
+  const portalUrl = portalToken ? buildPortalUrl(portalToken) : null;
 
   return (
     <main className="container admin-shell lead-crm-shell">
@@ -589,6 +597,14 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           </div>
         </div>
       </section>
+
+      {!lead.jurisdictionView.canPresentSeaiConclusions ? (
+        <section className="jurisdiction-route-panel" role="status">
+          <div className="eyebrow">Location routing</div>
+          <h2>{lead.jurisdictionView.label}</h2>
+          <p>{lead.jurisdictionView.message}</p>
+        </section>
+      ) : null}
 
       <section className="lead-crm-summary-grid">
         <div className="lead-crm-kpi lead-crm-kpi-info">
@@ -789,9 +805,9 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                         </div>
 
                         <div className="lead-document-actions">
-                          <a href={`/portal/${portalToken}/documents/${document.id}`} target="_blank" rel="noreferrer" className="lead-crm-button">
+                          {portalToken ? <a href={`/portal/${portalToken}/documents/${document.id}`} target="_blank" rel="noreferrer" className="lead-crm-button">
                             Download
-                          </a>
+                          </a> : null}
                           <form action={updateLeadDocumentStatus} className="lead-document-review-actions">
                             <input type="hidden" name="leadId" value={lead.id} />
                             <input type="hidden" name="documentId" value={document.id} />
@@ -921,14 +937,14 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 <h3>Print summary</h3>
                 <p className="small">Open the PDF-friendly manual prep summary.</p>
               </a>
-              <a className="action-card export-action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
+              {lead.jurisdictionView.canPresentSeaiConclusions ? <a className="action-card export-action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
                 <h3>Application pack JSON</h3>
                 <p className="small">Export structured data for human admin review.</p>
-              </a>
-              <a className="action-card export-action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
+              </a> : null}
+              {lead.jurisdictionView.canPresentSeaiConclusions ? <a className="action-card export-action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
                 <h3>Portal fill preview</h3>
                 <p className="small">Generate a safe reference payload for manual portal entry.</p>
-              </a>
+              </a> : null}
             </div>
 
             <div className="structured-snapshot">
@@ -1093,24 +1109,24 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             </p>
             <div className="lead-portal-link-box">
               <span>Portal URL</span>
-              <code>{portalUrl}</code>
+              <code>{portalUrl ?? 'Unavailable until the property location is supported'}</code>
             </div>
             <div className="lead-crm-action-buttons">
-              <CopyTextButton text={portalUrl} label="Copy portal link" />
-              <a href={`/portal/${portalToken}`} target="_blank" rel="noreferrer" className="lead-crm-button">
+              {portalUrl ? <CopyTextButton text={portalUrl} label="Copy portal link" /> : null}
+              {portalToken ? <a href={`/portal/${portalToken}`} target="_blank" rel="noreferrer" className="lead-crm-button">
                 Open portal
-              </a>
+              </a> : null}
             </div>
             <div className="lead-crm-field-grid">
               <LeadField label="Token created" value={formatDateTime(portalAccess.portalTokenCreatedAt)} />
               <LeadField label="Last accessed" value={formatDateTime(portalAccess.portalLastAccessedAt)} />
             </div>
-            <form action={regenerateLeadPortalTokenAction} className="lead-crm-form">
+            {lead.jurisdictionView.canPresentSeaiConclusions ? <form action={regenerateLeadPortalTokenAction} className="lead-crm-form">
               <input type="hidden" name="leadId" value={lead.id} />
               <div className="lead-crm-action-buttons">
                 <button type="submit" className="secondary">Regenerate portal link</button>
               </div>
-            </form>
+            </form> : null}
           </LeadCard>
 
           <LeadCard eyebrow="Grant/admin workflow" title="Review controls">

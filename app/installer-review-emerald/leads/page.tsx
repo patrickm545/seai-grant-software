@@ -8,6 +8,7 @@ import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
+import { adaptSolarGrantLeadForPresentation, getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ function getLeadLocation(lead: Pick<LeadsPageLead, 'county' | 'eircode'>) {
 }
 
 function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
+  const jurisdictionView = getSolarGrantJurisdictionViewState(lead);
   return {
     id: lead.id,
     applicant: lead.fullName,
@@ -33,6 +35,8 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
     phone: lead.phone,
     location: getLeadLocation(lead),
     confidence: lead.eligibilityConfidence,
+    jurisdictionStatus: jurisdictionView.status,
+    jurisdictionLabel: jurisdictionView.label,
     leadScore: lead.leadScore as LeadScoreValue,
     pipelineStage: lead.pipelineStage as LeadPipelineStageValue,
     lastActivityAt: getLastActivityAt(lead).toISOString()
@@ -59,7 +63,8 @@ export default async function InstallerLeadsPage() {
     })
   ]);
 
-  const metrics = getDashboardMetrics(leads);
+  const safeLeads = leads.map(adaptSolarGrantLeadForPresentation);
+  const metrics = getDashboardMetrics(safeLeads);
   const intakePath = installer ? `/embed?installerId=${encodeURIComponent(installer.id)}` : null;
   return (
     <DashboardShell
@@ -84,7 +89,7 @@ export default async function InstallerLeadsPage() {
       </div>
 
       <RecentLeadsTable
-        leads={leads.map(toRecentLead)}
+        leads={safeLeads.map(toRecentLead)}
         basePath={ADMIN_LEAD_BASE_PATH}
         updateStageAction={updateLeadPipelineStage}
         title="All leads"

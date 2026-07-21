@@ -22,6 +22,10 @@ import {
   getPricingValuesFromRecord,
   parseGeneratedInstallerQuote
 } from '@/lib/installer-quote-pricing';
+import {
+  requireSupportedSolarGrantJurisdiction,
+  SolarGrantJurisdictionError
+} from '@/lib/solargrant-jurisdiction';
 
 export const runtime = 'nodejs';
 
@@ -199,6 +203,31 @@ export async function POST(request: NextRequest) {
     };
     const { applicantDocuments = [], ...rawLeadInput } = parsed;
     const leadInput = normalizeLeadInput(rawLeadInput);
+    stage = 'jurisdiction';
+    try {
+      requireSupportedSolarGrantJurisdiction(leadInput);
+    } catch (error) {
+      if (!(error instanceof SolarGrantJurisdictionError)) throw error;
+
+      const firstErrorField = error.code === 'AMBIGUOUS_PROPERTY_JURISDICTION' ? 'eircode' : 'county';
+      console.warn('[intake] Property jurisdiction rejected', {
+        ...buildRequestContext(requestId, stage),
+        installerId: leadInput.installerId,
+        jurisdiction: error.classification.jurisdiction,
+        reason: error.classification.reason
+      });
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          firstErrorField,
+          firstErrorStepId: 'property',
+          firstErrorStepIndex: 0,
+          requestId
+        },
+        { status: error.code === 'PROPERTY_JURISDICTION_REVIEW_REQUIRED' ? 400 : 422 }
+      );
+    }
     console.info('[intake] Submission validated', {
       ...buildRequestContext(requestId, stage),
       installerId: leadInput.installerId,

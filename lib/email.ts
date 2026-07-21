@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { SolarQuoteEstimate } from './quote-estimate';
+import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 type LeadNotificationArgs = {
   lead: {
@@ -7,6 +8,7 @@ type LeadNotificationArgs = {
     email: string;
     phone?: string | null;
     county: string;
+    eircode?: string | null;
     mprn: string;
     id: string;
   };
@@ -67,6 +69,7 @@ function getMailerConfig() {
 }
 
 export async function sendLeadNotificationEmails(args: LeadNotificationArgs) {
+  requireSupportedSolarGrantJurisdiction(args.lead);
   const config = getMailerConfig();
   if (!config) return;
 

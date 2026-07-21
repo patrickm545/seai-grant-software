@@ -22,6 +22,7 @@ import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadActivityOrganisationWhere, leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
+import { adaptSolarGrantLeadForPresentation, getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
 
 const ADMIN_LEAD_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
@@ -64,6 +65,7 @@ function getLeadLocation(lead: Pick<DashboardLead, 'county' | 'eircode'>) {
 }
 
 function toRecentLead(lead: DashboardLead): RecentDashboardLead {
+  const jurisdictionView = getSolarGrantJurisdictionViewState(lead);
   return {
     id: lead.id,
     applicant: lead.fullName,
@@ -71,6 +73,8 @@ function toRecentLead(lead: DashboardLead): RecentDashboardLead {
     phone: lead.phone,
     location: getLeadLocation(lead),
     confidence: lead.eligibilityConfidence,
+    jurisdictionStatus: jurisdictionView.status,
+    jurisdictionLabel: jurisdictionView.label,
     leadScore: lead.leadScore as LeadScoreValue,
     pipelineStage: lead.pipelineStage as LeadPipelineStageValue,
     lastActivityAt: getLastActivityAt(lead).toISOString()
@@ -217,14 +221,15 @@ export default async function HiddenAdminPage() {
     })
   ]);
 
+  const safeLeads = leads.map(adaptSolarGrantLeadForPresentation);
   const intakePath = installer ? `/embed?installerId=${encodeURIComponent(installer.id)}` : null;
 
-  const metrics = getDashboardMetrics(leads);
-  const hotLeads = leads
-    .filter((lead) => lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage))
+  const metrics = getDashboardMetrics(safeLeads);
+  const hotLeads = safeLeads
+    .filter((lead) => lead.jurisdictionView.canPresentSeaiConclusions && lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage))
     .sort(sortByRecentActivity)
     .slice(0, 5);
-  const followUpLeads = leads
+  const followUpLeads = safeLeads
     .filter(isFollowUpDue)
     .sort((a, b) => {
       const aDate = a.nextFollowUpAt ?? a.followUpDate ?? getLastActivityAt(a);
@@ -240,7 +245,7 @@ export default async function HiddenAdminPage() {
     { label: 'Leads Without Documents', value: metrics.leadsWithoutDocuments, icon: 'D', tone: 'blue' }
   ];
 
-  const recentLeads = leads.map(toRecentLead);
+  const recentLeads = safeLeads.map(toRecentLead);
   return (
     <DashboardShell
       userName={organisationContext.userName}
@@ -274,7 +279,7 @@ export default async function HiddenAdminPage() {
       ) : null}
 
       <KpiCards cards={kpiCards} />
-      <PipelineWorkflow stages={buildPipelineStages(leads)} />
+      <PipelineWorkflow stages={buildPipelineStages(safeLeads)} />
 
       <div className="crm-dashboard-grid">
         <LeadMiniList

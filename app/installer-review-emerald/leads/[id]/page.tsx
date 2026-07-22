@@ -34,14 +34,11 @@ import {
   getActivityTone,
   getActivityTypeLabel,
   getLeadScoreLabel,
-  getLeadScoreTone,
   getPipelineStageLabel,
-  getPipelineStageTone,
   leadPipelineStages
 } from '@/lib/crm';
 import { adaptSolarGrantLeadForPresentation } from '@/lib/solargrant-jurisdiction-safe-view';
 
-const ADMIN_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
 
 type LeadDetail = Prisma.LeadGetPayload<{
@@ -249,16 +246,6 @@ async function eraseLeadData(formData: FormData) {
   revalidatePath('/admin/dashboard');
   revalidatePath('/installer-review-emerald/leads');
   redirect('/installer-review-emerald/leads');
-}
-
-function getStatusTone(status: string) {
-  if (status === 'READY_TO_APPLY' || status === 'SUBMITTED' || status === 'COMPLETED') return 'success';
-  if (status === 'NEEDS_REVIEW') return 'danger';
-  if (status === 'HOMEOWNER_REVIEW_PENDING' || status === 'PAYMENT_DOCS_PENDING' || status === 'INSTALLATION_PENDING') {
-    return 'warning';
-  }
-
-  return 'default';
 }
 
 function getLeadTempTone(temp: string | null) {
@@ -488,7 +475,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   }
 
   const auditLogs = await prisma.auditLog.findMany({
-    where: { leadId: lead.id },
+    where: { leadId: lead.id, organisationId: organisationContext.organisationId },
     orderBy: { createdAt: 'desc' },
     take: 8
   });
@@ -544,7 +531,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const consentCaptured = lead.consentToProcess && lead.consentToGrantAssist && lead.consentToContact;
   const nextRecommendedAction = getStringValue(
     salesSignal?.recommendedNextAction ?? quoteEstimate?.recommendedNextAction,
-    'Review eligibility, call homeowner, and confirm documents.'
+    'No recommended action is recorded.'
   );
   const installTimeline = formatEnumValue(salesSignal?.installTimeline ?? getNoteValue(noteEntries, 'Install timeline'));
   const callbackWindow = formatEnumValue(
@@ -566,37 +553,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const portalUrl = portalToken ? buildPortalUrl(portalToken) : null;
 
   return (
-    <main className="container admin-shell lead-crm-shell">
-      <section className="lead-crm-header">
-        <div className="lead-crm-topbar">
-          <Link href={ADMIN_BASE_PATH} className="small">Back to leads</Link>
-          <Link href="/admin/logout" className="small">Log out</Link>
-        </div>
-        <div className="lead-crm-header-grid">
-          <div className="lead-crm-title-block">
-            <div className="eyebrow">Lead detail</div>
-            <h1>{lead.fullName}</h1>
-            <p>
-              CRM view for pipeline stage, sales fit, grant readiness, documents, notes, and next workflow actions.
-            </p>
-            <div className="lead-crm-chip-row">
-              <span className={`status-pill status-pill-${getPipelineStageTone(lead.pipelineStage)}`}>{getPipelineStageLabel(lead.pipelineStage)}</span>
-              <span className={`status-pill status-pill-${getLeadScoreTone(lead.leadScore)}`}>{getLeadScoreLabel(lead.leadScore)}</span>
-              <span className={`status-pill status-pill-${getStatusTone(lead.status)}`}>{STATUS_LABELS[lead.status]}</span>
-              <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
-              <span className={`status-pill status-pill-${grantLikely ? 'success' : 'warning'}`}>
-                {grantLikely ? 'Grant likely' : 'Grant review'}
-              </span>
-              <span className="status-pill status-pill-default">{installTimeline}</span>
-            </div>
-          </div>
-          <div className="lead-crm-header-actions">
-            <CopyTextButton text={copyHomeownerSummary} label="Copy homeowner summary" />
-            <Link href={`/admin/dashboard/leads/${lead.id}/application-pack`} className="lead-crm-button lead-crm-button-primary">Open application pack</Link>
-            <a href={`/admin/dashboard/leads/${lead.id}/application-pack/print`} className="lead-crm-button" target="_blank" rel="noreferrer">Print summary</a>
-          </div>
-        </div>
-      </section>
+    <div className="lead-workspace-overview lead-crm-shell">
 
       {!lead.jurisdictionView.canPresentSeaiConclusions ? (
         <section className="jurisdiction-route-panel" role="status">
@@ -605,29 +562,6 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           <p>{lead.jurisdictionView.message}</p>
         </section>
       ) : null}
-
-      <section className="lead-crm-summary-grid">
-        <div className="lead-crm-kpi lead-crm-kpi-info">
-          <span>Pipeline stage</span>
-          <strong>{getPipelineStageLabel(lead.pipelineStage)}</strong>
-          <small>Last activity {lastActivityLabel}</small>
-        </div>
-        <div className={`lead-crm-kpi lead-crm-kpi-${getLeadScoreTone(lead.leadScore)}`}>
-          <span>Lead score</span>
-          <strong>{getLeadScoreLabel(lead.leadScore)}</strong>
-          <small>Updated {formatDateTime(lead.scoreUpdatedAt ?? lead.createdAt)}</small>
-        </div>
-        <div className="lead-crm-kpi lead-crm-kpi-success">
-          <span>Recommended system</span>
-          <strong>{recommendedSystemSize}</strong>
-          <small>{formatNumber(quoteEstimate?.estimatedPanelCount)} panels estimated</small>
-        </div>
-        <div className="lead-crm-kpi lead-crm-kpi-info">
-          <span>Estimated quote</span>
-          <strong>{netQuoteRange}</strong>
-          <small>{annualSavingsRange} annual savings</small>
-        </div>
-      </section>
 
       <div className="lead-crm-layout">
         <div className="lead-crm-main">
@@ -1255,6 +1189,6 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           </LeadCard>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

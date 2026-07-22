@@ -1,5 +1,6 @@
-import HiddenLeadDetailPage from '@/app/installer-review-emerald/leads/[id]/page';
+import { redirect } from 'next/navigation';
 
 export default async function AdminLeadPage({ params }: { params: Promise<{ id: string }> }) {
-  return <HiddenLeadDetailPage params={params} />;
+  const { id } = await params;
+  redirect(`/installer-review-emerald/leads/${encodeURIComponent(id)}`);
 }

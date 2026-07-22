@@ -37,7 +37,11 @@ Based on the current README and project history, the app currently includes:
 
 ## Platform Release 1.5 Boundary
 
-The current runtime supports homeowner-created leads but does not support authenticated Manual Lead Creation. Approved Platform Release 1.5 documentation specifies name-plus-phone/email minimum capture into the existing `Lead`, followed by redirect to the canonical workspace. CTO and CEO/product approval is recorded; no implementation has begun.
+The Platform Release 1.5 PR 1 implementation branch establishes `/installer-review-emerald/leads/[leadId]` as the canonical authenticated installer lead workspace. It adds a persistent, tenant-safe summary and deep-linkable Overview, Documents, Activity, Tasks, and Notes navigation. The Overview continues to compose the existing lead-detail capabilities; the other sections use bounded truthful placeholders until their approved implementation PRs. Legacy `/admin/leads/[leadId]` and `/admin/dashboard/leads/[leadId]` detail URLs redirect to the canonical route, while materially different application-pack routes remain available.
+
+The runtime still supports homeowner-created leads only and does not support authenticated Manual Lead Creation. The disabled `New Lead` entry point is explanatory only. Approved Platform Release 1.5 documentation specifies name-plus-phone/email minimum capture into the existing `Lead`, followed by redirect to the canonical workspace, but that belongs to PR 2 and has not begun.
+
+The PR 1 workspace shell read requires `lead.read`, derives organisation and membership context from the authenticated server session, scopes the projected lead query to that trusted organisation, and returns no related document, activity, task, note, audit, or binary payload. Existing workflow, portal, pack, document-review, follow-up, and note mutations retain their established protected services and transaction/audit behaviour.
 
 The current `Lead` still requires the full homeowner qualification data contract. Accepted ADR-0021 governs explicit origin, derived action-specific completeness, truthful unknown fields, field/consumer inspection, permissions, migration, privacy, and PR 2 stop conditions. Placeholder property, grant, eligibility, or consent values are not an acceptable implementation.
 

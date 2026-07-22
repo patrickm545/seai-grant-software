@@ -10,7 +10,7 @@
 
 ## Purpose
 
-Translate the approved amended Release 1.5 Master Specification into eight small, sequenced implementation PRs. Manual Lead Creation and Accepted ADR-0021 are explicit scope. After PR #34 merges, PRs 1-6 are authorised in sequence subject to their gates; PR 7 remains blocked by Release 1.4. No Release 1.5 implementation has begun.
+Translate the approved amended Release 1.5 Master Specification into eight small, sequenced implementation PRs. Manual Lead Creation and Accepted ADR-0021 are explicit scope. PR #34 has merged; PR 1 is now in implementation and validation, PRs 2-6 remain sequenced behind it, and PR 7 remains blocked by Release 1.4.
 
 ## Baseline And Dependency Decision
 
@@ -47,7 +47,7 @@ The amended release direction, architecture decisions, feature set, and sequence
 6. CTO architecture approval: Approved.
 7. CEO/product approval: Approved.
 8. Implementation authorisation: PRs 1-6 in sequence after PR #34 merges and their gates pass; PR 7 separately blocked; PR 8 follows the approved sequence.
-9. No implementation has begun.
+9. PR 1 implementation is in progress on its dedicated branch; PR 2 has not begun.
 
 ## Feature Specifications
 

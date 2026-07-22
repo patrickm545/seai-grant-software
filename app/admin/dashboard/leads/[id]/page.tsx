@@ -6,5 +6,5 @@ export default async function LegacyAdminDashboardLeadPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/admin/leads/${id}`);
+  redirect(`/installer-review-emerald/leads/${encodeURIComponent(id)}`);
 }

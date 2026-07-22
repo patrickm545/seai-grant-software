@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-TIMELINE |
-| Status | Approved |
+| Status | Proposed |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |
@@ -28,7 +28,7 @@ Installers need a readable answer to “what happened?” Existing facts are spl
 In scope:
 
 - reverse-chronological timeline with stable pagination;
-- allowlisted entry types for intake, note, contact/follow-up, workflow, task, upload/review, generated document, and approved portal events;
+- allowlisted entry types for homeowner intake, authenticated manual creation, note, contact/follow-up, workflow, task, upload/review, generated document, and approved portal events;
 - source type, source ID, occurred time, safe actor display, title, description, and optional deep link;
 - date grouping, filters by broad event category, truthful empty state, and accessible labels;
 - deduplication rule where one transaction writes platform and product records for the same user-visible action.
@@ -63,6 +63,7 @@ SolarGRANT Pro module read projection over platform and product facts. Platform 
 ## Architecture Notes
 
 - Prefer `LeadActivity` as the canonical SolarGRANT Pro display event when it exists for an action.
+- Render manual and homeowner-intake `LEAD_CREATED` events from their explicit creation-origin metadata; do not infer origin from missing fields.
 - Use `WorkflowHistory` only for workflow facts not already represented or to enrich an allowlisted activity with safe stage context.
 - Use task/document records or approved product activities for their user-visible events; `AuditLog` remains compliance evidence and is not a fallback content feed.
 - Build an explicit mapper per source with allowlisted fields.
@@ -92,7 +93,7 @@ Mitigate with source precedence, explicit mappers, safe actor rules, pagination,
 
 ## Verification Plan
 
-- unit tests per source mapper, source precedence, ordering, cursor, actor display, filters, and sanitisation;
+- unit tests per source mapper, including manual versus homeowner creation, source precedence, ordering, cursor, actor display, filters, and sanitisation;
 - integration tests for tenant isolation and transaction-created activity/history/audit combinations;
 - fixtures for simultaneous timestamps and malformed/legacy metadata;
 - browser tests for pagination/filter state and 390 px/keyboard/zoom behaviour;

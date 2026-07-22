@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-DOCUMENT-CENTRE |
-| Status | Approved |
+| Status | Proposed |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |
@@ -25,11 +25,11 @@ Installers need to know what has been received, what is missing or needs review,
 
 ## Delivery Gate
 
-This feature is Release 1.5 PR 6 and must not begin until the missing Release 1.4 governed generated-document implementation has completed its own separately approved implementation PR sequence and has been reviewed and merged into `main`.
+This feature is Release 1.5 PR 7 and must not begin until the missing Release 1.4 governed generated-document implementation has completed its own separately approved implementation PR sequence and has been reviewed and merged into `main`.
 
-Existing uploaded `LeadDocument` evidence may be surfaced before PR 6 only where an approved Release 1.5 PR 1–5 workspace scope requires it. Any such surface must explicitly label the records as uploaded evidence and must not imply that governed generated-document capability exists.
+Existing uploaded `LeadDocument` evidence may be surfaced before PR 7 only where an approved Release 1.5 PR 1–6 workspace scope requires it. Any such surface must explicitly label the records as uploaded evidence and must not imply that governed generated-document capability exists.
 
-PR 6 must consume the authoritative implementation governed by ADR-0015, ADR-0016, and ADR-0017. It must not introduce a temporary substitute or duplicate or partially recreate generated-document models, services, storage, rendering, retrieval, permissions, integrity evidence, or audit contracts.
+PR 7 must consume the authoritative implementation governed by ADR-0015, ADR-0016, and ADR-0017. It must not introduce a temporary substitute or duplicate or partially recreate generated-document models, services, storage, rendering, retrieval, permissions, integrity evidence, or audit contracts.
 
 ## Product Scope
 
@@ -60,7 +60,7 @@ SolarGRANT Pro module composition feature consuming the existing product upload 
 1. Installer opens Documents for an owned lead.
 2. A summary shows received, needs-review, missing, and generated-document counts only when those counts are supported by authoritative records.
 3. Installer reviews uploaded evidence using existing product rules.
-4. Because PR 6 cannot start before the Release 1.4 implementation merges, the installer uses that authoritative capability to view metadata, generate an approved document, or download immutable bytes when permission permits.
+4. Because PR 7 cannot start before the Release 1.4 implementation merges, the installer uses that authoritative capability to view metadata, generate an approved document, or download immutable bytes when permission permits.
 5. Successful material actions appear in the product timeline and required audit records.
 
 ## Design Requirements
@@ -85,7 +85,7 @@ SolarGRANT Pro module composition feature consuming the existing product upload 
 
 ## Risks
 
-- Release 1.4 runtime capability is absent from current `main`, so PR 6 is blocked even though PRs 1–5 may proceed after PR #34 approval and merge.
+- Release 1.4 runtime capability is absent from current `main`, so PR 7 is blocked even after PR #34 is re-approved and merged.
 - Mixed document types mislead users or weaken access rules.
 - Cross-tenant links create IDOR exposure.
 - Large lists or bytes are eager-loaded into the workspace.
@@ -96,7 +96,7 @@ The CTO baseline gate, source discrimination, separate services/permissions, bou
 ## Acceptance Criteria
 
 - Uploaded evidence remains fully compatible and tenant-scoped.
-- PR 6 begins only after the separately approved Release 1.4 implementation sequence is completed, reviewed, and merged into `main`.
+- PR 7 begins only after the separately approved Release 1.4 implementation sequence is completed, reviewed, and merged into `main`.
 - Governed documents come only from that authoritative Release 1.4 implementation.
 - No temporary substitute or duplicated/partial generated-document architecture exists in Release 1.5.
 - Each item displays its source type and authoritative status.
@@ -118,7 +118,7 @@ The CTO baseline gate, source discrimination, separate services/permissions, bou
 
 ## Rollout Plan
 
-Before PR 6, an earlier approved workspace PR may surface existing uploaded `LeadDocument` evidence only as clearly classified uploaded evidence. Separately complete, review, and merge the Release 1.4 governed generated-document implementation PR sequence. Only then branch and implement PR 6 as a composition of uploaded evidence and the authoritative generated-document capability. Never create a local substitute or partial Release 1.4 implementation inside Release 1.5.
+Before PR 7, an earlier approved workspace PR may surface existing uploaded `LeadDocument` evidence only as clearly classified uploaded evidence. Separately complete, review, and merge the Release 1.4 governed generated-document implementation PR sequence. Only then branch and implement PR 7 as a composition of uploaded evidence and the authoritative generated-document capability. Never create a local substitute or partial Release 1.4 implementation inside Release 1.5.
 
 ## Documentation Updates
 

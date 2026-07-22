@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-WORKSPACE |
-| Status | Approved |
+| Status | Proposed |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |
@@ -32,6 +32,7 @@ In scope:
 - direct contact actions and approved workflow actions;
 - stable deep links, breadcrumbs/back navigation, responsive layout, and truthful states;
 - safe redirects from superseded lead routes.
+- a stable `New Lead` action that enters the separately specified manual creation flow and redirects successful creation back to this workspace.
 
 Out of scope:
 
@@ -53,6 +54,8 @@ SolarGRANT Pro module feature consuming Clada OS identity, permissions, workflow
 4. Installer moves between lead-local sections without losing lead context.
 5. Mutations show pending, success, validation, conflict, or recoverable error feedback.
 6. Browser back/forward and direct section links preserve predictable navigation.
+
+Manual creation is specified separately: an authorised installer may select `New Lead`, complete the minimum approved fields, and arrive at this canonical workspace with incomplete qualification state shown truthfully.
 
 ## Design Requirements
 
@@ -93,6 +96,7 @@ Mitigate with section boundaries, bounded queries, canonical redirects, explicit
 - Desktop and 390 px critical journeys pass without horizontal table dependence.
 - Loading, empty, partial, conflict, and error states are designed and tested.
 - Existing lead actions retain their service, permission, audit, and transaction rules.
+- A manually created lead opens at the same canonical URL and is clearly distinguished from a completed homeowner intake without creating a second workspace type.
 
 ## Verification Plan
 
@@ -111,6 +115,7 @@ Ship the canonical shell and overview before moving each lead-local section. Kee
 ## Documentation Updates
 
 - Release 1.5 Master Specification and sprint plan;
+- [Manual Lead Creation](FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md);
 - SolarGRANT Pro module/current-state documentation after implementation;
 - pilot onboarding/support runbook;
 - architecture overview only if service boundaries materially change.

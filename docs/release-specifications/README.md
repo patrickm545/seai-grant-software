@@ -72,6 +72,6 @@ Release specifications must link to relevant roadmap entries, feature specificat
 ## Current Specifications
 
 - [PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md](PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md): Approved Master Specification for Platform Release 1.4 - Document Foundation; its implementation sign-off remains pending in that document on the current baseline.
-- [PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md): Approved Master Specification for Platform Release 1.5 - Lead Workspace and Document Management; PRs 1–5 are authorised in sequence after PR #34 merges, PR 6 remains blocked, and implementation has not begun.
+- [PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md): Proposed amended Master Specification for Platform Release 1.5 - Lead Workspace, Manual Lead Creation and Document Management; prior approval is superseded, CTO/CEO re-approval is pending, PR 7 retains the Release 1.4 dependency, and implementation has not begun.
 
 Draft specifications do not authorise implementation. Approved specifications authorise only the implementation scope and sequence explicitly recorded in their approval and sprint sections.

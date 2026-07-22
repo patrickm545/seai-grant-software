@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-TASKS |
-| Status | Approved |
+| Status | Proposed |
 | Owner | Clada Systems Platform Engineering |
 | Review cycle | Platform Release 1.5 and when work-item lifecycle changes |
 | Last reviewed | 2026-07-22 |
@@ -73,6 +73,7 @@ Clada OS platform capability with a SolarGRANT Pro lead proving slice. Platform 
 - Mutations use version/current-state conditional updates inside a transaction with audit/activity writes.
 - Audit metadata includes IDs and safe state changes, not title/description/customer facts.
 - Follow-up backfill chooses `nextFollowUpAt`, falling back to `followUpDate`, and creates no completion history.
+- Manual Lead Creation PR 2 may capture an optional compatibility follow-up before the work-item schema lands; PR 3 backfill and PR 4 service rules must create at most one corresponding open task.
 - Legacy follow-up fields remain readable during rollback compatibility; any dual writes are transaction-bound and documented.
 
 ## Permission Recommendation

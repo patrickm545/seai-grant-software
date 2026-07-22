@@ -3,29 +3,29 @@
 | Field | Value |
 | --- | --- |
 | Document ID | REL-PLATFORM-1.5 |
-| Status | Approved |
+| Status | Proposed |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | At release close |
 | Last reviewed | 2026-07-22 |
 | Release | Platform Release 1.5 |
 | Approved baseline | `9828af1` (PR #33 merge commit on `main`) |
 | Target branch | `codex/platform-release-1-5-lead-workspace-docs` |
-| CTO approval | Approved |
-| CEO approval | Approved |
+| CTO approval | Pending re-review |
+| CEO approval | Pending re-approval |
 
 ## Executive Summary
 
 Platform Release 1.5 will make the SolarGRANT Pro lead the installer's primary working environment from first enquiry through grant preparation, installation, and aftercare. It will expose existing Clada OS identity, permission, audit, workflow, and document capabilities through one coherent, tenant-safe workspace rather than creating a new platform architecture.
 
-The release is centred on six product outcomes: a unified lead workspace, customer document centre, chronological activity history, minimum task-management foundation, durable installer notes, and predictable lead-local navigation. The workspace is a SolarGRANT Pro composition surface. Clada OS continues to own reusable identity, authorisation, audit, workflow, generated-document mechanics, and the new product-neutral work-item foundation.
+The release is centred on seven product outcomes: a unified lead workspace, authenticated manual lead creation, customer document centre, chronological activity history, minimum task-management foundation, durable installer notes, and predictable lead-local navigation. The workspace is a SolarGRANT Pro composition surface. Clada OS continues to own reusable identity, authorisation, audit, workflow, generated-document mechanics, and the accepted product-neutral work-item foundation.
 
 The release must remain incremental. Existing lead, uploaded-document, workflow, audit, authentication, organisation, and generated-document boundaries remain authoritative. Release 1.5 will not merge audit, workflow history, product activity, uploaded evidence, and governed generated documents into ambiguous generic records.
 
-This documentation is approved. Release 1.5 implementation PRs 1–5 are authorised to begin in sequence from the current `main` baseline after PR #34 is merged. Release 1.5 PR 6 has the additional hard dependency recorded below. No Release 1.5 implementation has begun as of this approval-state update.
+The prior CTO and CEO approval is superseded by the Manual Lead Creation scope amendment. This Master Specification, all six feature specifications, ADR-0021, and the revised eight-PR sprint sequence are Proposed or Pending re-approval. PR #34 is a documentation-only draft. No Release 1.5 implementation is authorised and none has begun.
 
 ## Business Context
 
-Pilot installers need to understand a customer record quickly, know the next action, find every relevant document, record working context, and see what changed without navigating across disconnected pages or maintaining a parallel spreadsheet. The current application contains useful lead facts, workflow progression, follow-up fields, notes, uploaded evidence, activities, audit records, and document architecture, but those capabilities are exposed as separate or inconsistent surfaces.
+Pilot installers need to capture enquiries received outside the homeowner form, understand a customer record quickly, know the next action, find every relevant document, record working context, and see what changed without navigating across disconnected pages or maintaining a parallel spreadsheet. The current application contains useful lead facts, workflow progression, follow-up fields, notes, uploaded evidence, activities, audit records, and document architecture, but those capabilities are exposed as separate or inconsistent surfaces and authenticated installers cannot create a minimum lead honestly.
 
 The Release 1.5 mission is operational cohesion rather than capability expansion. One complete workspace should reduce missed follow-ups, duplicated notes, document hunting, context switching, and training time while strengthening trust and pilot readiness.
 
@@ -34,6 +34,7 @@ Evidence includes:
 - the product UX audit findings for lead-detail fragmentation, inconsistent navigation, weak mobile operation, document presentation, follow-up visibility, and error states;
 - existing `Lead`, `LeadDocument`, `LeadActivity`, `WorkflowInstance`, `WorkflowHistory`, and `AuditLog` records;
 - existing note, follow-up, stage-change, document-review, portal, application-pack, and dashboard behaviours;
+- the current `Lead` requires full homeowner qualification data, so name-plus-contact manual capture needs an explicit progressive-completeness decision rather than placeholders;
 - the Platform Release 1.4 document-domain ADRs, which deliberately keep uploaded evidence separate from governed generated documents;
 - the pilot-readiness requirement for one trustworthy daily installer workflow.
 
@@ -43,48 +44,56 @@ Repository review on 2026-07-22 used merge commit `9828af1`, the user-designated
 
 The baseline contains Release 1.4's approved Master Specification and ADR-0015 through ADR-0017. It does not contain the generated-document Prisma models, generated-file storage implementation, secure generated-document download route, Release 1.4 feature specifications, implementation migration, or completed Release 1.4 sign-off described by that specification.
 
-The CTO review of PR #34 resolves the sequencing question without treating the missing capability as present:
+The prior CTO review resolved the generated-document sequencing question without treating the missing capability as present. The Manual Lead Creation amendment preserves that decision but supersedes its implementation authorisation pending re-review:
 
-1. Release 1.5 implementation PRs 1–5 may proceed from the current `main` baseline after PR #34 is approved and merged and their other documented approval gates are satisfied.
-2. Release 1.5 PR 6, Customer Document Centre, must not begin until the missing Platform Release 1.4 governed generated-document implementation has been completed, reviewed, and merged into `main`.
-3. Release 1.4 implementation requires its own separately approved implementation PR sequence before Release 1.5 PR 6.
-4. Existing uploaded `LeadDocument` evidence may be surfaced from the current baseline where an earlier approved Release 1.5 workspace scope requires it, but it must remain explicitly classified as uploaded evidence.
-5. Release 1.5 must not create a temporary generated-document substitute or duplicate, partially recreate, or relocate any Release 1.4 generated-document architecture.
-6. ADR-0015, ADR-0016, and ADR-0017 remain authoritative for generated-document ownership, immutable templates/PDF rendering, storage, integrity, and secure retrieval.
+1. No Release 1.5 implementation PR may begin until amended PR #34 is re-approved and merged.
+2. After that gate, implementation PRs 1-6 may proceed in the approved sequence from the then-current `main`, subject to their own prerequisites.
+3. Release 1.5 PR 7, Customer Document Centre, must not begin until the missing Platform Release 1.4 governed generated-document implementation has been completed, reviewed, and merged into `main`.
+4. Release 1.4 implementation requires its own separately approved implementation PR sequence before Release 1.5 PR 7.
+5. Existing uploaded `LeadDocument` evidence may be surfaced from the current baseline where an earlier approved Release 1.5 PR 1-6 workspace scope requires it, but it must remain explicitly classified as uploaded evidence.
+6. Release 1.5 must not create a temporary generated-document substitute or duplicate, partially recreate, or relocate any Release 1.4 generated-document architecture.
+7. ADR-0015, ADR-0016, and ADR-0017 remain authoritative for generated-document ownership, immutable templates/PDF rendering, storage, integrity, and secure retrieval.
 
-This sequencing decision is incorporated into the approved Release 1.5 specification and accepted ADR-0020. It authorises implementation PRs 1–5 in sequence after PR #34 merges; it does not authorise PR 6 before its separate Release 1.4 dependency is satisfied.
+ADR-0020 remains Accepted and unchanged. The revised release sequence is Proposed and authorises nothing until CTO and CEO re-approval and PR #34 merge. Re-approval must not authorise PR 7 before its separate Release 1.4 dependency is satisfied.
 
 ### Dependency Stop Conditions
 
 Stop and return to CTO review if:
 
-- Release 1.5 PR 6 is proposed, branched, or started before the separate Release 1.4 governed generated-document implementation sequence is approved, completed, reviewed, and merged into `main`;
+- any Release 1.5 implementation begins before the amended documentation is approved and PR #34 merges;
+- Manual Lead Creation PR 2 begins before ADR-0021 is Accepted and its data migration is approved;
+- a manual lead requires fabricated qualification, consent, property, or eligibility values, or weakens public intake validation;
+- duplicate detection or assignment can reveal or link another organisation's records;
+- Release 1.5 PR 7 is proposed, branched, or started before the separate Release 1.4 governed generated-document implementation sequence is approved, completed, reviewed, and merged into `main`;
 - a Release 1.5 change creates a temporary generated-document substitute;
 - Release 1.5 duplicates, partially recreates, relocates, or conflicts with architecture governed by ADR-0015, ADR-0016, or ADR-0017;
 - uploaded `LeadDocument` evidence is presented as generated evidence or absorbed into the governed generated-document domain;
-- a PR 1–5 scope begins to depend on generated-document runtime capability that is absent from current `main`.
+- a PR 1-6 scope begins to depend on generated-document runtime capability that is absent from current `main`.
 
 ## Strategic Objectives
 
 1. Give installers one lead-local place to understand the customer, current state, next action, documents, tasks, notes, and material history.
-2. Turn existing platform capabilities into a coherent, responsive SolarGRANT Pro experience without redesigning platform architecture.
-3. Establish the minimum reusable Clada OS work-item foundation required for owned and due work.
-4. Preserve tenant isolation, server-side authorisation, actor-aware audit, and immutable generated-document evidence.
-5. Keep uploaded evidence, generated documents, product activity, workflow history, and compliance audit semantically distinct while presenting useful projections.
-6. Prepare stable extension points for quote revisions, document version history, and collaboration without implementing them prematurely.
-7. Improve pilot productivity with small, independently reviewable implementation PRs and measurable acceptance evidence.
+2. Let authenticated installers capture a new enquiry using customer name and at least one contact method, then continue directly in the same workspace without inventing qualification facts.
+3. Turn existing platform capabilities into a coherent, responsive SolarGRANT Pro experience without redesigning platform architecture.
+4. Establish the minimum reusable Clada OS work-item foundation required for owned and due work.
+5. Preserve tenant isolation, server-side authorisation, actor-aware audit, and immutable generated-document evidence.
+6. Keep creation origin, business lead source, uploaded evidence, generated documents, product activity, workflow history, and compliance audit semantically distinct while presenting useful projections.
+7. Prepare stable extension points for quote revisions, document version history, and collaboration without implementing them prematurely.
+8. Improve pilot productivity with small, independently reviewable implementation PRs and measurable acceptance evidence.
 
 ## Scope
 
 Release 1.5 includes:
 
 - a canonical authenticated route and shared shell for each lead workspace;
+- an authenticated, tenant-scoped `New Lead` flow requiring customer name and phone or email, with optional address, Eircode, source, internal note, follow-up, and active same-organisation assignee;
+- explicit manual-versus-homeowner creation origin, typed creator attribution, truthful progressive qualification completeness, safe same-tenant duplicate warning, atomic workflow/activity/audit evidence, and redirect to the canonical workspace;
 - a lead summary header showing identity, workflow stage, grant-readiness context, owner/assignee where reliable, and next action;
 - lead-local navigation for Overview, Documents, Activity, Tasks, and Notes;
 - responsive layout and mobile-critical actions without horizontal-table dependence;
-- a phase-gated Customer Document Centre in Release 1.5 PR 6 that presents uploaded evidence and authoritative governed generated documents through one read model with visibly distinct types and states, only after the separate Release 1.4 implementation sequence has merged;
+- a phase-gated Customer Document Centre in Release 1.5 PR 7 that presents uploaded evidence and authoritative governed generated documents through one read model with visibly distinct types and states, only after the separate Release 1.4 implementation sequence has merged;
 - document upload/review continuity through existing SolarGRANT Pro customer-document behaviour;
-- limited surfacing of existing uploaded `LeadDocument` evidence in PRs 1–5 where an earlier approved workspace scope requires it, always labelled as uploaded evidence and never represented as a generated document;
+- limited surfacing of existing uploaded `LeadDocument` evidence in PRs 1-6 where an earlier approved workspace scope requires it, always labelled as uploaded evidence and never represented as a generated document;
 - secure generated-document metadata and download consumption through Release 1.4 contracts only;
 - a chronological lead activity projection across product activities, workflow transitions, task events, note events, and document events;
 - a product-neutral, organisation-owned work-item foundation proved through lead tasks;
@@ -100,6 +109,8 @@ Release 1.5 includes:
 Release 1.5 does not include:
 
 - a replacement CRM or a general project-management suite;
+- a second intake engine or lead aggregate, bulk import, lead merging, enrichment, CRM synchronisation, AI-assisted lead creation, messaging, configurable lead schemas, or custom lead-source taxonomies;
+- homeowner qualification, eligibility decisions, quote calculation, automatic portal invitation, or fabricated consent/property/grant values during manual creation;
 - boards, Gantt charts, task dependencies, recurring tasks, subtasks, labels, estimates, SLA automation, or custom task workflows;
 - cross-lead or cross-organisation collaboration;
 - comments, mentions, reactions, presence, or real-time co-editing;
@@ -134,6 +145,7 @@ Clada OS owns:
 
 SolarGRANT Pro owns:
 
+- manual lead field vocabulary, creation UX, restrained acquisition-source choices, and truthful incomplete-qualification presentation;
 - the lead workspace information architecture, labels, prioritisation, and navigation;
 - lead summary, grant-readiness, SEAI, property, customer, quote, installation, and aftercare language;
 - the Customer Document Centre projection and SolarGRANT Pro uploaded-evidence categories/review states;
@@ -151,10 +163,11 @@ Product code must consume platform services and may not bypass tenant, permissio
 | Feature | Outcome | Specification |
 | --- | --- | --- |
 | Unified Lead Workspace | One canonical lead-local environment and navigation shell. | [Unified Lead Workspace](../04-features/FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md) |
-| Customer Document Centre | One clearly classified view of customer uploads and governed generated documents; PR 6 is blocked until the separate Release 1.4 implementation sequence is reviewed and merged. | [Customer Document Centre](../04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) |
+| Manual Lead Creation | Minimum authenticated enquiry capture with explicit origin, trusted tenant/actor context, and direct workspace continuation. | [Manual Lead Creation](../04-features/FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md) |
 | Timeline And Activity History | One readable chronology without collapsing source-of-truth records. | [Timeline And Activity History](../04-features/FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md) |
 | Task Management Foundation | Structured owned and due work linked to a lead. | [Task Management Foundation](../04-features/FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md) |
 | Installer Notes | Durable, attributed, append-only operational notes. | [Installer Notes](../04-features/FEAT-PLATFORM-1-5-INSTALLER-NOTES.md) |
+| Customer Document Centre | One clearly classified view of customer uploads and governed generated documents; PR 7 is blocked until the separate Release 1.4 implementation sequence is reviewed and merged. | [Customer Document Centre](../04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) |
 
 ## UX Principles
 
@@ -168,6 +181,8 @@ Product code must consume platform services and may not bypass tenant, permissio
 8. **Recoverable actions.** Mutations show pending, success, validation, conflict, and recoverable failure states. Destructive or link-invalidating actions require clear confirmation.
 9. **Stable URLs.** Workspace sections use canonical, deep-linkable routes or query state and preserve lead context.
 10. **No fabricated data.** Empty, loading, filtered-empty, partial, and unavailable states must be truthful.
+11. **Minimum capture.** Manual lead creation asks only for name and one contact method; optional and later qualification facts do not obstruct first capture.
+12. **Safe duplicate awareness.** Potential-match warnings are bounded, advisory, tenant-local, and never disclose another organisation's records.
 
 ## Architecture Impact Assessment
 
@@ -185,6 +200,13 @@ Authenticated installer request
       -> governed DocumentResourceLink and Document metadata when implemented
       -> organisation-owned WorkItem records
     -> view models for Overview, Documents, Activity, Tasks, and Notes
+
+Authenticated installer New Lead request
+  -> server-derived organisation, Installer, user, and membership context
+    -> protected SolarGRANT Pro lead creation service
+      -> existing Lead with explicit origin and progressive completeness
+      -> existing WorkflowInstance, LeadActivity, and AuditLog contracts
+    -> canonical Lead Workspace redirect
 ```
 
 The workspace is not a new persistence aggregate. The lead remains the SolarGRANT Pro business record. Each underlying domain remains authoritative for its own facts.
@@ -203,11 +225,12 @@ Forbidden:
 ```text
 platform capability -> SolarGRANT Pro routes, SEAI rules, lead labels, or installer UI
 workspace query -> unscoped Prisma access
+manual creation -> client-supplied tenant/actor ownership or placeholder qualification facts
 timeline UI -> mutation of audit, workflow history, or generated evidence
 document centre -> reinterpretation of LeadDocument as governed Document
 ```
 
-### No New ADR Required For Composition
+### Architecture Decisions
 
 - ADR-0005 and ADR-0008 govern tenant-aware access and authorisation.
 - ADR-0009 governs actor-aware audit.
@@ -218,11 +241,13 @@ document centre -> reinterpretation of LeadDocument as governed Document
 
 ADR-0020 is required because introducing a reusable structured work-item record, lifecycle, ownership, resource link, and concurrency contract is a material platform data-model decision.
 
+ADR-0021 is Proposed because minimum manual capture conflicts with the current non-null qualification-heavy `Lead` contract. It must decide explicit creation origin, progressive unknown values, typed creator/assignee attribution, migration, and path-specific validation. No separate ADR is required for the form, redirect, duplicate warning UX, workspace composition, notes, or timeline projection.
+
 ## Domain Model
 
 | Concept | Authority | Release 1.5 treatment |
 | --- | --- | --- |
-| `Lead` | SolarGRANT Pro | Workspace root and customer/business record; existing facts remain compatible. |
+| `Lead` | SolarGRANT Pro | Workspace root and customer/business record; gains explicit creation origin, typed creator/optional assignment, and progressive unknown qualification state under Proposed ADR-0021. |
 | `LeadActivity` | SolarGRANT Pro | Product-readable timeline entries and canonical append-only installer notes. |
 | `WorkflowInstance` / `WorkflowHistory` | Clada OS | Authoritative workflow state/history; projected into the timeline. |
 | `AuditLog` | Clada OS | Trust/compliance record; not exposed wholesale as the product timeline. |
@@ -241,6 +266,22 @@ ADR-0020 is required because introducing a reusable structured work-item record,
 - Keep `Lead.pipelineStage` compatibility rules governed by ADR-0014 and `TD-011`.
 - Keep `Lead.internalNotes` readable during migration; do not overwrite it with an activity identifier.
 - Existing `followUpDate` and `nextFollowUpAt` remain readable until task migration is validated.
+
+### Proposed Manual-Lead Evolution
+
+ADR-0021 must be Accepted before implementation. Its proposed minimum contract is:
+
+| Concern | Proposed treatment |
+| --- | --- |
+| Creation origin | Constrained, explicit `HOMEOWNER_INTAKE` or `MANUAL_INSTALLER`; separate from business `leadSource`. |
+| Creator | Typed user/membership attribution for authenticated creation; public intake keeps its established actor treatment. |
+| Minimum manual facts | Bounded name and at least one validated phone or email. |
+| Qualification facts | Unknown is stored as null/absent, not false, empty, zero, guessed, or consented. |
+| Completeness | Explicit or derived service contract prevents unknown manual leads being presented as qualified, eligible, grant-ready, or consented. |
+| Assignee | Optional active membership in the same organisation; no new use of legacy free-text assignee fields. |
+| Workflow/evidence | Existing `NEW_LEAD` workflow instance, `LEAD_CREATED` activity, and safe audit event created atomically. |
+
+Changing persistence nullability must not relax public homeowner intake validation. Existing leads require a truthful, reviewed, idempotent origin backfill. Ambiguous historical rows must use an explicitly approved legacy/unknown treatment rather than inference from missing customer fields.
 
 ### Approved Work-Item Foundation
 
@@ -285,7 +326,9 @@ Reuse the existing role-to-permission model. Exact role mapping must be approved
 | Permission | Meaning |
 | --- | --- |
 | `lead.read` | Read the organisation-owned lead workspace and safe product projections. |
+| `lead.create` | Create a lead inside the trusted organisation through an approved path-specific contract. Proposed for ADR-0021 review. |
 | `lead.update` | Update approved lead facts where existing behaviour permits. |
+| `lead.assign` | Assign an active same-organisation membership to a lead; required in addition to `lead.create` when Manual Lead Creation includes an assignee. |
 | `lead.change_status` | Execute approved workflow transitions. |
 | `document.read` | Read permitted document metadata. |
 | `document.review` | Change uploaded-evidence review state. |
@@ -301,6 +344,7 @@ If `lead.read`, `lead.update`, or an existing approved permission can safely cov
 
 - Resolve organisation and membership context server side through the existing authentication model.
 - Query every tenant-owned record by both resource identity and trusted `organisationId`.
+- Resolve manual-lead organisation, Installer, creator user, and creator membership from trusted server context; never accept ownership or actor attribution from the client.
 - Never trust organisation, membership, assignee, actor, document-link, or lead ownership identifiers from client input.
 - Verify cross-tenant consistency for work-item resource links and membership assignment.
 - Apply separate metadata and file-byte permissions for governed documents.
@@ -308,6 +352,8 @@ If `lead.read`, `lead.update`, or an existing approved permission can safely cov
 - Sanitize note/task input, apply explicit length limits, reject unsupported markup, and render as text unless a separately approved safe format exists.
 - Do not place customer facts, note bodies, document filenames, portal tokens, file bytes, credentials, or raw provider errors in logs or audit metadata.
 - Use safe not-found/forbidden behaviour that does not disclose cross-tenant resource existence.
+- Bound duplicate warnings to exact normalised email, phone, or Eircode within records the actor may already read in the trusted organisation. Do not perform cross-tenant or fuzzy matching in Release 1.5.
+- Treat manually supplied contact details as personal data, do not infer homeowner consent, and obtain privacy/legal approval for collection copy, retention, and follow-up handling before Production rollout.
 - Apply CSRF protections inherent to approved server-action/route patterns and validate every mutation server side.
 - Rate-limit or otherwise bound note/task mutation abuse if pilot evidence shows need; do not add speculative infrastructure.
 - Maintain GDPR data-subject linkage and existing erasure/export semantics. Task and note retention must be included in future retention policy work and must not bypass legal-hold or audit requirements.
@@ -318,6 +364,7 @@ If `lead.read`, `lead.update`, or an existing approved permission can safely cov
 - All related uploads, activities, workflow instances/history, generated documents/resource links, tasks, assignees, and audit records must resolve to that same organisation.
 - Composite database constraints should enforce organisation consistency for new work-item membership relationships where feasible.
 - Services must reject a valid resource ID from another organisation without partial mutation or existence leakage.
+- Duplicate candidate lookup must be organisation-scoped, bounded, and indistinguishable from no match when a record is outside the actor's authorised tenant scope.
 - Internal support or internal admin access remains governed by ADR-0010 and explicit permissions; it is never universal.
 - No organisation switching, cross-tenant task assignment, shared document link, or cross-organisation collaboration is introduced.
 
@@ -327,6 +374,7 @@ Audit remains distinct from the user-facing timeline.
 
 Required successful audit actions include:
 
+- `lead.created` with safe manual/homeowner origin and typed actor attribution;
 - `task.created`;
 - `task.updated` when due date, title, description, priority, or assignment materially changes;
 - `task.completed`;
@@ -335,7 +383,7 @@ Required successful audit actions include:
 - `lead.note_created`;
 - existing document generation, review, download, archive, workflow transition, portal-token, and lead-update events where governed today.
 
-Audit metadata should contain identifiers, safe previous/next states, and bounded non-sensitive context. It must not duplicate note bodies, task descriptions, customer contact information, document content, portal tokens, or secrets. Denied attempts should follow the existing audit policy; Release 1.5 does not create a second denied-event store.
+Audit metadata should contain identifiers, creation origin, safe previous/next states, and bounded non-sensitive context. It must not duplicate note bodies, duplicate candidates, task descriptions, customer contact information, document content, portal tokens, or secrets. Denied attempts should follow the existing audit policy; Release 1.5 does not create a second denied-event store.
 
 Timeline entries may link to the corresponding audit identifier where an existing service already provides it, but audit records remain authoritative and immutable.
 
@@ -343,6 +391,8 @@ Timeline entries may link to the corresponding audit identifier where an existin
 
 Required logical boundaries:
 
+- `findPotentialLeadDuplicates`: performs bounded exact matching only inside the trusted organisation and returns safe summaries already permitted by `lead.read`;
+- `createManualLead`: validates the minimum path-specific contract, trusted actor/tenant context, permission, idempotency, optional same-organisation assignment, and atomically creates lead/workflow/activity/audit records;
 - `getLeadWorkspace`: returns an organisation-scoped summary and section counts using bounded queries;
 - `getLeadDocuments`: returns a discriminated union of uploaded evidence and governed generated documents without hiding source semantics;
 - `getLeadTimeline`: returns stable, paginated entries with source type, source ID, occurred time, actor-safe display, title, description, and optional navigation target;
@@ -357,6 +407,7 @@ The canonical installer route family should be selected during implementation re
 
 Minimum route semantics:
 
+- one stable authenticated `New Lead` URL and action;
 - one canonical lead workspace URL;
 - stable section deep links for Overview, Documents, Activity, Tasks, and Notes;
 - mutations use server-side actions or protected route handlers;
@@ -366,6 +417,7 @@ Minimum route semantics:
 
 ## Transactions
 
+- Manual lead, workflow instance, creation activity, and audit evidence commit atomically; approved optional note/follow-up integration must not leave partial success.
 - A task mutation, lifecycle timestamps, actor attribution, audit event, and product timeline projection must commit atomically where the implementation writes more than one record.
 - Adding an installer note and its audit event must commit atomically.
 - Existing workflow transitions retain ADR-0014 transaction ownership.
@@ -375,6 +427,7 @@ Minimum route semantics:
 
 ## Concurrency
 
+- Manual creation uses an idempotency key or equivalent repeat-submission guard; duplicate warning is advisory and does not impose false uniqueness on legitimate same-contact leads.
 - Work-item updates use optimistic concurrency through a version/current-state guard.
 - Competing completion requests may produce one success; later stale requests return a conflict and do not create duplicate success history.
 - Reopening requires the expected completed state; cancelling requires a permitted current state.
@@ -387,6 +440,10 @@ Minimum route semantics:
 
 | Threat | Impact | Required mitigation |
 | --- | --- | --- |
+| Client-forged manual lead ownership/creator | Cross-tenant write or false attribution | Server-derived organisation, Installer, user, membership, permission, and actor context. |
+| Fabricated qualification or consent | Unsafe grant conclusion and false evidence | Null unknowns, path-specific validation, explicit origin/completeness, no sentinels. |
+| Duplicate lookup enumeration | Cross-tenant customer existence disclosure | Bounded exact matching only inside trusted organisation and authorised lead scope. |
+| Repeated create submission | Accidental duplicate leads and events | Idempotency/equivalent request guard and transaction tests. |
 | Cross-tenant lead or task ID tampering | Customer data disclosure or mutation | Trusted organisation context, scoped lookup, composite constraints, isolation tests, safe denial. |
 | Cross-tenant assignee tampering | Work visibility leak or privilege confusion | Same-organisation membership validation and database consistency where feasible. |
 | Document IDOR | Disclosure of uploaded or generated evidence | Source-specific access service, separate byte permission, no raw storage locator exposure. |
@@ -402,6 +459,9 @@ Minimum route semantics:
 
 | Failure | User experience | Recovery |
 | --- | --- | --- |
+| Manual field validation fails | Entered data is preserved and field-specific guidance is shown | Correct the bounded field and retry. |
+| Potential duplicate found | Advisory same-tenant warning with safe summary | Review authorised match or explicitly create anyway. |
+| Repeated submission | Existing successful result is returned or repeat is safely rejected | Redirect to the one created workspace. |
 | Lead not found or outside tenant | Safe not-found response | Return to tenant-scoped leads list; no existence disclosure. |
 | Section query fails | Workspace shell remains usable where safe; section shows recoverable error | Retry section; record sanitized operational error. |
 | Stale task mutation | Conflict message with current task state | Refresh or reapply intentional change. |
@@ -413,22 +473,24 @@ Minimum route semantics:
 
 ## Migration Requirements
 
-1. Start from the CTO-confirmed authoritative Release 1.4-compatible baseline.
-2. Add work-item schema and indexes additively.
-3. Seed no customer or fake task data.
-4. Backfill open follow-up work items idempotently from the canonical existing lead follow-up fields.
-5. Preserve existing follow-up fields during the release for rollback compatibility.
-6. Do not fabricate task completion, note, workflow, document, or audit history.
-7. Do not migrate `LeadDocument` into the governed generated-document model.
-8. Do not mutate generated files, template versions, checksums, or document evidence.
-9. Verify fresh-database migration and upgrade from the approved baseline in disposable PostgreSQL.
-10. Use the guarded environment-specific database commands and record status-before/status-after evidence.
+1. Start from the re-approved authoritative Release 1.4-compatible baseline after PR #34 merges.
+2. Accept ADR-0021 and add creation-origin, typed creator/optional assignment, and progressive unknown-field support additively to the existing `Lead`.
+3. Backfill existing origin truthfully and idempotently; use an approved legacy/unknown value when evidence is ambiguous rather than guessing.
+4. Preserve strict public-intake service validation even if shared persistence fields become nullable.
+5. Add work-item schema and indexes additively in PR 3.
+6. Seed no customer or fake task data.
+7. Backfill open follow-up work items idempotently from the canonical existing lead follow-up fields, including manually captured follow-ups, with at most one task per eligible lead.
+8. Preserve existing follow-up fields during the release for rollback compatibility.
+9. Do not fabricate consent, qualification, eligibility, task completion, note, workflow, document, or audit history.
+10. Do not migrate `LeadDocument` into the governed generated-document model or mutate generated evidence.
+11. Verify fresh-database migration, approved-baseline upgrade, and rerun behaviour in disposable PostgreSQL.
+12. Use guarded environment-specific database commands and record status-before/status-after evidence.
 
 Rollback is application-first: old code can continue reading existing lead follow-up fields. Data written to additive work-item tables remains intact. Schema removal is not the normal rollback path after pilot data exists.
 
 ## Deployment Considerations
 
-- Documentation approval precedes implementation and migration.
+- CTO and CEO re-approval and PR #34 merge precede every implementation PR and migration.
 - Implementation is delivered through small PRs in the sprint sequence below.
 - Database-affecting PRs require Preview/test migration evidence before Production promotion.
 - Production migration uses the existing database operations runbook, explicit environment classification, change reference, status before deploy, and clean status after deploy.
@@ -436,20 +498,21 @@ Rollback is application-first: old code can continue reading existing lead follo
 - Canonical route redirects must be deployed before legacy route removal.
 - Feature rollout may use a simple server-controlled flag only if operational rollback requires it; do not introduce a general flag platform.
 - Pilot enablement starts with one provisioned organisation and test records owned by that organisation.
+- Manual creation is enabled first for one pilot organisation only after privacy review, migration evidence, and public-intake/portal regression pass.
 - Observability must report safe error categories, latency, query counts where practical, task conflicts, and document failures without personal data.
 
 ## Testing
 
 Required automated coverage:
 
-- unit tests for task lifecycle validation, note limits, timeline mapping/order, document discriminators, and workspace view-model rules;
-- PostgreSQL integration tests for work-item constraints, idempotent follow-up backfill, optimistic concurrency, transaction rollback, and actor/audit linkage;
-- permission tests for read, create, update, assignment, completion, note creation, document review, and generated-document download;
+- unit tests for manual input/origin/completeness/duplicates, task lifecycle validation, note limits, timeline mapping/order, document discriminators, and workspace view-model rules;
+- PostgreSQL integration tests for manual-lead migration/relations/idempotency, work-item constraints, follow-up backfill, optimistic concurrency, transaction rollback, and actor/audit linkage;
+- permission tests for lead creation/read/update, assignment, task completion, note creation, document review, and generated-document download;
 - tenant-isolation tests using valid foreign IDs from another organisation for every new query/mutation boundary;
-- regression tests for existing intake, portal upload/download, lead stage changes, application pack, jurisdiction routing, and truthful empty states;
+- regression tests for existing public intake validation, consent/eligibility, portal upload/download, lead stage changes, application pack, jurisdiction routing, and truthful unknown/empty states;
 - migration tests from the approved baseline and a fresh database;
 - route/component tests for canonical redirects, section deep links, loading, empty, filtered-empty, validation, conflict, and error states;
-- browser smoke coverage at desktop and 390 px for lead navigation, note creation, task creation/completion, document review/download where available, and stage change;
+- browser smoke coverage at desktop and 390 px for minimum manual creation, duplicate warning/continue, workspace redirect/navigation, note creation, task creation/completion, document review/download where available, and stage change;
 - accessibility checks for landmarks, headings, keyboard operation, focus, names, status announcements, contrast, zoom, and touch targets;
 - performance evidence for bounded initial workspace queries and paginated activity/document lists.
 
@@ -476,13 +539,15 @@ This documentation-only PR requires documentation validation and `git diff --che
 
 Detailed sequencing is in [Platform Release 1.5 Sprint Plan](../06-sprints/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md).
 
-1. **Documentation and approval:** completed on 2026-07-22 for this specification, five feature specs, ADR-0020, baseline sequencing, sprint, and migration strategy; PR #34 merge remains pending.
-2. **Workspace shell and canonical navigation:** establish lead-local routes, responsive shell, overview, loading/error/empty states, and legacy redirects without new data models.
-3. **Task foundation schema and service:** add work items, migration/backfill, permissions, protected services, audit, and tenant/concurrency tests.
-4. **Installer notes:** make append-only attributed notes first-class through the existing activity boundary and protected service.
-5. **Timeline projection:** aggregate bounded source entries without changing source domains.
-6. **Customer Document Centre:** after the separately approved Release 1.4 implementation PR sequence has completed and merged, compose uploaded evidence and authoritative governed generated documents with source-specific actions. PR 6 must not start before that gate.
-7. **Pilot hardening:** mobile/accessibility, browser smoke, performance, deployment rehearsal, support guidance, and release documentation.
+1. **Documentation amendment and re-approval:** six Proposed features, Accepted ADR-0020, Proposed ADR-0021, revised gates, migration strategy, and eight-PR sequence; CTO/CEO approval and PR #34 merge Pending.
+2. **PR 1 - Workspace shell:** canonical lead-local routes, responsive shell, Overview, states, and redirects.
+3. **PR 2 - Manual Lead Creation:** minimum authenticated capture, progressive data migration, trusted actor/tenant context, duplicate warning, audit/activity/workflow, and workspace redirect.
+4. **PR 3 - Work-item schema/migration:** additive work items, permissions, follow-up backfill, and migration evidence.
+5. **PR 4 - Work-item service/tasks:** protected lifecycle, concurrency, audit/activity, and Tasks UI.
+6. **PR 5 - Installer Notes:** append-only attributed notes through the existing activity boundary.
+7. **PR 6 - Source-aware timeline:** bounded source projection, including explicit manual/homeowner creation labels.
+8. **PR 7 - Customer Document Centre:** only after the separate Release 1.4 implementation merges; compose uploaded evidence and authoritative governed documents without substitution.
+9. **PR 8 - Pilot hardening:** complete journey, mobile/accessibility, performance, deployment rehearsal, support, and release documentation.
 
 Each implementation PR must be independently reviewable and preserve a working main branch.
 
@@ -491,15 +556,17 @@ Each implementation PR must be independently reviewable and preserve a working m
 Documentation phase deliverables:
 
 - this Master Release Specification;
-- five feature specifications;
+- six feature specifications;
 - ADR-0020 for the task/work-item foundation;
+- Proposed ADR-0021 for lead creation origin and progressive completeness;
 - Release 1.5 sprint plan;
 - updated release, feature, ADR, sprint, COM, and roadmap indexes;
-- documentation-only PR #34 prepared for final review and merge.
+- documentation-only PR #34 kept draft for CTO and CEO re-review.
 
 Implementation deliverables after approval:
 
 - canonical lead workspace and navigation;
+- authenticated minimum manual lead creation using the existing Lead/workflow/activity/audit boundaries;
 - Customer Document Centre;
 - timeline projection;
 - work-item schema, migration, service, permissions, audit, and UI;
@@ -508,20 +575,25 @@ Implementation deliverables after approval:
 
 ## Acceptance Criteria
 
-### Documentation Approval Record
+### Documentation Re-Approval Record
 
-- the CTO sequencing decision for the current baseline is recorded: PRs 1–5 may use current `main`, and PR 6 remains blocked by the separate Release 1.4 implementation sequence;
-- this specification is approved by CTO and CEO;
+- the previous CTO and CEO approval is recorded as superseded by the Manual Lead Creation scope amendment;
+- the proposed sequence is recorded: after re-approval and PR #34 merge, PRs 1-6 may proceed in sequence, while PR 7 remains blocked by the separate Release 1.4 implementation sequence;
+- this specification is Proposed; CTO and CEO re-approval is Pending;
 - ADR-0020 is accepted;
-- all five feature specifications and the sprint sequence are approved;
-- task permission mapping and migration/backfill rules are approved for implementation through the sequenced PRs;
-- no application implementation has started as of this approval-state update.
+- ADR-0021 remains Proposed until its approval questions are resolved;
+- all six feature specifications and the sprint sequence remain Proposed;
+- no implementation is authorised and no application implementation has started.
 
-The approval and future merge of PR #34 authorise Release 1.5 PRs 1–5 to begin in sequence. They do not authorise PR 6 or substitute for the required separately governed Release 1.4 implementation PR sequence.
+Future re-approval and merge of PR #34 may authorise Release 1.5 PRs 1-6 in the recorded sequence. They cannot authorise PR 7 before the separately governed Release 1.4 implementation sequence is completed, reviewed, and merged.
 
 ### Product Acceptance
 
 - an authorised installer can open one canonical workspace for an organisation-owned lead;
+- an authorised installer can create a lead with bounded customer name and at least one of phone or email, then continue directly in that workspace;
+- optional address, Eircode, source, follow-up, note, and assignee obey their approved service and sequencing dependencies;
+- a manual lead has explicit origin/creator attribution and is never presented as homeowner-qualified, eligible, grant-ready, or consented while required facts are unknown;
+- duplicate warnings are advisory, bounded, tenant-local, and never reveal another organisation's record;
 - the workspace makes customer identity, current stage, grant-readiness context, and next action clear within the first view;
 - Overview, Documents, Activity, Tasks, and Notes remain lead-local, deep-linkable, responsive, and accessible;
 - an installer can create, assign, due-date, complete, reopen, and cancel a lead task according to permissions;
@@ -535,6 +607,8 @@ The approval and future merge of PR #34 authorise Release 1.5 PRs 1–5 to begin
 ### Engineering Acceptance
 
 - every new query and mutation is organisation-scoped and permission-protected server side;
+- manual creation uses trusted organisation/Installer/actor context, path-specific validation, idempotency, and atomic lead/workflow/activity/audit writes;
+- progressive persistence changes do not weaken public intake, consent, eligibility, jurisdiction, or portal validation;
 - cross-tenant IDs and assignees are rejected without leakage or partial mutation;
 - task/note mutations and required audit/activity records are atomic;
 - stale task updates are detected and surfaced as conflicts;
@@ -548,7 +622,11 @@ The approval and future merge of PR #34 authorise Release 1.5 PRs 1–5 to begin
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Release 1.4 runtime capability is absent from baseline | High (observed) | High | Allow Release 1.5 PRs 1–5 from current `main`; block PR 6 until a separately approved Release 1.4 implementation PR sequence is completed, reviewed, and merged. | CTO |
+| Release 1.4 runtime capability is absent from baseline | High (observed) | High | After re-approval allow PRs 1-6 in sequence; block PR 7 until the separately approved Release 1.4 implementation is completed, reviewed, and merged. | CTO |
+| Current `Lead` cannot honestly store minimum manual enquiries | High (observed) | Critical | Accept ADR-0021 before PR 2; use explicit origin, null unknowns, path-specific validation, typed actor/assignment, and migration regression tests. | CTO and Engineering |
+| Manual creation weakens public intake validation | Medium | Critical | Keep strict per-path service schemas and comprehensive intake/consent/jurisdiction/portal regression tests. | Engineering |
+| Duplicate warning leaks another tenant | Low | Critical | Exact, bounded matching only within trusted organisation and authorised read scope; isolation tests. | Security and Engineering |
+| Repeated submit creates duplicate records/events | Medium | High | Idempotency/equivalent guard and transaction tests. | Engineering |
 | Workspace becomes a monolithic page | Medium | High | Sectioned routes/read models, bounded queries, pagination, performance acceptance. | Engineering |
 | Timeline duplicates or contradicts audit/workflow facts | Medium | High | Read-only mapping, source identity, no new event store, domain-specific tests. | Platform Engineering |
 | Tasks over-expand into project management | Medium | Medium | ADR-0020 minimum model and explicit non-goals. | Product and CTO |
@@ -580,7 +658,7 @@ Release 1.5 must not worsen existing `TD-001`, `TD-005`, `TD-007`, `TD-009`, `TD
 
 Implementation should add a technical-debt entry only for a real accepted compromise, such as temporary follow-up dual writes or legacy route compatibility. Missing deferred features are not technical debt.
 
-The missing Release 1.4 implementation is a release dependency, not a new runtime debt item created by this documentation branch. It does not block Release 1.5 PRs 1–5 after PR #34 approval and merge, but it is a hard stop for PR 6.
+The missing Release 1.4 implementation is a release dependency, not runtime debt created by this documentation branch. After re-approval it does not block Release 1.5 PRs 1-6, but it is a hard stop for PR 7.
 
 ## Future Releases
 
@@ -600,6 +678,10 @@ Accepted for this release:
 
 - [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md).
 
+Proposed and required before Manual Lead Creation implementation:
+
+- [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md).
+
 Do not create separate ADRs for workspace navigation, document-centre aggregation, timeline projection, or installer notes unless implementation review discovers a conflict with ADR-0005, ADR-0008, ADR-0009, ADR-0013, ADR-0015, ADR-0016, or ADR-0017.
 
 Future quote revisions, document supersession semantics, collaboration/visibility, notifications, or task automation require ADR review when their release is proposed; they are not decided here.
@@ -608,31 +690,32 @@ Future quote revisions, document supersession semantics, collaboration/visibilit
 
 | Field | Value |
 | --- | --- |
-| Status | Approved |
+| Status | Pending re-review |
 | Reviewer | CTO |
-| Date | 2026-07-22 |
-| Notes | Architecture and sequencing approved. PRs 1–5 are authorised in sequence after PR #34 merges. PR 6 remains blocked until a separately approved Release 1.4 generated-document implementation sequence is completed, reviewed, and merged. |
+| Date | Pending |
+| Notes | Previous approval superseded by Manual Lead Creation scope, Proposed ADR-0021, and the revised eight-PR sequence. No implementation is authorised. PR 7 retains the Release 1.4 dependency. |
 
 ## CEO Approval
 
 | Field | Value |
 | --- | --- |
-| Status | Approved |
+| Status | Pending re-approval |
 | Approver | CEO |
-| Date | 2026-07-22 |
-| Notes | Product scope, pilot workflow priority, task and note behaviour, document-centre positioning, non-goals, deferrals, and phased implementation sequence approved. |
+| Date | Pending |
+| Notes | Previous product approval superseded by the added Manual Lead Creation scope and revised sequence. Product re-approval is required. |
 
 ## Release Sign-Off
 
 | Field | Value |
 | --- | --- |
-| Documentation PR | PR #34 - ready for review; merge pending |
-| CTO review | Approved - 2026-07-22 |
-| CEO approval | Approved - 2026-07-22 |
-| Implementation authorisation | Approved for PRs 1–5 in sequence after PR #34 merges; PR 6 blocked by Release 1.4 implementation dependency |
+| Documentation PR | PR #34 - draft; CTO/CEO re-review pending |
+| Prior approval | Superseded by Manual Lead Creation scope amendment on 2026-07-22 |
+| CTO review | Pending re-review |
+| CEO approval | Pending re-approval |
+| Implementation authorisation | Pending; no implementation may begin |
 | Implementation merge commit | Pending |
 | Release tag | Pending |
-| Roadmap update | Approval state recorded; release-close outcome pending |
+| Roadmap update | Proposed amendment and PR 7 dependency recorded; release-close outcome pending |
 
 ## Related Documents
 
@@ -649,3 +732,4 @@ Future quote revisions, document supersession semantics, collaboration/visibilit
 - [ADR-0016](../05-decisions/ADR-0016-template-versioning-and-pdf-rendering.md)
 - [ADR-0017](../05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md)
 - [ADR-0020](../05-decisions/ADR-0020-organisation-owned-work-items.md)
+- [ADR-0021](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md)

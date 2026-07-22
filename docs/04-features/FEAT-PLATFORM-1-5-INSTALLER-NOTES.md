@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-INSTALLER-NOTES |
-| Status | Approved |
+| Status | Proposed |
 | Owner | SolarGRANT Pro Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |
@@ -71,6 +71,7 @@ SolarGRANT Pro module feature extending the accepted product activity boundary. 
 - Create `lead.note_created` audit metadata with lead/activity IDs only; exclude note body and customer facts.
 - Note creation and audit commit in one transaction.
 - Existing `Lead.internalNotes` remains read-only compatibility content during Release 1.5. Do not create a duplicate activity on every read.
+- Manual Lead Creation may enable its optional initial note only through this canonical append-only note contract. It must not make `Lead.internalNotes` authoritative for new note history.
 
 ## Risks
 

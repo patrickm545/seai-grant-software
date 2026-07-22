@@ -322,13 +322,13 @@ Implementation note for the active release branch: the selected proving slice is
 
 | Field | Value |
 | --- | --- |
-| Status | Documentation approved; PRs 1–5 authorised in sequence after PR #34 merges; implementation not begun; PR 6 blocked by Release 1.4 implementation dependency. |
-| Objective | Make each lead the installer's primary working environment from enquiry through grant application, installation, and aftercare preparation. |
-| Key deliverables | Unified lead workspace; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive/accessibility hardening; and a phase-gated Customer Document Centre after the authoritative Release 1.4 implementation merges. |
-| SolarGRANT Pro proving slice | Complete daily lead work through one tenant-safe workspace using existing identity, permission, audit, workflow, and uploaded-evidence capabilities; consume governed generated documents only after their separate Release 1.4 implementation sequence is reviewed and merged. |
-| Success criteria | An authorised pilot installer can understand state and next action, manage documents, tasks, and notes, and review material history from one responsive lead workspace without weakening established architecture. |
-| Dependencies | PRs 1–5 may use current `main` after PR #34 approval/merge; PR 6 requires the separately approved Release 1.4 governed generated-document implementation sequence to be completed, reviewed, and merged first; ADR-0020 and privacy/security review remain applicable. |
-| Non-goals | Full project management, quote revisions, collaboration, notifications, scheduling/dispatch, document editing, e-signature, or platform architecture redesign. |
+| Status | Proposed amendment; prior CTO/CEO approval superseded; re-approval pending; implementation not begun; PR 7 blocked by Release 1.4 implementation dependency. |
+| Objective | Make each lead the installer's primary working environment from minimum authenticated enquiry capture through grant application, installation, and aftercare preparation. |
+| Key deliverables | Unified lead workspace; Manual Lead Creation; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive/accessibility hardening; and a phase-gated Customer Document Centre after the authoritative Release 1.4 implementation merges. |
+| SolarGRANT Pro proving slice | Create a minimum tenant-owned lead and complete daily work through one workspace using existing identity, permission, audit, workflow, activity, and uploaded-evidence capabilities; consume governed generated documents only after their separate Release 1.4 implementation sequence is reviewed and merged. |
+| Success criteria | An authorised pilot installer can create a source-classified lead from name plus phone/email, continue in one responsive workspace, understand truthful incomplete state, manage tasks/notes/documents, and review material history without weakening established architecture. |
+| Dependencies | PRs 1-6 require amended PR #34 approval/merge; PR 2 additionally requires Accepted ADR-0021; PR 7 requires the separately approved Release 1.4 generated-document implementation to be completed, reviewed, and merged first; ADR-0020 and privacy/security review remain applicable. |
+| Non-goals | Second intake engine, bulk import, lead merging/enrichment, CRM sync, AI creation, messaging, configurable schemas, custom source taxonomy, full project management, quote revisions, collaboration, notifications, scheduling/dispatch, document editing, e-signature, or platform architecture redesign. |
 
 ### Platform Release 1.6 - Module Configuration Foundation
 

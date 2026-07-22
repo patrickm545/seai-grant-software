@@ -32,6 +32,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0018-pilot-installer-authentication.md](ADR-0018-pilot-installer-authentication.md): replace the shared password adapter with verified-installer user authentication and database-backed sessions.
 - [ADR-0019-standardised-tenant-provisioning.md](ADR-0019-standardised-tenant-provisioning.md): propose the standard idempotent command, secure interim credential, and forced first-login change for pilot onboarding.
 - [ADR-0020-organisation-owned-work-items.md](ADR-0020-organisation-owned-work-items.md): accepted minimum tenant-owned work-item model, lifecycle, assignment, concurrency, migration, and SolarGRANT Pro lead-task proving slice.
+- [ADR-0021-lead-creation-origin-and-progressive-completeness.md](ADR-0021-lead-creation-origin-and-progressive-completeness.md): proposed explicit lead creation origin, progressive unknown qualification facts, typed creator/assignment, path-specific validation, and migration contract for Manual Lead Creation.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

@@ -85,7 +85,9 @@ test('canonical section routes, active navigation, loading state, and safe legac
   const root = resolve(process.cwd());
   const shell = readFileSync(resolve(root, 'components/LeadWorkspaceShell.tsx'), 'utf8');
   const loading = readFileSync(resolve(root, 'app/installer-review-emerald/leads/[id]/loading.tsx'), 'utf8');
+  const leadsLayout = readFileSync(resolve(root, 'app/installer-review-emerald/leads/layout.tsx'), 'utf8');
   const parentError = readFileSync(resolve(root, 'app/installer-review-emerald/leads/error.tsx'), 'utf8');
+  const parentNotFound = readFileSync(resolve(root, 'app/installer-review-emerald/leads/not-found.tsx'), 'utf8');
   const adminRedirect = readFileSync(resolve(root, 'app/admin/leads/[id]/page.tsx'), 'utf8');
   const dashboardRedirect = readFileSync(resolve(root, 'app/admin/dashboard/leads/[id]/page.tsx'), 'utf8');
 
@@ -96,8 +98,13 @@ test('canonical section routes, active navigation, loading state, and safe legac
   assert.match(shell, /aria-current={active \? 'page'/);
   assert.match(shell, /usePathname/);
   assert.match(loading, /aria-busy="true"/);
+  assert.match(leadsLayout, /return children/);
   assert.match(parentError, /role="alert"/);
   assert.match(parentError, /reset/);
+  assert.match(parentNotFound, /Lead not available/);
+  assert.match(parentNotFound, /not available to your organisation/);
+  assert.match(shell, /aria-disabled="true"/);
+  assert.doesNotMatch(shell, /className="lead-workspace-new-lead" disabled/);
   assert.match(adminRedirect, /redirect\(`\/installer-review-emerald\/leads\/\$\{encodeURIComponent\(id\)\}`\)/);
   assert.match(dashboardRedirect, /redirect\(`\/installer-review-emerald\/leads\/\$\{encodeURIComponent\(id\)\}`\)/);
   assert.doesNotMatch(adminRedirect + dashboardRedirect, /\/admin\/leads\/\$\{/);

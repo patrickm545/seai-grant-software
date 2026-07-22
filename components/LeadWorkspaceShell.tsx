@@ -21,7 +21,7 @@ export function LeadWorkspaceShell({ lead, children }: { lead: LeadWorkspaceView
     <main className="lead-workspace" id="main-content">
       <div className="lead-workspace-bar">
         <Link href="/installer-review-emerald/leads" className="lead-workspace-back">← Back to leads</Link>
-        <button type="button" className="lead-workspace-new-lead" disabled aria-describedby="new-lead-help">New Lead</button>
+        <button type="button" className="lead-workspace-new-lead" aria-disabled="true" aria-describedby="new-lead-help">New Lead</button>
         <span id="new-lead-help" className="visually-hidden">Manual lead creation is coming in the next approved release step.</span>
       </div>
 

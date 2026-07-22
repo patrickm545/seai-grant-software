@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-08 |
+| Last reviewed | 2026-07-22 |
 
 ## Purpose
 
@@ -35,6 +35,14 @@ Based on the current README and project history, the app currently includes:
 - Prisma and Postgres data layer
 - Vercel deployment target
 
+## Platform Release 1.5 Boundary
+
+The current runtime supports homeowner-created leads but does not support authenticated Manual Lead Creation. Approved Platform Release 1.5 documentation specifies name-plus-phone/email minimum capture into the existing `Lead`, followed by redirect to the canonical workspace. CTO and CEO/product approval is recorded; no implementation has begun.
+
+The current `Lead` still requires the full homeowner qualification data contract. Accepted ADR-0021 governs explicit origin, derived action-specific completeness, truthful unknown fields, field/consumer inspection, permissions, migration, privacy, and PR 2 stop conditions. Placeholder property, grant, eligibility, or consent values are not an acceptable implementation.
+
+The current baseline contains uploaded `LeadDocument` evidence but not the governed Release 1.4 generated-document runtime. Under the Approved sequence, Customer Document Centre is PR 7 and remains blocked until that separate Release 1.4 implementation is reviewed and merged. Release 1.5 must not create a substitute.
+
 ## Product risks
 
 Do not remove or weaken the existing lead funnel while building Clada OS.
@@ -52,6 +60,7 @@ The next upgrades should focus on:
 - Cleaner app shell
 - Stronger admin dashboard
 - Better lead pipeline
+- Authenticated minimum Manual Lead Creation without weakening homeowner intake
 - Structured lead detail pages
 - Quote and proposal workflow
 - Grant checklist and document tracking

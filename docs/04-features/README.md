@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-21 |
+| Last reviewed | 2026-07-22 |
 
 Feature specifications define the problem, evidence, scope, design, architecture, risks, and verification plan before major implementation.
 
@@ -43,6 +43,12 @@ Use [FEATURE_SPEC_TEMPLATE.md](FEATURE_SPEC_TEMPLATE.md) for new feature specs.
 - [FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md](FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md)
 - [FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md](FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md)
 - [FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md](FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md)
+- [FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md](FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md) - Approved
+- [FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md](FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md) - Approved
+- [FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md](FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md) - Approved
+- [FEAT-PLATFORM-1-5-INSTALLER-NOTES.md](FEAT-PLATFORM-1-5-INSTALLER-NOTES.md) - Approved
+- [FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md](FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md) - Approved
+- [FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md](FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) - Approved; implementation PR 7 blocked by Release 1.4 generated-document dependency
 
 ## Feature Spec Rule
 

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-22 |
 
 Sprint documents connect strategy to execution. They should be specific enough for engineers and AI agents to understand what is active, what is out of scope, and what definition of done applies.
 
@@ -24,6 +24,7 @@ Sprint documents connect strategy to execution. They should be specific enough f
 - [PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md](PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md)
 - [PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md](PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md)
 - [PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md](PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md)
+- [PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md) - Approved eight-PR sequence; PRs 1-6 authorised after PR #34 merges; PR 7 blocked; implementation not begun
 
 ## Hotfixes
 

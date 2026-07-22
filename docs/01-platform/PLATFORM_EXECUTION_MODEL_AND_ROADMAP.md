@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Architecture |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-22 |
 
 ## Purpose
 
@@ -318,16 +318,17 @@ Implementation note for the active release branch: the selected proving slice is
 | Dependencies | Platform Release 1.3; privacy/security review. |
 | Non-goals | Autonomous document approval, broad OCR platform, public document API, final AI extraction workflows. |
 
-### Platform Release 1.5 - Notifications and Communications Foundation
+### Platform Release 1.5 - Lead Workspace And Document Management
 
 | Field | Value |
 | --- | --- |
-| Objective | Create reusable notification request, delivery status, communication history, and provider-boundary foundations, validated by one real SolarGRANT Pro reminder or follow-up. |
-| Key deliverables | Notification specification; message event model; email/SMS provider interface; consent and audit expectations; SolarGRANT Pro reminder or follow-up slice; operational notification patterns. |
-| SolarGRANT Pro proving slice | Send one real reminder or follow-up through the platform notification service. |
-| Success criteria | SolarGRANT Pro can send the selected reminder or follow-up through a platform boundary with delivery status and audit context. |
-| Dependencies | Platform Release 1.4; integration boundary review. |
-| Non-goals | Marketing automation, bulk campaigns, provider marketplace, autonomous communication journeys. |
+| Status | Amended documentation approved; PRs 1-6 authorised in sequence after PR #34 merges; implementation not begun; PR 7 blocked by Release 1.4 implementation dependency. |
+| Objective | Make each lead the installer's primary working environment from minimum authenticated enquiry capture through grant application, installation, and aftercare preparation. |
+| Key deliverables | Unified lead workspace; Manual Lead Creation; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive/accessibility hardening; and a phase-gated Customer Document Centre after the authoritative Release 1.4 implementation merges. |
+| SolarGRANT Pro proving slice | Create a minimum tenant-owned lead and complete daily work through one workspace using existing identity, permission, audit, workflow, activity, and uploaded-evidence capabilities; consume governed generated documents only after their separate Release 1.4 implementation sequence is reviewed and merged. |
+| Success criteria | An authorised pilot installer can create a source-classified lead from name plus phone/email, continue in one responsive workspace, understand truthful incomplete state, manage tasks/notes/documents, and review material history without weakening established architecture. |
+| Dependencies | PRs 1-6 require PR #34 merge and their documented gates; PR 2 follows Accepted ADR-0021 and requires its field/consumer, migration, permission, action-gate, and privacy controls; PR 7 requires the separately approved Release 1.4 generated-document implementation to be completed, reviewed, and merged first. |
+| Non-goals | Second intake engine, bulk import, lead merging/enrichment, CRM sync, AI creation, messaging, configurable schemas, custom source taxonomy, full project management, quote revisions, collaboration, notifications, scheduling/dispatch, document editing, e-signature, or platform architecture redesign. |
 
 ### Platform Release 1.6 - Module Configuration Foundation
 
@@ -355,7 +356,7 @@ Implementation note for the active release branch: the selected proving slice is
 
 | Field | Value |
 | --- | --- |
-| Objective | Provide reusable operational metrics from workflow, audit, document, notification, and AI events, validated by one real SolarGRANT Pro operational dashboard. |
+| Objective | Provide reusable operational metrics from workflow, audit, document, work-item, and AI events, validated by one real SolarGRANT Pro operational dashboard. |
 | Key deliverables | Reporting specification; metric definitions; pipeline visibility; SolarGRANT Pro operational dashboard slice; operational dashboards or report APIs; audit-aligned event sources. |
 | SolarGRANT Pro proving slice | Produce one real operational dashboard using platform events. |
 | Success criteria | SolarGRANT Pro can show the selected operational dashboard from platform events with traceable source definitions. |
@@ -368,7 +369,7 @@ Implementation note for the active release branch: the selected proving slice is
 | --- | --- |
 | Objective | Consolidate and harden the Platform Release 1.x SolarGRANT Pro proving slices into the SolarGRANT Pro MVP integration. |
 | Key deliverables | SolarGRANT Pro feature specifications; module configuration; integration plan; migration plan if needed; proving-slice hardening plan; user-facing release notes; production readiness review. |
-| Success criteria | SolarGRANT Pro consumes platform identity, permissions, audit, workflow, documents, notifications, module configuration, AI governance, and reporting through documented platform contracts, with each capability already validated through at least one earlier proving slice. |
+| Success criteria | SolarGRANT Pro consumes the platform identity, permissions, audit, workflow, document, work-item, module configuration, AI governance, and reporting capabilities delivered by its approved releases through documented contracts, with each capability validated through an earlier proving slice. Notification capability is included only if separately approved and delivered before integration close. |
 | Dependencies | Platform Releases 1.1 through 1.8. |
 | Non-goals | Second product module, partner marketplace, public SDK, broad codebase renaming. |
 
@@ -376,9 +377,10 @@ Implementation note for the active release branch: the selected proving slice is
 
 | Release candidate | Objective | Entry condition |
 | --- | --- | --- |
-| Platform Release 1.9 - Integrations Framework | Standardize provider interfaces and adapter lifecycle. | Core platform APIs have production consumers and provider risks are clear. |
-| Platform Release 1.10 - Billing and Commercial Operations | Support commercial packaging, account status, and billing-ready usage signals. | SolarGRANT Pro pricing/package assumptions are validated. |
-| Platform Release 1.11 - Marketplace or Partner Extensibility | Explore partner/module extensibility. | Internal reuse is proven and support, billing, permissions, and API stability are ready. |
+| Platform Release 1.9 - Notifications and Communications Foundation | Create reusable notification request, delivery status, communication history, consent, audit, and provider-boundary foundations. | Pilot evidence identifies one approved reminder or follow-up and the managed-channel/privacy boundary is reviewed. |
+| Platform Release 1.10 - Integrations Framework | Standardize provider interfaces and adapter lifecycle. | Core platform APIs have production consumers and provider risks are clear. |
+| Platform Release 1.11 - Billing and Commercial Operations | Support commercial packaging, account status, and billing-ready usage signals. | SolarGRANT Pro pricing/package assumptions are validated. |
+| Platform Release 1.12 - Marketplace or Partner Extensibility | Explore partner/module extensibility. | Internal reuse is proven and support, billing, permissions, and API stability are ready. |
 
 ## Risk Register
 

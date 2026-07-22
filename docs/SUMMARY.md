@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-21 |
+| Last reviewed | 2026-07-22 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -71,6 +71,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 - [release-specifications/README.md](release-specifications/README.md)
 - [release-specifications/PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md](release-specifications/PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md)
+- [release-specifications/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](release-specifications/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md) - Approved
 
 ## Design
 
@@ -110,6 +111,12 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md](04-features/FEAT-PLATFORM-1-3-WORKFLOW-HISTORY.md)
 - [04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md](04-features/FEAT-PLATFORM-1-3-SOLARGRANT-PRO-WORKFLOW-PROVING-SLICE.md)
 - [04-features/FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md](04-features/FEAT-SOLARGRANT-PRO-REPUBLIC-OF-IRELAND-GRANT-ROUTING.md)
+- [04-features/FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md](04-features/FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md) - Approved
+- [04-features/FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md](04-features/FEAT-PLATFORM-1-5-MANUAL-LEAD-CREATION.md) - Approved
+- [04-features/FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md](04-features/FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md) - Approved
+- [04-features/FEAT-PLATFORM-1-5-INSTALLER-NOTES.md](04-features/FEAT-PLATFORM-1-5-INSTALLER-NOTES.md) - Approved
+- [04-features/FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md](04-features/FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md) - Approved
+- [04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md](04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) - Approved; implementation PR 7 blocked by Release 1.4 dependency
 
 ## Decisions
 
@@ -134,6 +141,8 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md](05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md)
 - [05-decisions/ADR-0018-pilot-installer-authentication.md](05-decisions/ADR-0018-pilot-installer-authentication.md)
 - [05-decisions/ADR-0019-standardised-tenant-provisioning.md](05-decisions/ADR-0019-standardised-tenant-provisioning.md)
+- [05-decisions/ADR-0020-organisation-owned-work-items.md](05-decisions/ADR-0020-organisation-owned-work-items.md) - Accepted
+- [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 
 ## Sprints
 
@@ -146,6 +155,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md](06-sprints/PLATFORM_RELEASE_1_1_IDENTITY_AND_ORGANISATION.md)
 - [06-sprints/PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md](06-sprints/PLATFORM_RELEASE_1_2_USERS_ROLES_PERMISSIONS_AUDIT.md)
 - [06-sprints/PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md](06-sprints/PLATFORM_RELEASE_1_3_WORKFLOW_FOUNDATION.md)
+- [06-sprints/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](06-sprints/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md) - Approved; implementation not begun
 - [06-sprints/HOTFIX_SOLARGRANT_FORM_RELIABILITY.md](06-sprints/HOTFIX_SOLARGRANT_FORM_RELIABILITY.md)
 - [06-sprints/ARCHITECTURE_CHECKPOINT_1.md](06-sprints/ARCHITECTURE_CHECKPOINT_1.md)
 

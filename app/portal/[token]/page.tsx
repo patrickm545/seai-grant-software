@@ -8,6 +8,7 @@ import {
 } from '@/lib/documents';
 import { getCustomerPortalProgress, markPortalAccessed } from '@/lib/portal';
 import { prisma } from '@/lib/prisma';
+import { getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,12 +107,42 @@ export default async function CustomerPortalPage({ params, searchParams }: Porta
 
   if (!lead) return notFound();
 
+  const jurisdictionView = getSolarGrantJurisdictionViewState(lead);
+  const address = [lead.addressLine1, lead.addressLine2, lead.county, lead.eircode].filter(Boolean).join(', ');
+  if (!jurisdictionView.canPresentSeaiConclusions) {
+    return (
+      <main className="portal-shell">
+        <section className="portal-header">
+          <div className="portal-brand-row">
+            <div className="portal-brand-mark">CO</div>
+            <div>
+              <span>{lead.installer.name}</span>
+              <strong>Customer project portal</strong>
+            </div>
+          </div>
+          <div className="portal-header-grid">
+            <div>
+              <div className="eyebrow">Solar project</div>
+              <h1>{lead.fullName}</h1>
+              <p>{address || 'Project address not recorded yet'}</p>
+            </div>
+          </div>
+        </section>
+        <section className="portal-card jurisdiction-route-panel" role="status">
+          <div className="eyebrow">Location routing</div>
+          <h2>{jurisdictionView.label}</h2>
+          <p>{jurisdictionView.message}</p>
+          <p className="small">No current SEAI eligibility or grant conclusion is available for this record.</p>
+        </section>
+      </main>
+    );
+  }
+
   await markPortalAccessed(lead.id);
 
   const uploadSuccess = getSearchValue(resolvedSearchParams, 'uploaded') === '1';
   const documentError = getSearchValue(resolvedSearchParams, 'documentError');
   const progress = getCustomerPortalProgress(lead, lead.documents);
-  const address = [lead.addressLine1, lead.addressLine2, lead.county, lead.eircode].filter(Boolean).join(', ');
 
   return (
     <main className="portal-shell">

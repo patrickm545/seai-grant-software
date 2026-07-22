@@ -1,6 +1,7 @@
 import type { Installer, Lead, LeadDocument } from '@prisma/client';
 import type { SolarQuoteEstimate } from './quote-estimate';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from './installer-quote-pricing';
+import { adaptSolarGrantLeadForPresentation } from './solargrant-jurisdiction-safe-view';
 
 type SalesSignal = {
   callbackWindow?: string;
@@ -219,6 +220,9 @@ function uniqueItems(items: string[]) {
 }
 
 export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationPack {
+  const safeLead = adaptSolarGrantLeadForPresentation(lead);
+  lead = safeLead;
+  const jurisdictionView = safeLead.jurisdictionView;
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
@@ -228,6 +232,12 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
   const risks = asStringArray(lead.risksJson);
 
   const baseChecklist: ReadinessItem[] = [
+    {
+      id: 'supported-jurisdiction',
+      label: 'property is in the supported Republic of Ireland route',
+      complete: jurisdictionView.canPresentSeaiConclusions,
+      missingMessage: jurisdictionView.label
+    },
     {
       id: 'applicant-name',
       label: 'applicant name present',
@@ -372,6 +382,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       makeField('Consent To Contact', lead.consentToContact, !lead.consentToContact)
     ]),
     makeSection('grant-information', 'Grant Information', [
+      makeField('Jurisdiction Status', jurisdictionView.label),
       makeField('Grant Scheme', 'SEAI Solar Electricity Grant'),
       makeField('Installer', lead.installer.name),
       makeField('Installer SEAI Company ID', lead.installer.seaiCompanyId),
@@ -388,8 +399,8 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       makeField('Selected System Size kWp', quoteEstimate?.selectedSystemSizeKwp ?? 'Not supplied'),
       makeField('Estimated Panel Count', quoteEstimate?.estimatedPanelCount ?? 'Not supplied'),
       makeField('Gross Cost Range', quoteEstimate ? `EUR ${quoteEstimate.grossCostRange.min}-${quoteEstimate.grossCostRange.max}` : 'Not supplied'),
-      makeField('Estimated SEAI Grant Deduction', quoteEstimate ? `EUR ${quoteEstimate.estimatedSeaiGrantDeduction}` : 'Not supplied'),
-      makeField('Net Cost Range After Grant', quoteEstimate ? `EUR ${quoteEstimate.netCostRangeAfterGrant.min}-${quoteEstimate.netCostRangeAfterGrant.max}` : 'Not supplied'),
+      makeField('Estimated SEAI Grant Deduction', typeof quoteEstimate?.estimatedSeaiGrantDeduction === 'number' ? `EUR ${quoteEstimate.estimatedSeaiGrantDeduction}` : 'Suppressed pending supported location'),
+      makeField('Net Cost Range After Grant', quoteEstimate?.netCostRangeAfterGrant ? `EUR ${quoteEstimate.netCostRangeAfterGrant.min}-${quoteEstimate.netCostRangeAfterGrant.max}` : 'Suppressed pending supported location'),
       makeField('Estimated Annual Savings', quoteEstimate ? `EUR ${quoteEstimate.estimatedAnnualSavingsRange.min}-${quoteEstimate.estimatedAnnualSavingsRange.max}` : 'Not supplied'),
       makeField('Estimated Payback Range', quoteEstimate ? `${quoteEstimate.estimatedPaybackRangeYears.min}-${quoteEstimate.estimatedPaybackRangeYears.max} years` : 'Not supplied'),
       makeField('Grant Estimate Status', quoteEstimate?.grantStatus ?? 'Not supplied')

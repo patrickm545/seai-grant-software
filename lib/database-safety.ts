@@ -14,7 +14,8 @@ export const databaseOperations = [
   'reset',
   'smoke-write',
   'pilot-provision',
-  'one-off-mutation'
+  'one-off-mutation',
+  'jurisdiction-audit'
 ] as const;
 export type DatabaseOperation = (typeof databaseOperations)[number];
 
@@ -48,6 +49,8 @@ type GuardInput = {
   productionMigrationChangeId?: string;
   productionProvisioningAcknowledgement?: string;
   productionProvisioningChangeId?: string;
+  productionJurisdictionAuditAcknowledgement?: string;
+  productionJurisdictionAuditChangeId?: string;
 };
 
 const PRODUCTION_MIGRATION_ACKNOWLEDGEMENT = 'APPLY_APPROVED_PRODUCTION_MIGRATIONS';
@@ -349,6 +352,22 @@ export function assertDatabaseOperationAllowed(input: GuardInput) {
     }
   }
 
+  if (input.operation === 'jurisdiction-audit' && targetsProduction) {
+    if (
+      input.productionJurisdictionAuditAcknowledgement !== 'AUDIT_SOLARGRANT_JURISDICTION' ||
+      !input.productionJurisdictionAuditChangeId?.trim()
+    ) {
+      block(
+        'DB_OPERATION_NOT_ALLOWED',
+        'Production jurisdiction audit requires the exact acknowledgement and a change identifier.',
+        input,
+        identity,
+        appEnvironment,
+        databaseEnvironment
+      );
+    }
+  }
+
   if (input.operation === 'migration-dev' && appEnvironment !== 'development') {
     block('DB_OPERATION_NOT_ALLOWED', 'Prisma migrate dev is restricted to Development.', input, identity, appEnvironment, databaseEnvironment);
   }
@@ -363,6 +382,9 @@ export function assertDatabaseOperationAllowed(input: GuardInput) {
   }
   if (input.operation === 'smoke-write' && !['preview', 'test'].includes(appEnvironment)) {
     block('DB_OPERATION_NOT_ALLOWED', 'Smoke writes are restricted to isolated Preview or test databases.', input, identity, appEnvironment, databaseEnvironment);
+  }
+  if (input.operation === 'jurisdiction-audit' && !['development', 'preview', 'production'].includes(appEnvironment)) {
+    block('DB_OPERATION_NOT_ALLOWED', 'Jurisdiction audit is restricted to Development, Preview, or Production.', input, identity, appEnvironment, databaseEnvironment);
   }
 
   return { appEnvironment, databaseEnvironment, identity, targetsProduction };

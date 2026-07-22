@@ -20,6 +20,11 @@ import {
   type LeadFormFieldErrorMap,
   type LeadFormValidationFailure
 } from './lead-form-flow';
+import {
+  isReviewedSolarGrantLocationCode,
+  normalizeSolarGrantCounty,
+  normalizeSolarGrantLocationCode
+} from './solargrant-jurisdiction';
 
 const currentYear = new Date().getFullYear();
 const leadStatuses = [
@@ -69,6 +74,18 @@ const optionalOccupantsField = z.preprocess((value) => {
   return value;
 }, z.number().int().min(1).max(12).optional());
 
+const countyField = z.preprocess(
+  (value) => normalizeSolarGrantCounty(value) ?? value,
+  z.enum(counties)
+);
+
+const eircodeField = z.preprocess(
+  (value) => normalizeSolarGrantLocationCode(value) ?? undefined,
+  z.string()
+    .refine(isReviewedSolarGrantLocationCode, 'Enter a valid Eircode or leave this field blank.')
+    .optional()
+);
+
 export const leadFormSchema = z.object({
   installerId: z.string().min(1),
   fullName: z.string().trim().min(2),
@@ -76,8 +93,8 @@ export const leadFormSchema = z.object({
   phone: z.string().trim().min(7),
   addressLine1: z.string().trim().min(5),
   addressLine2: z.string().optional(),
-  county: z.enum(counties),
-  eircode: z.string().optional(),
+  county: countyField,
+  eircode: eircodeField,
   propertyOwner: z.boolean(),
   privateLandlord: z.boolean().default(false),
   dwellingType: z.enum(dwellingTypes),
@@ -139,7 +156,14 @@ export function formatLeadFormValidationFailure(error: z.ZodError, requestId?: s
     }
 
     if (!firstErrorField) firstErrorField = field;
-    fieldErrors[field] = getLeadFormFieldMessage(field, leadFormFriendlyFieldMessages[field] ?? issue.message);
+    if (field === 'county') {
+      const received = 'received' in issue ? issue.received : undefined;
+      fieldErrors[field] = received === undefined || received === null || received === ''
+        ? 'Choose the county where the property is located.'
+        : 'Choose a county from the list.';
+    } else {
+      fieldErrors[field] = getLeadFormFieldMessage(field, leadFormFriendlyFieldMessages[field] ?? issue.message);
+    }
   }
 
   const firstErrorStepId = firstErrorField ? getLeadFormStepForField(firstErrorField) : undefined;

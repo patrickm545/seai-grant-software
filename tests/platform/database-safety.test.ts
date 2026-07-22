@@ -28,6 +28,7 @@ function guard(args: {
   expectedFingerprint?: string;
   productionPath?: boolean;
   provisioningPath?: boolean;
+  jurisdictionAuditPath?: boolean;
   requiredEnvironment?: keyof typeof urls;
 }) {
   const database = args.database ?? args.app;
@@ -45,7 +46,9 @@ function guard(args: {
       : undefined,
     productionMigrationChangeId: args.productionPath ? 'PR-20' : undefined,
     productionProvisioningAcknowledgement: args.provisioningPath ? 'PROVISION_VERIFIED_PILOT' : undefined,
-    productionProvisioningChangeId: args.provisioningPath ? 'PILOT-001' : undefined
+    productionProvisioningChangeId: args.provisioningPath ? 'PILOT-001' : undefined,
+    productionJurisdictionAuditAcknowledgement: args.jurisdictionAuditPath ? 'AUDIT_SOLARGRANT_JURISDICTION' : undefined,
+    productionJurisdictionAuditChangeId: args.jurisdictionAuditPath ? 'SGP-JURISDICTION-001' : undefined
   });
 }
 
@@ -71,6 +74,24 @@ test('Production pilot provisioning requires an exact acknowledgement and change
     guard({ operation: 'pilot-provision', app: 'production', provisioningPath: true }).targetsProduction,
     true
   );
+});
+
+test('jurisdiction audit allows identified Development and Preview targets', () => {
+  assert.equal(guard({ operation: 'jurisdiction-audit', app: 'development' }).databaseEnvironment, 'development');
+  assert.equal(guard({ operation: 'jurisdiction-audit', app: 'preview' }).databaseEnvironment, 'preview');
+});
+
+test('Production jurisdiction audit requires its exact acknowledgement and change id', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () => guard({ operation: 'jurisdiction-audit', app: 'production' }));
+  assert.equal(
+    guard({ operation: 'jurisdiction-audit', app: 'production', jurisdictionAuditPath: true }).targetsProduction,
+    true
+  );
+});
+
+test('jurisdiction audit refuses the test environment and mismatched targets', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () => guard({ operation: 'jurisdiction-audit', app: 'test' }));
+  expectCode('DB_ENV_MISMATCH', () => guard({ operation: 'jurisdiction-audit', app: 'development', database: 'preview' }));
 });
 
 test('Preview app cannot target Production', () => {

@@ -1,11 +1,13 @@
 import twilio from 'twilio';
 import type { SolarQuoteEstimate } from './quote-estimate';
+import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 type LeadSmsArgs = {
   lead: {
     fullName: string;
     phone: string | null;
     county: string;
+    eircode?: string | null;
   };
   quoteEstimate?: SolarQuoteEstimate;
   leadTemperature?: string;
@@ -25,6 +27,7 @@ function getTwilioConfig() {
 }
 
 export async function sendLeadNotificationSms(args: LeadSmsArgs) {
+  requireSupportedSolarGrantJurisdiction(args.lead);
   const config = getTwilioConfig();
   if (!config || !args.lead.phone) return;
 

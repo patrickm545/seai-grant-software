@@ -10,6 +10,9 @@ import {
   updateLeadInOrganisation
 } from '../../lib/lead-access';
 import { getDashboardMetrics } from '../../lib/dashboard-metrics';
+import { adaptSolarGrantLeadForPresentation } from '../../lib/solargrant-jurisdiction-safe-view';
+import { buildPortalFillPreview, buildSubmissionPackage } from '../../lib/submission-package';
+import { SolarGrantJurisdictionError } from '../../lib/solargrant-jurisdiction';
 
 const prisma = new PrismaClient();
 const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
@@ -21,6 +24,7 @@ const installerB = `installer_test_b_${suffix}`;
 const leadA = `lead_test_a_${suffix}`;
 const leadB = `lead_test_b_${suffix}`;
 const mismatchedLead = `lead_test_mismatch_${suffix}`;
+const historicalNiLead = `lead_test_ni_${suffix}`;
 
 const scopeA = { organisationId: orgA };
 const scopeB = { organisationId: orgB };
@@ -60,7 +64,7 @@ async function cleanupTestData() {
   await prisma.lead.deleteMany({
     where: {
       id: {
-        in: [leadA, leadB, mismatchedLead]
+        in: [leadA, leadB, mismatchedLead, historicalNiLead]
       }
     }
   });
@@ -231,4 +235,54 @@ test('dashboard records, metrics, and activity remain organisation scoped', asyn
   assert.equal(metrics.applicationsSubmitted, 0);
   assert.equal(metrics.pipelineCounts.NEW_LEAD, 1);
   assert.equal(metrics.pipelineCounts.QUALIFIED, 0);
+});
+
+test('historical unsupported records stay stored, tenant scoped, and unsafe exports are refused', async (t) => {
+  await seedTestData();
+  t.after(cleanupTestData);
+
+  await prisma.lead.create({
+    data: {
+      ...leadData({
+        id: historicalNiLead,
+        organisationId: orgA,
+        installerId: installerA,
+        fullName: 'Historical NI Homeowner',
+        email: `tenant-ni-${suffix}@example.test`,
+        mprn: '10000000004'
+      }),
+      county: 'Antrim',
+      eircode: 'BT7 1AA',
+      likelyEligible: true,
+      eligibilityConfidence: 0.95,
+      aiSummary: 'Historical positive SEAI conclusion',
+      structuredExportJson: {
+        quoteEstimate: {
+          estimatedSeaiGrantDeduction: 1800,
+          netCostRangeAfterGrant: { min: 5000, max: 6000 },
+          grantLikely: true
+        }
+      }
+    }
+  });
+
+  const storedForA = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(scopeA, { id: historicalNiLead }),
+    include: { installer: true, documents: true }
+  });
+  assert.ok(storedForA);
+  const hiddenFromB = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(scopeB, { id: historicalNiLead })
+  });
+  assert.equal(hiddenFromB, null);
+
+  const safe = adaptSolarGrantLeadForPresentation(storedForA);
+  assert.equal(safe.county, 'Antrim');
+  assert.equal(safe.likelyEligible, null);
+  assert.equal(safe.jurisdictionView.status, 'UNSUPPORTED');
+  assert.equal(JSON.stringify(safe).includes('Historical positive SEAI conclusion'), false);
+  assert.equal(JSON.stringify(safe).includes('1800'), false);
+
+  assert.throws(() => buildSubmissionPackage(storedForA, storedForA.installer), SolarGrantJurisdictionError);
+  assert.throws(() => buildPortalFillPreview(storedForA, storedForA.installer), SolarGrantJurisdictionError);
 });

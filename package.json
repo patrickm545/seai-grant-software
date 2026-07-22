@@ -28,7 +28,8 @@
     "pilot:provision": "node --import tsx scripts/provision-pilot-user.ts",
     "pilot:rehearsal": "node --import tsx scripts/pilot-rehearsal.ts",
     "tenant:provision": "node --import tsx scripts/tenant-provision.ts",
-    "tenant:recover": "node --import tsx scripts/tenant-recover.ts"
+    "tenant:recover": "node --import tsx scripts/tenant-recover.ts",
+    "solargrant:jurisdiction-audit": "node --import tsx scripts/solargrant-jurisdiction-audit.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

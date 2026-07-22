@@ -3,6 +3,7 @@ import { isPilotAuthenticationError, requirePilotContext } from '@/lib/pilot-aut
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 import { buildSubmissionPackage } from '@/lib/submission-package';
+import { SolarGrantJurisdictionError } from '@/lib/solargrant-jurisdiction';
 
 export const runtime = 'nodejs';
 
@@ -26,6 +27,9 @@ export async function GET(request: NextRequest) {
     const payload = buildSubmissionPackage(lead, lead.installer);
     return NextResponse.json(payload);
   } catch (error) {
+    if (error instanceof SolarGrantJurisdictionError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
+    }
     if (isPilotAuthenticationError(error) && error.code === 'PASSWORD_CHANGE_REQUIRED') {
       return NextResponse.json({ error: 'Password change required', code: error.code }, { status: 403 });
     }

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-SGP-ROI-GRANT-ROUTING-001 |
-| Status | Approved |
+| Status | Active |
 | Owner | SolarGRANT Pro Product and Engineering |
 | Review cycle | Per feature milestone |
 | Last reviewed | 2026-07-21 |
@@ -17,7 +17,7 @@ SolarGRANT Pro must route a property through its SEAI grant-assistance workflow 
 
 This specification defines the smallest safe correction and is approved for implementation in a separate application PR. SolarGRANT Pro will own a deterministic property-jurisdiction classifier. County will be the required primary routing input; an optional Eircode will be a supporting format and conflict signal, not a county lookup. Northern Ireland will receive a clear unsupported-route outcome before eligibility, quote, persistence, notification, or AI work. Clada OS intake, tenant, audit, and storage capabilities remain region-neutral.
 
-This is a documentation and implementation-design deliverable only. Application code is not changed by this specification.
+The approved design is now implemented in the application. The implementation remains a SolarGRANT Pro module boundary and does not add a schema migration or regional policy to Clada OS.
 
 ## Problem
 
@@ -469,7 +469,20 @@ Implement one focused application PR after this approved documentation is accept
 | Northern Ireland next step | Use text-only neutral guidance, the plain-language explanation, and the primary **Change county** action. Do not add an external advice-service link or imply support for NI services or grant schemes. An external link requires separate future content review. |
 | Historical-record audit | Add the dedicated, narrow `pnpm solargrant:jurisdiction-audit` command with existing database identity and environment guardrails, aggregate-only output, explicit Production controls, no personal data, no writes, and no general-query capability. Production execution is not authorised by this implementation plan. |
 
-These decisions were approved by CTO direction on 2026-07-21. They resolve the design choices previously listed for review and do not activate application behaviour.
+These decisions were approved by CTO direction on 2026-07-21. They resolved the design choices previously listed for review; approval alone did not activate application behaviour.
+
+## Implementation Record
+
+The active implementation:
+
+- classifies the 26 Republic of Ireland counties, the six recognised Northern Ireland counties, missing or unknown county values, reviewed Eircode shapes, and explicit `BT` conflict signals in one SolarGRANT Pro jurisdiction module;
+- groups all 32 public county options, stops Northern Ireland journeys on the property step, reclassifies restored drafts before grant previews, and provides accessible correction and focus behaviour;
+- enforces the same deterministic boundary in `/api/intake`, `/api/ai/eligibility`, rules eligibility, quote calculation, and AI fallback before lookup, mutation, persistence, workflow, audit, or notification work;
+- applies one read-time presentation adapter across tenant-scoped lead API, dashboard metrics and lists, detail and copy/export views, homeowner portal, application pack, submission package, portal-fill preview, CRM scoring, and notification boundaries;
+- keeps historical source facts stored while suppressing current positive SEAI conclusions for Northern Ireland and requiring location review for unknown or contradictory records;
+- adds a fixed-purpose, read-only `pnpm solargrant:jurisdiction-audit` command that emits aggregate organisation/jurisdiction counts only and retains the existing environment and Production-operation controls.
+
+Validation completed on 2026-07-21 with lint, typecheck, 145 unit tests, 43 PostgreSQL integration tests, Prisma format/validate/generate, a production build, diff and sensitive-data checks, and live desktop/375 px browser verification. All 14 existing migrations applied successfully to a new disposable local PostgreSQL 16 database. No Production, Preview, or Development database was queried and no migration was added.
 
 ## Acceptance Criteria
 
@@ -503,4 +516,4 @@ The approved implementation must satisfy all of the following:
 
 ## What Next
 
-Complete final documentation review and merge this Approved specification when ready. Application work belongs in the separate smallest safe implementation PR described above. Do not build application changes from this documentation PR.
+Complete CTO review of the focused implementation pull request. Production rollout and any authorised aggregate Production audit remain separate operational decisions.

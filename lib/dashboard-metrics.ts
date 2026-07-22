@@ -1,4 +1,5 @@
 import { leadPipelineStages, type LeadPipelineStageValue } from './crm';
+import { classifySolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 export type DashboardMetricLead = {
   status: string;
@@ -7,6 +8,8 @@ export type DashboardMetricLead = {
   worksStarted: boolean;
   priorSolarGrantAtMprn: boolean;
   likelyEligible: boolean | null;
+  county?: string | null;
+  eircode?: string | null;
   documents: readonly unknown[];
 };
 
@@ -18,7 +21,9 @@ const submittedApplicationStatuses = new Set([
 ]);
 
 export function isOpenBlocker(lead: DashboardMetricLead) {
+  const jurisdiction = classifySolarGrantJurisdiction(lead);
   return (
+    !jurisdiction.isSupported ||
     lead.status === 'NEEDS_REVIEW' ||
     lead.status === 'HOMEOWNER_REVIEW_PENDING' ||
     lead.worksStarted ||
@@ -27,7 +32,7 @@ export function isOpenBlocker(lead: DashboardMetricLead) {
 }
 
 export function isEligibilityConcern(lead: DashboardMetricLead) {
-  return lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
+  return !classifySolarGrantJurisdiction(lead).isSupported || lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
 }
 
 export function getPipelineCounts(leads: readonly DashboardMetricLead[]) {
@@ -50,7 +55,7 @@ export function getDashboardMetrics(leads: readonly DashboardMetricLead[]) {
 
   return {
     activeLeads: activeLeads.length,
-    hotLeads: activeLeads.filter((lead) => lead.leadScore === 'HOT').length,
+    hotLeads: activeLeads.filter((lead) => lead.leadScore === 'HOT' && classifySolarGrantJurisdiction(lead).isSupported).length,
     applicationsSubmitted: leads.filter((lead) => submittedApplicationStatuses.has(lead.status)).length,
     leadsWithoutDocuments: leads.filter((lead) => lead.documents.length === 0).length,
     openBlockers: leads.filter(isOpenBlocker).length,

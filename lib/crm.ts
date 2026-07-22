@@ -1,4 +1,5 @@
 import type { LeadActivityType, LeadPipelineStage, LeadScore } from '@prisma/client';
+import { classifySolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 export const leadPipelineStages = [
   'NEW_LEAD',
@@ -197,6 +198,7 @@ function isRecent(value: Date | string | null | undefined) {
 }
 
 export function calculateLeadScore(input: LeadScoreSource): LeadScore {
+  const jurisdiction = classifySolarGrantJurisdiction({ county: input.county, eircode: input.eircode });
   const signal = getSalesSignalFromStructuredExport(input.structuredExportJson);
   const monthlyBill = firstString(input.monthlyElectricityBillRange, signal?.monthlyElectricityBillRange);
   const installTimeline = firstString(input.installTimeline, signal?.installTimeline);
@@ -212,8 +214,8 @@ export function calculateLeadScore(input: LeadScoreSource): LeadScore {
   if (input.email && input.phone) points += 2;
   else if (input.email || input.phone) points += 1;
 
-  if (input.addressLine1 && input.county && input.mprn) points += 2;
-  if (input.eircode) points += 1;
+  if (jurisdiction.isSupported && input.addressLine1 && input.county && input.mprn) points += 2;
+  if (jurisdiction.isSupported && input.eircode) points += 1;
   if (input.dwellingType && input.yearBuilt) points += 1;
 
   if (input.propertyOwner && !input.worksStarted && !input.priorSolarGrantAtMprn) points += 2;
@@ -237,10 +239,10 @@ export function calculateLeadScore(input: LeadScoreSource): LeadScore {
   else if (installTimeline === 'THREE_TO_SIX_MONTHS') points += 1;
   else if (installTimeline === 'JUST_RESEARCHING') points -= 1;
 
-  if (input.likelyEligible === true) points += 2;
-  if (input.likelyEligible === false) points -= 3;
+  if (jurisdiction.isSupported && input.likelyEligible === true) points += 2;
+  if (jurisdiction.isSupported && input.likelyEligible === false) points -= 3;
 
-  if (typeof input.eligibilityConfidence === 'number') {
+  if (jurisdiction.isSupported && typeof input.eligibilityConfidence === 'number') {
     if (input.eligibilityConfidence >= 0.85) points += 1;
     if (input.eligibilityConfidence < 0.55) points -= 1;
   }

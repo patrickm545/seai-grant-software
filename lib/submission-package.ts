@@ -2,6 +2,7 @@ import { Lead, Installer, LeadDocument } from '@prisma/client';
 import { buildApplicationPack } from './application-pack';
 import type { SolarQuoteEstimate } from './quote-estimate';
 import { parseGeneratedInstallerQuote } from './installer-quote-pricing';
+import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
 
 type SalesSignal = {
   leadTemperature?: string;
@@ -50,6 +51,7 @@ function getQuoteEstimate(lead: Lead): SolarQuoteEstimate | null {
 }
 
 export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[] }, installer: Installer) {
+  requireSupportedSolarGrantJurisdiction(lead);
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
@@ -135,6 +137,7 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
 }
 
 export function buildPortalFillPreview(lead: Lead, installer: Installer) {
+  requireSupportedSolarGrantJurisdiction(lead);
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);

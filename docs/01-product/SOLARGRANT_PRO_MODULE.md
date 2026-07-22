@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-21 |
 
 SolarGRANT Pro is the first product module built on Clada OS. It focuses on Irish solar grant workflows and the operational needs of solar installers.
 
@@ -22,6 +22,7 @@ The current repository supports:
 - admin and installer dashboards
 - optional AI assistance for summaries and document extraction
 - organisation-owned lead records through the Clada OS identity foundation
+- Republic of Ireland-only routing for the SEAI grant-assistance journey, with a dedicated unsupported Northern Ireland outcome
 
 ## Module Boundary
 
@@ -62,6 +63,19 @@ SolarGRANT Pro consumes the Clada OS Workflow Foundation through the lead pipeli
 - successful stage changes write workflow transition history linked to the audit event;
 - `Lead.pipelineStage` remains as a compatibility projection for current UI, portal progress, and reporting surfaces;
 - SolarGRANT Pro retains lead labels, domain language, and product activity entries.
+
+## Republic Of Ireland Grant Routing
+
+SolarGRANT Pro owns the active jurisdiction policy for its SEAI workflow:
+
+- county is the authoritative pilot routing fact; Eircode is optional supporting format evidence and `BT` is an explicit Northern Ireland conflict signal;
+- all 32 counties remain selectable, but Northern Ireland stops on the property step before later contact, consent, calculation, AI, or persistence work;
+- the intake and direct eligibility APIs return stable safe contracts before lookups and side effects;
+- eligibility, quote, AI, submission-package, portal-fill, CRM, notification, portal, dashboard, pack, and export boundaries fail closed or use the shared jurisdiction-safe presentation adapter;
+- historical source facts remain unchanged and tenant scoped while unsafe stored SEAI conclusions are suppressed at read time;
+- the aggregate jurisdiction audit is read-only, environment guarded, and never prints homeowner data.
+
+This product rule does not add a country selector, geocoding, a Northern Ireland grant workflow, a database migration, or regional configuration to Clada OS.
 
 ## What Next
 

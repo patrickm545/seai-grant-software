@@ -323,10 +323,10 @@ Implementation note for the active release branch: the selected proving slice is
 | Field | Value |
 | --- | --- |
 | Objective | Make each lead the installer's primary working environment from enquiry through grant application, installation, and aftercare preparation. |
-| Key deliverables | Unified lead workspace; Customer Document Centre; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive and accessibility hardening. |
-| SolarGRANT Pro proving slice | Complete daily lead work through one tenant-safe workspace using existing identity, permission, audit, workflow, upload, and available generated-document capabilities. |
+| Key deliverables | Unified lead workspace; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive/accessibility hardening; and a phase-gated Customer Document Centre after the authoritative Release 1.4 implementation merges. |
+| SolarGRANT Pro proving slice | Complete daily lead work through one tenant-safe workspace using existing identity, permission, audit, workflow, and uploaded-evidence capabilities; consume governed generated documents only after their separate Release 1.4 implementation sequence is reviewed and merged. |
 | Success criteria | An authorised pilot installer can understand state and next action, manage documents, tasks, and notes, and review material history from one responsive lead workspace without weakening established architecture. |
-| Dependencies | Platform Release 1.4 architecture; CTO confirmation of the authoritative Release 1.4 implementation baseline; ADR-0020; privacy/security review. |
+| Dependencies | PRs 1–5 may use current `main` after PR #34 approval/merge; PR 6 requires the separately approved Release 1.4 governed generated-document implementation sequence to be completed, reviewed, and merged first; ADR-0020 and privacy/security review remain applicable. |
 | Non-goals | Full project management, quote revisions, collaboration, notifications, scheduling/dispatch, document editing, e-signature, or platform architecture redesign. |
 
 ### Platform Release 1.6 - Module Configuration Foundation

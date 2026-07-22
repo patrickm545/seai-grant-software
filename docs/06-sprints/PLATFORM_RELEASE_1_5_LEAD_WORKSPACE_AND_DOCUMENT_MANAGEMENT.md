@@ -12,11 +12,18 @@
 
 Translate the proposed Release 1.5 Master Specification into small, approval-gated implementation increments. This document does not authorise application code. The current active work is documentation and CTO/CEO review only.
 
-## Approved Baseline
+## Baseline And CTO Sequencing Decision
 
 The documentation baseline is `main` merge commit `9828af1` from PR #33.
 
-Before implementation, the CTO must resolve the Release 1.4 baseline discrepancy recorded in the [Master Specification](../release-specifications/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md#authoritative-baseline-and-dependency-gate). No implementation sprint may consume generated-document capability that is absent from its branch.
+The CTO review decision is explicit:
+
+- Release 1.5 PRs 1–5 may proceed from current `main` after PR #34 is approved and merged and their other documented approval gates are satisfied.
+- Release 1.5 PR 6 must not begin until the missing Release 1.4 governed generated-document implementation has completed its own separately approved implementation PR sequence and has been reviewed and merged into `main`.
+- Existing uploaded `LeadDocument` evidence may be surfaced earlier only where an approved PR 1–5 workspace scope requires it, and it must be labelled as uploaded evidence.
+- No Release 1.5 PR may create a temporary generated-document substitute or duplicate or partially recreate the architecture governed by ADR-0015, ADR-0016, and ADR-0017.
+
+This decision resolves sequencing only. The sprint plan, Master Specification, feature specifications, and ADR-0020 remain Proposed/Pending.
 
 ## Objectives
 
@@ -30,16 +37,18 @@ Before implementation, the CTO must resolve the Release 1.4 baseline discrepancy
 
 ## Required Approval Gates
 
-Implementation remains stopped until all are complete:
+Release 1.5 PRs 1–5 remain stopped until all are complete:
 
-1. CTO baseline resolution for Release 1.4.
-2. CTO architecture approval of the Master Specification.
-3. CEO product/scope approval of the Master Specification.
-4. ADR-0020 accepted.
-5. Five feature specifications approved.
-6. Exact task permissions, field constraints, migration/backfill identity, and concurrency contract approved.
-7. Sprint sequence approved.
-8. Explicit implementation authorisation recorded.
+1. PR #34 is approved and merged.
+2. CTO architecture approval of the Master Specification is recorded.
+3. CEO product/scope approval of the Master Specification is recorded.
+4. ADR-0020 is accepted before task-foundation implementation.
+5. Relevant feature specifications are approved before their implementation PRs.
+6. Exact task permissions, field constraints, migration/backfill identity, and concurrency contract are approved before task-foundation implementation.
+7. Sprint sequence is approved.
+8. Explicit implementation authorisation is recorded.
+
+Release 1.5 PR 6 additionally requires the separate Release 1.4 governed generated-document implementation PR sequence to be approved, implemented, reviewed, and merged into `main` first.
 
 ## Feature Specifications
 
@@ -172,10 +181,15 @@ Evidence:
 
 ### PR 6 - Customer Document Centre
 
+Hard prerequisite:
+
+- do not begin this PR until the missing Release 1.4 governed generated-document implementation has completed its own separately approved implementation PR sequence and has been reviewed and merged into `main`;
+- confirm the PR 6 branch contains the authoritative Release 1.4 capability governed by ADR-0015, ADR-0016, and ADR-0017 before any Customer Document Centre work starts.
+
 Outcome:
 
 - uploaded-evidence read model and actions;
-- governed generated-document metadata/actions only when the confirmed baseline supports them;
+- governed generated-document metadata/actions from the merged authoritative Release 1.4 implementation;
 - source-specific grouping, status, counts, empty/unavailable states;
 - document-related timeline integration.
 
@@ -183,6 +197,7 @@ Constraints:
 
 - no `LeadDocument` migration or unified table;
 - no generated-document substitute;
+- no duplication or partial recreation of Release 1.4 generated-document models, services, storage, rendering, retrieval, or audit contracts;
 - no file bytes in list queries;
 - no changes to immutable generated evidence or portal token semantics.
 
@@ -230,8 +245,8 @@ Evidence:
 
 ## Migration And Deployment Sequence
 
-1. Confirm Release 1.4-compatible baseline.
-2. Validate work-item migration against a disposable copy of the approved schema state.
+1. Use current `main` as the implementation baseline for Release 1.5 PRs 1–5 after PR #34 approval and merge.
+2. Validate work-item migration against a disposable copy of that approved schema state.
 3. Deploy additive schema before code that requires it.
 4. Deploy service/UI readers compatible with legacy follow-up fields.
 5. Verify backfill count and duplicates using aggregate identifiers only; do not print customer data.
@@ -239,7 +254,9 @@ Evidence:
 7. Confirm backup/PITR and recovery gates.
 8. Run guarded Production migration with change reference and clean status evidence.
 9. Enable the workspace for the first pilot organisation.
-10. Monitor safe error categories, conflicts, latency, and support outcomes.
+10. Complete, review, and merge the separately approved Release 1.4 implementation PR sequence before creating the Release 1.5 PR 6 branch.
+11. Confirm PR 6 contains the authoritative ADR-0015/0016/0017 implementation, then implement and validate the Customer Document Centre.
+12. Monitor safe error categories, conflicts, latency, and support outcomes.
 
 ## Release Validation Matrix
 
@@ -261,7 +278,8 @@ Evidence:
 
 Stop and return to CTO review when:
 
-- Release 1.4 implementation baseline is unresolved for generated-document scope;
+- Release 1.5 PR 6 is proposed, branched, or started before the separate Release 1.4 governed generated-document implementation sequence is approved, completed, reviewed, and merged into `main`;
+- any Release 1.5 work creates a temporary generated-document substitute or duplicates or partially recreates ADR-0015, ADR-0016, or ADR-0017 architecture;
 - a feature would merge uploaded evidence with governed generated documents;
 - a protected path cannot guarantee server-derived tenant context;
 - task membership/resource organisation consistency is not enforceable and tested;

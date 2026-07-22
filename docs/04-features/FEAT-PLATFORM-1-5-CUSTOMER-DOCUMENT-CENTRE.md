@@ -23,13 +23,21 @@ Installers need to know what has been received, what is missing or needs review,
 - ADR-0015 requires uploaded evidence and governed generated documents to remain distinct.
 - ADR-0017 requires authenticated, organisation-scoped, separately permitted generated-file retrieval.
 
+## Delivery Gate
+
+This feature is Release 1.5 PR 6 and must not begin until the missing Release 1.4 governed generated-document implementation has completed its own separately approved implementation PR sequence and has been reviewed and merged into `main`.
+
+Existing uploaded `LeadDocument` evidence may be surfaced before PR 6 only where an approved Release 1.5 PR 1–5 workspace scope requires it. Any such surface must explicitly label the records as uploaded evidence and must not imply that governed generated-document capability exists.
+
+PR 6 must consume the authoritative implementation governed by ADR-0015, ADR-0016, and ADR-0017. It must not introduce a temporary substitute or duplicate or partially recreate generated-document models, services, storage, rendering, retrieval, permissions, integrity evidence, or audit contracts.
+
 ## Product Scope
 
 In scope:
 
 - lead-local document summary counts and actionable status;
 - uploaded-evidence list with category, safe filename, source, date, review status, and permitted action;
-- governed generated-document list when Release 1.4 implementation exists in the approved baseline;
+- governed generated-document list from the separately reviewed and merged Release 1.4 implementation;
 - visually distinct Uploaded Evidence and Generated Documents groupings;
 - missing/required checklist guidance from existing SolarGRANT Pro rules;
 - source-specific view/download/review/generate actions and timeline entries;
@@ -45,14 +53,14 @@ Out of scope:
 
 ## Platform Classification
 
-SolarGRANT Pro module composition feature consuming the existing product upload domain and Clada OS generated-document capability. No new generic document architecture is introduced.
+SolarGRANT Pro module composition feature consuming the existing product upload domain and, after the delivery gate is satisfied, the authoritative Clada OS generated-document capability. No new generic document architecture is introduced.
 
 ## User Workflow
 
 1. Installer opens Documents for an owned lead.
 2. A summary shows received, needs-review, missing, and generated-document counts only when those counts are supported by authoritative records.
 3. Installer reviews uploaded evidence using existing product rules.
-4. If Release 1.4 capability is available and permission permits, installer views metadata, generates an approved document, or downloads immutable bytes through the protected route.
+4. Because PR 6 cannot start before the Release 1.4 implementation merges, the installer uses that authoritative capability to view metadata, generate an approved document, or download immutable bytes when permission permits.
 5. Successful material actions appear in the product timeline and required audit records.
 
 ## Design Requirements
@@ -77,7 +85,7 @@ SolarGRANT Pro module composition feature consuming the existing product upload 
 
 ## Risks
 
-- Release 1.4 runtime capability is absent from current `main`.
+- Release 1.4 runtime capability is absent from current `main`, so PR 6 is blocked even though PRs 1–5 may proceed after PR #34 approval and merge.
 - Mixed document types mislead users or weaken access rules.
 - Cross-tenant links create IDOR exposure.
 - Large lists or bytes are eager-loaded into the workspace.
@@ -88,7 +96,9 @@ The CTO baseline gate, source discrimination, separate services/permissions, bou
 ## Acceptance Criteria
 
 - Uploaded evidence remains fully compatible and tenant-scoped.
-- Governed documents appear only if the authoritative Release 1.4 implementation is available.
+- PR 6 begins only after the separately approved Release 1.4 implementation sequence is completed, reviewed, and merged into `main`.
+- Governed documents come only from that authoritative Release 1.4 implementation.
+- No temporary substitute or duplicated/partial generated-document architecture exists in Release 1.5.
 - Each item displays its source type and authoritative status.
 - Metadata read does not imply file-byte access.
 - Cross-tenant lead/document/link identifiers are denied safely.
@@ -108,7 +118,7 @@ The CTO baseline gate, source discrimination, separate services/permissions, bou
 
 ## Rollout Plan
 
-First compose current uploaded evidence. Add governed generated documents only after the CTO confirms the Release 1.4 implementation baseline and its own acceptance evidence. Never create a local substitute generated-document path inside Release 1.5.
+Before PR 6, an earlier approved workspace PR may surface existing uploaded `LeadDocument` evidence only as clearly classified uploaded evidence. Separately complete, review, and merge the Release 1.4 governed generated-document implementation PR sequence. Only then branch and implement PR 6 as a composition of uploaded evidence and the authoritative generated-document capability. Never create a local substitute or partial Release 1.4 implementation inside Release 1.5.
 
 ## Documentation Updates
 

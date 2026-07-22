@@ -21,7 +21,7 @@ The release is centred on six product outcomes: a unified lead workspace, custom
 
 The release must remain incremental. Existing lead, uploaded-document, workflow, audit, authentication, organisation, and generated-document boundaries remain authoritative. Release 1.5 will not merge audit, workflow history, product activity, uploaded evidence, and governed generated documents into ambiguous generic records.
 
-This documentation does not authorise implementation. Implementation may begin only after CTO and CEO approval, resolution of the baseline dependency gate below, acceptance of ADR-0020, approval of the linked feature specifications and sprint scope, and explicit implementation authorisation.
+This documentation does not authorise implementation. Release 1.5 PRs 1–5 may proceed from the current `main` baseline only after PR #34 is approved and merged and the other documented approval gates relevant to those PRs are satisfied. Release 1.5 PR 6 has the additional hard dependency recorded below. ADR-0020 and this release remain Proposed/Pending until separately approved.
 
 ## Business Context
 
@@ -43,12 +43,26 @@ Repository review on 2026-07-22 used merge commit `9828af1`, the user-designated
 
 The baseline contains Release 1.4's approved Master Specification and ADR-0015 through ADR-0017. It does not contain the generated-document Prisma models, generated-file storage implementation, secure generated-document download route, Release 1.4 feature specifications, implementation migration, or completed Release 1.4 sign-off described by that specification.
 
-This discrepancy does not change the Release 1.5 mission, but it is an implementation stop condition. Before Release 1.5 document-centre implementation begins, the CTO must record one of these outcomes:
+The CTO review of PR #34 resolves the sequencing question without treating the missing capability as present:
 
-1. identify the authoritative Release 1.4 implementation commit or branch and merge/rebase Release 1.5 implementation onto it; or
-2. confirm that Release 1.5 begins from the current `main` baseline with governed generated-document integration deferred until Release 1.4 implementation lands.
+1. Release 1.5 implementation PRs 1–5 may proceed from the current `main` baseline after PR #34 is approved and merged and their other documented approval gates are satisfied.
+2. Release 1.5 PR 6, Customer Document Centre, must not begin until the missing Platform Release 1.4 governed generated-document implementation has been completed, reviewed, and merged into `main`.
+3. Release 1.4 implementation requires its own separately approved implementation PR sequence before Release 1.5 PR 6.
+4. Existing uploaded `LeadDocument` evidence may be surfaced from the current baseline where an earlier approved Release 1.5 workspace scope requires it, but it must remain explicitly classified as uploaded evidence.
+5. Release 1.5 must not create a temporary generated-document substitute or duplicate, partially recreate, or relocate any Release 1.4 generated-document architecture.
+6. ADR-0015, ADR-0016, and ADR-0017 remain authoritative for generated-document ownership, immutable templates/PDF rendering, storage, integrity, and secure retrieval.
 
-Release 1.5 must not silently recreate Release 1.4 or claim missing runtime capabilities exist. Uploaded `LeadDocument` evidence can still be presented from the current baseline. Governed generated documents may appear in the workspace only when their approved Release 1.4 contracts exist in the implementation baseline.
+This is a scoped sequencing decision, not approval of the Release 1.5 specification, ADR-0020, any feature specification, or implementation. Their recorded statuses remain Proposed or Pending.
+
+### Dependency Stop Conditions
+
+Stop and return to CTO review if:
+
+- Release 1.5 PR 6 is proposed, branched, or started before the separate Release 1.4 governed generated-document implementation sequence is approved, completed, reviewed, and merged into `main`;
+- a Release 1.5 change creates a temporary generated-document substitute;
+- Release 1.5 duplicates, partially recreates, relocates, or conflicts with architecture governed by ADR-0015, ADR-0016, or ADR-0017;
+- uploaded `LeadDocument` evidence is presented as generated evidence or absorbed into the governed generated-document domain;
+- a PR 1–5 scope begins to depend on generated-document runtime capability that is absent from current `main`.
 
 ## Strategic Objectives
 
@@ -68,8 +82,9 @@ Release 1.5 includes:
 - a lead summary header showing identity, workflow stage, grant-readiness context, owner/assignee where reliable, and next action;
 - lead-local navigation for Overview, Documents, Activity, Tasks, and Notes;
 - responsive layout and mobile-critical actions without horizontal-table dependence;
-- a Customer Document Centre that presents uploaded evidence and, when available in the baseline, governed generated documents through one read model with visibly distinct types and states;
+- a phase-gated Customer Document Centre in Release 1.5 PR 6 that presents uploaded evidence and authoritative governed generated documents through one read model with visibly distinct types and states, only after the separate Release 1.4 implementation sequence has merged;
 - document upload/review continuity through existing SolarGRANT Pro customer-document behaviour;
+- limited surfacing of existing uploaded `LeadDocument` evidence in PRs 1–5 where an earlier approved workspace scope requires it, always labelled as uploaded evidence and never represented as a generated document;
 - secure generated-document metadata and download consumption through Release 1.4 contracts only;
 - a chronological lead activity projection across product activities, workflow transitions, task events, note events, and document events;
 - a product-neutral, organisation-owned work-item foundation proved through lead tasks;
@@ -136,7 +151,7 @@ Product code must consume platform services and may not bypass tenant, permissio
 | Feature | Outcome | Specification |
 | --- | --- | --- |
 | Unified Lead Workspace | One canonical lead-local environment and navigation shell. | [Unified Lead Workspace](../04-features/FEAT-PLATFORM-1-5-UNIFIED-LEAD-WORKSPACE.md) |
-| Customer Document Centre | One clearly classified view of customer uploads and governed generated documents. | [Customer Document Centre](../04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) |
+| Customer Document Centre | One clearly classified view of customer uploads and governed generated documents; PR 6 is blocked until the separate Release 1.4 implementation sequence is reviewed and merged. | [Customer Document Centre](../04-features/FEAT-PLATFORM-1-5-CUSTOMER-DOCUMENT-CENTRE.md) |
 | Timeline And Activity History | One readable chronology without collapsing source-of-truth records. | [Timeline And Activity History](../04-features/FEAT-PLATFORM-1-5-TIMELINE-AND-ACTIVITY-HISTORY.md) |
 | Task Management Foundation | Structured owned and due work linked to a lead. | [Task Management Foundation](../04-features/FEAT-PLATFORM-1-5-TASK-MANAGEMENT-FOUNDATION.md) |
 | Installer Notes | Durable, attributed, append-only operational notes. | [Installer Notes](../04-features/FEAT-PLATFORM-1-5-INSTALLER-NOTES.md) |
@@ -466,7 +481,7 @@ Detailed sequencing is in [Platform Release 1.5 Sprint Plan](../06-sprints/PLATF
 3. **Task foundation schema and service:** add work items, migration/backfill, permissions, protected services, audit, and tenant/concurrency tests.
 4. **Installer notes:** make append-only attributed notes first-class through the existing activity boundary and protected service.
 5. **Timeline projection:** aggregate bounded source entries without changing source domains.
-6. **Customer Document Centre:** compose uploaded evidence and available governed generated documents with source-specific actions.
+6. **Customer Document Centre:** after the separately approved Release 1.4 implementation PR sequence has completed and merged, compose uploaded evidence and authoritative governed generated documents with source-specific actions. PR 6 must not start before that gate.
 7. **Pilot hardening:** mobile/accessibility, browser smoke, performance, deployment rehearsal, support guidance, and release documentation.
 
 Each implementation PR must be independently reviewable and preserve a working main branch.
@@ -495,12 +510,14 @@ Implementation deliverables after approval:
 
 ### Documentation Approval Gate
 
-- the baseline discrepancy is resolved in writing by the CTO;
+- the CTO sequencing decision for the current baseline is recorded: PRs 1–5 may use current `main`, and PR 6 remains blocked by the separate Release 1.4 implementation sequence;
 - this specification is approved by CTO and CEO;
 - ADR-0020 is accepted;
 - all five feature specifications and sprint sequence are approved;
 - task permission mapping and migration/backfill rules are approved;
 - no application implementation has started from this documentation PR.
+
+The merge of PR #34 satisfies documentation sequencing only. It does not approve ADR-0020, mark Release 1.5 Approved, authorise PR 6, or substitute for the required Release 1.4 implementation reviews.
 
 ### Product Acceptance
 
@@ -531,7 +548,7 @@ Implementation deliverables after approval:
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Release 1.4 runtime capability is absent from baseline | High (observed) | High | CTO baseline gate; defer generated-document integration or merge authoritative implementation first. | CTO |
+| Release 1.4 runtime capability is absent from baseline | High (observed) | High | Allow Release 1.5 PRs 1–5 from current `main`; block PR 6 until a separately approved Release 1.4 implementation PR sequence is completed, reviewed, and merged. | CTO |
 | Workspace becomes a monolithic page | Medium | High | Sectioned routes/read models, bounded queries, pagination, performance acceptance. | Engineering |
 | Timeline duplicates or contradicts audit/workflow facts | Medium | High | Read-only mapping, source identity, no new event store, domain-specific tests. | Platform Engineering |
 | Tasks over-expand into project management | Medium | Medium | ADR-0020 minimum model and explicit non-goals. | Product and CTO |
@@ -563,7 +580,7 @@ Release 1.5 must not worsen existing `TD-001`, `TD-005`, `TD-007`, `TD-009`, `TD
 
 Implementation should add a technical-debt entry only for a real accepted compromise, such as temporary follow-up dual writes or legacy route compatibility. Missing deferred features are not technical debt.
 
-The Release 1.4 baseline discrepancy is a release dependency, not a new runtime debt item created by this documentation branch.
+The missing Release 1.4 implementation is a release dependency, not a new runtime debt item created by this documentation branch. It does not block Release 1.5 PRs 1–5 after PR #34 approval and merge, but it is a hard stop for PR 6.
 
 ## Future Releases
 
@@ -594,7 +611,7 @@ Future quote revisions, document supersession semantics, collaboration/visibilit
 | Status | Pending |
 | Reviewer | CTO |
 | Date | Pending |
-| Notes | Confirm the authoritative Release 1.4 implementation baseline; review ADR-0020, task permissions, migration, domain separation, tenant constraints, concurrency, deployment gates, and PR sequence. |
+| Notes | Scoped sequencing decision recorded: PRs 1–5 may use current `main` after PR #34 approval/merge; PR 6 is blocked until a separately approved Release 1.4 implementation PR sequence is completed, reviewed, and merged. Full Release 1.5 and ADR-0020 approval remain pending. |
 
 ## CEO Approval
 

@@ -23,7 +23,7 @@ Create and review the complete documentation set for Platform Release 1.5. No ap
 - ADR-0020 for organisation-owned work items
 - Release 1.5 sprint plan and small-PR sequence
 - COM, release, feature, ADR, sprint, and roadmap index updates
-- explicit Release 1.4 baseline dependency gate
+- explicit CTO sequencing decision: PRs 1–5 may use current `main` after PR #34 approval/merge, while PR 6 remains blocked by the separate Release 1.4 implementation sequence
 - documentation validation
 - documentation-only draft pull request to `main`
 - CTO review handoff
@@ -39,7 +39,7 @@ Create and review the complete documentation set for Platform Release 1.5. No ap
 
 ## Definition Of Done
 
-This documentation sprint is complete when the documentation set is internally consistent and validated, a documentation-only draft PR is opened to `main`, the PR number and ADR recommendation are reported, and work stops for CTO review. Implementation remains blocked until all approval gates in the Master Specification are satisfied.
+This documentation sprint is complete when the documentation set is internally consistent and validated, a documentation-only draft PR is opened to `main`, the PR number and ADR recommendation are reported, and work stops for CTO review. After PR #34 approval/merge, PRs 1–5 may proceed only through their remaining documented gates. PR 6 remains blocked until the separately approved Release 1.4 governed generated-document implementation sequence is completed, reviewed, and merged into `main`.
 
 ## Release Documents
 

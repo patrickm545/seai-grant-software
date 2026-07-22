@@ -34,6 +34,14 @@ Canonical module boundary rules are defined in [../01-platform/MODULE_ARCHITECTU
 
 SolarGRANT Pro should teach Clada OS which capabilities need to become reusable. Examples include intake workflows, customer portals, audit logs, document review, and dashboard patterns.
 
+## Current Document Capability Boundary
+
+The authoritative `main` baseline after PR #33 supports SolarGRANT Pro uploaded evidence through `LeadDocument`, including existing upload, review, portal, and preparation behaviour. Those records are uploaded evidence and must remain labelled and governed as such.
+
+The same baseline contains the approved Release 1.4 Master Specification and ADR-0015, ADR-0016, and ADR-0017, but it does not contain the governed generated-document runtime implementation described by them. Release 1.5 PRs 1–5 may proceed from current `main` after PR #34 approval and merge. Release 1.5 PR 6, Customer Document Centre, must wait for the Release 1.4 generated-document implementation to complete its own separately approved PR sequence and be reviewed and merged into `main`.
+
+SolarGRANT Pro must not create a temporary generated-document substitute or duplicate or partially recreate Release 1.4 architecture inside Release 1.5.
+
 ## Platform Release 1.1 Consumption
 
 SolarGRANT Pro consumes the Clada OS Identity and Organisation Foundation through the lead workflow:

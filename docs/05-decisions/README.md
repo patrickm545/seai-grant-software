@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-17 |
+| Last reviewed | 2026-07-22 |
 
 Architecture Decision Records (ADRs) capture decisions that materially affect platform architecture, product boundaries, technical standards, data handling, security, automation, or long-term maintainability.
 
@@ -31,6 +31,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0017-generated-file-storage-and-secure-retrieval.md](ADR-0017-generated-file-storage-and-secure-retrieval.md): define bounded database-backed generated-file storage, immutable integrity evidence, physical-object and active-locator identity, and authenticated organisation-scoped retrieval.
 - [ADR-0018-pilot-installer-authentication.md](ADR-0018-pilot-installer-authentication.md): replace the shared password adapter with verified-installer user authentication and database-backed sessions.
 - [ADR-0019-standardised-tenant-provisioning.md](ADR-0019-standardised-tenant-provisioning.md): propose the standard idempotent command, secure interim credential, and forced first-login change for pilot onboarding.
+- [ADR-0020-organisation-owned-work-items.md](ADR-0020-organisation-owned-work-items.md): propose the minimum tenant-owned work-item model, lifecycle, assignment, concurrency, migration, and SolarGRANT Pro lead-task proving slice.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

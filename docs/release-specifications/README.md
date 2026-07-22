@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-14 |
+| Last reviewed | 2026-07-22 |
 
 This section stores permanent Master Release Specifications for Clada OS platform releases.
 
@@ -71,6 +71,7 @@ Release specifications must link to relevant roadmap entries, feature specificat
 
 ## Current Specifications
 
-- [PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md](PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md): Draft Specification for Platform Release 1.4 - Document Foundation.
+- [PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md](PLATFORM_RELEASE_1_4_MASTER_SPECIFICATION.md): Approved Master Specification for Platform Release 1.4 - Document Foundation; its implementation sign-off remains pending in that document on the current baseline.
+- [PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md](PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md): Proposed Master Specification for Platform Release 1.5 - Lead Workspace and Document Management.
 
 Draft specifications do not authorise implementation. Implementation may begin only after CTO architecture approval, CEO approval, required ADRs, required feature specifications, and sprint approval are complete.

@@ -322,6 +322,7 @@ Implementation note for the active release branch: the selected proving slice is
 
 | Field | Value |
 | --- | --- |
+| Status | Documentation approved; PRs 1–5 authorised in sequence after PR #34 merges; implementation not begun; PR 6 blocked by Release 1.4 implementation dependency. |
 | Objective | Make each lead the installer's primary working environment from enquiry through grant application, installation, and aftercare preparation. |
 | Key deliverables | Unified lead workspace; source-aware activity history; minimum organisation-owned work-item foundation; installer notes; canonical lead-local navigation; responsive/accessibility hardening; and a phase-gated Customer Document Centre after the authoritative Release 1.4 implementation merges. |
 | SolarGRANT Pro proving slice | Complete daily lead work through one tenant-safe workspace using existing identity, permission, audit, workflow, and uploaded-evidence capabilities; consume governed generated documents only after their separate Release 1.4 implementation sequence is reviewed and merged. |

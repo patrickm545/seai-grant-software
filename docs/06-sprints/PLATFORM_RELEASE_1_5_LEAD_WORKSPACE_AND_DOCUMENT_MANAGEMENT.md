@@ -3,14 +3,14 @@
 | Field | Value |
 | --- | --- |
 | Document ID | SPRINT-PR1-5 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Each Release 1.5 implementation sprint and at release close |
 | Last reviewed | 2026-07-22 |
 
 ## Purpose
 
-Translate the proposed Release 1.5 Master Specification into small, approval-gated implementation increments. This document does not authorise application code. The current active work is documentation and CTO/CEO review only.
+Translate the approved Release 1.5 Master Specification into small, sequenced implementation increments. Documentation is approved and implementation PRs 1–5 are authorised to begin in sequence after PR #34 merges. PR 6 remains blocked by the separately governed Release 1.4 implementation. No Release 1.5 implementation has begun as of this approval-state update.
 
 ## Baseline And CTO Sequencing Decision
 
@@ -23,7 +23,7 @@ The CTO review decision is explicit:
 - Existing uploaded `LeadDocument` evidence may be surfaced earlier only where an approved PR 1–5 workspace scope requires it, and it must be labelled as uploaded evidence.
 - No Release 1.5 PR may create a temporary generated-document substitute or duplicate or partially recreate the architecture governed by ADR-0015, ADR-0016, and ADR-0017.
 
-This decision resolves sequencing only. The sprint plan, Master Specification, feature specifications, and ADR-0020 remain Proposed/Pending.
+This decision is incorporated into the approved sprint plan, Master Specification, five approved feature specifications, and accepted ADR-0020.
 
 ## Objectives
 
@@ -35,20 +35,19 @@ This decision resolves sequencing only. The sprint plan, Master Specification, f
 - prove responsive, accessible, secure pilot use;
 - preserve small PRs, backwards compatibility, tenant isolation, auditability, and immutable evidence.
 
-## Required Approval Gates
+## Approval State And Implementation Authorisation
 
-Release 1.5 PRs 1–5 remain stopped until all are complete:
+Approval state:
 
-1. PR #34 is approved and merged.
-2. CTO architecture approval of the Master Specification is recorded.
-3. CEO product/scope approval of the Master Specification is recorded.
-4. ADR-0020 is accepted before task-foundation implementation.
-5. Relevant feature specifications are approved before their implementation PRs.
-6. Exact task permissions, field constraints, migration/backfill identity, and concurrency contract are approved before task-foundation implementation.
-7. Sprint sequence is approved.
-8. Explicit implementation authorisation is recorded.
+1. CTO architecture approval is recorded.
+2. CEO/product approval is recorded.
+3. The Master Specification and all five feature specifications are Approved.
+4. ADR-0020 is Accepted.
+5. This sprint sequence, task permissions, field constraints, migration/backfill direction, and concurrency contract are approved.
+6. Implementation PRs 1–5 are authorised to begin in sequence after PR #34 merges.
+7. No implementation has begun as of this approval-state update.
 
-Release 1.5 PR 6 additionally requires the separate Release 1.4 governed generated-document implementation PR sequence to be approved, implemented, reviewed, and merged into `main` first.
+Release 1.5 PR 6 remains blocked. It additionally requires the separate Release 1.4 governed generated-document implementation PR sequence to be approved, implemented, reviewed, and merged into `main` first.
 
 ## Feature Specifications
 
@@ -63,7 +62,7 @@ Release 1.5 PR 6 additionally requires the separate Release 1.4 governed generat
 - [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md)
 - Existing ADR-0005, ADR-0008, ADR-0009, ADR-0010, ADR-0013, ADR-0014, ADR-0015, ADR-0016, and ADR-0017 remain in force.
 
-## Proposed PR Sequence
+## Approved PR Sequence
 
 ### PR 1 - Canonical Lead Workspace Shell
 
@@ -222,7 +221,7 @@ Outcome:
 Constraints:
 
 - no unrelated feature expansion or architecture redesign;
-- no release tag before CTO/CEO approval and merge.
+- no release tag before PR #34 merges and release-close authorisation is recorded.
 
 Evidence:
 
@@ -245,7 +244,7 @@ Evidence:
 
 ## Migration And Deployment Sequence
 
-1. Use current `main` as the implementation baseline for Release 1.5 PRs 1–5 after PR #34 approval and merge.
+1. Use current `main` as the implementation baseline for Release 1.5 PRs 1–5 after PR #34 merges.
 2. Validate work-item migration against a disposable copy of that approved schema state.
 3. Deploy additive schema before code that requires it.
 4. Deploy service/UI readers compatible with legacy follow-up fields.
@@ -291,7 +290,7 @@ Stop and return to CTO review when:
 
 ## Definition Of Done
 
-Release 1.5 is done only when all approved PRs are merged, all acceptance criteria in the Master Specification pass, the pilot journey is verified, migrations are safely deployed, current-state documentation matches reality, CTO and CEO approve release close, the release tag is explicitly authorised and created, and the roadmap records the actual outcome and deferrals.
+Release 1.5 is done only when all authorised and unblocked implementation PRs are completed and merged, PR 6's separate dependency is satisfied before its work begins, all acceptance criteria in the Master Specification pass, the pilot journey is verified, migrations are safely deployed, current-state documentation matches reality, CTO and CEO approve release close, the release tag is explicitly authorised and created, and the roadmap records the actual outcome and deferrals. At documentation approval, no implementation has begun.
 
 ## Related Documents
 

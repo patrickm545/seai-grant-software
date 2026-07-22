@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0020 |
-| Status | Proposed |
+| Status | Accepted |
 | Owner | Clada Systems Engineering |
 | Review cycle | When task, collaboration, assignment, or automation boundaries change |
 | Last reviewed | 2026-07-22 |
@@ -140,7 +140,7 @@ Rejected. Projects, subtasks, dependencies, recurrence, labels, time estimates, 
 
 ## Follow-Up
 
-1. CTO accepts or amends this ADR before schema implementation.
+1. CTO accepted this ADR on 2026-07-22; schema implementation has not begun.
 2. The Task Management Foundation feature specification locks exact names, field lengths, priority values, permission mapping, backfill identity, and error contracts.
 3. Implementation adds schema, migration, service, permissions, audit/activity integration, tests, and deployment evidence in a focused PR.
 4. Remove any temporary follow-up dual write only after readers and operational reports consume work items.

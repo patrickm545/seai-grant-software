@@ -3,15 +3,15 @@
 | Field | Value |
 | --- | --- |
 | Document ID | REL-PLATFORM-1.5 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | At release close |
 | Last reviewed | 2026-07-22 |
 | Release | Platform Release 1.5 |
 | Approved baseline | `9828af1` (PR #33 merge commit on `main`) |
 | Target branch | `codex/platform-release-1-5-lead-workspace-docs` |
-| CTO approval | Pending |
-| CEO approval | Pending |
+| CTO approval | Approved |
+| CEO approval | Approved |
 
 ## Executive Summary
 
@@ -21,7 +21,7 @@ The release is centred on six product outcomes: a unified lead workspace, custom
 
 The release must remain incremental. Existing lead, uploaded-document, workflow, audit, authentication, organisation, and generated-document boundaries remain authoritative. Release 1.5 will not merge audit, workflow history, product activity, uploaded evidence, and governed generated documents into ambiguous generic records.
 
-This documentation does not authorise implementation. Release 1.5 PRs 1–5 may proceed from the current `main` baseline only after PR #34 is approved and merged and the other documented approval gates relevant to those PRs are satisfied. Release 1.5 PR 6 has the additional hard dependency recorded below. ADR-0020 and this release remain Proposed/Pending until separately approved.
+This documentation is approved. Release 1.5 implementation PRs 1–5 are authorised to begin in sequence from the current `main` baseline after PR #34 is merged. Release 1.5 PR 6 has the additional hard dependency recorded below. No Release 1.5 implementation has begun as of this approval-state update.
 
 ## Business Context
 
@@ -52,7 +52,7 @@ The CTO review of PR #34 resolves the sequencing question without treating the m
 5. Release 1.5 must not create a temporary generated-document substitute or duplicate, partially recreate, or relocate any Release 1.4 generated-document architecture.
 6. ADR-0015, ADR-0016, and ADR-0017 remain authoritative for generated-document ownership, immutable templates/PDF rendering, storage, integrity, and secure retrieval.
 
-This is a scoped sequencing decision, not approval of the Release 1.5 specification, ADR-0020, any feature specification, or implementation. Their recorded statuses remain Proposed or Pending.
+This sequencing decision is incorporated into the approved Release 1.5 specification and accepted ADR-0020. It authorises implementation PRs 1–5 in sequence after PR #34 merges; it does not authorise PR 6 before its separate Release 1.4 dependency is satisfied.
 
 ### Dependency Stop Conditions
 
@@ -242,9 +242,9 @@ ADR-0020 is required because introducing a reusable structured work-item record,
 - Keep `Lead.internalNotes` readable during migration; do not overwrite it with an activity identifier.
 - Existing `followUpDate` and `nextFollowUpAt` remain readable until task migration is validated.
 
-### Proposed Work-Item Foundation
+### Approved Work-Item Foundation
 
-ADR-0020 specifies the final names. The minimum proposed fields are:
+ADR-0020 specifies the final names. The minimum approved fields are:
 
 | Field | Purpose |
 | --- | --- |
@@ -476,7 +476,7 @@ This documentation-only PR requires documentation validation and `git diff --che
 
 Detailed sequencing is in [Platform Release 1.5 Sprint Plan](../06-sprints/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md).
 
-1. **Documentation and approval:** approve this specification, feature specs, ADR-0020, baseline resolution, sprint, and migration strategy.
+1. **Documentation and approval:** completed on 2026-07-22 for this specification, five feature specs, ADR-0020, baseline sequencing, sprint, and migration strategy; PR #34 merge remains pending.
 2. **Workspace shell and canonical navigation:** establish lead-local routes, responsive shell, overview, loading/error/empty states, and legacy redirects without new data models.
 3. **Task foundation schema and service:** add work items, migration/backfill, permissions, protected services, audit, and tenant/concurrency tests.
 4. **Installer notes:** make append-only attributed notes first-class through the existing activity boundary and protected service.
@@ -495,7 +495,7 @@ Documentation phase deliverables:
 - ADR-0020 for the task/work-item foundation;
 - Release 1.5 sprint plan;
 - updated release, feature, ADR, sprint, COM, and roadmap indexes;
-- documentation-only draft PR for CTO review.
+- documentation-only PR #34 prepared for final review and merge.
 
 Implementation deliverables after approval:
 
@@ -508,16 +508,16 @@ Implementation deliverables after approval:
 
 ## Acceptance Criteria
 
-### Documentation Approval Gate
+### Documentation Approval Record
 
 - the CTO sequencing decision for the current baseline is recorded: PRs 1–5 may use current `main`, and PR 6 remains blocked by the separate Release 1.4 implementation sequence;
 - this specification is approved by CTO and CEO;
 - ADR-0020 is accepted;
-- all five feature specifications and sprint sequence are approved;
-- task permission mapping and migration/backfill rules are approved;
-- no application implementation has started from this documentation PR.
+- all five feature specifications and the sprint sequence are approved;
+- task permission mapping and migration/backfill rules are approved for implementation through the sequenced PRs;
+- no application implementation has started as of this approval-state update.
 
-The merge of PR #34 satisfies documentation sequencing only. It does not approve ADR-0020, mark Release 1.5 Approved, authorise PR 6, or substitute for the required Release 1.4 implementation reviews.
+The approval and future merge of PR #34 authorise Release 1.5 PRs 1–5 to begin in sequence. They do not authorise PR 6 or substitute for the required separately governed Release 1.4 implementation PR sequence.
 
 ### Product Acceptance
 
@@ -596,7 +596,7 @@ Release 1.5 prepares for:
 
 ## Recommended ADRs
 
-Create and approve only:
+Accepted for this release:
 
 - [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md).
 
@@ -608,31 +608,31 @@ Future quote revisions, document supersession semantics, collaboration/visibilit
 
 | Field | Value |
 | --- | --- |
-| Status | Pending |
+| Status | Approved |
 | Reviewer | CTO |
-| Date | Pending |
-| Notes | Scoped sequencing decision recorded: PRs 1–5 may use current `main` after PR #34 approval/merge; PR 6 is blocked until a separately approved Release 1.4 implementation PR sequence is completed, reviewed, and merged. Full Release 1.5 and ADR-0020 approval remain pending. |
+| Date | 2026-07-22 |
+| Notes | Architecture and sequencing approved. PRs 1–5 are authorised in sequence after PR #34 merges. PR 6 remains blocked until a separately approved Release 1.4 generated-document implementation sequence is completed, reviewed, and merged. |
 
 ## CEO Approval
 
 | Field | Value |
 | --- | --- |
-| Status | Pending |
+| Status | Approved |
 | Approver | CEO |
-| Date | Pending |
-| Notes | Confirm pilot workflow priority, product scope, task/notes behaviour, document-centre positioning, non-goals, and deferrals. |
+| Date | 2026-07-22 |
+| Notes | Product scope, pilot workflow priority, task and note behaviour, document-centre positioning, non-goals, deferrals, and phased implementation sequence approved. |
 
 ## Release Sign-Off
 
 | Field | Value |
 | --- | --- |
-| Documentation PR | Pending |
-| CTO review | Pending |
-| CEO approval | Pending |
-| Implementation authorisation | Pending |
+| Documentation PR | PR #34 - ready for review; merge pending |
+| CTO review | Approved - 2026-07-22 |
+| CEO approval | Approved - 2026-07-22 |
+| Implementation authorisation | Approved for PRs 1–5 in sequence after PR #34 merges; PR 6 blocked by Release 1.4 implementation dependency |
 | Implementation merge commit | Pending |
 | Release tag | Pending |
-| Roadmap update | Pending |
+| Roadmap update | Approval state recorded; release-close outcome pending |
 
 ## Related Documents
 

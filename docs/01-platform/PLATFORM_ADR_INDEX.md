@@ -47,7 +47,7 @@ Current platform ADRs:
 | [ADR-0017: Generated File Storage and Secure Retrieval](../05-decisions/ADR-0017-generated-file-storage-and-secure-retrieval.md) | Accepted | Defines bounded PostgreSQL-backed generated-file storage behind a platform abstraction, immutable physical-object and content integrity evidence, active-locator migration rules, and authenticated organisation-scoped PDF retrieval for Platform Release 1.4. |
 | [ADR-0018: Database-Backed Pilot Installer Authentication](../05-decisions/ADR-0018-pilot-installer-authentication.md) | Accepted | Defines verified-installer pilot users, Argon2id credentials, database sessions, and server-derived tenant context. |
 | [ADR-0019: Standardised Tenant Provisioning and Forced First-Login Password Change](../05-decisions/ADR-0019-standardised-tenant-provisioning.md) | Proposed | Defines the target transactional provisioning command, conflicts, restricted first-login flow, audit, and migration path. |
-| [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md) | Proposed | Defines the minimum tenant-owned work-item model, resource and membership boundaries, lifecycle, concurrency, migration compatibility, and SolarGRANT Pro lead-task proving slice. |
+| [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md) | Accepted | Defines the minimum tenant-owned work-item model, resource and membership boundaries, lifecycle, concurrency, migration compatibility, and SolarGRANT Pro lead-task proving slice. |
 
 Recommended future ADR candidates:
 

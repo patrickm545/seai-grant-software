@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-DOCUMENT-CENTRE |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |

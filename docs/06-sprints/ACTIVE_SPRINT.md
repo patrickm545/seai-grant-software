@@ -10,46 +10,47 @@
 
 ## Sprint
 
-Platform Release 1.5 - Manual Lead Creation documentation amendment and re-approval preparation.
+Platform Release 1.5 - approved documentation and final pre-merge handoff.
 
 ## Objective
 
-Amend documentation-only PR #34 to include Manual Lead Creation, supersede the previous approval state, define the minimum compatible Lead data evolution, and prepare the revised eight-PR sequence for CTO and CEO re-review. No implementation is authorised and none has begun.
+Prepare documentation-only PR #34 for final CTO pre-merge review after approval of Manual Lead Creation, Accepted ADR-0021, all six feature specifications, and the eight-PR sequence. No implementation has begun.
 
 ## In Scope
 
-- Proposed amended Release 1.5 Master Specification;
-- six Proposed Release 1.5 feature specifications, including Manual Lead Creation;
-- Accepted ADR-0020, unchanged;
-- Proposed ADR-0021 for lead creation origin and progressive completeness;
-- Proposed Release 1.5 eight-PR sequence;
-- explicit dependency rule: PRs 1-6 may proceed only after re-approval and PR #34 merge; PR 7 remains blocked by the separate Release 1.4 implementation;
-- COM, release, feature, ADR, sprint, product-current-state, and roadmap updates;
-- documentation and approval-state validation;
-- draft PR #34 body update and CTO re-review handoff.
+- Approved amended Release 1.5 Master Specification;
+- six Approved Release 1.5 feature specifications;
+- Accepted ADR-0020 and ADR-0021;
+- Approved eight-PR implementation sequence;
+- resolved ADR-0021 origin, completeness, migration, creator/assignee, permission, duplicate, follow-up, note, privacy, and PR 2 stop-condition decisions;
+- explicit sequencing: PRs 1-6 authorised only after PR #34 merges and their gates pass; PR 7 remains blocked by the separate Release 1.4 implementation;
+- aligned COM, release, feature, ADR, sprint, product-current-state, and roadmap records;
+- documentation validation, PR body update, and ready-for-review transition.
 
 ## Out Of Scope
 
 - application code or runtime behaviour;
 - Prisma schema or database migrations;
-- any Release 1.5 implementation before amended documentation approval and PR #34 merge;
-- Manual Lead Creation, workspace, tasks, notes, timeline, document centre, or hardening implementation;
+- dependencies, tests, or deployment configuration;
+- any Release 1.5 implementation before PR #34 merges;
 - Release 1.5 PR 7 before the separate Release 1.4 generated-document implementation is approved, completed, reviewed, and merged;
-- deployment, merge, release tag, or release-close approval.
+- merge, deployment, release tag, or implementation work.
 
 ## Approval State
 
-- Prior CTO approval: Superseded by material scope amendment.
-- Prior CEO/product approval: Superseded by material scope amendment.
-- CTO re-review: Pending.
-- CEO/product re-approval: Pending.
-- Implementation authorisation: Pending.
+- Master Specification: Approved.
+- Six feature specifications: Approved.
+- ADR-0020: Accepted.
+- ADR-0021: Accepted.
+- Sprint plan: Approved.
+- CTO approval: Approved.
+- CEO/product approval: Approved.
 - Implementation begun: No.
-- PR #34 state: Draft.
+- PR #34: Ready for review; merge pending.
 
 ## Definition Of Done
 
-This amendment sprint is ready for re-review when six feature specs, the Master, Accepted ADR-0020, Proposed ADR-0021, the eight-PR sequence, PR 7 dependency, indexes, roadmap, product boundary, and approval records agree; required documentation checks pass; changes are committed and pushed to PR #34; the PR remains draft; and no runtime file changed.
+This documentation sprint is complete when the approved records agree; all required validation and targeted consistency scans pass; the documentation-only changes are committed and pushed; PR #34 is marked ready for review; and no runtime, schema, migration, dependency, test, deployment, or application-behaviour change exists.
 
 ## Release Documents
 

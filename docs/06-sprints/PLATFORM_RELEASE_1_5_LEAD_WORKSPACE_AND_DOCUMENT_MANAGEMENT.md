@@ -3,14 +3,14 @@
 | Field | Value |
 | --- | --- |
 | Document ID | SPRINT-PR1-5 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Each Release 1.5 implementation sprint and at release close |
 | Last reviewed | 2026-07-22 |
 
 ## Purpose
 
-Translate the amended Release 1.5 Master Specification into eight small, sequenced implementation PRs. Manual Lead Creation is now explicit scope. The previous CTO and CEO approval is superseded by this material scope amendment; documentation approval and implementation authorisation are Pending. No Release 1.5 implementation has begun.
+Translate the approved amended Release 1.5 Master Specification into eight small, sequenced implementation PRs. Manual Lead Creation and Accepted ADR-0021 are explicit scope. After PR #34 merges, PRs 1-6 are authorised in sequence subject to their gates; PR 7 remains blocked by Release 1.4. No Release 1.5 implementation has begun.
 
 ## Baseline And Dependency Decision
 
@@ -18,13 +18,13 @@ The documentation baseline remains `main` merge commit `9828af1` from PR #33. PR
 
 The amended dependency rules are explicit:
 
-- no implementation PR is authorised until PR #34 is re-approved and merged;
+- no implementation PR may begin until approved PR #34 is merged;
 - Release 1.5 PRs 1-6 may then proceed in sequence from the approved `main` baseline, subject to their documented gates;
 - Release 1.5 PR 7 must not begin until the missing Release 1.4 governed generated-document implementation completes its own separately approved implementation PR sequence and is reviewed and merged into `main`;
 - existing uploaded `LeadDocument` evidence may surface earlier only where an approved PR 1-6 workspace scope requires it, and it must be labelled as uploaded evidence;
 - no Release 1.5 PR may create a generated-document substitute or duplicate or partially recreate architecture governed by ADR-0015, ADR-0016, and ADR-0017.
 
-The previous approval record remains historical evidence, but it no longer authorises implementation because the release scope, data model, and sequence have changed.
+The amended release direction, architecture decisions, feature set, and sequence are approved. Approval does not bypass any PR-specific stop condition or the PR 7 dependency.
 
 ## Objectives
 
@@ -39,14 +39,14 @@ The previous approval record remains historical evidence, but it no longer autho
 
 ## Approval State And Implementation Authorisation
 
-1. Master Specification: Proposed.
-2. Six feature specifications: Proposed.
+1. Master Specification: Approved.
+2. Six feature specifications: Approved.
 3. ADR-0020: Accepted and unchanged.
-4. ADR-0021: Proposed; acceptance is required before Manual Lead Creation implementation.
-5. Sprint sequence: Proposed.
-6. CTO architecture re-review: Pending.
-7. CEO/product re-approval: Pending.
-8. Implementation authorisation: Pending; no PR 1-8 implementation may begin yet.
+4. ADR-0021: Accepted with final origin, completeness, migration, attribution, permission, duplicate, follow-up, note, privacy, and stop-condition decisions.
+5. Sprint sequence: Approved.
+6. CTO architecture approval: Approved.
+7. CEO/product approval: Approved.
+8. Implementation authorisation: PRs 1-6 in sequence after PR #34 merges and their gates pass; PR 7 separately blocked; PR 8 follows the approved sequence.
 9. No implementation has begun.
 
 ## Feature Specifications
@@ -61,10 +61,10 @@ The previous approval record remains historical evidence, but it no longer autho
 ## Architecture Decisions
 
 - [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md) remains Accepted.
-- [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) is Proposed because the existing required `Lead` shape cannot truthfully store a minimum manual enquiry.
+- [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) is Accepted and governs Manual Lead Creation PR 2.
 - Existing ADR-0005, ADR-0008, ADR-0009, ADR-0010, ADR-0013, ADR-0014, ADR-0015, ADR-0016, and ADR-0017 remain in force.
 
-## Proposed PR Sequence
+## Approved PR Sequence
 
 ### PR 1 - Canonical Lead Workspace Shell
 
@@ -86,14 +86,18 @@ Outcome:
 - authenticated `New Lead` flow requiring name plus phone or email;
 - optional address, Eircode, restrained source, follow-up, same-organisation assignee, and append-only initial note through the existing activity/audit contract;
 - additive source/progressive-completeness data migration approved through ADR-0021;
+- derived action gates for eligibility, recommendations, readiness, consent-dependent processing, and governed document generation;
+- field-by-field `Lead` migration/consumer table and legacy-assignee compatibility/retirement plan;
 - protected, idempotent create service with workflow, activity, audit, and canonical-workspace redirect;
 - bounded same-tenant duplicate warning.
 
 Constraints and evidence:
 
-- ADR-0021 and the Manual Lead Creation feature must be approved before implementation;
+- follow Accepted ADR-0021 and the Approved Manual Lead Creation specification without weakening public intake;
 - no homeowner qualification, synthetic facts, new intake aggregate, merge, bulk import, enrichment, CRM sync, AI creation, messaging, configurable schema, or custom source taxonomy;
-- migration fresh/upgrade/rerun evidence; permission, tenant, actor, assignment, duplicate non-disclosure, idempotency, atomicity, public-intake/portal regression, desktop/390 px, and accessibility evidence.
+- migration fresh/production-baseline/rerun evidence and origin counts proving customer/consent facts unchanged;
+- permission-catalogue review; tenant, actor, assignment, duplicate non-disclosure, idempotency, atomicity, action-gate, public-intake/portal/consumer regression, desktop/390 px, and accessibility evidence;
+- Production enablement blocked until the ADR-0021 privacy gate is recorded complete.
 
 ### PR 3 - Work-Item Schema And Migration
 
@@ -182,9 +186,9 @@ Constraints and evidence:
 
 ## Migration And Deployment Sequence
 
-1. Obtain CTO and CEO re-approval, merge documentation PR #34, and record the approved head.
+1. Confirm recorded CTO and CEO approval, merge documentation PR #34, and record the approved head.
 2. Land PR 1 without schema change.
-3. Accept ADR-0021, then validate and deploy the additive manual-lead migration before PR 2 code that depends on it.
+3. Apply Accepted ADR-0021, complete its field/consumer and permission gates, then validate and deploy the additive manual-lead migration before PR 2 code that depends on it.
 4. Regression-test public intake and portal behaviour before enabling manual creation for one pilot organisation.
 5. Deploy PR 3 work-item schema before PR 4 services/UI; verify idempotent follow-up backfill without customer data in logs.
 6. Land PRs 5 and 6 in sequence and verify source-aware activity.
@@ -213,9 +217,14 @@ Constraints and evidence:
 Stop and return to CTO review when:
 
 - any implementation begins before the amended documentation is approved and PR #34 merges;
-- PR 2 begins before ADR-0021 is accepted or relies on fabricated qualification/consent data;
+- PR 2 relies on fabricated qualification/consent data or omits its required field/consumer table, permission review, legacy-assignee plan, action gates, or migration evidence;
 - public intake validation is weakened by progressive-completeness persistence changes;
+- the schema cannot evolve additively without unsafe data loss or a current consumer cannot safely handle nullable qualification fields;
+- historical origin cannot be determined truthfully under ADR-0021;
 - duplicate lookup or assignment can cross the trusted organisation boundary;
+- atomic creation of required lead, workflow, activity/note, and audit evidence cannot be guaranteed;
+- permissions require unreviewed access broadening;
+- privacy review is incomplete when Production enablement is proposed;
 - Release 1.5 PR 7 is proposed, branched, or started before the separate Release 1.4 implementation sequence is approved, completed, reviewed, and merged;
 - any Release 1.5 work substitutes for, duplicates, or partially recreates ADR-0015/0016/0017 architecture;
 - uploaded evidence is merged with governed generated documents;
@@ -228,7 +237,7 @@ Stop and return to CTO review when:
 
 ## Definition Of Done
 
-This documentation amendment is ready for CTO re-review when all six Proposed features, the Proposed Master and sprint plan, Accepted ADR-0020, Proposed ADR-0021, eight-PR sequence, PR 7 dependency, approval supersession, and no-implementation state agree and validate. Release 1.5 is done only after all authorised PRs are merged, PR 7's dependency is satisfied before it starts, acceptance evidence passes, current-state documentation matches reality, release-close approval is recorded, and a tag is explicitly authorised.
+This documentation is ready for final pre-merge review when all six Approved features, the Approved Master and sprint plan, Accepted ADR-0020 and ADR-0021, eight-PR sequence, PR 2 gates, PR 7 dependency, and no-implementation state agree and validate. Release 1.5 is done only after all authorised PRs are merged, PR 7's dependency is satisfied before it starts, acceptance evidence passes, current-state documentation matches reality, release-close approval is recorded, and a tag is explicitly authorised.
 
 ## Related Documents
 

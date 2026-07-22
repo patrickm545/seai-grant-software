@@ -43,7 +43,7 @@ Goal: turn the admin area into a practical installer CRM.
 - Contact history
 - Lead priority
 - Simple filtering and search
-- Authenticated minimum Manual Lead Creation into the canonical lead workspace, subject to Platform Release 1.5 approval and ADR-0021
+- Approved authenticated minimum Manual Lead Creation into the canonical lead workspace under Accepted ADR-0021; implementation not begun
 
 ## Phase 3: Lead intake and qualification
 

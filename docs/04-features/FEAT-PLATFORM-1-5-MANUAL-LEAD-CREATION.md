@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-MANUAL-LEAD-CREATION |
-| Status | Proposed |
+| Status | Approved |
 | Owner | SolarGRANT Pro Product and Engineering |
 | Review cycle | Platform Release 1.5 and pilot feedback |
 | Last reviewed | 2026-07-22 |
@@ -21,7 +21,7 @@ Phone, referral, event, and walk-in enquiries cannot currently be captured witho
 - Product UX audit finding PUX-021 identifies the absence of manual lead creation and resulting duplicate entry.
 - The authenticated installer experience already has trusted user, membership, organisation, Installer, permission, audit, workflow, activity, and tenant-scoped lead boundaries.
 - Public intake already creates a `Lead`, `WorkflowInstance`, `LEAD_CREATED` activity, and audit evidence but assumes a completed homeowner qualification journey.
-- [ADR-0021](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) is Proposed because minimum manual capture conflicts with the current required-data contract.
+- Accepted [ADR-0021](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) resolves the conflict between minimum manual capture and the current required-data contract.
 
 ## Product Scope
 
@@ -46,7 +46,7 @@ Out of scope:
 
 ## Platform Classification
 
-SolarGRANT Pro product feature using the existing Clada OS authentication, organisation, membership, permission, audit, workflow, and activity foundations. The only Proposed architecture change is the minimum data-contract evolution recorded by ADR-0021; no new reusable platform capability is introduced.
+SolarGRANT Pro product feature using the existing Clada OS authentication, organisation, membership, permission, audit, workflow, and activity foundations. The accepted minimum data-contract evolution is governed by ADR-0021; no new reusable platform capability is introduced.
 
 ## User Workflow
 
@@ -85,14 +85,27 @@ SolarGRANT Pro product feature using the existing Clada OS authentication, organ
 
 - Extend the existing `Lead`; do not create a parallel manual-lead table or intake aggregate.
 - Implement a protected service boundary using trusted authentication and organisation context. UI hiding is not authorisation.
-- ADR-0021 must be accepted before PR 2 implementation because current non-null qualification fields cannot represent the approved minimum honestly.
-- Use an explicit creation-origin value and typed creator attribution. Do not infer origin from nullable fields or free-text `leadSource`.
+- PR 2 must follow Accepted ADR-0021 because current non-null qualification fields cannot represent the approved minimum honestly.
+- Use the accepted creation-origin enum: `HOMEOWNER_INTAKE`, `MANUAL_INSTALLER`, and migration-only `LEGACY_UNKNOWN`. New application writes must never use `LEGACY_UNKNOWN`.
+- Use typed creator attribution. Do not infer origin from nullable fields, free-text `leadSource`, customer data, or workflow stage.
 - Keep business acquisition source separate from technical creation origin.
 - Create the existing lead workflow at `NEW_LEAD`; manual creation does not bypass workflow ownership or invent transition history.
 - Reuse `LEAD_CREATED` with safe source metadata and typed actor fields. Audit metadata may contain identifiers and classification, not customer name, contact details, note content, or duplicate candidates.
 - Optional initial note must use the existing append-only `LeadActivity` and audit contract inside the manual-create transaction. PR 5 may consolidate the shared protected note service, but PR 2 must not write `Lead.internalNotes` as new canonical note history or defer the approved optional field.
 - Optional follow-up captured before the work-item migration remains compatible with ADR-0020. Backfill/dual-write rules must guarantee at most one resulting open follow-up task.
 - Optional assignee uses `OrganisationMembership`, not legacy free-text assignee fields.
+
+## Qualification-Completeness Gates
+
+Use ADR-0021's derived, action-specific service contract. Do not store a generic completion boolean or percentage.
+
+- Grant-eligibility assessment requires every validated fact used by the approved eligibility and jurisdiction rules.
+- Quote or system recommendation requires the validated property/customer/usage facts needed by that approved recommendation path.
+- Grant-readiness status requires its approved facts and evidence; workflow stage alone is insufficient.
+- Homeowner-consent-dependent processing requires attributable consent captured through an approved homeowner path.
+- Generated grant or submission documents require verified inputs and the authoritative Release 1.4 generated-document capability.
+
+Unknown values remain null/absent and are never treated as false, declined, not applicable, consented, or completed. A manual lead is never described as homeowner-submitted, qualified, eligible, grant-ready, or consented until the corresponding service gate passes.
 
 ## Duplicate Warning Contract
 
@@ -109,13 +122,17 @@ SolarGRANT Pro product feature using the existing Clada OS authentication, organ
 - Validate assignee and duplicate candidates against the same organisation and active membership rules.
 - Do not log customer fields, note content, or duplicate candidate data.
 - Record a successful `lead.created` audit event with safe resource, actor, organisation, origin, and outcome fields; failed validation or denial must not create success evidence.
-- Manual creation records the facts provided by the installer but does not assert homeowner consent, eligibility, property ownership, or lawful-basis conclusions. Privacy/legal review must approve collection copy, retention, and follow-up handling before Production rollout.
+- Manual creation records only supplied facts and does not assert homeowner consent, eligibility, property ownership, or a final legal conclusion.
+- Production rollout is blocked until Clada Systems records approval of installer collection wording, purpose limitation, lawful-basis position, retention/deletion, follow-up contact, access/correction handling, sensitive-note treatment, and pilot guidance against excessive or special-category data.
+- Clearly distinguish installer-entered facts from homeowner-submitted facts and collect only what is necessary for the enquiry.
 
 ## Data Model And Migration Impact
 
-- Additive migration is expected to represent manual origin, typed creator, membership-backed optional assignment, and progressive completeness on the existing `Lead`.
+- Additive migration represents accepted origin, typed creator, membership-backed optional assignment, and progressive unknown values on the existing `Lead`.
 - Qualification-only fields that are unavailable at manual capture must support an honest unknown state according to accepted ADR-0021; placeholder strings, zero values, guessed booleans, and fabricated consent are forbidden.
-- Existing intake-created leads are backfilled with their truthful creation origin without changing homeowner-supplied facts.
+- PR 2 must inspect the current Prisma `Lead` model and every route, service, component, report, export, script, migration, seed, and test that assumes a field is present. It must publish an explicit field-by-field table covering current type, all-lead requirement, manual nullability, homeowner-intake requirement, safe unknown presentation, affected consumers, required changes, and regression evidence.
+- Backfill `HOMEOWNER_INTAKE` or `MANUAL_INSTALLER` only from authoritative creation/actor evidence; use `LEGACY_UNKNOWN` for genuinely ambiguous rows. Never infer origin from customer fields, `leadSource`, missingness, or stage.
+- Migration validation includes aggregate counts by origin and proves no customer, qualification, or consent fact changed without printing customer data.
 - Existing intake and portal routes remain backwards compatible and preserve their validation, jurisdiction, consent, workflow, document, notification, and token semantics.
 - Migration must be safe on a fresh database and from the approved baseline, idempotent where data backfill is involved, and reversible at the application layer.
 
@@ -143,13 +160,17 @@ Mitigate through path-specific service validation, explicit origin/completeness,
 - Duplicate warnings use only bounded same-tenant signals and reveal no cross-tenant existence.
 - Repeated submission is idempotent or otherwise protected from accidental duplicate creation.
 - Existing homeowner intake and portal behaviours pass regression tests unchanged.
+- Qualification-dependent actions call the derived service contract and fail safely when required facts are unknown.
+- PR 2 includes the complete field/consumer migration table and an assignee compatibility/retirement plan.
+- Historical origin migration is evidence-based, idempotent, and leaves customer/consent facts unchanged.
+- Production enablement remains blocked until the recorded privacy gate is complete.
 - No new intake engine, bulk import, merge, enrichment, CRM sync, AI creation, messaging, configurable schema, or custom source taxonomy is introduced.
 - Desktop, 390 px, keyboard, focus, error association, zoom, status announcement, and touch-target checks pass.
 
 ## Verification Plan
 
 - unit tests for field normalisation, contact alternatives, bounds, source classification, safe audit metadata, duplicate signals, and error mapping;
-- PostgreSQL tests for migration/backfill, progressive unknown fields, typed creator/assignee relations, idempotency, and transaction rollback;
+- PostgreSQL tests for fresh and approved-production-baseline migration, evidence-based origin backfill, rerun idempotency, progressive unknown fields, typed creator/assignee relations, unchanged customer/consent facts, and transaction rollback;
 - integration tests for permission, trusted context, cross-tenant IDs, inactive memberships, duplicate non-disclosure, workflow/activity/audit atomicity, and repeated submissions;
 - regression tests for public intake, jurisdiction routing, homeowner consent/eligibility handling, portal token flows, notifications, and existing lead reads;
 - browser tests for the shortest path, optional fields, warning/continue flow, redirect, recovery states, 390 px, keyboard, focus, zoom, and screen-reader naming;
@@ -157,7 +178,11 @@ Mitigate through path-specific service validation, explicit origin/completeness,
 
 ## Rollout Plan
 
-Land only after ADR-0021 and this feature are approved. Release through PR 2 after the canonical shell, initially for one provisioned pilot organisation. Verify same-tenant creation, incomplete-state presentation, audit evidence, duplicate warning safety, and existing intake regression before wider pilot enablement.
+Release through PR 2 after the canonical shell, initially for one provisioned pilot organisation. Verify same-tenant creation, incomplete-state presentation, action gates, audit evidence, duplicate warning safety, migration evidence, and existing intake regression before wider pilot enablement. Do not enable Production until the privacy gate is recorded complete.
+
+## Implementation Stop Conditions
+
+Stop PR 2 and return to CTO review if the schema cannot evolve additively without unsafe data loss; any consumer cannot safely handle nullable qualification facts; public intake validation would weaken; origin cannot be determined truthfully; duplicate matching could leak across tenants; required atomic writes cannot be guaranteed; permissions require unreviewed broadening; or privacy review is incomplete when Production enablement is proposed.
 
 ## Dependencies
 

@@ -37,11 +37,11 @@ Based on the current README and project history, the app currently includes:
 
 ## Platform Release 1.5 Boundary
 
-The current runtime supports homeowner-created leads but does not support authenticated Manual Lead Creation. The Platform Release 1.5 documentation amendment proposes name-plus-phone/email minimum capture into the existing `Lead`, followed by redirect to the canonical workspace. The prior Release 1.5 approval is superseded, CTO/CEO re-approval is pending, and no implementation has begun.
+The current runtime supports homeowner-created leads but does not support authenticated Manual Lead Creation. Approved Platform Release 1.5 documentation specifies name-plus-phone/email minimum capture into the existing `Lead`, followed by redirect to the canonical workspace. CTO and CEO/product approval is recorded; no implementation has begun.
 
-The current `Lead` still requires the full homeowner qualification data contract. Proposed ADR-0021 must be Accepted before implementation can introduce explicit creation origin and truthful progressive unknown fields. Placeholder property, grant, eligibility, or consent values are not an acceptable interim implementation.
+The current `Lead` still requires the full homeowner qualification data contract. Accepted ADR-0021 governs explicit origin, derived action-specific completeness, truthful unknown fields, field/consumer inspection, permissions, migration, privacy, and PR 2 stop conditions. Placeholder property, grant, eligibility, or consent values are not an acceptable implementation.
 
-The current baseline contains uploaded `LeadDocument` evidence but not the governed Release 1.4 generated-document runtime. Under the Proposed sequence, Customer Document Centre is PR 7 and remains blocked until that separate Release 1.4 implementation is reviewed and merged. Release 1.5 must not create a substitute.
+The current baseline contains uploaded `LeadDocument` evidence but not the governed Release 1.4 generated-document runtime. Under the Approved sequence, Customer Document Centre is PR 7 and remains blocked until that separate Release 1.4 implementation is reviewed and merged. Release 1.5 must not create a substitute.
 
 ## Product risks
 

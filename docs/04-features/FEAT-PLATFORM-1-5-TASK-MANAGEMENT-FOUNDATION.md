@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PLATFORM-1.5-TASKS |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Platform Engineering |
 | Review cycle | Platform Release 1.5 and when work-item lifecycle changes |
 | Last reviewed | 2026-07-22 |

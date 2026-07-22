@@ -3,15 +3,15 @@
 | Field | Value |
 | --- | --- |
 | Document ID | REL-PLATFORM-1.5 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | At release close |
 | Last reviewed | 2026-07-22 |
 | Release | Platform Release 1.5 |
 | Approved baseline | `9828af1` (PR #33 merge commit on `main`) |
 | Target branch | `codex/platform-release-1-5-lead-workspace-docs` |
-| CTO approval | Pending re-review |
-| CEO approval | Pending re-approval |
+| CTO approval | Approved |
+| CEO approval | Approved |
 
 ## Executive Summary
 
@@ -21,7 +21,7 @@ The release is centred on seven product outcomes: a unified lead workspace, auth
 
 The release must remain incremental. Existing lead, uploaded-document, workflow, audit, authentication, organisation, and generated-document boundaries remain authoritative. Release 1.5 will not merge audit, workflow history, product activity, uploaded evidence, and governed generated documents into ambiguous generic records.
 
-The prior CTO and CEO approval is superseded by the Manual Lead Creation scope amendment. This Master Specification, all six feature specifications, ADR-0021, and the revised eight-PR sprint sequence are Proposed or Pending re-approval. PR #34 is a documentation-only draft. No Release 1.5 implementation is authorised and none has begun.
+The amended Master Specification, all six feature specifications, ADR-0020, ADR-0021, and the eight-PR sprint sequence are approved. No Release 1.5 implementation has begun. After PR #34 merges, implementation PRs 1-6 are authorised to proceed in sequence subject to their documented gates; PR 7 retains the separate Release 1.4 dependency.
 
 ## Business Context
 
@@ -44,9 +44,9 @@ Repository review on 2026-07-22 used merge commit `9828af1`, the user-designated
 
 The baseline contains Release 1.4's approved Master Specification and ADR-0015 through ADR-0017. It does not contain the generated-document Prisma models, generated-file storage implementation, secure generated-document download route, Release 1.4 feature specifications, implementation migration, or completed Release 1.4 sign-off described by that specification.
 
-The prior CTO review resolved the generated-document sequencing question without treating the missing capability as present. The Manual Lead Creation amendment preserves that decision but supersedes its implementation authorisation pending re-review:
+The final CTO direction approves Manual Lead Creation and preserves the generated-document sequencing decision without treating the missing capability as present:
 
-1. No Release 1.5 implementation PR may begin until amended PR #34 is re-approved and merged.
+1. No Release 1.5 implementation PR may begin until approved PR #34 is merged.
 2. After that gate, implementation PRs 1-6 may proceed in the approved sequence from the then-current `main`, subject to their own prerequisites.
 3. Release 1.5 PR 7, Customer Document Centre, must not begin until the missing Platform Release 1.4 governed generated-document implementation has been completed, reviewed, and merged into `main`.
 4. Release 1.4 implementation requires its own separately approved implementation PR sequence before Release 1.5 PR 7.
@@ -54,14 +54,14 @@ The prior CTO review resolved the generated-document sequencing question without
 6. Release 1.5 must not create a temporary generated-document substitute or duplicate, partially recreate, or relocate any Release 1.4 generated-document architecture.
 7. ADR-0015, ADR-0016, and ADR-0017 remain authoritative for generated-document ownership, immutable templates/PDF rendering, storage, integrity, and secure retrieval.
 
-ADR-0020 remains Accepted and unchanged. The revised release sequence is Proposed and authorises nothing until CTO and CEO re-approval and PR #34 merge. Re-approval must not authorise PR 7 before its separate Release 1.4 dependency is satisfied.
+ADR-0020 and ADR-0021 are Accepted. The approved sequence authorises PRs 1-6 only after PR #34 merges and their individual gates pass. It does not authorise PR 7 before its separate Release 1.4 dependency is satisfied.
 
 ### Dependency Stop Conditions
 
 Stop and return to CTO review if:
 
 - any Release 1.5 implementation begins before the amended documentation is approved and PR #34 merges;
-- Manual Lead Creation PR 2 begins before ADR-0021 is Accepted and its data migration is approved;
+- Manual Lead Creation PR 2 begins without the ADR-0021 field/consumer migration table, permission review, compatibility plan, migration evidence, or action-gate tests;
 - a manual lead requires fabricated qualification, consent, property, or eligibility values, or weakens public intake validation;
 - duplicate detection or assignment can reveal or link another organisation's records;
 - Release 1.5 PR 7 is proposed, branched, or started before the separate Release 1.4 governed generated-document implementation sequence is approved, completed, reviewed, and merged into `main`;
@@ -241,13 +241,13 @@ document centre -> reinterpretation of LeadDocument as governed Document
 
 ADR-0020 is required because introducing a reusable structured work-item record, lifecycle, ownership, resource link, and concurrency contract is a material platform data-model decision.
 
-ADR-0021 is Proposed because minimum manual capture conflicts with the current non-null qualification-heavy `Lead` contract. It must decide explicit creation origin, progressive unknown values, typed creator/assignee attribution, migration, and path-specific validation. No separate ADR is required for the form, redirect, duplicate warning UX, workspace composition, notes, or timeline projection.
+ADR-0021 is Accepted because minimum manual capture conflicts with the current non-null qualification-heavy `Lead` contract. It defines creation origin, action-specific progressive completeness, unknown-value semantics, typed creator/assignee attribution, permissions, migration, duplicate detection, follow-up/note compatibility, privacy, and PR 2 stop conditions. No separate ADR is required for the form, redirect, duplicate-warning UX, workspace composition, notes, or timeline projection.
 
 ## Domain Model
 
 | Concept | Authority | Release 1.5 treatment |
 | --- | --- | --- |
-| `Lead` | SolarGRANT Pro | Workspace root and customer/business record; gains explicit creation origin, typed creator/optional assignment, and progressive unknown qualification state under Proposed ADR-0021. |
+| `Lead` | SolarGRANT Pro | Workspace root and customer/business record; gains explicit creation origin, typed creator/optional assignment, and progressive unknown qualification state under Accepted ADR-0021. |
 | `LeadActivity` | SolarGRANT Pro | Product-readable timeline entries and canonical append-only installer notes. |
 | `WorkflowInstance` / `WorkflowHistory` | Clada OS | Authoritative workflow state/history; projected into the timeline. |
 | `AuditLog` | Clada OS | Trust/compliance record; not exposed wholesale as the product timeline. |
@@ -267,21 +267,29 @@ ADR-0021 is Proposed because minimum manual capture conflicts with the current n
 - Keep `Lead.internalNotes` readable during migration; do not overwrite it with an activity identifier.
 - Existing `followUpDate` and `nextFollowUpAt` remain readable until task migration is validated.
 
-### Proposed Manual-Lead Evolution
+### Approved Manual-Lead Evolution
 
-ADR-0021 must be Accepted before implementation. Its proposed minimum contract is:
+ADR-0021 defines the approved minimum contract:
 
-| Concern | Proposed treatment |
+| Concern | Approved treatment |
 | --- | --- |
-| Creation origin | Constrained, explicit `HOMEOWNER_INTAKE` or `MANUAL_INSTALLER`; separate from business `leadSource`. |
+| Creation origin | Constrained enum: `HOMEOWNER_INTAKE`, `MANUAL_INSTALLER`, and migration-only `LEGACY_UNKNOWN`; separate from business `leadSource`. |
 | Creator | Typed user/membership attribution for authenticated creation; public intake keeps its established actor treatment. |
 | Minimum manual facts | Bounded name and at least one validated phone or email. |
 | Qualification facts | Unknown is stored as null/absent, not false, empty, zero, guessed, or consented. |
-| Completeness | Explicit or derived service contract prevents unknown manual leads being presented as qualified, eligible, grant-ready, or consented. |
+| Completeness | Derived action-specific service contract; no stored completion boolean or generic percentage. |
 | Assignee | Optional active membership in the same organisation; no new use of legacy free-text assignee fields. |
 | Workflow/evidence | Existing `NEW_LEAD` workflow instance, `LEAD_CREATED` activity, and safe audit event created atomically. |
 
-Changing persistence nullability must not relax public homeowner intake validation. Existing leads require a truthful, reviewed, idempotent origin backfill. Ambiguous historical rows must use an explicitly approved legacy/unknown treatment rather than inference from missing customer fields.
+Qualification gates initially cover grant eligibility, quote/system recommendation, grant readiness, homeowner-consent-dependent processing, and generated grant/submission documents. Each gate requires its validated facts through the service; workflow stage and nullable-field assumptions are insufficient.
+
+PR 2 must inspect the current Prisma `Lead` model and every affected route, service, component, report, export, script, migration, seed, and test. Before schema change it must publish a field-by-field migration table identifying all-lead requirements, manual nullability, homeowner-intake-only requirements, safe unknown presentation, affected consumers, required changes, and regression evidence. Changing persistence nullability must not relax public homeowner intake validation.
+
+Origin backfill uses authoritative creation/actor evidence only. Genuinely ambiguous rows become `LEGACY_UNKNOWN`; no origin is guessed from customer facts, `leadSource`, missingness, or workflow stage. Migration is fresh-baseline safe, production-baseline safe, idempotent, reports aggregate origin counts, and changes no customer or consent facts.
+
+Production rollout is blocked until Clada Systems records the privacy gate required by ADR-0021, including collection wording, purpose limitation, lawful basis, retention/deletion, follow-up, access/correction, sensitive-note handling, and pilot guidance.
+
+PR 2 must stop and return to CTO review if the schema cannot evolve additively without unsafe data loss; a current consumer cannot safely handle nullable qualification fields; public homeowner intake validation would weaken; historical origin cannot be determined truthfully; cross-tenant duplicate information could leak; atomic creation of required lead, workflow, activity/note, and audit evidence cannot be guaranteed; permissions require unreviewed access broadening; or privacy review is incomplete when Production enablement is proposed.
 
 ### Approved Work-Item Foundation
 
@@ -326,7 +334,7 @@ Reuse the existing role-to-permission model. Exact role mapping must be approved
 | Permission | Meaning |
 | --- | --- |
 | `lead.read` | Read the organisation-owned lead workspace and safe product projections. |
-| `lead.create` | Create a lead inside the trusted organisation through an approved path-specific contract. Proposed for ADR-0021 review. |
+| `lead.create` | Create a manual lead inside the trusted organisation through the ADR-0021 path-specific contract. |
 | `lead.update` | Update approved lead facts where existing behaviour permits. |
 | `lead.assign` | Assign an active same-organisation membership to a lead; required in addition to `lead.create` when Manual Lead Creation includes an assignee. |
 | `lead.change_status` | Execute approved workflow transitions. |
@@ -474,7 +482,7 @@ Minimum route semantics:
 ## Migration Requirements
 
 1. Start from the re-approved authoritative Release 1.4-compatible baseline after PR #34 merges.
-2. Accept ADR-0021 and add creation-origin, typed creator/optional assignment, and progressive unknown-field support additively to the existing `Lead`.
+2. Apply Accepted ADR-0021 and add creation-origin, typed creator/optional assignment, and progressive unknown-field support additively to the existing `Lead` after completing its field/consumer inspection gate.
 3. Backfill existing origin truthfully and idempotently; use an approved legacy/unknown value when evidence is ambiguous rather than guessing.
 4. Preserve strict public-intake service validation even if shared persistence fields become nullable.
 5. Add work-item schema and indexes additively in PR 3.
@@ -490,7 +498,7 @@ Rollback is application-first: old code can continue reading existing lead follo
 
 ## Deployment Considerations
 
-- CTO and CEO re-approval and PR #34 merge precede every implementation PR and migration.
+- Recorded CTO and CEO approval and PR #34 merge precede every implementation PR and migration.
 - Implementation is delivered through small PRs in the sprint sequence below.
 - Database-affecting PRs require Preview/test migration evidence before Production promotion.
 - Production migration uses the existing database operations runbook, explicit environment classification, change reference, status before deploy, and clean status after deploy.
@@ -539,7 +547,7 @@ This documentation-only PR requires documentation validation and `git diff --che
 
 Detailed sequencing is in [Platform Release 1.5 Sprint Plan](../06-sprints/PLATFORM_RELEASE_1_5_LEAD_WORKSPACE_AND_DOCUMENT_MANAGEMENT.md).
 
-1. **Documentation amendment and re-approval:** six Proposed features, Accepted ADR-0020, Proposed ADR-0021, revised gates, migration strategy, and eight-PR sequence; CTO/CEO approval and PR #34 merge Pending.
+1. **Documentation approval:** six Approved features, Accepted ADR-0020 and ADR-0021, approved gates, migration strategy, and eight-PR sequence; PR #34 merge remains pending and implementation has not begun.
 2. **PR 1 - Workspace shell:** canonical lead-local routes, responsive shell, Overview, states, and redirects.
 3. **PR 2 - Manual Lead Creation:** minimum authenticated capture, progressive data migration, trusted actor/tenant context, duplicate warning, audit/activity/workflow, and workspace redirect.
 4. **PR 3 - Work-item schema/migration:** additive work items, permissions, follow-up backfill, and migration evidence.
@@ -558,10 +566,10 @@ Documentation phase deliverables:
 - this Master Release Specification;
 - six feature specifications;
 - ADR-0020 for the task/work-item foundation;
-- Proposed ADR-0021 for lead creation origin and progressive completeness;
+- Accepted ADR-0021 for lead creation origin and progressive completeness;
 - Release 1.5 sprint plan;
 - updated release, feature, ADR, sprint, COM, and roadmap indexes;
-- documentation-only PR #34 kept draft for CTO and CEO re-review.
+- documentation-only PR #34 prepared for final pre-merge review.
 
 Implementation deliverables after approval:
 
@@ -575,17 +583,16 @@ Implementation deliverables after approval:
 
 ## Acceptance Criteria
 
-### Documentation Re-Approval Record
+### Documentation Approval Record
 
-- the previous CTO and CEO approval is recorded as superseded by the Manual Lead Creation scope amendment;
-- the proposed sequence is recorded: after re-approval and PR #34 merge, PRs 1-6 may proceed in sequence, while PR 7 remains blocked by the separate Release 1.4 implementation sequence;
-- this specification is Proposed; CTO and CEO re-approval is Pending;
+- the amended sequence is approved: after PR #34 merges, PRs 1-6 may proceed in sequence, while PR 7 remains blocked by the separate Release 1.4 implementation sequence;
+- this specification is Approved by CTO and CEO/product;
 - ADR-0020 is accepted;
-- ADR-0021 remains Proposed until its approval questions are resolved;
-- all six feature specifications and the sprint sequence remain Proposed;
-- no implementation is authorised and no application implementation has started.
+- ADR-0021 is accepted with its final action gates, migration rules, permission boundaries, privacy gate, and PR 2 stop conditions;
+- all six feature specifications and the sprint sequence are approved;
+- no application implementation has started.
 
-Future re-approval and merge of PR #34 may authorise Release 1.5 PRs 1-6 in the recorded sequence. They cannot authorise PR 7 before the separately governed Release 1.4 implementation sequence is completed, reviewed, and merged.
+Merge of PR #34 authorises Release 1.5 PRs 1-6 in the recorded sequence subject to their gates. It does not authorise PR 7 before the separately governed Release 1.4 implementation sequence is completed, reviewed, and merged.
 
 ### Product Acceptance
 
@@ -622,8 +629,8 @@ Future re-approval and merge of PR #34 may authorise Release 1.5 PRs 1-6 in the 
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Release 1.4 runtime capability is absent from baseline | High (observed) | High | After re-approval allow PRs 1-6 in sequence; block PR 7 until the separately approved Release 1.4 implementation is completed, reviewed, and merged. | CTO |
-| Current `Lead` cannot honestly store minimum manual enquiries | High (observed) | Critical | Accept ADR-0021 before PR 2; use explicit origin, null unknowns, path-specific validation, typed actor/assignment, and migration regression tests. | CTO and Engineering |
+| Release 1.4 runtime capability is absent from baseline | High (observed) | High | After PR #34 merges allow PRs 1-6 in sequence; block PR 7 until the separately approved Release 1.4 implementation is completed, reviewed, and merged. | CTO |
+| Current `Lead` cannot honestly store minimum manual enquiries | High (observed) | Critical | Apply Accepted ADR-0021 in PR 2 with explicit origin, null unknowns, derived action gates, typed actor/assignment, field/consumer inspection, and migration regression tests. | CTO and Engineering |
 | Manual creation weakens public intake validation | Medium | Critical | Keep strict per-path service schemas and comprehensive intake/consent/jurisdiction/portal regression tests. | Engineering |
 | Duplicate warning leaks another tenant | Low | Critical | Exact, bounded matching only within trusted organisation and authorised read scope; isolation tests. | Security and Engineering |
 | Repeated submit creates duplicate records/events | Medium | High | Idempotency/equivalent guard and transaction tests. | Engineering |
@@ -658,7 +665,7 @@ Release 1.5 must not worsen existing `TD-001`, `TD-005`, `TD-007`, `TD-009`, `TD
 
 Implementation should add a technical-debt entry only for a real accepted compromise, such as temporary follow-up dual writes or legacy route compatibility. Missing deferred features are not technical debt.
 
-The missing Release 1.4 implementation is a release dependency, not runtime debt created by this documentation branch. After re-approval it does not block Release 1.5 PRs 1-6, but it is a hard stop for PR 7.
+The missing Release 1.4 implementation is a release dependency, not runtime debt created by this documentation branch. After PR #34 merges it does not block Release 1.5 PRs 1-6, but it is a hard stop for PR 7.
 
 ## Future Releases
 
@@ -678,7 +685,7 @@ Accepted for this release:
 
 - [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md).
 
-Proposed and required before Manual Lead Creation implementation:
+Also accepted for Manual Lead Creation:
 
 - [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md).
 
@@ -690,32 +697,31 @@ Future quote revisions, document supersession semantics, collaboration/visibilit
 
 | Field | Value |
 | --- | --- |
-| Status | Pending re-review |
+| Status | Approved |
 | Reviewer | CTO |
-| Date | Pending |
-| Notes | Previous approval superseded by Manual Lead Creation scope, Proposed ADR-0021, and the revised eight-PR sequence. No implementation is authorised. PR 7 retains the Release 1.4 dependency. |
+| Date | 2026-07-22 |
+| Notes | Amended direction, Manual Lead Creation, Accepted ADR-0021 decisions, PR 2 gates, and eight-PR sequence approved. No implementation has begun. PR 7 retains the Release 1.4 dependency. |
 
 ## CEO Approval
 
 | Field | Value |
 | --- | --- |
-| Status | Pending re-approval |
+| Status | Approved |
 | Approver | CEO |
-| Date | Pending |
-| Notes | Previous product approval superseded by the added Manual Lead Creation scope and revised sequence. Product re-approval is required. |
+| Date | 2026-07-22 |
+| Notes | Amended product scope, Manual Lead Creation safeguards, privacy gate, pilot workflow, non-goals, and eight-PR sequence approved. |
 
 ## Release Sign-Off
 
 | Field | Value |
 | --- | --- |
-| Documentation PR | PR #34 - draft; CTO/CEO re-review pending |
-| Prior approval | Superseded by Manual Lead Creation scope amendment on 2026-07-22 |
-| CTO review | Pending re-review |
-| CEO approval | Pending re-approval |
-| Implementation authorisation | Pending; no implementation may begin |
+| Documentation PR | PR #34 - ready for final pre-merge review; merge pending |
+| CTO review | Approved - 2026-07-22 |
+| CEO approval | Approved - 2026-07-22 |
+| Implementation authorisation | PRs 1-6 in sequence after PR #34 merges and their gates pass; PR 7 blocked by Release 1.4 implementation dependency |
 | Implementation merge commit | Pending |
 | Release tag | Pending |
-| Roadmap update | Proposed amendment and PR 7 dependency recorded; release-close outcome pending |
+| Roadmap update | Approved amendment and PR 7 dependency recorded; release-close outcome pending |
 
 ## Related Documents
 

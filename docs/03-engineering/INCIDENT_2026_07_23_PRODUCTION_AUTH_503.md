@@ -11,6 +11,7 @@
 | Failed PR #37 Preview deployment | `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` |
 | Recovered PR #37 Preview deployment | `dpl_13RahjKPFfh44bePyt84t49i9ePn` |
 | Quote-page exception deployment | `dpl_5JSXevbRNgD9uwinaipPLZAwT1ME` |
+| Quote-page correction deployment | `dpl_4FvSQhhq4QcuRJ7dWGWy53Qg2jaE` |
 | Last reviewed | 2026-07-23 |
 
 ## Detection And Impact
@@ -116,6 +117,7 @@ customer data.
 | 2026-07-23 16:07:05-16:07:15 | Recovered Preview deployment passed the identity guard, applied the four pending migrations, and required clean post-status. |
 | 2026-07-23 16:08 | Preview deployment became Ready; GitHub validation and Vercel checks passed. |
 | 2026-07-23 16:26:29.493 | Preview Quote Pricing request failed with digest `61054729` because the active tenant's generated installer ID did not equal the demo installer constant. |
+| 2026-07-23 16:38:54 | Quote-page correction deployment became Ready after a clean 15-migration Preview status check. |
 
 ## Migration State Before And After
 
@@ -264,6 +266,11 @@ action and can never be selected by the Vercel build script.
 - Controlled invalid Preview login: 401 with the generic credential-denial body,
   not 503. Unit and disposable-PostgreSQL coverage assert that this denial path
   creates no auth session.
+- Quote-page correction deployment `dpl_4FvSQhhq4QcuRJ7dWGWy53Qg2jaE`:
+  Ready with GitHub and Vercel checks passed and no runtime errors in the
+  post-deployment scan. Public shell returned 200, unauthenticated dashboard
+  access redirected to login, and controlled invalid credentials returned the
+  generic 401 response.
 - Live public shell, `/admin`, and `/embed`: 200.
 - Live unauthenticated `/admin/dashboard`: 307 to the login challenge.
 - Controlled invalid Production login: 401 with generic body and zero session

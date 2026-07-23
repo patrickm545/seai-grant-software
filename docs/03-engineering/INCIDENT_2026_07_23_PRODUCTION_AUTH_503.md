@@ -10,6 +10,7 @@
 | Affected deployment | `dpl_4XA7MifjdScwRf2Wn3TENvutzBtC` |
 | Failed PR #37 Preview deployment | `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` |
 | Recovered PR #37 Preview deployment | `dpl_13RahjKPFfh44bePyt84t49i9ePn` |
+| Quote-page exception deployment | `dpl_5JSXevbRNgD9uwinaipPLZAwT1ME` |
 | Last reviewed | 2026-07-23 |
 
 ## Detection And Impact
@@ -25,6 +26,34 @@ Production deployment from commit
 `0f438efd8453b3bc68d6456fd2ca30a528865cf7`. Pilot users could not establish
 new sessions. Public error handling did not expose database or configuration
 details.
+
+### Preview Quote Page Follow-up
+
+After Preview authentication recovered, authenticated request
+`94bdc-1784823989493-f525fa652b3b` to
+`GET /admin/dashboard/quote-pricing` produced digest `61054729`:
+
+```text
+Error: Default installer is not available in the active organisation context.
+```
+
+The exception came from the Quote Pricing server component. It was not caused
+by a missing table or column, stale Prisma client, environment variable,
+calculation/PDF dependency, session lookup, route parameter, enum, or
+serialization failure.
+
+The page queried for the global `DEFAULT_INSTALLER_ID` and the authenticated
+organisation ID together. Tenant provisioning creates the organisation's
+installer with a generated ID, so a valid provisioned tenant could never match
+the demo installer constant. The page then threw instead of using the
+organisation-owned installer.
+
+The correction resolves the installer deterministically within the
+authenticated organisation, retains the same organisation constraint when
+saving, and renders a truthful no-installer state when an organisation
+legitimately has no installer. Incomplete lead facts remain nullable and are
+passed to the existing truthful dashboard metrics. Quote calculation and audit
+write behaviour are unchanged.
 
 ## Exact Root Cause
 
@@ -86,6 +115,7 @@ customer data.
 | 2026-07-23 | PR #37 Preview deployment `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` failed safely after identifying four pending committed migrations. |
 | 2026-07-23 16:07:05-16:07:15 | Recovered Preview deployment passed the identity guard, applied the four pending migrations, and required clean post-status. |
 | 2026-07-23 16:08 | Preview deployment became Ready; GitHub validation and Vercel checks passed. |
+| 2026-07-23 16:26:29.493 | Preview Quote Pricing request failed with digest `61054729` because the active tenant's generated installer ID did not equal the demo installer constant. |
 
 ## Migration State Before And After
 
@@ -214,11 +244,12 @@ action and can never be selected by the Vercel build script.
 - Prisma format, generate, and validate: passed.
 - Typecheck: passed.
 - Lint: passed.
-- Unit/platform tests: 188 passed, 0 failed.
+- Unit/platform tests: 192 passed, 0 failed.
 - Disposable PostgreSQL 16 fresh migration: all 15 migrations applied.
-- PostgreSQL integration tests: 50 passed, 0 failed, including successful
+- PostgreSQL integration tests: 53 passed, 0 failed, including successful
   durable session creation, generic invalid-credential denial, single-tenant
-  context, cross-tenant denial, and transaction rollback.
+  context, cross-tenant denial, transaction rollback, generated-installer Quote
+  loading, incomplete legacy lead facts, and no-installer handling.
 - Approved baseline upgrade: commit
   `3cd9ded8cc93a98ed1a0136ba13d4cc9bf63e7fd` supplied exactly 14 migrations;
   the current `20260722190000_manual_lead_creation` migration applied next and

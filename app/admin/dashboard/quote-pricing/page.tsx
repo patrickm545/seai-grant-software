@@ -4,7 +4,6 @@ import { DashboardShell } from '@/components/DashboardShell';
 import { InstallerQuotePricingForm } from '@/components/InstallerQuotePricingForm';
 import { SidebarMetrics } from '@/components/SidebarMetrics';
 import { writeAuditLog } from '@/lib/audit';
-import { DEFAULT_INSTALLER_ID } from '@/lib/default-installer';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import {
   defaultInstallerQuotePricing,
@@ -14,9 +13,9 @@ import {
   type InstallerQuotePricingKey,
   type InstallerQuotePricingValues
 } from '@/lib/installer-quote-pricing';
-import { leadOrganisationWhere } from '@/lib/lead-access';
 import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { prisma } from '@/lib/prisma';
+import { loadOrganisationQuotePricing } from '@/lib/quote-pricing-page';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,16 +55,15 @@ async function saveInstallerPricingSettings(formData: FormData) {
   'use server';
 
   const organisationContext = await requirePilotContext();
-  const requestedInstallerId = String(formData.get('installerId') || DEFAULT_INSTALLER_ID);
+  const requestedInstallerId = String(formData.get('installerId') ?? '').trim();
   const pricingAction = String(formData.get('pricingAction') || 'save');
-  const installerId = requestedInstallerId || DEFAULT_INSTALLER_ID;
   const values = pricingAction === 'reset' ? defaultInstallerQuotePricing : parsePricingFormData(formData);
   const data = toPricingUpdateData(values);
 
   await prisma.$transaction(async (tx) => {
     const installer = await tx.installer.findFirst({
       where: {
-        id: installerId,
+        id: requestedInstallerId,
         organisationId: organisationContext.organisationId
       }
     });
@@ -112,45 +110,12 @@ export default async function QuotePricingPage({
 }) {
   const params = await searchParams;
   const organisationContext = await requirePilotContext();
-  const installer = await prisma.installer.findFirst({
-    where: {
-      id: DEFAULT_INSTALLER_ID,
-      organisationId: organisationContext.organisationId
-    }
-  });
-
-  if (!installer) {
-    throw new Error('Default installer is not available in the active organisation context.');
-  }
-
-  const [pricing, leads] = await Promise.all([
-    prisma.installerQuotePricing.upsert({
-      where: { installerId: installer.id },
-      update: {},
-      create: {
-        installerId: installer.id,
-        ...defaultInstallerQuotePricing
-      }
-    }),
-    prisma.lead.findMany({
-      where: leadOrganisationWhere(organisationContext),
-      select: {
-        county: true,
-        eircode: true,
-        status: true,
-        worksStarted: true,
-        priorSolarGrantAtMprn: true,
-        likelyEligible: true,
-        pipelineStage: true,
-        leadScore: true,
-        documents: { select: { id: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-  ]);
+  const { installer, pricing, leads } = await loadOrganisationQuotePricing(
+    prisma,
+    organisationContext.organisationId
+  );
 
   const metrics = getDashboardMetrics(leads);
-  const pricingValues = getPricingValuesFromRecord(pricing);
   const statusMessage = params.saved
     ? 'Pricing settings saved. New homeowner quotes will use these values.'
     : params.reset
@@ -171,13 +136,23 @@ export default async function QuotePricingPage({
       }
     >
       {statusMessage ? <div className="installer-pricing-status">{statusMessage}</div> : null}
-      <InstallerQuotePricingForm
-        installerId={installer.id}
-        installerName={installer.name}
-        pricing={pricingValues}
-        pricingUpdatedAt={pricing.updatedAt.toISOString()}
-        savePricingSettings={saveInstallerPricingSettings}
-      />
+      {installer && pricing ? (
+        <InstallerQuotePricingForm
+          installerId={installer.id}
+          installerName={installer.name}
+          pricing={getPricingValuesFromRecord(pricing)}
+          pricingUpdatedAt={pricing.updatedAt.toISOString()}
+          savePricingSettings={saveInstallerPricingSettings}
+        />
+      ) : (
+        <section className="empty-state" data-empty-state="installer">
+          <h1>Quote pricing is not available yet</h1>
+          <p>
+            No installer profile is configured for this organisation. Contact support before
+            creating or updating quote pricing.
+          </p>
+        </section>
+      )}
     </DashboardShell>
   );
 }

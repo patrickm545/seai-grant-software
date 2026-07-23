@@ -21,7 +21,7 @@ The release is centred on seven product outcomes: a unified lead workspace, auth
 
 The release must remain incremental. Existing lead, uploaded-document, workflow, audit, authentication, organisation, and generated-document boundaries remain authoritative. Release 1.5 will not merge audit, workflow history, product activity, uploaded evidence, and governed generated documents into ambiguous generic records.
 
-The amended Master Specification, all six feature specifications, ADR-0020, ADR-0021, and the eight-PR sprint sequence are approved. Documentation PR #34 has merged and PR 1 is in implementation and validation; later PRs have not begun. Implementation PRs 1-6 remain authorised in sequence subject to their documented gates; PR 7 retains the separate Release 1.4 dependency.
+The amended Master Specification, all six feature specifications, ADR-0020, ADR-0021, and the eight-PR sprint sequence are approved. Documentation PR #34 and workspace PR #35 have merged. PR 2 implementation and disposable verification are in progress on its dedicated branch; PR 3 and later work has not begun. Implementation PRs 1-6 remain authorised in sequence subject to their documented gates; PR 7 retains the separate Release 1.4 dependency.
 
 ## Business Context
 

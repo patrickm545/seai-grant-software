@@ -14,7 +14,7 @@ Translate the approved amended Release 1.5 Master Specification into eight small
 
 ## Baseline And Dependency Decision
 
-The documentation baseline remains `main` merge commit `9828af1` from PR #33. PR #34 is a documentation-only draft.
+The PR 2 authoritative starting baseline is `main` merge commit `3cd9ded8cc93a98ed1a0136ba13d4cc9bf63e7fd` from merged PR #35. PR #34 and PR #35 are merged.
 
 The amended dependency rules are explicit:
 
@@ -47,7 +47,7 @@ The amended release direction, architecture decisions, feature set, and sequence
 6. CTO architecture approval: Approved.
 7. CEO/product approval: Approved.
 8. Implementation authorisation: PRs 1-6 in sequence after PR #34 merges and their gates pass; PR 7 separately blocked; PR 8 follows the approved sequence.
-9. PR 1 implementation is in progress on its dedicated branch; PR 2 has not begun.
+9. PR 1 is merged as PR #35; PR 2 implementation and disposable verification are in progress on its dedicated branch.
 
 ## Feature Specifications
 

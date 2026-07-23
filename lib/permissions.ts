@@ -3,6 +3,7 @@ import type { OrganisationContext } from './identity';
 
 export const platformPermissions = [
   'lead.read',
+  'lead.create',
   'lead.update',
   'lead.delete',
   'lead.assign',
@@ -24,6 +25,7 @@ export const rolePermissionMap: Record<PlatformRole, readonly PlatformPermission
   ORGANISATION_OWNER: platformPermissions,
   ORGANISATION_ADMIN: [
     'lead.read',
+    'lead.create',
     'lead.update',
     'lead.delete',
     'lead.assign',
@@ -35,9 +37,10 @@ export const rolePermissionMap: Record<PlatformRole, readonly PlatformPermission
     'installer.manage_quote_pricing',
     'portal_token.manage'
   ],
-  ORGANISATION_MEMBER: ['lead.read', 'document.read'],
+  ORGANISATION_MEMBER: ['lead.read', 'lead.create', 'document.read'],
   CLADA_INTERNAL_ADMIN: [
     'lead.read',
+    'lead.create',
     'lead.update',
     'lead.delete',
     'lead.assign',

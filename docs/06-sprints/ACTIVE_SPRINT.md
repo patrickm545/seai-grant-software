@@ -10,26 +10,24 @@
 
 ## Sprint
 
-Platform Release 1.5 - PR 1 Canonical Lead Workspace Shell implementation.
+Platform Release 1.5 - PR 2 Manual Lead Creation implementation.
 
 ## Objective
 
-Implement and validate the first approved Release 1.5 slice: one canonical, tenant-safe installer lead workspace with persistent lead context, local navigation, Overview composition, truthful deferred-section states, and legacy-route compatibility.
+Implement and validate protected minimum manual lead capture into the existing SolarGRANT Pro `Lead`, then continue directly into the canonical workspace without fabricating qualification or consent facts.
 
 ## In Scope
 
-- canonical `/installer-review-emerald/leads/[leadId]` route and bounded workspace view model;
-- authenticated persistent summary and Overview, Documents, Activity, Tasks, and Notes navigation;
-- truthful loading, unavailable, not-found, and recoverable-error states;
-- safe redirects from superseded admin lead-detail routes;
-- desktop, 390 px, keyboard, focus, zoom, tenant, permission, route, and query evidence;
-- current-state documentation and draft CTO review PR.
+- canonical `/installer-review-emerald/leads/new` route with name plus phone/email minimum capture;
+- additive origin, creator, assignee, exact-match and progressive-nullability migration;
+- trusted tenant/actor service, bounded duplicate warning, idempotency, workflow/activity/note/audit transaction and workspace redirect;
+- action-specific qualification gates and public-intake/portal/consumer regression;
+- field/consumer table, migration evidence, desktop/390 px/accessibility evidence and draft CTO review PR.
 
 ## Out Of Scope
 
-- Prisma schema or database migrations;
-- dependencies, tests, or deployment configuration;
-- Manual Lead Creation or any PR 2 implementation;
+- PR 3 work-item schema or task migration;
+- PR 4 Tasks UI/service, PR 5 full Notes UI/service, PR 6 timeline, or PR 7 Document Centre;
 - task, installer-note, source-aware timeline, Customer Document Centre, or generated-document persistence;
 - Release 1.5 PR 7 before the separate Release 1.4 generated-document implementation is approved, completed, reviewed, and merged;
 - merge, deployment, release tag, or implementation outside PR 1.
@@ -44,12 +42,12 @@ Implement and validate the first approved Release 1.5 slice: one canonical, tena
 - CTO approval: Approved.
 - CEO/product approval: Approved.
 - Documentation gate PR #34: Merged in the authoritative `main` baseline.
-- PR 1: Implementation in progress on its dedicated branch; draft CTO review PR pending validation.
-- PR 2: Not begun.
+- PR 1: Merged as PR #35 at `3cd9ded8cc93a98ed1a0136ba13d4cc9bf63e7fd`.
+- PR 2: Implementation and disposable verification in progress on its dedicated branch; Production privacy gate remains incomplete.
 
 ## Definition Of Done
 
-PR 1 is complete when the canonical workspace and compatibility routes pass focused tenant, permission, navigation, responsive, accessibility, performance, regression, build, and documentation validation; the scoped changes are committed and pushed; and a draft PR is opened for CTO review without schema, migration, dependency, or deferred Release 1.5 implementation.
+PR 2 is ready for review when the protected creation flow, migration, field/consumer table, permission and tenant boundaries, public-intake compatibility, qualification gates, responsive/accessibility checks, and full validation pass; the scoped changes are committed and pushed; and a draft PR is opened without Production enablement or PR 3 work.
 
 ## Release Documents
 

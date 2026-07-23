@@ -51,6 +51,14 @@ test('organisation admin can change lead status but member cannot', () => {
   assert.equal(hasPermission(context('ORGANISATION_MEMBER'), 'lead.read'), true);
 });
 
+test('manual creation uses explicit least-privilege permissions', () => {
+  assert.equal(hasPermission(context('ORGANISATION_OWNER'), 'lead.create'), true);
+  assert.equal(hasPermission(context('ORGANISATION_ADMIN'), 'lead.create'), true);
+  assert.equal(hasPermission(context('ORGANISATION_MEMBER'), 'lead.create'), true);
+  assert.equal(hasPermission(context('ORGANISATION_MEMBER'), 'lead.assign'), false);
+  assert.equal(hasPermission(context('ORGANISATION_MEMBER'), 'lead.read'), true);
+});
+
 test('missing context defaults to no permissions and denial', () => {
   assert.deepEqual(getEffectivePermissions(null), []);
   assert.throws(

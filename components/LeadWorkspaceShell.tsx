@@ -13,7 +13,7 @@ const sections = [
   { label: 'Notes', segment: 'notes' }
 ] as const;
 
-export function LeadWorkspaceShell({ lead, children }: { lead: LeadWorkspaceViewModel; children: ReactNode }) {
+export function LeadWorkspaceShell({ lead, children, canCreateLead }: { lead: LeadWorkspaceViewModel; children: ReactNode; canCreateLead: boolean }) {
   const pathname = usePathname();
   const basePath = `/installer-review-emerald/leads/${lead.id}`;
 
@@ -21,8 +21,7 @@ export function LeadWorkspaceShell({ lead, children }: { lead: LeadWorkspaceView
     <main className="lead-workspace" id="main-content">
       <div className="lead-workspace-bar">
         <Link href="/installer-review-emerald/leads" className="lead-workspace-back">← Back to leads</Link>
-        <button type="button" className="lead-workspace-new-lead" aria-disabled="true" aria-describedby="new-lead-help">New Lead</button>
-        <span id="new-lead-help" className="visually-hidden">Manual lead creation is coming in the next approved release step.</span>
+        {canCreateLead ? <Link href="/installer-review-emerald/leads/new" className="lead-workspace-new-lead">New Lead</Link> : null}
       </div>
 
       <header className="lead-workspace-summary">
@@ -39,6 +38,10 @@ export function LeadWorkspaceShell({ lead, children }: { lead: LeadWorkspaceView
           <div>
             <dt>Workflow stage</dt>
             <dd><span className={`status-pill status-pill-${lead.stage.tone}`}>{lead.stage.label}</span></dd>
+          </div>
+          <div>
+            <dt>Creation</dt>
+            <dd><strong>{lead.origin.label}</strong><span>{lead.origin.detail}</span></dd>
           </div>
           <div>
             <dt>Readiness</dt>

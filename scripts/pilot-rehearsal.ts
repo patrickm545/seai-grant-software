@@ -294,6 +294,7 @@ async function addSyntheticLead(db: PrismaClient, tenant: Tenant, id: string) {
     data: {
       organisationId: tenant.result.organisation.id,
       installerId: tenant.result.installer.id,
+      creationOrigin: 'HOMEOWNER_INTAKE',
       fullName: `Synthetic Homeowner ${tenant.label}`,
       email: `homeowner-${tenant.label.toLowerCase()}-${marker(id)}@pilot-rehearsal.example.test`,
       phone: '+353000000000',

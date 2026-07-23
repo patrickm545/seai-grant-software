@@ -13,13 +13,14 @@ import {
 export type RecentDashboardLead = {
   id: string;
   applicant: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   location: string;
   confidence: number | null;
   jurisdictionStatus: 'SUPPORTED' | 'UNSUPPORTED' | 'LOCATION_REVIEW';
   jurisdictionLabel: string;
   leadScore: LeadScoreValue;
+  scoreAssessed: boolean;
   pipelineStage: LeadPipelineStageValue;
   lastActivityAt: string | null;
 };
@@ -57,7 +58,7 @@ export function RecentLeadsTable({
   basePath,
   updateStageAction,
   title = 'Recent leads',
-  subtitle = 'Homeowner pipeline'
+  subtitle = 'Manual and homeowner pipeline'
 }: {
   leads: RecentDashboardLead[];
   basePath: string;
@@ -68,7 +69,9 @@ export function RecentLeadsTable({
   const [filter, setFilter] = useState<FilterValue>('ALL');
 
   const filteredLeads = useMemo(
-    () => leads.filter((lead) => filter === 'ALL' || lead.leadScore === filter || lead.pipelineStage === filter),
+    () => leads.filter((lead) => filter === 'ALL'
+      || (lead.scoreAssessed && lead.leadScore === filter)
+      || lead.pipelineStage === filter),
     [filter, leads]
   );
 
@@ -94,7 +97,7 @@ export function RecentLeadsTable({
       {leads.length === 0 ? (
         <div className="dashboard-table-empty" data-empty-state="organisation">
           <strong>No leads yet</strong>
-          <p>New homeowner enquiries will appear here when they complete your SolarGRANT Pro intake form.</p>
+          <p>New manual and homeowner enquiries will appear here.</p>
         </div>
       ) : filteredLeads.length === 0 ? (
         <div className="dashboard-table-empty" data-empty-state="filter">
@@ -124,7 +127,7 @@ export function RecentLeadsTable({
                 <tr key={lead.id}>
                   <td>
                     <strong>{lead.applicant}</strong>
-                    <span>{lead.email}</span>
+                    <span>{lead.email || lead.phone || 'Contact method unavailable'}</span>
                     <span>{lead.location}</span>
                   </td>
                   <td>
@@ -144,9 +147,11 @@ export function RecentLeadsTable({
                     ) : null}
                   </td>
                   <td>
-                    <span className={`installer-badge installer-signal-${lead.leadScore.toLowerCase()}`}>
-                      {getLeadScoreLabel(lead.leadScore)}
-                    </span>
+                    {lead.scoreAssessed ? (
+                      <span className={`installer-badge installer-signal-${lead.leadScore.toLowerCase()}`}>
+                        {getLeadScoreLabel(lead.leadScore)}
+                      </span>
+                    ) : <span className="installer-badge">Not assessed</span>}
                   </td>
                   <td>
                     <span className="installer-table-muted">{formatLastActivity(lead.lastActivityAt)}</span>

@@ -68,3 +68,15 @@ test('a stored zero is never replaced by a positive fallback', () => {
   assert.equal(metrics.applicationsSubmitted, 0);
   assert.equal(metrics.leadsWithoutDocuments, 0);
 });
+
+test('missing manual qualification facts are not reported as a negative eligibility concern', () => {
+  const metrics = getDashboardMetrics([
+    lead({
+      county: null,
+      worksStarted: null,
+      priorSolarGrantAtMprn: null,
+      likelyEligible: null
+    })
+  ]);
+  assert.equal(metrics.eligibilityConcerns, 0);
+});

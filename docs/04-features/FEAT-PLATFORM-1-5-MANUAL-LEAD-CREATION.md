@@ -12,6 +12,12 @@
 
 Allow an authenticated installer to create a tenant-owned lead from a short `New Lead` flow and continue directly in the canonical Lead Workspace. Manual creation extends the existing SolarGRANT Pro `Lead`; it does not create another intake engine, platform aggregate, or CRM abstraction.
 
+## Implementation Status
+
+Implemented on the dedicated PR 2 branch for draft review: canonical route `/installer-review-emerald/leads/new`, protected service, exact bounded duplicate warning, request-token/input-hash idempotency, atomic lead/workflow/activity/note/audit writes, explicit origin and progressive unknown persistence, membership-backed attribution/assignment, qualification action gates, consumer compatibility, tests, and migration evidence. This document remains Approved rather than Complete until review and merge. Production enablement remains blocked by the unrecorded privacy gate.
+
+The complete pre-schema field/consumer decision record is [Platform Release 1.5 PR 2 Lead Field And Consumer Migration](../03-engineering/PLATFORM_RELEASE_1_5_PR2_LEAD_FIELD_CONSUMER_MIGRATION.md).
+
 ## Problem
 
 Phone, referral, event, and walk-in enquiries cannot currently be captured without completing the homeowner qualification form. Installers must keep incomplete enquiries elsewhere or enter invented qualification facts. The current `Lead` schema also requires email, property, MPRN, eligibility, and consent fields that are not known during minimum manual capture.

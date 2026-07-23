@@ -66,4 +66,6 @@ Platform Release 1.2 adds the first reusable authorisation and typed audit found
 
 ## Sprint requirement
 
+Platform Release 1.5 PR 2 manual lead collection is not approved for Production until Clada Systems records the ADR-0021 wording, purpose/lawful basis, retention/deletion, follow-up contact, access/correction, sensitive-note, and pilot-minimisation decisions. Implementation and synthetic disposable verification do not complete that gate.
+
 Any sprint that changes login, customer data, forms, uploads, business access, or storage must mention security and GDPR impact in the sprint notes.

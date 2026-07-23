@@ -24,7 +24,7 @@ The current repository supports:
 - organisation-owned lead records through the Clada OS identity foundation
 - Republic of Ireland-only routing for the SEAI grant-assistance journey, with a dedicated unsupported Northern Ireland outcome
 
-Authenticated manual lead creation is Approved for Platform Release 1.5 but is not implemented on the current baseline.
+Authenticated manual lead creation is implemented on the Platform Release 1.5 PR 2 draft branch and remains pending review/merge; it is not Production-enabled.
 
 ## Module Boundary
 
@@ -40,7 +40,7 @@ SolarGRANT Pro should teach Clada OS which capabilities need to become reusable.
 
 The authoritative `main` baseline after PR #33 supports SolarGRANT Pro uploaded evidence through `LeadDocument`, including existing upload, review, portal, and preparation behaviour. Those records are uploaded evidence and must remain labelled and governed as such.
 
-The same baseline contains the approved Release 1.4 Master Specification and ADR-0015, ADR-0016, and ADR-0017, but it does not contain the governed generated-document runtime implementation described by them. Amended Platform Release 1.5 documentation, Manual Lead Creation, ADR-0021, six features, and the eight-PR sequence are approved. PR #34 has merged and PR 1's canonical lead-workspace shell is in implementation and validation; PR 2 has not begun. Release 1.5 PR 7, Customer Document Centre, must wait for the Release 1.4 generated-document implementation to complete its own separately approved PR sequence and be reviewed and merged into `main`.
+The same baseline contains the approved Release 1.4 Master Specification and ADR-0015, ADR-0016, and ADR-0017, but it does not contain the governed generated-document runtime implementation described by them. Amended Platform Release 1.5 documentation, Manual Lead Creation, ADR-0021, six features, and the eight-PR sequence are approved. PR #34 and PR #35 have merged; PR 2 implements manual creation on its dedicated draft branch. Release 1.5 PR 7, Customer Document Centre, must wait for the Release 1.4 generated-document implementation to complete its own separately approved PR sequence and be reviewed and merged into `main`.
 
 SolarGRANT Pro must not create a temporary generated-document substitute or duplicate or partially recreate Release 1.4 architecture inside Release 1.5.
 
@@ -48,7 +48,7 @@ SolarGRANT Pro must not create a temporary generated-document substitute or dupl
 
 Manual Lead Creation extends the existing SolarGRANT Pro `Lead` under Accepted ADR-0021 after PR #34 merges. The approved minimum is customer name plus phone or email, explicit `MANUAL_INSTALLER` origin, trusted organisation/Installer/creator attribution, derived action-specific completeness, truthful unknown qualification fields, same-tenant duplicate warning, and canonical-workspace redirect. Production enablement requires the recorded privacy gate.
 
-The current runtime does not provide this flow. It must not use a second intake aggregate, placeholder qualification or consent values, bulk import, merging, enrichment, CRM synchronisation, AI creation, messaging, configurable schemas, or custom source taxonomies. Existing homeowner intake and portal behaviour remain authoritative until an approved implementation changes documented reality.
+The PR 2 branch provides this flow at `/installer-review-emerald/leads/new` behind `lead.create`; it remains unmerged and not Production-enabled. It does not use a second intake aggregate, placeholder qualification or consent values, bulk import, merging, enrichment, CRM synchronisation, AI creation, messaging, configurable schemas, or custom source taxonomies. Existing homeowner intake and portal behaviour remain authoritative and regression-protected.
 
 ## Platform Release 1.1 Consumption
 

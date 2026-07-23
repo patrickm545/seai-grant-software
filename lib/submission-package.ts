@@ -3,6 +3,7 @@ import { buildApplicationPack } from './application-pack';
 import type { SolarQuoteEstimate } from './quote-estimate';
 import { parseGeneratedInstallerQuote } from './installer-quote-pricing';
 import { requireSupportedSolarGrantJurisdiction } from './solargrant-jurisdiction';
+import { requireLeadQualificationAction } from './lead-qualification';
 
 type SalesSignal = {
   leadTemperature?: string;
@@ -50,8 +51,15 @@ function getQuoteEstimate(lead: Lead): SolarQuoteEstimate | null {
   return quoteEstimate as SolarQuoteEstimate;
 }
 
+function requireSubmissionFacts(lead: Lead) {
+  requireLeadQualificationAction({ lead, action: 'GRANT_READINESS' });
+  requireLeadQualificationAction({ lead, action: 'QUOTE_RECOMMENDATION' });
+  requireLeadQualificationAction({ lead, action: 'HOMEOWNER_CONSENT_PROCESSING' });
+}
+
 export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[] }, installer: Installer) {
   requireSupportedSolarGrantJurisdiction(lead);
+  requireSubmissionFacts(lead);
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
@@ -138,6 +146,7 @@ export function buildSubmissionPackage(lead: Lead & { documents?: LeadDocument[]
 
 export function buildPortalFillPreview(lead: Lead, installer: Installer) {
   requireSupportedSolarGrantJurisdiction(lead);
+  requireSubmissionFacts(lead);
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);

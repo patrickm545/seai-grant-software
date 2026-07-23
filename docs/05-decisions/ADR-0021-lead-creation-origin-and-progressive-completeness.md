@@ -12,6 +12,8 @@
 
 Platform Release 1.5 adds authenticated manual lead creation with customer name and at least one of phone or email. The current SolarGRANT Pro `Lead` requires email, address, county, property ownership, dwelling type, build year, MPRN, works-started, consent, and other homeowner qualification values. Those requirements are valid for the public qualification intake but cannot honestly represent an early phone or referral enquiry.
 
+Implementation status: the accepted contract is implemented on the PR 2 draft branch with the field/consumer table, additive migration, service/action gates, permission mapping, tests, and disposable PostgreSQL evidence. The ADR remains Accepted; merge and Production privacy approval are not claimed.
+
 Placeholder strings, guessed booleans, zero years, fabricated consent, or a parallel `ManualLead` record would damage data integrity and create divergent lead lifecycles. Creation origin, qualification completeness, creator attribution, assignment, permissions, duplicate detection, follow-up, notes, privacy, and historical migration therefore require one explicit decision before implementation PR 2.
 
 ## Decision

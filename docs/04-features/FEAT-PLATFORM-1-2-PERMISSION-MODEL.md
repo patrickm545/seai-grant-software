@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Per platform release |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-22 |
 
 ## Summary
 
@@ -60,6 +60,10 @@ Human users receive effective permissions from their active membership role. Sys
 - Role mappings are defined in code and tested.
 - Permission checks fail closed for missing actor, missing membership, inactive context, unknown permission, or unmapped role.
 - Service and system actors do not implicitly inherit human permissions.
+
+## Current Catalogue Amendment - Platform Release 1.5 PR 2
+
+`lead.create` is an explicit permission. `ORGANISATION_OWNER`, `ORGANISATION_ADMIN`, `ORGANISATION_MEMBER`, and `CLADA_INTERNAL_ADMIN` receive it. This lets sales members record a minimum enquiry without granting update, assignment, deletion, export, or status-change authority. Assignment remains separately protected by `lead.assign`; duplicate summaries remain protected by `lead.read`. Service/system actors and support roles do not receive creation implicitly. All checks occur in the protected server service before writes.
 
 ## Security Requirements
 

@@ -38,11 +38,12 @@ import {
   leadPipelineStages
 } from '@/lib/crm';
 import { adaptSolarGrantLeadForPresentation } from '@/lib/solargrant-jurisdiction-safe-view';
+import { getLeadQualificationSummary } from '@/lib/lead-qualification';
 
 export const dynamic = 'force-dynamic';
 
 type LeadDetail = Prisma.LeadGetPayload<{
-  include: { installer: true; documents: true };
+  include: { installer: true; documents: true; assignedMembership: { include: { user: true } } };
 }>;
 
 const STATUS_LABELS: Record<string, string> = {
@@ -326,7 +327,14 @@ function formatEnumValue(value: unknown) {
 }
 
 function formatBoolean(value: unknown) {
-  return value ? 'Yes' : 'No';
+  return typeof value === 'boolean' ? (value ? 'Yes' : 'No') : 'Not supplied';
+}
+
+function formatFactLabel(value: string) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace('Mprn', 'MPRN')
+    .replace(/^./, (letter) => letter.toUpperCase());
 }
 
 function formatPercent(value: unknown) {
@@ -453,6 +461,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     where: leadOrganisationWhere(organisationContext, { id }),
     include: {
       installer: true,
+      assignedMembership: { include: { user: true } },
       documents: {
         orderBy: { createdAt: 'desc' }
       }
@@ -485,13 +494,18 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     take: 30
   });
 
-  const missingItems = asStringArray(lead.missingItemsJson);
+  const qualification = getLeadQualificationSummary(lead);
+  const storedMissingItems = asStringArray(lead.missingItemsJson);
+  const missingItems = Array.from(new Set([
+    ...storedMissingItems,
+    ...qualification.eligibility.missingFacts.map(formatFactLabel)
+  ]));
   const risks = asStringArray(lead.risksJson);
   const exportData = asRecord(lead.structuredExportJson);
   const salesSignal = getSalesSignal(lead.structuredExportJson);
   const quoteEstimate = asRecord(exportData?.quoteEstimate);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
-  const leadTemperature = typeof salesSignal?.leadTemperature === 'string' ? salesSignal.leadTemperature : 'WARM';
+  const leadTemperature = typeof salesSignal?.leadTemperature === 'string' ? salesSignal.leadTemperature : null;
   const noteEntries = getNoteEntries(lead.notes);
   const grantWarnings = asStringArray(quoteEstimate?.grantWarnings);
   const exportWarnings = [
@@ -500,18 +514,27 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     ...risks.map((risk) => `Risk: ${risk}`)
   ];
   const mprnWarnings = [
-    /^\d{11}$/.test(lead.mprn) ? null : 'MPRN is not an 11-digit value.',
+    /^\d{11}$/.test(lead.mprn ?? '') ? null : 'MPRN is not an 11-digit value.',
     lead.worksStarted ? 'Works appear to have started before grant approval.' : null,
     lead.priorSolarGrantAtMprn ? 'Prior solar grant recorded at this MPRN.' : null
   ].filter((item): item is string => Boolean(item));
-  const grantLikely = quoteEstimate?.grantLikely === true || lead.likelyEligible === true;
+  const grantLikely = quoteEstimate?.grantLikely === true || lead.likelyEligible === true
+    ? true
+    : quoteEstimate?.grantLikely === false || lead.likelyEligible === false
+      ? false
+      : null;
+  const grantStatusFallback = grantLikely === true
+    ? 'Likely eligible, subject to SEAI approval.'
+    : grantLikely === false
+      ? 'Manual review needed'
+      : 'Qualification incomplete';
   const copyQuoteSummary = [
     `Recommended system: ${formatKwp(quoteEstimate?.recommendedSystemSizeKwp)}`,
     `Estimated panels: ${formatNumber(quoteEstimate?.estimatedPanelCount)}`,
     `Net quote range: ${formatEuroRangeValue(quoteEstimate?.netCostRangeAfterGrant)}`,
     `Annual savings: ${formatEuroRangeValue(quoteEstimate?.estimatedAnnualSavingsRange)}`,
     `Payback: ${formatPayback(quoteEstimate?.estimatedPaybackRangeYears)}`,
-    `Grant status: ${getStringValue(quoteEstimate?.grantStatus, grantLikely ? 'Likely eligible, subject to SEAI approval.' : 'Review needed')}`
+    `Grant status: ${getStringValue(quoteEstimate?.grantStatus, grantStatusFallback)}`
   ].join('\n');
   const copyHomeownerSummary = [
     `Applicant: ${lead.fullName}`,
@@ -528,7 +551,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
   const addressSummary = [lead.addressLine1, lead.addressLine2, lead.county, lead.eircode].filter(Boolean).join(', ');
   const eligibilityLabel = lead.likelyEligible === null ? 'Pending review' : lead.likelyEligible ? 'Likely eligible' : 'Needs review';
   const confidenceLabel = lead.eligibilityConfidence === null ? 'Not scored' : formatPercent(lead.eligibilityConfidence);
-  const consentCaptured = lead.consentToProcess && lead.consentToGrantAssist && lead.consentToContact;
+  const consentCaptured = qualification.consent.allowed;
   const nextRecommendedAction = getStringValue(
     salesSignal?.recommendedNextAction ?? quoteEstimate?.recommendedNextAction,
     'No recommended action is recorded.'
@@ -577,11 +600,11 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               <div className="lead-crm-field-grid lead-crm-overview-fields">
                 <LeadField label="Installer" value={lead.installer.name} />
                 <LeadField label="Pipeline stage" value={getPipelineStageLabel(lead.pipelineStage)} />
-                <LeadField label="Lead score" value={getLeadScoreLabel(lead.leadScore)} />
+                <LeadField label="Lead score" value={qualification.recommendation.allowed ? getLeadScoreLabel(lead.leadScore) : 'Not assessed'} />
                 <LeadField label="Grant workflow" value={STATUS_LABELS[lead.status]} />
                 <LeadField label="Follow-up date" value={formatDateInput(nextFollowUpDate) || 'Not scheduled'} />
                 <LeadField label="Last contacted" value={formatDateTime(lead.lastContactedAt)} />
-                <LeadField label="Assigned admin" value={lead.assignedAdmin || 'Unassigned'} />
+                <LeadField label="Assigned admin" value={lead.assignedMembership?.user.displayName || lead.assignedAdmin || 'Unassigned'} />
                 <LeadField label="Assigned installer" value={lead.assignedInstaller || 'Unassigned'} />
               </div>
             </div>
@@ -590,11 +613,11 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
           <div className="lead-crm-two-column">
             <LeadCard eyebrow="Contact details" title="Applicant">
               <div className="lead-crm-field-grid">
-                <LeadField label="Email" value={<a href={`mailto:${lead.email}`} className="lead-crm-link">{lead.email}</a>} />
+                <LeadField label="Email" value={lead.email ? <a href={`mailto:${lead.email}`} className="lead-crm-link">{lead.email}</a> : 'No email provided'} />
                 <LeadField label="Phone" value={lead.phone ? <a href={`tel:${lead.phone}`} className="lead-crm-link">{lead.phone}</a> : 'No phone provided'} />
                 <LeadField label="Preferred callback" value={callbackWindow} />
                 <LeadField label="Address" value={addressSummary} />
-                <LeadField label="MPRN" value={lead.mprn} />
+                <LeadField label="MPRN" value={lead.mprn || 'Not supplied'} />
                 <LeadField label="Consent" value={consentCaptured ? 'Captured' : 'Check required'} />
               </div>
             </LeadCard>
@@ -602,7 +625,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <LeadCard eyebrow="Property details" title="Home and roof">
               <div className="lead-crm-field-grid">
                 <LeadField label="Dwelling type" value={formatEnumValue(lead.dwellingType)} />
-                <LeadField label="Year built" value={lead.yearBuilt} />
+                <LeadField label="Year built" value={lead.yearBuilt ?? 'Not supplied'} />
                 <LeadField label="Year occupied" value={lead.yearOccupied || 'Unknown'} />
                 <LeadField label="Roof type" value={roofType} />
                 <LeadField label="Roof direction" value={roofDirection} />
@@ -648,7 +671,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 <LeadField label="Net cost after grant" value={netQuoteRange} />
                 <LeadField label="Annual savings" value={annualSavingsRange} />
                 <LeadField label="Payback range" value={paybackRange} />
-                <LeadField label="Grant status" value={getStringValue(quoteEstimate?.grantStatus, grantLikely ? 'Likely eligible, subject to SEAI approval.' : 'Manual review needed')} />
+                <LeadField label="Grant status" value={getStringValue(quoteEstimate?.grantStatus, grantStatusFallback)} />
               </div>
             </LeadCard>
           </div>
@@ -776,9 +799,9 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
             <div className="lead-crm-note-layout">
               <div className="homeowner-context-summary">
                 <div className="homeowner-context-hero">
-                  <span className={`status-pill status-pill-${getLeadTempTone(leadTemperature)}`}>{leadTemperature} lead</span>
-                  <span className={`status-pill status-pill-${grantLikely ? 'success' : 'warning'}`}>
-                    {grantLikely ? 'Grant likely' : 'Grant review'}
+                  <span className={`status-pill status-pill-${leadTemperature ? getLeadTempTone(leadTemperature) : 'default'}`}>{leadTemperature ? `${leadTemperature} lead` : 'Lead temperature not assessed'}</span>
+                  <span className={`status-pill status-pill-${grantLikely === true ? 'success' : 'warning'}`}>
+                    {grantLikely === true ? 'Grant likely' : grantLikely === false ? 'Grant review' : 'Qualification incomplete'}
                   </span>
                   <span className="status-pill status-pill-default">{installTimeline}</span>
                 </div>
@@ -898,16 +921,16 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 <DetailMetric label="Recommended system" value={recommendedSystemSize} tone="success" />
                 <DetailMetric label="Estimated panels" value={formatNumber(quoteEstimate?.estimatedPanelCount)} tone="info" />
                 <DetailMetric label="Net quote range" value={netQuoteRange} tone="success" />
-                <DetailMetric label="Grant eligibility" value={grantLikely ? 'Likely eligible' : 'Review needed'} tone={grantLikely ? 'success' : 'warning'} />
+                <DetailMetric label="Grant eligibility" value={grantLikely === true ? 'Likely eligible' : grantLikely === false ? 'Review needed' : 'Qualification incomplete'} tone={grantLikely === true ? 'success' : 'warning'} />
               </div>
 
               <div className="structured-section-grid">
                 <StructuredSection title="Property Information">
-                  <StructuredField label="County" value={lead.county} />
+                  <StructuredField label="County" value={lead.county ?? 'Not recorded'} />
                   <StructuredField label="Eircode" value={lead.eircode || 'Not supplied'} />
-                  <StructuredField label="MPRN" value={lead.mprn} />
+                  <StructuredField label="MPRN" value={lead.mprn ?? 'Not recorded'} />
                   <StructuredField label="Dwelling Type" value={formatEnumValue(lead.dwellingType)} />
-                  <StructuredField label="Year Built" value={String(lead.yearBuilt)} />
+                  <StructuredField label="Year Built" value={lead.yearBuilt === null ? 'Not supplied' : String(lead.yearBuilt)} />
                   <StructuredField label="Year Occupied" value={lead.yearOccupied ? String(lead.yearOccupied) : 'Not supplied'} />
                 </StructuredSection>
                 <StructuredSection title="Roof Details">
@@ -950,7 +973,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                   <StructuredField label="Prior Grant At MPRN" value={formatBoolean(lead.priorSolarGrantAtMprn)} />
                 </StructuredSection>
                 <StructuredSection title="Installer Notes">
-                  <StructuredField label="Lead Temperature" value={leadTemperature} />
+                  <StructuredField label="Lead Temperature" value={leadTemperature ?? 'Not assessed'} />
                   <StructuredField label="Install Timeline" value={installTimeline} />
                   <StructuredField label="Callback Window" value={callbackWindow} />
                   <StructuredField label="Recommended Next Action" value={nextRecommendedAction} />

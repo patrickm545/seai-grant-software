@@ -5,8 +5,8 @@ export type DashboardMetricLead = {
   status: string;
   pipelineStage: string;
   leadScore: string;
-  worksStarted: boolean;
-  priorSolarGrantAtMprn: boolean;
+  worksStarted: boolean | null;
+  priorSolarGrantAtMprn: boolean | null;
   likelyEligible: boolean | null;
   county?: string | null;
   eircode?: string | null;
@@ -32,7 +32,12 @@ export function isOpenBlocker(lead: DashboardMetricLead) {
 }
 
 export function isEligibilityConcern(lead: DashboardMetricLead) {
-  return !classifySolarGrantJurisdiction(lead).isSupported || lead.worksStarted || lead.priorSolarGrantAtMprn || lead.likelyEligible === false;
+  const jurisdiction = classifySolarGrantJurisdiction(lead);
+  const knownJurisdictionConcern = !jurisdiction.isSupported && jurisdiction.reason !== 'MISSING_COUNTY';
+  return knownJurisdictionConcern
+    || lead.worksStarted === true
+    || lead.priorSolarGrantAtMprn === true
+    || lead.likelyEligible === false;
 }
 
 export function getPipelineCounts(leads: readonly DashboardMetricLead[]) {

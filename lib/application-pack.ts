@@ -2,6 +2,7 @@ import type { Installer, Lead, LeadDocument } from '@prisma/client';
 import type { SolarQuoteEstimate } from './quote-estimate';
 import { formatPricingCurrency, parseGeneratedInstallerQuote } from './installer-quote-pricing';
 import { adaptSolarGrantLeadForPresentation } from './solargrant-jurisdiction-safe-view';
+import { getLeadQualificationSummary } from './lead-qualification';
 
 type SalesSignal = {
   callbackWindow?: string;
@@ -223,6 +224,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
   const safeLead = adaptSolarGrantLeadForPresentation(lead);
   lead = safeLead;
   const jurisdictionView = safeLead.jurisdictionView;
+  const qualification = getLeadQualificationSummary(lead);
   const salesSignal = getSalesSignal(lead);
   const quoteEstimate = getQuoteEstimate(lead);
   const generatedQuote = parseGeneratedInstallerQuote(lead.generatedQuoteJson);
@@ -232,6 +234,12 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
   const risks = asStringArray(lead.risksJson);
 
   const baseChecklist: ReadinessItem[] = [
+    {
+      id: 'qualification-gate',
+      label: 'qualification facts are validated',
+      complete: qualification.readiness.allowed,
+      missingMessage: 'Qualification or consent facts require review'
+    },
     {
       id: 'supported-jurisdiction',
       label: 'property is in the supported Republic of Ireland route',
@@ -271,7 +279,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
     {
       id: 'mprn',
       label: 'MPRN exactly 11 digits',
-      complete: /^\d{11}$/.test(lead.mprn),
+      complete: /^\d{11}$/.test(lead.mprn ?? ''),
       missingMessage: 'MPRN must be exactly 11 digits'
     },
     {
@@ -301,7 +309,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
     {
       id: 'consents',
       label: 'required consent fields completed',
-      complete: lead.consentToProcess && lead.consentToGrantAssist && lead.consentToContact,
+      complete: lead.consentToProcess === true && lead.consentToGrantAssist === true && lead.consentToContact === true,
       missingMessage: 'Required consent fields are not completed'
     },
     ...REQUIRED_DOCUMENTS.map((document) => ({
@@ -356,7 +364,7 @@ export function buildApplicationPack(lead: LeadForApplicationPack): ApplicationP
       makeField('Eircode', formatOptional(lead.eircode))
     ]),
     makeSection('mprn-electricity-details', 'MPRN / Electricity Details', [
-      makeField('MPRN', lead.mprn, !/^\d{11}$/.test(lead.mprn)),
+      makeField('MPRN', lead.mprn, !/^\d{11}$/.test(lead.mprn ?? '')),
       makeField('Monthly Electricity Bill Range', formatEnum(salesSignal.monthlyElectricityBillRange)),
       makeField('Electricity Bill Uploaded', hasDocument(documents, 'electricity_bill')),
       makeField('Meter Photo Uploaded', hasDocument(documents, 'meter_photo'))

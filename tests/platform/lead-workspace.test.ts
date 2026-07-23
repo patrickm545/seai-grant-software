@@ -24,6 +24,21 @@ function leadFixture(overrides: Record<string, unknown> = {}) {
     phone: null,
     county: 'Galway',
     eircode: null,
+    addressLine1: '1 Main Street',
+    propertyOwner: true,
+    privateLandlord: false,
+    dwellingType: 'DETACHED',
+    yearBuilt: 2015,
+    mprn: '10012345678',
+    worksStarted: false,
+    priorSolarGrantAtMprn: false,
+    consentToProcess: true,
+    consentToGrantAssist: true,
+    consentToContact: true,
+    structuredExportJson: {},
+    generatedQuoteJson: null,
+    creationOrigin: 'HOMEOWNER_INTAKE',
+    assignedMembership: null,
     pipelineStage: 'CONTACTED',
     likelyEligible: null,
     nextFollowUpAt: null,
@@ -48,11 +63,14 @@ test('workspace read is permission checked, organisation scoped, bounded, and re
     AND: [{ organisationId: 'org-a' }, { id: 'lead-a' }]
   });
   assert.deepEqual(Object.keys((query as { select: Record<string, boolean> }).select).sort(), [
-    'county', 'eircode', 'email', 'followUpDate', 'fullName',
-    'id', 'likelyEligible', 'nextFollowUpAt', 'phone', 'pipelineStage'
+    'addressLine1', 'assignedMembership', 'consentToContact', 'consentToGrantAssist',
+    'consentToProcess', 'county', 'creationOrigin', 'dwellingType', 'eircode', 'email',
+    'followUpDate', 'fullName', 'generatedQuoteJson', 'id', 'likelyEligible', 'mprn',
+    'nextFollowUpAt', 'phone', 'pipelineStage', 'priorSolarGrantAtMprn', 'privateLandlord',
+    'propertyOwner', 'structuredExportJson', 'worksStarted', 'yearBuilt'
   ]);
-  assert.equal(view?.readiness.label, 'Eligibility not yet recorded');
-  assert.equal(view?.ownerLabel, 'No reliable owner recorded');
+  assert.equal(view?.readiness.label, 'Qualification incomplete');
+  assert.equal(view?.ownerLabel, 'Unassigned');
   assert.equal(view?.nextAction.label, 'No follow-up scheduled');
 });
 
@@ -103,8 +121,8 @@ test('canonical section routes, active navigation, loading state, and safe legac
   assert.match(parentError, /reset/);
   assert.match(parentNotFound, /Lead not available/);
   assert.match(parentNotFound, /not available to your organisation/);
-  assert.match(shell, /aria-disabled="true"/);
-  assert.doesNotMatch(shell, /className="lead-workspace-new-lead" disabled/);
+  assert.match(shell, /canCreateLead \? <Link href="\/installer-review-emerald\/leads\/new"/);
+  assert.doesNotMatch(shell, /aria-disabled="true"/);
   assert.match(adminRedirect, /redirect\(`\/installer-review-emerald\/leads\/\$\{encodeURIComponent\(id\)\}`\)/);
   assert.match(dashboardRedirect, /redirect\(`\/installer-review-emerald\/leads\/\$\{encodeURIComponent\(id\)\}`\)/);
   assert.doesNotMatch(adminRedirect + dashboardRedirect, /\/admin\/leads\/\$\{/);

@@ -46,13 +46,20 @@ For Production:
 
 The Production command never resets or seeds. Prisma migrations are forward operations and are not automatically reversible. Rollback means a reviewed forward repair, application rollback when schema-compatible, or provider recovery after an incident decision.
 
-`vercel.json` runs `pnpm db:status` before the application build. The Vercel
-environment must therefore contain the matching application/database
-classification and fingerprint variables. A deployment whose target has pending
-migrations, divergent history, a failed migration, or an unsafe identity must
-fail before `next build`; do not bypass this gate. Apply approved Production
-migrations through the dedicated command before deploying the consuming
-application artifact.
+`vercel.json` runs the environment-aware database preflight before the
+application build. `VERCEL_ENV` and `APP_ENV` must match. The Vercel environment
+must contain the matching database classification and fingerprint variables.
+
+- Preview runs the dedicated `db:migrate:preview` path: guarded status, committed
+  migration deploy, and clean post-status before `next build`.
+- Production is status-only. Production migrations remain a deliberate operator
+  step through `db:migrate:production`; a Git deployment never applies them.
+- Development is status-only.
+
+A deployment whose target has divergent history, a failed migration, an unsafe
+identity, or a classification mismatch must fail before `next build`; do not
+bypass this gate. Apply approved Production migrations through the dedicated
+command before deploying the consuming application artifact.
 
 The migration wrapper accepts pending migrations only when Prisma reports a
 non-divergent repository history with no failed migration. A database-only

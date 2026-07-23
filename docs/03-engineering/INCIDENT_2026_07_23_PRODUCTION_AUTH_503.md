@@ -8,6 +8,7 @@
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Affected commit | `0f438efd8453b3bc68d6456fd2ca30a528865cf7` |
 | Affected deployment | `dpl_4XA7MifjdScwRf2Wn3TENvutzBtC` |
+| Failed PR #37 Preview deployment | `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` |
 | Last reviewed | 2026-07-23 |
 
 ## Detection And Impact
@@ -45,6 +46,12 @@ The release process validated all 15 migrations only in disposable PostgreSQL
 and deployed the new application without first proving or advancing the
 Production migration state.
 
+The first PR #37 Preview deployment exposed the corresponding Preview workflow
+gap. Its guarded `db:status` check verified the Preview identity and then
+correctly stopped the build because the same four committed migrations were
+pending. The guard was not bypassed and the failed deployment never produced a
+stale application artifact.
+
 Production also contains the completed legacy ledger entry
 `20260423093000_application_pack_admin_fields`, which is absent from the current
 repository. Prisma reported this history divergence while migrations were
@@ -75,6 +82,7 @@ customer data.
 | 2026-07-23 15:28:25.427 | Guarded pre-change integrity checkpoint captured; Neon six-hour PITR window verified. |
 | 2026-07-23 15:28-15:29 | Dedicated guarded Production command applied the four pending committed migrations and required clean status. |
 | 2026-07-23 15:29:00.653 | Post-change counts and hashes matched the checkpoint; controlled wrong credentials returned 401 and created no session. |
+| 2026-07-23 | PR #37 Preview deployment `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` failed safely after identifying four pending committed migrations. |
 
 ## Migration State Before And After
 
@@ -187,8 +195,15 @@ wrapper. The hotfix adds:
   behavior, and missing-pepper fail-closed behavior;
 - stricter migration preflight rejection for failed, ambiguous, or divergent
   histories;
-- a Vercel pre-build `pnpm db:status` gate, so database state and identity must
-  be clean before an application artifact can build.
+- an environment-aware Vercel database preflight. Preview uses the existing
+  guarded migration command and requires a clean post-status before building;
+  Production and Development builds remain status-only;
+- fail-closed agreement between Vercel's deployment classification and
+  `APP_ENV`, so a misclassified build cannot select a migration path.
+
+The Preview correction changes no Production variable, migration ledger, data,
+deployment, or feature flag. Production migrations remain an explicit operator
+action and can never be selected by the Vercel build script.
 
 ## Validation
 
@@ -196,7 +211,7 @@ wrapper. The hotfix adds:
 - Prisma format, generate, and validate: passed.
 - Typecheck: passed.
 - Lint: passed.
-- Unit/platform tests: 185 passed, 0 failed.
+- Unit/platform tests: 188 passed, 0 failed.
 - Disposable PostgreSQL 16 fresh migration: all 15 migrations applied.
 - PostgreSQL integration tests: 50 passed, 0 failed, including successful
   durable session creation, generic invalid-credential denial, single-tenant

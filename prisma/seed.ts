@@ -75,6 +75,7 @@ async function main() {
       scoreUpdatedAt: now
     },
     create: {
+      creationOrigin: 'HOMEOWNER_INTAKE',
       id: 'demo-lead-1',
       organisationId: installer.organisationId,
       installerId: installer.id,
@@ -124,6 +125,7 @@ async function main() {
       scoreUpdatedAt: now
     },
     create: {
+      creationOrigin: 'HOMEOWNER_INTAKE',
       id: 'demo-lead-2',
       organisationId: installer.organisationId,
       installerId: installer.id,
@@ -175,6 +177,7 @@ async function main() {
       scoreUpdatedAt: now
     },
     create: {
+      creationOrigin: 'HOMEOWNER_INTAKE',
       id: 'demo-lead-3',
       organisationId: installer.organisationId,
       installerId: installer.id,
@@ -226,6 +229,7 @@ async function main() {
       scoreUpdatedAt: now
     },
     create: {
+      creationOrigin: 'HOMEOWNER_INTAKE',
       id: 'demo-lead-4',
       organisationId: installer.organisationId,
       installerId: installer.id,
@@ -276,6 +280,7 @@ async function main() {
       scoreUpdatedAt: now
     },
     create: {
+      creationOrigin: 'HOMEOWNER_INTAKE',
       id: 'demo-lead-5',
       organisationId: installer.organisationId,
       installerId: installer.id,

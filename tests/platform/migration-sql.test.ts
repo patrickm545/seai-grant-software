@@ -44,6 +44,10 @@ const tenantFirstLoginMigrationSql = readFileSync(
   join(process.cwd(), 'prisma', 'migrations', '20260718150000_tenant_first_login_activation', 'migration.sql'),
   'utf8'
 );
+const manualLeadMigrationSql = readFileSync(
+  join(process.cwd(), 'prisma', 'migrations', '20260722190000_manual_lead_creation', 'migration.sql'),
+  'utf8'
+);
 
 test('migration creates identity and organisation tables', () => {
   assert.match(migrationSql, /CREATE TABLE "Organisation"/);
@@ -208,4 +212,29 @@ test('Prisma AuthSession schema requires an explicit session type with no defaul
   const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
   assert.match(schema, /sessionType AuthSessionType\s*\n/);
   assert.doesNotMatch(schema, /sessionType\s+AuthSessionType\s+@default/);
+});
+
+test('manual lead migration uses the exact accepted origin enum and evidence-only backfill', () => {
+  assert.match(manualLeadMigrationSql, /'HOMEOWNER_INTAKE'[\s\S]*'MANUAL_INSTALLER'[\s\S]*'LEGACY_UNKNOWN'/);
+  assert.match(manualLeadMigrationSql, /activity\."metadata"->>'source' = 'public_intake'/);
+  assert.match(manualLeadMigrationSql, /audit\."actorType" = 'HUMAN_USER'/);
+  assert.match(manualLeadMigrationSql, /ELSE 'LEGACY_UNKNOWN'/);
+  assert.doesNotMatch(manualLeadMigrationSql, /"leadSource"|"pipelineStage"|"status"|"fullName"/);
+  assert.match(manualLeadMigrationSql, /ALTER COLUMN "creationOrigin" SET DEFAULT 'LEGACY_UNKNOWN'/);
+  const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
+  assert.match(schema, /creationOrigin\s+LeadCreationOrigin\s*\n/);
+  assert.doesNotMatch(schema, /creationOrigin\s+LeadCreationOrigin\s+@default/);
+});
+
+test('manual lead migration preserves facts and adds tenant-scoped exact-match indexes', () => {
+  assert.doesNotMatch(manualLeadMigrationSql, /UPDATE "Lead"[\s\S]*SET "email"/);
+  assert.match(manualLeadMigrationSql, /"Lead_organisationId_manualCreationRequestId_key"[\s\S]*\("organisationId", "manualCreationRequestId"\)/);
+  assert.doesNotMatch(manualLeadMigrationSql, /"Lead_manualCreationRequestId_key"/);
+  assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedEmail_idx"/);
+  assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedPhone_idx"/);
+  assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedEircode_idx"/);
+  assert.match(manualLeadMigrationSql, /"Lead_assignedMembershipId_organisationId_fkey"/);
+  const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
+  assert.match(schema, /@@unique\(\[organisationId, manualCreationRequestId\]\)/);
+  assert.doesNotMatch(schema, /manualCreationRequestId\s+String\?\s+@unique/);
 });

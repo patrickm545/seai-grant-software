@@ -23,6 +23,7 @@ import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadActivityOrganisationWhere, leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 import { adaptSolarGrantLeadForPresentation, getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
+import { getLeadQualificationSummary } from '@/lib/lead-qualification';
 
 const ADMIN_LEAD_BASE_PATH = '/installer-review-emerald/leads';
 export const dynamic = 'force-dynamic';
@@ -61,7 +62,11 @@ function formatDateTime(value: Date | string | null | undefined) {
 }
 
 function getLeadLocation(lead: Pick<DashboardLead, 'county' | 'eircode'>) {
-  return [lead.county, lead.eircode || 'No Eircode'].filter(Boolean).join(' / ');
+  return [lead.county, lead.eircode].filter(Boolean).join(' / ') || 'Location not recorded';
+}
+
+function isLeadScoreAssessed(lead: DashboardLead) {
+  return getLeadQualificationSummary(lead).recommendation.allowed;
 }
 
 function toRecentLead(lead: DashboardLead): RecentDashboardLead {
@@ -76,6 +81,7 @@ function toRecentLead(lead: DashboardLead): RecentDashboardLead {
     jurisdictionStatus: jurisdictionView.status,
     jurisdictionLabel: jurisdictionView.label,
     leadScore: lead.leadScore as LeadScoreValue,
+    scoreAssessed: isLeadScoreAssessed(lead),
     pipelineStage: lead.pipelineStage as LeadPipelineStageValue,
     lastActivityAt: getLastActivityAt(lead).toISOString()
   };
@@ -140,9 +146,11 @@ function LeadMiniList({
               <span>{getLeadLocation(lead)}</span>
             </div>
             <div className="crm-lead-row-meta">
-              <span className={`installer-badge installer-signal-${lead.leadScore.toLowerCase()}`}>
-                {getLeadScoreLabel(lead.leadScore)}
-              </span>
+              {isLeadScoreAssessed(lead) ? (
+                <span className={`installer-badge installer-signal-${lead.leadScore.toLowerCase()}`}>
+                  {getLeadScoreLabel(lead.leadScore)}
+                </span>
+              ) : <span className="installer-badge">Not assessed</span>}
               <span className={`installer-badge installer-stage-${lead.pipelineStage.toLowerCase().replaceAll('_', '-')}`}>
                 {getPipelineStageLabel(lead.pipelineStage)}
               </span>
@@ -226,7 +234,7 @@ export default async function HiddenAdminPage() {
 
   const metrics = getDashboardMetrics(safeLeads);
   const hotLeads = safeLeads
-    .filter((lead) => lead.jurisdictionView.canPresentSeaiConclusions && lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage))
+    .filter((lead) => isLeadScoreAssessed(lead) && lead.leadScore === 'HOT' && !isClosedPipelineStage(lead.pipelineStage))
     .sort(sortByRecentActivity)
     .slice(0, 5);
   const followUpLeads = safeLeads
@@ -272,7 +280,7 @@ export default async function HiddenAdminPage() {
           <div>
             <div className="eyebrow">Getting started</div>
             <h2>No leads yet</h2>
-            <p>New homeowner enquiries will appear here when they complete your SolarGRANT Pro intake form.</p>
+            <p>New manual and homeowner enquiries will appear here.</p>
           </div>
           {intakePath ? <IntakeLinkActions intakePath={intakePath} /> : null}
         </section>
@@ -286,13 +294,13 @@ export default async function HiddenAdminPage() {
           title="Hot leads"
           subtitle="Highest-priority active opportunities"
           leads={hotLeads}
-          emptyText={leads.length === 0 ? 'No hot leads. Hot leads will appear here after homeowner enquiries arrive.' : 'No hot leads match the current priority criteria.'}
+          emptyText={leads.length === 0 ? 'No hot leads. Assessed leads will appear here when they meet the priority criteria.' : 'No hot leads match the current priority criteria.'}
         />
         <LeadMiniList
           title="Follow-up needed"
           subtitle="Due follow-ups or leads without recent contact"
           leads={followUpLeads}
-          emptyText={leads.length === 0 ? 'No follow-ups due. Follow-ups will appear here after homeowner enquiries arrive.' : 'No follow-ups are due.'}
+          emptyText={leads.length === 0 ? 'No follow-ups due. Scheduled or stale enquiries will appear here.' : 'No follow-ups are due.'}
         />
       </div>
 

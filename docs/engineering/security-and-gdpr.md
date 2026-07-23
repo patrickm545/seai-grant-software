@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Quarterly |
-| Last reviewed | 2026-07-10 |
+| Last reviewed | 2026-07-23 |
 
 ## Purpose
 
@@ -65,5 +65,9 @@ Platform Release 1.2 adds the first reusable authorisation and typed audit found
 - public homeowner portal access remains token-scoped and must not gain organisation permissions.
 
 ## Sprint requirement
+
+Platform Release 1.5 PR 2 manual lead collection is not approved for Production until Clada Systems records the ADR-0021 wording, purpose/lawful basis, retention/deletion, follow-up contact, access/correction, sensitive-note, and pilot-minimisation decisions. Implementation and synthetic disposable verification do not complete that gate.
+
+Manual Lead Creation is technically fail-closed in every application environment. Only exact explicit enablement at the platform configuration boundary opens the UI and protected service; Production and Preview remain closed by default and require Project Shield plus the relevant company/privacy owner’s recorded operational approval. The service denies a direct call before replay lookup or writes, and denial does not create normal lead/audit success evidence or log submitted personal data. This control is not a declaration of GDPR compliance or certification.
 
 Any sprint that changes login, customer data, forms, uploads, business access, or storage must mention security and GDPR impact in the sprint notes.

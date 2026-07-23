@@ -6,7 +6,7 @@
 | Status | Active; provider isolation configured, recovery evidence pending |
 | Owner | Clada Systems Engineering; Production configuration owner: Patrick or delegated deployment owner |
 | Review cycle | Every database or deployment change |
-| Last reviewed | 2026-07-16 |
+| Last reviewed | 2026-07-23 |
 
 ## Environment Model
 
@@ -31,6 +31,12 @@ The reusable guard in `lib/database-safety.ts` requires:
 - `DATABASE_URL`: secret connection URL. It is parsed but never printed.
 
 The fingerprint is `db_` plus the first 16 hexadecimal characters of SHA-256 over normalised host, port, and database name. Username, password, query parameters, and the operator-supplied branch label are excluded. Compute it locally with `pnpm db:fingerprint`; the command prints only safe identity fields.
+
+## Manual Lead Privacy Enablement
+
+`APP_ENV` also supplies the authoritative classification for the Platform Release 1.5 PR 2 Manual Lead Creation gate. The separate `MANUAL_LEAD_CREATION_ENABLED` value must equal the exact lower-case string `true`; missing, false, invalid, ambiguous, whitespace-padded, differently cased, or loose-truthy values remain disabled. An absent or unsupported `APP_ENV` also disables the feature.
+
+The same explicit rule applies to Production, Preview, Development, and test. Production and Preview default closed because either may contain real customer data. Development and test are not implicitly trusted: they must opt in explicitly, and integration execution separately proves a disposable database before the runner supplies the test-only value. Enabling Production or Preview requires a recorded Project Shield decision plus the relevant company/privacy owner’s approval; test success alone is insufficient. Rollback removes or changes the value from exact `true`. The UI then removes active entry points, the canonical page reports controlled unavailability, and the protected service rejects direct calls before replay lookup or writes.
 
 ## Positive Production Marker
 

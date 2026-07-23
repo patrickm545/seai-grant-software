@@ -26,6 +26,7 @@ import {
   requireSupportedSolarGrantJurisdiction,
   SolarGrantJurisdictionError
 } from '@/lib/solargrant-jurisdiction';
+import { normaliseEircode, normalisePhone } from '@/lib/manual-lead';
 
 export const runtime = 'nodejs';
 
@@ -411,13 +412,17 @@ export async function POST(request: NextRequest) {
         data: {
           organisationId: installer.organisationId,
           installerId: leadInput.installerId,
+          creationOrigin: 'HOMEOWNER_INTAKE',
           fullName: leadInput.fullName,
           email: leadInput.email,
+          normalisedEmail: leadInput.email,
           phone: leadInput.phone,
+          normalisedPhone: leadInput.phone ? normalisePhone(leadInput.phone) : null,
           addressLine1: leadInput.addressLine1,
           addressLine2: leadInput.addressLine2,
           county: leadInput.county,
           eircode: leadInput.eircode,
+          normalisedEircode: normaliseEircode(leadInput.eircode) ?? null,
           propertyOwner: leadInput.propertyOwner,
           privateLandlord: leadInput.privateLandlord,
           dwellingType: leadInput.dwellingType,
@@ -608,7 +613,12 @@ export async function POST(request: NextRequest) {
             channel: 'email',
             run: () =>
               sendLeadNotificationEmails({
-                lead: submissionResult.lead,
+                lead: {
+                  ...submissionResult.lead,
+                  email: leadInput.email,
+                  county: leadInput.county,
+                  mprn: leadInput.mprn
+                },
                 installerName: installer.name,
                 quoteEstimate: submissionResult.quoteEstimate,
                 recommendedNextAction: submissionResult.quoteEstimate?.recommendedNextAction
@@ -618,7 +628,10 @@ export async function POST(request: NextRequest) {
             channel: 'sms',
             run: () =>
               sendLeadNotificationSms({
-                lead: submissionResult.lead,
+                lead: {
+                  ...submissionResult.lead,
+                  county: leadInput.county
+                },
                 quoteEstimate: submissionResult.quoteEstimate,
                 leadTemperature: submissionResult.analysis.leadTemperature
               })

@@ -12,6 +12,8 @@
 
 Platform Release 1.5 adds authenticated manual lead creation with customer name and at least one of phone or email. The current SolarGRANT Pro `Lead` requires email, address, county, property ownership, dwelling type, build year, MPRN, works-started, consent, and other homeowner qualification values. Those requirements are valid for the public qualification intake but cannot honestly represent an early phone or referral enquiry.
 
+Implementation status: the accepted contract is implemented on the PR 2 draft branch with the field/consumer table, additive migration, service/action gates, permission mapping, tests, and disposable PostgreSQL evidence. The ADR remains Accepted; merge and Production privacy approval are not claimed.
+
 Placeholder strings, guessed booleans, zero years, fabricated consent, or a parallel `ManualLead` record would damage data integrity and create divergent lead lifecycles. Creation origin, qualification completeness, creator attribution, assignment, permissions, duplicate detection, follow-up, notes, privacy, and historical migration therefore require one explicit decision before implementation PR 2.
 
 ## Decision
@@ -101,6 +103,8 @@ The initial warning model matches exact normalised email, exact normalised phone
 
 Warnings are advisory. The installer may choose `Review match` or `Create anyway`. Release 1.5 has no fuzzy name/address matching, automatic merging, or global duplicate search. Duplicate checks tolerate races; submission idempotency separately protects against accidental double creation.
 
+The idempotency request token is server-issued, opaque, and unique only with its organisation: `(organisationId, manualCreationRequestId)`. It is not an authentication credential. Every initial, transactional, and race-recovery replay lookup includes the trusted organisation. Exact same-tenant replay returns the original lead, changed-payload reuse in that tenant conflicts, and an identical token may safely identify an independent request in another organisation.
+
 ### 8. Follow-Up Compatibility With ADR-0020
 
 PR 2 may capture the optional initial follow-up in the current compatible lead follow-up field when the `WorkItem` schema is not yet available. PR 3 and PR 4 must define and test the migration or projection into the Accepted ADR-0020 `WorkItem` model. One manual follow-up produces no more than one open task.
@@ -128,6 +132,8 @@ This ADR is not legal advice. Production rollout is blocked until Clada Systems 
 
 Product safeguards collect only information necessary for the enquiry, exclude contact details/note content/duplicate candidates from logs, never infer homeowner consent, and clearly distinguish installer-entered data from homeowner-submitted data. Production enablement must fail closed until the privacy gate is recorded complete.
 
+The technical gate is platform-owned and server-enforced. `APP_ENV` must identify one of Production, Preview, Development, or test, and `MANUAL_LEAD_CREATION_ENABLED` must be the exact string `true`; every missing, false, invalid, ambiguous, loose-truthy, or unsupported-environment state is closed. Production and Preview therefore default to blocked, and Development/test require an equally explicit opt-in. UI entry points reflect the state, but `createManualLead` is the final boundary and refuses direct calls before replay lookup or writes. Enabling Production or Preview is an operational decision requiring Project Shield and the relevant Clada company/privacy owner’s recorded approval, not merely passing tests. Removing or changing the value closes the feature immediately without altering stored leads.
+
 ## Required Invariants
 
 1. Every lead belongs to one trusted organisation and Installer.
@@ -142,6 +148,8 @@ Product safeguards collect only information necessary for the enquiry, exclude c
 10. Audit and logs exclude customer contact details, note bodies, and duplicate candidates.
 11. Follow-up migration creates at most one open work item per qualifying manual follow-up.
 12. Production rollout requires a completed recorded privacy gate.
+13. Manual request-token uniqueness and every replay lookup are organisation-scoped.
+14. Missing, invalid, or ambiguous privacy-gate configuration denies manual creation before any write.
 
 ## Implementation Stop Conditions
 

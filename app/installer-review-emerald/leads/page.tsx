@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import Link from 'next/link';
 import { updateLeadPipelineStage } from '@/app/installer-review-emerald/actions';
 import { DashboardShell } from '@/components/DashboardShell';
 import { RecentLeadsTable, type RecentDashboardLead } from '@/components/RecentLeadsTable';
@@ -8,7 +9,10 @@ import { getDashboardMetrics } from '@/lib/dashboard-metrics';
 import { requirePilotContext } from '@/lib/pilot-auth';
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
+import { hasPermission } from '@/lib/permissions';
 import { adaptSolarGrantLeadForPresentation, getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
+import { getLeadQualificationSummary } from '@/lib/lead-qualification';
+import { isManualLeadCreationEnabled } from '@/lib/manual-lead-privacy';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +27,7 @@ function getLastActivityAt(lead: LeadsPageLead) {
 }
 
 function getLeadLocation(lead: Pick<LeadsPageLead, 'county' | 'eircode'>) {
-  return [lead.county, lead.eircode || 'No Eircode'].filter(Boolean).join(' / ');
+  return [lead.county, lead.eircode].filter(Boolean).join(' / ') || 'Location not recorded';
 }
 
 function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
@@ -38,6 +42,7 @@ function toRecentLead(lead: LeadsPageLead): RecentDashboardLead {
     jurisdictionStatus: jurisdictionView.status,
     jurisdictionLabel: jurisdictionView.label,
     leadScore: lead.leadScore as LeadScoreValue,
+    scoreAssessed: getLeadQualificationSummary(lead).recommendation.allowed,
     pipelineStage: lead.pipelineStage as LeadPipelineStageValue,
     lastActivityAt: getLastActivityAt(lead).toISOString()
   };
@@ -83,9 +88,14 @@ export default async function InstallerLeadsPage() {
         <div>
           <div className="eyebrow">Clada OS CRM</div>
           <h1>Leads</h1>
-          <p className="small">Open homeowner records, update sales stages, review scores, and manage grant-readiness workflow.</p>
+          <p className="small">Open enquiries, update sales stages, review assessed scores, and manage grant-readiness workflow.</p>
         </div>
-        {intakePath ? <a href={intakePath} className="installer-add-button">Open intake</a> : null}
+        <div className="installer-dashboard-actions">
+          {hasPermission(organisationContext, 'lead.create') && isManualLeadCreationEnabled()
+            ? <Link href="/installer-review-emerald/leads/new" className="installer-add-button">New Lead</Link>
+            : null}
+          {intakePath ? <a href={intakePath} className="installer-secondary-link">Open homeowner intake</a> : null}
+        </div>
       </div>
 
       <RecentLeadsTable
@@ -93,7 +103,7 @@ export default async function InstallerLeadsPage() {
         basePath={ADMIN_LEAD_BASE_PATH}
         updateStageAction={updateLeadPipelineStage}
         title="All leads"
-        subtitle={`Showing ${leads.length} homeowner record${leads.length === 1 ? '' : 's'}`}
+        subtitle={`Showing ${leads.length} lead${leads.length === 1 ? '' : 's'}`}
       />
     </DashboardShell>
   );

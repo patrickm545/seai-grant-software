@@ -78,6 +78,10 @@ The next implemented platform security slice introduces:
 
 Internal administrative access remains explicit through organisation memberships. Membership in the Clada internal organisation alone does not grant access to installer-owned data.
 
+Platform Release 1.5 PR 2 extends the existing `Lead` rather than adding an enquiry aggregate. `LeadCreationOrigin` distinguishes public intake, authenticated manual creation, and ambiguous legacy rows. Qualification-only facts support null while public intake remains strict at its service schema. Manual creator and optional assignee reference organisation memberships through same-organisation composite foreign keys; legacy string assignment fields remain compatibility-only. Tenant-local duplicate keys are separately normalised and indexed. Manual request-token uniqueness is composite with `organisationId`, and every replay lookup uses the trusted organisation. Action-specific completeness is derived in `lib/lead-qualification.ts`; no generic score or completion flag is stored.
+
+`lib/manual-lead-privacy.ts` is the single typed boundary for the Manual Lead Creation enablement configuration. All recognised application environments require exact explicit enablement, while missing/invalid environment or configuration values fail closed. UI entry points reflect the state and the protected service independently enforces it before replay lookup or writes. Production and Preview remain disabled until the required Project Shield and company/privacy-owner operational approval is recorded.
+
 ## Platform Release 1.3 Workflow Foundation
 
 The workflow slice introduces:

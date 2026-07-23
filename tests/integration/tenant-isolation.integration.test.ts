@@ -43,6 +43,7 @@ function leadData(input: {
   mprn: string;
 }) {
   return {
+    creationOrigin: 'HOMEOWNER_INTAKE' as const,
     id: input.id,
     organisationId: input.organisationId,
     installerId: input.installerId,

@@ -17,7 +17,7 @@ test('dashboard runtime contains no synthetic leads or positive metric fallbacks
 
 test('organisation and filtered empty states have distinct truthful copy', () => {
   assert.match(dashboard, /No leads yet/);
-  assert.match(dashboard, /New homeowner enquiries will appear here/);
+  assert.match(dashboard, /New manual and homeowner enquiries will appear here/);
   assert.match(dashboard, /No hot leads/);
   assert.match(dashboard, /No follow-ups due/);
   assert.match(dashboard, /No recent activity/);

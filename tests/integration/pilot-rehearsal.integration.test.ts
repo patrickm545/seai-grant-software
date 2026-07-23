@@ -87,6 +87,7 @@ async function createUntrackedFixture(db: PrismaClient, rehearsalId: string) {
     data: {
       organisationId: organisation.id,
       installerId: installer.id,
+      creationOrigin: 'HOMEOWNER_INTAKE',
       fullName: `Synthetic cleanup lead ${rehearsalId}`,
       email: `lead-${rehearsalId}@pilot-rehearsal.example.test`,
       phone: '+353000000000',

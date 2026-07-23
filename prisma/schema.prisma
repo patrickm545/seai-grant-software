@@ -35,6 +35,12 @@ enum LeadScore {
   COLD
 }
 
+enum LeadCreationOrigin {
+  HOMEOWNER_INTAKE
+  MANUAL_INSTALLER
+  LEGACY_UNKNOWN
+}
+
 enum LeadActivityType {
   LEAD_CREATED
   STAGE_CHANGED
@@ -194,6 +200,8 @@ model OrganisationMembership {
   userId         String
   organisation   Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   user           User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdLeads   Lead[]                       @relation("LeadCreatorMembership")
+  assignedLeads  Lead[]                       @relation("LeadAssignedMembership")
   status         OrganisationMembershipStatus @default(ACTIVE)
   isOwner        Boolean                      @default(false)
   role           PlatformRole                 @default(ORGANISATION_MEMBER)
@@ -202,6 +210,7 @@ model OrganisationMembership {
 
   @@unique([organisationId, userId])
   @@unique([userId])
+  @@unique([id, organisationId])
   @@index([userId, status])
   @@index([organisationId, status])
   @@index([role])
@@ -262,65 +271,81 @@ model ProvisioningOperation {
 }
 
 model Lead {
-  id                    String            @id @default(cuid())
-  organisationId        String
-  organisation          Organisation      @relation(fields: [organisationId], references: [id])
-  installerId           String
-  installer             Installer         @relation(fields: [installerId, organisationId], references: [id, organisationId])
-  fullName              String
-  email                 String
-  phone                 String?
-  addressLine1          String
-  addressLine2          String?
-  county                String
-  eircode               String?
-  propertyOwner         Boolean
-  privateLandlord       Boolean           @default(false)
-  dwellingType          DwellingType
-  yearBuilt             Int
-  yearOccupied          Int?
-  mprn                  String
-  worksStarted          Boolean
-  priorSolarGrantAtMprn Boolean           @default(false)
-  consentToProcess      Boolean
-  consentToGrantAssist  Boolean
-  consentToContact      Boolean           @default(false)
-  notes                 String?
-  internalNotes         String?
-  followUpDate          DateTime?
-  assignedAdmin         String?
-  assignedInstaller     String?
-  currentCrmProcess     String?
-  installerSize         String?
-  objections            String?
-  painPoints            String?
-  likelihoodToBuy       String?
-  leadSource            String?
-  portalToken           String?           @unique
-  portalTokenCreatedAt  DateTime?
-  portalLastAccessedAt  DateTime?
-  pipelineStage         LeadPipelineStage @default(NEW_LEAD)
-  leadScore             LeadScore         @default(WARM)
-  lastContactedAt       DateTime?
-  nextFollowUpAt        DateTime?
-  scoreUpdatedAt        DateTime?
-  researchCallCompleted Boolean           @default(false)
-  salesCallRequired     Boolean           @default(false)
-  status                LeadStatus        @default(NEW)
-  aiSummary             String?
-  likelyEligible        Boolean?
-  eligibilityConfidence Float?
-  risksJson             Json?
-  missingItemsJson      Json?
-  structuredExportJson  Json?
-  generatedQuoteJson    Json?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  documents             LeadDocument[]
-  activities            LeadActivity[]
+  id                      String                  @id @default(cuid())
+  organisationId          String
+  organisation            Organisation            @relation(fields: [organisationId], references: [id])
+  installerId             String
+  installer               Installer               @relation(fields: [installerId, organisationId], references: [id, organisationId])
+  creationOrigin          LeadCreationOrigin
+  createdByMembershipId   String?
+  createdByMembership     OrganisationMembership? @relation("LeadCreatorMembership", fields: [createdByMembershipId, organisationId], references: [id, organisationId], onDelete: Restrict)
+  assignedMembershipId    String?
+  assignedMembership      OrganisationMembership? @relation("LeadAssignedMembership", fields: [assignedMembershipId, organisationId], references: [id, organisationId], onDelete: Restrict)
+  manualCreationRequestId String?
+  manualCreationInputHash String?
+  fullName                String
+  email                   String?
+  normalisedEmail         String?
+  phone                   String?
+  normalisedPhone         String?
+  addressLine1            String?
+  addressLine2            String?
+  county                  String?
+  eircode                 String?
+  normalisedEircode       String?
+  propertyOwner           Boolean?
+  privateLandlord         Boolean?
+  dwellingType            DwellingType?
+  yearBuilt               Int?
+  yearOccupied            Int?
+  mprn                    String?
+  worksStarted            Boolean?
+  priorSolarGrantAtMprn   Boolean?
+  consentToProcess        Boolean?
+  consentToGrantAssist    Boolean?
+  consentToContact        Boolean?
+  notes                   String?
+  internalNotes           String?
+  followUpDate            DateTime?
+  assignedAdmin           String?
+  assignedInstaller       String?
+  currentCrmProcess       String?
+  installerSize           String?
+  objections              String?
+  painPoints              String?
+  likelihoodToBuy         String?
+  leadSource              String?
+  portalToken             String?                 @unique
+  portalTokenCreatedAt    DateTime?
+  portalLastAccessedAt    DateTime?
+  pipelineStage           LeadPipelineStage       @default(NEW_LEAD)
+  leadScore               LeadScore               @default(WARM)
+  lastContactedAt         DateTime?
+  nextFollowUpAt          DateTime?
+  scoreUpdatedAt          DateTime?
+  researchCallCompleted   Boolean                 @default(false)
+  salesCallRequired       Boolean                 @default(false)
+  status                  LeadStatus              @default(NEW)
+  aiSummary               String?
+  likelyEligible          Boolean?
+  eligibilityConfidence   Float?
+  risksJson               Json?
+  missingItemsJson        Json?
+  structuredExportJson    Json?
+  generatedQuoteJson      Json?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  documents               LeadDocument[]
+  activities              LeadActivity[]
 
+  @@unique([organisationId, manualCreationRequestId])
   @@index([organisationId, createdAt])
   @@index([organisationId, installerId])
+  @@index([organisationId, normalisedEmail])
+  @@index([organisationId, normalisedPhone])
+  @@index([organisationId, normalisedEircode])
+  @@index([organisationId, assignedMembershipId])
+  @@index([createdByMembershipId])
 }
 
 model InstallerQuotePricing {

@@ -4,6 +4,7 @@ import { getPipelineStageLabel, getPipelineStageTone } from './crm';
 import { leadOrganisationWhere } from './lead-access';
 import { requirePermission } from './permissions';
 import { getSolarGrantJurisdictionViewState } from './solargrant-jurisdiction-safe-view';
+import { getLeadQualificationSummary } from './lead-qualification';
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
@@ -13,6 +14,10 @@ export type LeadWorkspaceViewModel = {
   email: string | null;
   phone: string | null;
   location: string;
+  origin: {
+    label: string;
+    detail: string;
+  };
   stage: {
     key: string;
     label: string;
@@ -79,14 +84,43 @@ export async function getLeadWorkspaceViewModel(args: {
       pipelineStage: true,
       likelyEligible: true,
       nextFollowUpAt: true,
-      followUpDate: true
+      followUpDate: true,
+      creationOrigin: true,
+      addressLine1: true,
+      propertyOwner: true,
+      privateLandlord: true,
+      dwellingType: true,
+      yearBuilt: true,
+      mprn: true,
+      worksStarted: true,
+      priorSolarGrantAtMprn: true,
+      consentToProcess: true,
+      consentToGrantAssist: true,
+      consentToContact: true,
+      structuredExportJson: true,
+      generatedQuoteJson: true,
+      assignedMembership: {
+        select: {
+          status: true,
+          user: { select: { displayName: true } }
+        }
+      }
     }
   });
 
   if (!lead) return null;
 
   const jurisdiction = getSolarGrantJurisdictionViewState(lead);
-  const readiness = !jurisdiction.canPresentSeaiConclusions
+  const qualification = getLeadQualificationSummary(lead);
+  const readiness = !qualification.readiness.allowed
+    ? {
+        label: 'Qualification incomplete',
+        detail: lead.creationOrigin === 'MANUAL_INSTALLER'
+          ? 'Installer-entered enquiry. Eligibility, homeowner consent, and grant readiness have not been established.'
+          : 'Required qualification or consent facts are not yet verified.',
+        tone: 'warning' as const
+      }
+    : !jurisdiction.canPresentSeaiConclusions
     ? { label: jurisdiction.label, detail: jurisdiction.message ?? 'Location must be reviewed.', tone: 'warning' as const }
     : lead.likelyEligible === true
       ? { label: 'Eligibility assessment recorded', detail: 'Likely eligible, subject to the existing SEAI review process.', tone: 'success' as const }
@@ -99,13 +133,20 @@ export async function getLeadWorkspaceViewModel(args: {
     email: lead.email || null,
     phone: lead.phone || null,
     location: [lead.county, lead.eircode].filter(Boolean).join(' / ') || 'Location not recorded',
+    origin: lead.creationOrigin === 'MANUAL_INSTALLER'
+      ? { label: 'Manually entered', detail: 'Recorded by an authenticated installer.' }
+      : lead.creationOrigin === 'HOMEOWNER_INTAKE'
+        ? { label: 'Homeowner intake', detail: 'Submitted through the homeowner qualification journey.' }
+        : { label: 'Legacy origin', detail: 'The historical creation path is not known.' },
     stage: {
       key: lead.pipelineStage,
       label: getPipelineStageLabel(lead.pipelineStage),
       tone: getPipelineStageTone(lead.pipelineStage)
     },
     readiness,
-    ownerLabel: 'No reliable owner recorded',
+    ownerLabel: lead.assignedMembership
+      ? `${lead.assignedMembership.user.displayName}${lead.assignedMembership.status === 'ACTIVE' ? '' : ' (inactive)'}`
+      : 'Unassigned',
     nextAction: describeLeadNextAction(lead.nextFollowUpAt, lead.followUpDate, now)
   };
 }

@@ -137,6 +137,7 @@ async function seedFixture(fixture: FixtureIds) {
       id: fixture.leadA,
       organisationId: fixture.orgA,
       installerId: fixture.installerA,
+      creationOrigin: 'HOMEOWNER_INTAKE',
       fullName: 'Workflow Integrity Homeowner',
       email: `homeowner-${fixture.suffix}@example.test`,
       addressLine1: '1 Integrity Street',

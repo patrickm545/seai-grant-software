@@ -89,6 +89,14 @@ The audit service exposes:
 - `buildAuditActorFromContext` for authenticated contexts;
 - a compatibility `writeAuditLog` wrapper until all legacy call sites migrate.
 
+### Current Audit Event Catalogue Amendment - Platform Release 1.5 PR 2
+
+| Action | Outcome | Actor/source | Resource | Allowed metadata | Explicit exclusions |
+| --- | --- | --- | --- | --- | --- |
+| `lead.created` | `SUCCEEDED` only after the full manual-create transaction commits | authenticated `HUMAN_USER`, trusted user/membership/organisation, source `manual_installer` | created lead | origin, Installer ID, creator membership ID, optional assignee membership ID, and boolean follow-up/note presence | customer name, phone, email, address, Eircode, note body, duplicate candidates, request payload |
+
+Validation or authorisation denial creates no successful `lead.created` event. Public intake retains its existing public/homeowner actor compatibility event and now stores explicit `HOMEOWNER_INTAKE` origin on the lead.
+
 ## Failure Behaviour
 
 Audit write failure inside a protected mutation transaction should fail the transaction for material state changes.

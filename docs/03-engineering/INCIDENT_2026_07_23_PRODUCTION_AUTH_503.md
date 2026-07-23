@@ -9,6 +9,7 @@
 | Affected commit | `0f438efd8453b3bc68d6456fd2ca30a528865cf7` |
 | Affected deployment | `dpl_4XA7MifjdScwRf2Wn3TENvutzBtC` |
 | Failed PR #37 Preview deployment | `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` |
+| Recovered PR #37 Preview deployment | `dpl_13RahjKPFfh44bePyt84t49i9ePn` |
 | Last reviewed | 2026-07-23 |
 
 ## Detection And Impact
@@ -83,6 +84,8 @@ customer data.
 | 2026-07-23 15:28-15:29 | Dedicated guarded Production command applied the four pending committed migrations and required clean status. |
 | 2026-07-23 15:29:00.653 | Post-change counts and hashes matched the checkpoint; controlled wrong credentials returned 401 and created no session. |
 | 2026-07-23 | PR #37 Preview deployment `dpl_7kYgtVzQrLanmtw6T6saf144eUbP` failed safely after identifying four pending committed migrations. |
+| 2026-07-23 16:07:05-16:07:15 | Recovered Preview deployment passed the identity guard, applied the four pending migrations, and required clean post-status. |
+| 2026-07-23 16:08 | Preview deployment became Ready; GitHub validation and Vercel checks passed. |
 
 ## Migration State Before And After
 
@@ -221,6 +224,15 @@ action and can never be selected by the Vercel build script.
   the current `20260722190000_manual_lead_creation` migration applied next and
   final status was clean.
 - Production build: passed.
+- Vercel Preview deployment `dpl_13RahjKPFfh44bePyt84t49i9ePn`: Ready. Its
+  guarded Preview preflight applied exactly the four pending committed
+  migrations and reported all 15 migrations up to date before building.
+- PR #37 GitHub validation, Vercel, and Vercel Preview Comments checks: passed.
+- Live Preview `/`: 200. `/admin`: expected login redirect with final 200.
+  Unauthenticated `/admin/dashboard`: 307 to `/login?next=%2Fadmin%2Fdashboard`.
+- Controlled invalid Preview login: 401 with the generic credential-denial body,
+  not 503. Unit and disposable-PostgreSQL coverage assert that this denial path
+  creates no auth session.
 - Live public shell, `/admin`, and `/embed`: 200.
 - Live unauthenticated `/admin/dashboard`: 307 to the login challenge.
 - Controlled invalid Production login: 401 with generic body and zero session

@@ -7,6 +7,7 @@ import { LEAD_PIPELINE_WORKFLOW_DEFINITION_KEY } from './lead-workflow';
 import { hasPermission, requirePermission } from './permissions';
 import { ensureWorkflowInstanceForResource } from './workflow';
 import { manualLeadSources } from './manual-lead-contract';
+import { requireManualLeadCreationEnabled } from './manual-lead-privacy';
 
 export { manualLeadSources } from './manual-lead-contract';
 
@@ -161,6 +162,7 @@ export async function findManualLeadDuplicates(args: {
   input: ValidatedManualLeadInput;
 }): Promise<DuplicateLeadSummary[]> {
   const { db, context, input } = args;
+  requireManualLeadCreationEnabled();
   requirePermission(context, 'lead.read');
 
   const normalisedEmail = input.email;
@@ -207,12 +209,22 @@ async function findReplay(db: PrismaClient, organisationId: string, requestId: s
   return existing;
 }
 
+export function isManualLeadIdempotencyUniqueTarget(target: unknown) {
+  if (Array.isArray(target)) {
+    return target.length === 2
+      && target.includes('organisationId')
+      && target.includes('manualCreationRequestId');
+  }
+  return target === 'Lead_organisationId_manualCreationRequestId_key';
+}
+
 export async function createManualLead(args: {
   db: PrismaClient;
   context: OrganisationContext | null | undefined;
   input: ValidatedManualLeadInput;
 }) {
   const { db, context, input } = args;
+  requireManualLeadCreationEnabled();
   requirePermission(context, 'lead.create');
   if (context.actor.actorType !== 'human_user') {
     throw new ManualLeadError('HUMAN_ACTOR_REQUIRED', 'An authenticated installer user is required.');
@@ -354,7 +366,11 @@ export async function createManualLead(args: {
 
     return { leadId, replayed: false };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError
+      && error.code === 'P2002'
+      && isManualLeadIdempotencyUniqueTarget(error.meta?.target)
+    ) {
       const racedReplay = await findReplay(db, context.organisationId, input.requestId, inputHash);
       if (racedReplay) return { leadId: racedReplay.id, replayed: true };
     }

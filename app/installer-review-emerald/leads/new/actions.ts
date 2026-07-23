@@ -10,6 +10,11 @@ import {
   ManualLeadError,
   manualLeadSchema
 } from '@/lib/manual-lead';
+import {
+  isManualLeadCreationEnabled,
+  MANUAL_LEAD_PRIVACY_GATE_MESSAGE,
+  ManualLeadPrivacyGateError
+} from '@/lib/manual-lead-privacy';
 import { AuthorizationError, hasPermission } from '@/lib/permissions';
 
 export type ManualLeadFormState = {
@@ -48,6 +53,14 @@ export async function submitManualLead(
   formData: FormData
 ): Promise<ManualLeadFormState> {
   const revision = previousState.revision + 1;
+  if (!isManualLeadCreationEnabled()) {
+    return {
+      status: 'error',
+      revision,
+      message: MANUAL_LEAD_PRIVACY_GATE_MESSAGE
+    };
+  }
+
   const values = readSafeValues(formData);
   const parsed = manualLeadSchema.safeParse(values);
   if (!parsed.success) {
@@ -82,6 +95,9 @@ export async function submitManualLead(
     const result = await createManualLead({ db: prisma, context, input: parsed.data });
     redirect(`/installer-review-emerald/leads/${result.leadId}`);
   } catch (error) {
+    if (error instanceof ManualLeadPrivacyGateError) {
+      return { revision, status: 'error', message: error.message };
+    }
     if (error instanceof ManualLeadError) {
       return { revision, status: 'error', message: error.message, values };
     }

@@ -228,8 +228,13 @@ test('manual lead migration uses the exact accepted origin enum and evidence-onl
 
 test('manual lead migration preserves facts and adds tenant-scoped exact-match indexes', () => {
   assert.doesNotMatch(manualLeadMigrationSql, /UPDATE "Lead"[\s\S]*SET "email"/);
+  assert.match(manualLeadMigrationSql, /"Lead_organisationId_manualCreationRequestId_key"[\s\S]*\("organisationId", "manualCreationRequestId"\)/);
+  assert.doesNotMatch(manualLeadMigrationSql, /"Lead_manualCreationRequestId_key"/);
   assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedEmail_idx"/);
   assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedPhone_idx"/);
   assert.match(manualLeadMigrationSql, /"Lead_organisationId_normalisedEircode_idx"/);
   assert.match(manualLeadMigrationSql, /"Lead_assignedMembershipId_organisationId_fkey"/);
+  const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
+  assert.match(schema, /@@unique\(\[organisationId, manualCreationRequestId\]\)/);
+  assert.doesNotMatch(schema, /manualCreationRequestId\s+String\?\s+@unique/);
 });

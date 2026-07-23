@@ -20,7 +20,7 @@ Implement and validate protected minimum manual lead capture into the existing S
 
 - canonical `/installer-review-emerald/leads/new` route with name plus phone/email minimum capture;
 - additive origin, creator, assignee, exact-match and progressive-nullability migration;
-- trusted tenant/actor service, bounded duplicate warning, idempotency, workflow/activity/note/audit transaction and workspace redirect;
+- trusted tenant/actor service, bounded duplicate warning, organisation-scoped idempotency, fail-closed privacy enablement, workflow/activity/note/audit transaction and workspace redirect;
 - action-specific qualification gates and public-intake/portal/consumer regression;
 - field/consumer table, migration evidence, desktop/390 px/accessibility evidence and draft CTO review PR.
 
@@ -43,7 +43,7 @@ Implement and validate protected minimum manual lead capture into the existing S
 - CEO/product approval: Approved.
 - Documentation gate PR #34: Merged in the authoritative `main` baseline.
 - PR 1: Merged as PR #35 at `3cd9ded8cc93a98ed1a0136ba13d4cc9bf63e7fd`.
-- PR 2: Implementation and disposable verification in progress on its dedicated branch; Production privacy gate remains incomplete.
+- PR 2: CTO/Project Shield corrections and disposable verification are in progress on its existing draft branch. The technical privacy gate is fail-closed; Production approval and enablement remain incomplete.
 
 ## Definition Of Done
 

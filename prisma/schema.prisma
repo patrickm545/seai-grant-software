@@ -281,7 +281,7 @@ model Lead {
   createdByMembership     OrganisationMembership? @relation("LeadCreatorMembership", fields: [createdByMembershipId, organisationId], references: [id, organisationId], onDelete: Restrict)
   assignedMembershipId    String?
   assignedMembership      OrganisationMembership? @relation("LeadAssignedMembership", fields: [assignedMembershipId, organisationId], references: [id, organisationId], onDelete: Restrict)
-  manualCreationRequestId String?                 @unique
+  manualCreationRequestId String?
   manualCreationInputHash String?
   fullName                String
   email                   String?
@@ -338,6 +338,7 @@ model Lead {
   documents               LeadDocument[]
   activities              LeadActivity[]
 
+  @@unique([organisationId, manualCreationRequestId])
   @@index([organisationId, createdAt])
   @@index([organisationId, installerId])
   @@index([organisationId, normalisedEmail])

@@ -120,6 +120,7 @@ Unknown values remain null/absent and are never treated as false, declined, not 
 - Return a bounded count and safe summaries already permitted by `lead.read`; never reveal that a cross-tenant record exists.
 - A warning is not a merge, uniqueness constraint, or denial. The installer may continue with an explicit confirmation.
 - The duplicate check and create operation must tolerate races; idempotency protects repeated submissions, while two legitimate same-contact leads may coexist.
+- Manual request-token uniqueness is scoped to `(organisationId, manualCreationRequestId)`. The server-issued token is not an authentication credential, replay lookup is always organisation-scoped, and the same opaque token may be used independently by different organisations without cross-tenant lookup or replay.
 
 ## Security, Privacy, Multi-Tenant, And Audit
 
@@ -131,6 +132,14 @@ Unknown values remain null/absent and are never treated as false, declined, not 
 - Manual creation records only supplied facts and does not assert homeowner consent, eligibility, property ownership, or a final legal conclusion.
 - Production rollout is blocked until Clada Systems records approval of installer collection wording, purpose limitation, lawful-basis position, retention/deletion, follow-up contact, access/correction handling, sensitive-note treatment, and pilot guidance against excessive or special-category data.
 - Clearly distinguish installer-entered facts from homeowner-submitted facts and collect only what is necessary for the enquiry.
+
+### Privacy Enablement Control
+
+Manual Lead Creation is fail-closed behind the platform-owned `MANUAL_LEAD_CREATION_ENABLED` configuration read only by `lib/manual-lead-privacy.ts`. The only enabling value is the exact lower-case string `true`; missing, `false`, differently cased, whitespace-padded, loose truthy, or arbitrary values remain closed. Missing or unsupported `APP_ENV` classification also remains closed.
+
+The same explicit enablement rule applies to Production, Preview, Development, and test. Production and Preview default to unavailable because either may contain real customer data. Development and test may enable the feature only through the same explicit value; database safety controls separately prove that integration tests use a disposable target. The list/workspace actions, canonical page, server action, duplicate lookup, and protected `createManualLead` service all enforce or reflect the gate. The service boundary is authoritative and denies before replay lookup or writes with `MANUAL_LEAD_PRIVACY_GATE_CLOSED` and a configuration-neutral user message.
+
+Enabling the flag is an operational release decision, not a consequence of successful tests. Production or Preview enablement requires Project Shield review plus the relevant Clada company/privacy owner’s recorded approval of the outstanding privacy decisions. Rollback sets the value to anything other than exact `true` or removes it; UI entry points disappear, the page shows a controlled unavailable state, and direct submissions fail without lead, workflow, activity, note, or audit-success writes. This control does not claim legal advice, GDPR compliance, certification, or privacy approval.
 
 ## Data Model And Migration Impact
 
@@ -165,11 +174,12 @@ Mitigate through path-specific service validation, explicit origin/completeness,
 - A successful create redirects to the organisation-owned canonical workspace.
 - Duplicate warnings use only bounded same-tenant signals and reveal no cross-tenant existence.
 - Repeated submission is idempotent or otherwise protected from accidental duplicate creation.
+- The same request token is unique only inside one organisation; same-tenant exact replay returns the original, changed-payload reuse conflicts, concurrent replay creates one lead, and cross-tenant token reuse remains independent.
 - Existing homeowner intake and portal behaviours pass regression tests unchanged.
 - Qualification-dependent actions call the derived service contract and fail safely when required facts are unknown.
 - PR 2 includes the complete field/consumer migration table and an assignee compatibility/retirement plan.
 - Historical origin migration is evidence-based, idempotent, and leaves customer/consent facts unchanged.
-- Production enablement remains blocked until the recorded privacy gate is complete.
+- Production enablement is technically blocked by default and remains operationally blocked until Project Shield and the relevant company/privacy owner record approval and explicitly enable the gate.
 - No new intake engine, bulk import, merge, enrichment, CRM sync, AI creation, messaging, configurable schema, or custom source taxonomy is introduced.
 - Desktop, 390 px, keyboard, focus, error association, zoom, status announcement, and touch-target checks pass.
 

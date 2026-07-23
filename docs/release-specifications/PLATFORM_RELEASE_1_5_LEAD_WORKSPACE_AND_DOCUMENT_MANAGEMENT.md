@@ -287,7 +287,7 @@ PR 2 must inspect the current Prisma `Lead` model and every affected route, serv
 
 Origin backfill uses authoritative creation/actor evidence only. Genuinely ambiguous rows become `LEGACY_UNKNOWN`; no origin is guessed from customer facts, `leadSource`, missingness, or workflow stage. Migration is fresh-baseline safe, production-baseline safe, idempotent, reports aggregate origin counts, and changes no customer or consent facts.
 
-Production rollout is blocked until Clada Systems records the privacy gate required by ADR-0021, including collection wording, purpose limitation, lawful basis, retention/deletion, follow-up, access/correction, sensitive-note handling, and pilot guidance.
+Production rollout is technically fail-closed and operationally blocked until Project Shield and the relevant Clada company/privacy owner record the privacy gate required by ADR-0021, including collection wording, purpose limitation, lawful basis, retention/deletion, follow-up, access/correction, sensitive-note handling, and pilot guidance. Preview also defaults closed because it may contain real customer data; every recognised environment requires the same exact explicit enabling value.
 
 PR 2 must stop and return to CTO review if the schema cannot evolve additively without unsafe data loss; a current consumer cannot safely handle nullable qualification fields; public homeowner intake validation would weaken; historical origin cannot be determined truthfully; cross-tenant duplicate information could leak; atomic creation of required lead, workflow, activity/note, and audit evidence cannot be guaranteed; permissions require unreviewed access broadening; or privacy review is incomplete when Production enablement is proposed.
 
@@ -400,7 +400,7 @@ Timeline entries may link to the corresponding audit identifier where an existin
 Required logical boundaries:
 
 - `findPotentialLeadDuplicates`: performs bounded exact matching only inside the trusted organisation and returns safe summaries already permitted by `lead.read`;
-- `createManualLead`: validates the minimum path-specific contract, trusted actor/tenant context, permission, idempotency, optional same-organisation assignment, and atomically creates lead/workflow/activity/audit records;
+- `createManualLead`: independently enforces privacy enablement, validates the minimum path-specific contract, trusted actor/tenant context, permission, organisation-scoped idempotency, optional same-organisation assignment, and atomically creates lead/workflow/activity/audit records;
 - `getLeadWorkspace`: returns an organisation-scoped summary and section counts using bounded queries;
 - `getLeadDocuments`: returns a discriminated union of uploaded evidence and governed generated documents without hiding source semantics;
 - `getLeadTimeline`: returns stable, paginated entries with source type, source ID, occurred time, actor-safe display, title, description, and optional navigation target;
@@ -435,7 +435,7 @@ Minimum route semantics:
 
 ## Concurrency
 
-- Manual creation uses an idempotency key or equivalent repeat-submission guard; duplicate warning is advisory and does not impose false uniqueness on legitimate same-contact leads.
+- Manual creation uses a server-issued opaque idempotency token unique with `organisationId`; replay lookup always includes the trusted organisation, cross-tenant token reuse is independent, and the token is not an authentication credential. Duplicate warning is advisory and does not impose false uniqueness on legitimate same-contact leads.
 - Work-item updates use optimistic concurrency through a version/current-state guard.
 - Competing completion requests may produce one success; later stale requests return a conflict and do not create duplicate success history.
 - Reopening requires the expected completed state; cancelling requires a permitted current state.

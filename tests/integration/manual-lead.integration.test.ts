@@ -4,6 +4,7 @@ import test from 'node:test';
 import { PrismaClient } from '@prisma/client';
 import type { OrganisationContext } from '../../lib/identity';
 import { createManualLead, findManualLeadDuplicates, manualLeadSchema, ManualLeadError } from '../../lib/manual-lead';
+import { ManualLeadPrivacyGateError } from '../../lib/manual-lead-privacy';
 import { AuthorizationError } from '../../lib/permissions';
 
 const prisma = new PrismaClient();
@@ -128,6 +129,87 @@ test('manual creation is tenant-derived, atomic, attributed, incomplete and idem
   assert.deepEqual(crossTenant, []);
 });
 
+test('manual creation is blocked at the service boundary without privacy enablement and creates no records', async () => {
+  const previous = process.env.MANUAL_LEAD_CREATION_ENABLED;
+  process.env.MANUAL_LEAD_CREATION_ENABLED = 'false';
+  const before = {
+    leads: await prisma.lead.count({ where: { organisationId: ids.orgA } }),
+    workflows: await prisma.workflowInstance.count({ where: { organisationId: ids.orgA } }),
+    activities: await prisma.leadActivity.count({ where: { actorOrganisationId: ids.orgA } }),
+    audits: await prisma.auditLog.count({ where: { organisationId: ids.orgA } })
+  };
+
+  try {
+    await assert.rejects(
+      () => createManualLead({
+        db: prisma,
+        context: context('ORGANISATION_MEMBER', ids.member, ids.userMember),
+        input: input()
+      }),
+      (error) => error instanceof ManualLeadPrivacyGateError
+        && error.code === 'MANUAL_LEAD_PRIVACY_GATE_CLOSED'
+    );
+  } finally {
+    if (previous === undefined) delete process.env.MANUAL_LEAD_CREATION_ENABLED;
+    else process.env.MANUAL_LEAD_CREATION_ENABLED = previous;
+  }
+
+  assert.deepEqual({
+    leads: await prisma.lead.count({ where: { organisationId: ids.orgA } }),
+    workflows: await prisma.workflowInstance.count({ where: { organisationId: ids.orgA } }),
+    activities: await prisma.leadActivity.count({ where: { actorOrganisationId: ids.orgA } }),
+    audits: await prisma.auditLog.count({ where: { organisationId: ids.orgA } })
+  }, before);
+});
+
+test('manual request idempotency is organisation scoped and rejects changed same-tenant payloads', async () => {
+  const requestId = `manual_shared_${suffix}_1234567890`;
+  const request = input({ requestId, email: `shared-${suffix}@example.test` });
+  const orgAContext = context('ORGANISATION_ADMIN', ids.admin, ids.userAdmin);
+  const orgBContext = context('ORGANISATION_ADMIN', ids.other, ids.userOther, ids.orgB);
+
+  const orgA = await createManualLead({ db: prisma, context: orgAContext, input: request });
+  const orgB = await createManualLead({ db: prisma, context: orgBContext, input: request });
+  assert.notEqual(orgA.leadId, orgB.leadId);
+
+  const orgBReplay = await createManualLead({ db: prisma, context: orgBContext, input: request });
+  assert.equal(orgBReplay.leadId, orgB.leadId);
+  assert.notEqual(orgBReplay.leadId, orgA.leadId);
+
+  await assert.rejects(
+    () => createManualLead({
+      db: prisma,
+      context: orgAContext,
+      input: input({ requestId, email: `changed-${suffix}@example.test` })
+    }),
+    (error) => error instanceof ManualLeadError && error.code === 'IDEMPOTENCY_CONFLICT'
+  );
+
+  const records = await prisma.lead.findMany({
+    where: { manualCreationRequestId: requestId },
+    select: { id: true, organisationId: true }
+  });
+  assert.deepEqual(
+    records.map((record) => record.organisationId).sort(),
+    [ids.orgA, ids.orgB].sort()
+  );
+});
+
+test('concurrent exact replay creates one manual lead in the organisation', async () => {
+  const requestId = `manual_concurrent_${suffix}_123456`;
+  const request = input({ requestId });
+  const organisationContext = context('ORGANISATION_MEMBER', ids.member, ids.userMember);
+  const [first, second] = await Promise.all([
+    createManualLead({ db: prisma, context: organisationContext, input: request }),
+    createManualLead({ db: prisma, context: organisationContext, input: request })
+  ]);
+
+  assert.equal(first.leadId, second.leadId);
+  assert.equal(await prisma.lead.count({
+    where: { organisationId: ids.orgA, manualCreationRequestId: requestId }
+  }), 1);
+});
+
 test('assignment requires permission and an active same-organisation membership', async () => {
   const base = { assignedMembershipId: ids.admin };
   await assert.rejects(
@@ -204,7 +286,9 @@ test('a required activity failure rolls back the lead, workflow and audit atomic
     await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS "${functionName}"()`);
   }
 
-  assert.equal(await prisma.lead.findUnique({ where: { manualCreationRequestId: requestId } }), null);
+  assert.equal(await prisma.lead.findFirst({
+    where: { organisationId: ids.orgA, manualCreationRequestId: requestId }
+  }), null);
   assert.deepEqual({
     leads: await prisma.lead.count({ where: { organisationId: ids.orgA } }),
     workflows: await prisma.workflowInstance.count({ where: { organisationId: ids.orgA } }),

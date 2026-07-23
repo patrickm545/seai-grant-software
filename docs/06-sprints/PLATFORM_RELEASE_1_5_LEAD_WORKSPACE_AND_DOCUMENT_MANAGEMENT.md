@@ -84,11 +84,12 @@ Constraints and evidence:
 Outcome:
 
 - authenticated `New Lead` flow requiring name plus phone or email;
+- platform-owned fail-closed privacy enablement across navigation, route, server action, duplicate lookup, and protected service;
 - optional address, Eircode, restrained source, follow-up, same-organisation assignee, and append-only initial note through the existing activity/audit contract;
 - additive source/progressive-completeness data migration approved through ADR-0021;
 - derived action gates for eligibility, recommendations, readiness, consent-dependent processing, and governed document generation;
 - field-by-field `Lead` migration/consumer table and legacy-assignee compatibility/retirement plan;
-- protected, idempotent create service with workflow, activity, audit, and canonical-workspace redirect;
+- protected create service with organisation-scoped request-token idempotency, workflow, activity, audit, and canonical-workspace redirect;
 - bounded same-tenant duplicate warning.
 
 Constraints and evidence:
@@ -96,8 +97,8 @@ Constraints and evidence:
 - follow Accepted ADR-0021 and the Approved Manual Lead Creation specification without weakening public intake;
 - no homeowner qualification, synthetic facts, new intake aggregate, merge, bulk import, enrichment, CRM sync, AI creation, messaging, configurable schema, or custom source taxonomy;
 - migration fresh/production-baseline/rerun evidence and origin counts proving customer/consent facts unchanged;
-- permission-catalogue review; tenant, actor, assignment, duplicate non-disclosure, idempotency, atomicity, action-gate, public-intake/portal/consumer regression, desktop/390 px, and accessibility evidence;
-- Production enablement blocked until the ADR-0021 privacy gate is recorded complete.
+- permission-catalogue review; tenant, actor, assignment, duplicate non-disclosure, cross-tenant replay, privacy denial, idempotency, atomicity, action-gate, public-intake/portal/consumer regression, desktop/390 px, and accessibility evidence;
+- Production and Preview default blocked by exact explicit configuration; Production enablement remains blocked until Project Shield and the relevant company/privacy owner record the ADR-0021 privacy gate complete.
 
 ### PR 3 - Work-Item Schema And Migration
 
@@ -205,7 +206,7 @@ Constraints and evidence:
 | Schema | Prisma format/validate/generate and migration SQL review. |
 | Migration | Fresh database, approved-baseline upgrade, rerun idempotency, unknown-field integrity, guarded status. |
 | Unit | Manual input/origin, view models, task lifecycle, timeline/document mapping, note validation. |
-| Integration | Permissions, tenant isolation, actor attribution, audit, duplicate non-disclosure, idempotency, concurrency, rollback. |
+| Integration | Permissions, tenant isolation, actor attribution, audit, duplicate non-disclosure, organisation-scoped idempotency/cross-tenant replay, privacy denial with zero writes, concurrency, rollback. |
 | Regression | Public intake, consent/eligibility, jurisdiction, portal, workflow, existing documents, truthful unknown states. |
 | Browser | Login; create lead; redirect; navigate; note; task; timeline; document; stage; back/forward. |
 | Responsive/accessibility | 390 px, keyboard, focus, headings, names, error/status announcement, contrast, zoom, touch targets. |

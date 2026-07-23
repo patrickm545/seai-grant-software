@@ -46,9 +46,9 @@ SolarGRANT Pro must not create a temporary generated-document substitute or dupl
 
 ## Approved Platform Release 1.5 Manual Lead Boundary
 
-Manual Lead Creation extends the existing SolarGRANT Pro `Lead` under Accepted ADR-0021 after PR #34 merges. The approved minimum is customer name plus phone or email, explicit `MANUAL_INSTALLER` origin, trusted organisation/Installer/creator attribution, derived action-specific completeness, truthful unknown qualification fields, same-tenant duplicate warning, and canonical-workspace redirect. Production enablement requires the recorded privacy gate.
+Manual Lead Creation extends the existing SolarGRANT Pro `Lead` under Accepted ADR-0021 after PR #34 merges. The approved minimum is customer name plus phone or email, explicit `MANUAL_INSTALLER` origin, trusted organisation/Installer/creator attribution, derived action-specific completeness, truthful unknown qualification fields, same-tenant duplicate warning, organisation-scoped request-token idempotency, and canonical-workspace redirect. Production enablement requires the recorded privacy gate.
 
-The PR 2 branch provides this flow at `/installer-review-emerald/leads/new` behind `lead.create`; it remains unmerged and not Production-enabled. It does not use a second intake aggregate, placeholder qualification or consent values, bulk import, merging, enrichment, CRM synchronisation, AI creation, messaging, configurable schemas, or custom source taxonomies. Existing homeowner intake and portal behaviour remain authoritative and regression-protected.
+The PR 2 branch provides this flow at `/installer-review-emerald/leads/new` behind `lead.create` and a server-enforced fail-closed privacy enablement gate; it remains unmerged and not Production-enabled. Production, Preview, Development and test all require the exact explicit enabling value, with Project Shield and company/privacy-owner approval additionally required before any Production or Preview operational enablement. It does not use a second intake aggregate, placeholder qualification or consent values, bulk import, merging, enrichment, CRM synchronisation, AI creation, messaging, configurable schemas, or custom source taxonomies. Existing homeowner intake and portal behaviour remain authoritative and regression-protected.
 
 ## Platform Release 1.1 Consumption
 

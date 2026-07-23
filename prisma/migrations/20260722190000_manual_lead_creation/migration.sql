@@ -81,8 +81,8 @@ ALTER COLUMN "consentToContact" DROP NOT NULL;
 CREATE UNIQUE INDEX "OrganisationMembership_id_organisationId_key"
 ON "OrganisationMembership"("id", "organisationId");
 
-CREATE UNIQUE INDEX "Lead_manualCreationRequestId_key"
-ON "Lead"("manualCreationRequestId");
+CREATE UNIQUE INDEX "Lead_organisationId_manualCreationRequestId_key"
+ON "Lead"("organisationId", "manualCreationRequestId");
 
 CREATE INDEX "Lead_organisationId_normalisedEmail_idx"
 ON "Lead"("organisationId", "normalisedEmail");

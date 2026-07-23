@@ -48,7 +48,10 @@ const env = {
   DATABASE_ENVIRONMENT: 'test',
   DATABASE_URL: testDatabaseUrl,
   DATABASE_FINGERPRINT: guarded.identity.fingerprint,
-  DATABASE_BRANCH_ID: process.env.TEST_DATABASE_BRANCH_ID ?? ''
+  DATABASE_BRANCH_ID: process.env.TEST_DATABASE_BRANCH_ID ?? '',
+  // This runner has already proved the target is a disposable test database.
+  // Manual creation remains closed unless this explicit test-only policy is set.
+  MANUAL_LEAD_CREATION_ENABLED: 'true'
 };
 
 function run(command: string, args: string[]) {

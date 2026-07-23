@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/permissions';
 import { adaptSolarGrantLeadForPresentation, getSolarGrantJurisdictionViewState } from '@/lib/solargrant-jurisdiction-safe-view';
 import { getLeadQualificationSummary } from '@/lib/lead-qualification';
+import { isManualLeadCreationEnabled } from '@/lib/manual-lead-privacy';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,7 +91,9 @@ export default async function InstallerLeadsPage() {
           <p className="small">Open enquiries, update sales stages, review assessed scores, and manage grant-readiness workflow.</p>
         </div>
         <div className="installer-dashboard-actions">
-          {hasPermission(organisationContext, 'lead.create') ? <Link href="/installer-review-emerald/leads/new" className="installer-add-button">New Lead</Link> : null}
+          {hasPermission(organisationContext, 'lead.create') && isManualLeadCreationEnabled()
+            ? <Link href="/installer-review-emerald/leads/new" className="installer-add-button">New Lead</Link>
+            : null}
           {intakePath ? <a href={intakePath} className="installer-secondary-link">Open homeowner intake</a> : null}
         </div>
       </div>

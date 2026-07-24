@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; incident and Production execution owner: Patrick or delegated deployment owner |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-16 |
+| Last reviewed | 2026-07-23 |
 
 ## Guarded Commands
 
@@ -41,9 +41,31 @@ For Production:
 7. Set `ACKNOWLEDGE_PRODUCTION_MIGRATION=APPLY_APPROVED_PRODUCTION_MIGRATIONS`.
 8. Run `pnpm db:migrate:production` once. Preserve the output and exit code without storing credentials.
 9. Run `pnpm db:status` again and require a clean result.
-10. Follow the non-destructive smoke checklist below.
+10. Only after the migration status is clean, deploy or promote the application artifact that consumes the schema.
+11. Follow the non-destructive smoke checklist below.
 
 The Production command never resets or seeds. Prisma migrations are forward operations and are not automatically reversible. Rollback means a reviewed forward repair, application rollback when schema-compatible, or provider recovery after an incident decision.
+
+`vercel.json` runs the environment-aware database preflight before the
+application build. `VERCEL_ENV` and `APP_ENV` must match. The Vercel environment
+must contain the matching database classification and fingerprint variables.
+
+- Preview runs the dedicated `db:migrate:preview` path: guarded status, committed
+  migration deploy, and clean post-status before `next build`.
+- Production is status-only. Production migrations remain a deliberate operator
+  step through `db:migrate:production`; a Git deployment never applies them.
+- Development is status-only.
+
+A deployment whose target has divergent history, a failed migration, an unsafe
+identity, or a classification mismatch must fail before `next build`; do not
+bypass this gate. Apply approved Production migrations through the dedicated
+command before deploying the consuming application artifact.
+
+The migration wrapper accepts pending migrations only when Prisma reports a
+non-divergent repository history with no failed migration. A database-only
+migration, a local-only history mismatch beyond ordinary pending migrations, or
+an ambiguous status is an incident requiring review; it is not eligible for
+automatic deployment.
 
 ## Disposable Integration Database
 

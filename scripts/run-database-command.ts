@@ -7,6 +7,7 @@ import {
   type ApplicationEnvironment,
   type DatabaseOperation
 } from '../lib/database-safety';
+import { evaluateMigrationPreflight } from '../lib/migration-status';
 
 type CommandDefinition = {
   operation: DatabaseOperation;
@@ -127,20 +128,19 @@ function runMigrationPreflight() {
   });
   const status = result.status ?? 1;
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  if (status === 0) {
+  let state;
+  try {
+    state = evaluateMigrationPreflight(status, output);
+  } catch {
+    console.error('DB_OPERATION_NOT_ALLOWED: Prisma migration preflight could not prove a safe pending-migration state.');
+    process.exit(status || 1);
+  }
+
+  if (state === 'up-to-date') {
     console.log('Migration preflight: schema is currently up to date.');
     return;
   }
-
-  const pending = /have not yet been applied|pending migration/i.test(output);
-  const failed = /failed migration|migration(?:s)? have failed|failed to apply/i.test(output);
-  if (status === 1 && pending && !failed) {
-    console.log('Migration preflight: repository migrations are pending and eligible for this deliberate deploy step.');
-    return;
-  }
-
-  console.error('DB_OPERATION_NOT_ALLOWED: Prisma migration preflight could not prove a safe pending-migration state.');
-  process.exit(status);
+  console.log('Migration preflight: repository migrations are pending and eligible for this deliberate deploy step.');
 }
 
 if (definition.operation === 'migration-deploy') {

@@ -20,6 +20,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [POSTGRES_INTEGRATION_TESTS.md](POSTGRES_INTEGRATION_TESTS.md): disposable PostgreSQL setup for database-backed integration tests.
 - [DATABASE_ENVIRONMENT_SAFETY.md](DATABASE_ENVIRONMENT_SAFETY.md): environment classification, safe fingerprints, and Vercel/Neon isolation contract.
 - [DATABASE_OPERATIONS_RUNBOOK.md](DATABASE_OPERATIONS_RUNBOOK.md): guarded commands, migration gate, recovery verification, and smoke checks.
+- [INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md): Production authentication schema-drift incident, recovery evidence, and preventive actions.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md): proposed pilot approval, provisioning, secure delivery, activation, smoke-test, and support workflow.
 - [TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md](TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md): proposed five-PR delivery sequence, risks, tests, gates, and approval decisions.

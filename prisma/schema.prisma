@@ -111,6 +111,20 @@ enum AuthSessionType {
   RESTRICTED_FIRST_LOGIN
 }
 
+enum PasswordResetStatus {
+  PENDING
+  DISPATCHED
+  EXCHANGED
+  CONSUMED
+  REVOKED
+}
+
+enum PasswordResetRevocationReason {
+  SUPERSEDED
+  DELIVERY_FAILED
+  ADMINISTRATIVE
+}
+
 enum ProvisioningOperationStatus {
   PENDING
   VALIDATING
@@ -189,9 +203,34 @@ model User {
   updatedAt                      DateTime                 @updatedAt
   memberships                    OrganisationMembership[]
   sessions                       AuthSession[]
+  passwordResetRequests          PasswordResetRequest[]
   approvedProvisioningOperations ProvisioningOperation[]  @relation("ProvisioningApprovedBy")
 
   @@index([status])
+}
+
+model PasswordResetRequest {
+  id                String                         @id @default(cuid())
+  userId            String
+  user              User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tokenDigest       String                         @unique
+  exchangeDigest    String?                        @unique
+  status            PasswordResetStatus            @default(PENDING)
+  expiresAt         DateTime
+  dispatchedAt      DateTime?
+  exchangedAt       DateTime?
+  consumedAt        DateTime?
+  revokedAt         DateTime?
+  revocationReason  PasswordResetRevocationReason?
+  providerName      String?
+  providerReceiptId String?
+  correlationId     String?                        @unique
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([expiresAt])
+  @@index([status, updatedAt])
 }
 
 model OrganisationMembership {

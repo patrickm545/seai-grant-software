@@ -6,7 +6,7 @@
 | Status | Proposed |
 | Owner | Clada Systems Engineering |
 | Review cycle | At every implementation PR |
-| Last reviewed | 2026-07-20 |
+| Last reviewed | 2026-07-24 |
 
 ## Purpose
 
@@ -63,6 +63,18 @@ Status: validation harness implemented in PR #31 as `pnpm pilot:rehearsal`. The 
 Scope: approved disposable organisation, end-to-end onboarding, tenant isolation, failure/rollback and recovery rehearsal, operator runbook validation, and cleanup/archive through approved commands. No real customer is used for the first exercise.
 
 Dependencies: PRs 1-4 deployed and approved. Migration risk is none; operational/security risk is Production targeting and test-data leakage. Tests are the complete onboarding runbook smoke suite. Acceptance requires truthful empty dashboard, isolated labelled intake, no Demo Solar impact, audit completeness, clean logs, documented archival, and Patrick's explicit pilot-readiness approval.
+
+## Exceptional legacy Production credential recovery
+
+ADR-0022 proposes a separate, owner-only recovery command for an existing
+active Production pilot account whose credential predates or differs from the
+approved Preview credential. This is not tenant provisioning and does not
+broaden PR 4's general recovery scope. It requires exact Production database
+identification, a reviewed read-only plan, CTO/owner approval, a change ID,
+hidden human credential entry, forced first-login replacement, serializable
+audit/idempotency, and unchanged tenant ownership. Production execution remains
+blocked until the ADR and implementation are approved, merged, deployed, and a
+separate execution change is authorised.
 
 ## Cross-PR controls
 

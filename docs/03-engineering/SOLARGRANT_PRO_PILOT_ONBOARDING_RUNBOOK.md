@@ -6,11 +6,18 @@
 | Status | Proposed |
 | Owner | Clada Systems Engineering and Operations |
 | Review cycle | Before every pilot onboarding and after any incident |
-| Last reviewed | 2026-07-20 |
+| Last reviewed | 2026-07-24 |
 
 ## Status and prerequisites
 
 The dry-run-first `pnpm tenant:provision` service and command, canonical idempotency, strict conflicts, transactional tenant creation, fixed credential expiry state, fake/test delivery adapter, secret-free audit/output contract, 30-minute restricted first-login session, forced password replacement, atomic owner/organisation activation, and all-session rotation are implemented. PR #30 adds the dry-run-first `pnpm tenant:recover` inspection, credential-reissue, suspension, and reactivation commands. Real transactional email, Production execution, owner replacement, and end-to-end Production smoke validation remain deferred. Do not onboard an external pilot until every [readiness gate](#pilot-readiness-gate) passes. The legacy `pnpm pilot:provision` command is described in [pilot authentication](PILOT_AUTHENTICATION.md) and is not a substitute.
+
+The proposed [Production legacy credential reissue
+runbook](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md) addresses only an
+already-active legacy pilot owner after an incident-specific read-only
+classification. It must not be used for onboarding, tenant repair, owner
+replacement, or general password reset, and it remains blocked pending
+ADR-0022, CTO/owner approval, merge/deployment, and a separate execution change.
 
 Provisioning is a Clada OS capability; this runbook defines its SolarGRANT Pro product use. Architecture and security rules live in [Clada OS tenant provisioning architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md).
 

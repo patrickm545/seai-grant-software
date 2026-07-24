@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-24 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -89,6 +89,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
 - [03-engineering/PILOT_AUTHENTICATION.md](03-engineering/PILOT_AUTHENTICATION.md)
+- [03-engineering/PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](03-engineering/PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md)
 - [03-engineering/PLATFORM_RELEASE_1_5_PR2_LEAD_FIELD_CONSUMER_MIGRATION.md](03-engineering/PLATFORM_RELEASE_1_5_PR2_LEAD_FIELD_CONSUMER_MIGRATION.md)
 - [03-engineering/PLATFORM_RELEASE_1_5_PR2_VALIDATION.md](03-engineering/PLATFORM_RELEASE_1_5_PR2_VALIDATION.md)
 - [03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md](03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md)
@@ -146,6 +147,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0019-standardised-tenant-provisioning.md](05-decisions/ADR-0019-standardised-tenant-provisioning.md)
 - [05-decisions/ADR-0020-organisation-owned-work-items.md](05-decisions/ADR-0020-organisation-owned-work-items.md) - Accepted
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
+- [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Proposed
 
 ## Sprints
 

@@ -308,6 +308,30 @@ action and can never be selected by the Vercel build script.
    pilot release, using an approved test identity and auditable session cleanup
    policy.
 
+## 2026-07-24 Approved Pilot Credential Classification
+
+After the schema incident was remediated, the approved pilot email continued
+to receive the expected generic `401`, not a `503`. A read-only Production
+inspection classified the denial as `PASSWORD_MISMATCH`:
+
+- one case-insensitive normalised Production user exists and is active;
+- its Argon2id hash is present and structurally valid;
+- `mustChangePassword` is false;
+- exactly one active owner membership points to the intended active, verified
+  installer organisation, which has an Installer record; and
+- no approved Production provisioning operation establishes that the Preview
+  credential was issued to this Production identity.
+
+No credential, hash, session, database URL, secret, or raw customer data was
+recorded. No Production record was changed. Preview and Production identity
+state remains isolated.
+
+ADR-0022 and the separate Draft security pull request propose a guarded,
+audited reissue path. That work does not authorise execution. The incident
+remains open until the path is approved, merged, deployed, separately
+authorised, executed by a human operator, and the authenticated Production
+tenant-isolation smoke test passes.
+
 ## Prevention
 
 Future schema releases use this order:

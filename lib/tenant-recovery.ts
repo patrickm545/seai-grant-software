@@ -7,6 +7,7 @@ import type {
 } from '@prisma/client';
 import { writeAuditEvent } from './audit';
 import type { CredentialDeliveryAdapter, CredentialDeliveryReceipt } from './credential-delivery';
+import { PRODUCTION_CREDENTIAL_REISSUE_ACKNOWLEDGEMENT } from './database-safety';
 import { generateTemporaryCredential } from './tenant-provisioning';
 import { hashPilotPassword } from './password-hashing';
 
@@ -48,6 +49,7 @@ export class TenantRecoveryError extends Error {
       | 'IDEMPOTENCY_OPERATION_INCOMPLETE'
       | 'DELIVERY_FAILED'
       | 'PRODUCTION_DISABLED'
+      | 'PRODUCTION_AUTHORIZATION_REQUIRED'
       | 'TRANSACTION_FAILED',
     message: string
   ) {
@@ -87,6 +89,48 @@ export type RecoveryInput = {
   environment: 'development' | 'test' | 'preview' | 'production';
 };
 
+export type ProductionLegacyCredentialReissueInput = {
+  email: string;
+  operatorUserId: string;
+  idempotencyKey: string;
+  reason: string;
+  environment: 'production';
+};
+
+export type ProductionCredentialReissueAuthorization = {
+  confirmed: true;
+  acknowledgement: string;
+  changeId: string;
+  appEnvironment: 'production';
+  databaseEnvironment: 'production';
+  databaseFingerprint: string;
+  productionFingerprint: string;
+  approvedPlanReference: string;
+};
+
+export type ProductionLegacyCredentialReissuePlan = {
+  safeToExecute: boolean;
+  normalizedEmail: string;
+  planReference: string;
+  idempotency: 'NEW' | 'COMPLETED_MATCH' | 'EQUIVALENT_COMPLETED' | 'MISMATCH' | 'INCOMPLETE';
+  operationId: string | null;
+  completedResult?: RecoveryResult;
+  eligible: boolean;
+  refusalReason?: string;
+  account: {
+    exactlyOneUser: boolean;
+    userStatus: string | null;
+    exactlyOneActiveMembership: boolean;
+    organisationReference: string | null;
+    organisationStatus: string | null;
+    organisationType: string | null;
+    organisationVerified: boolean | null;
+    installerPresent: boolean | null;
+    mustChangePassword: boolean | null;
+  };
+  intendedDatabaseActions: string[];
+};
+
 export type RecoveryPlan = {
   safeToExecute: boolean;
   operationType: RecoveryOperationType;
@@ -113,6 +157,7 @@ export type RecoveryResult = {
 type RecoveryResultSnapshot = Omit<RecoveryResult, 'idempotentReplay' | 'operation'> & {
   operationType: RecoveryOperationType;
   completedAt: string;
+  recoveryMode?: 'ACTIVE_LEGACY_PRODUCTION';
   delivery?: CredentialDeliveryReceipt;
 };
 
@@ -339,6 +384,9 @@ function parseRecoveryResultSnapshot(value: Prisma.JsonValue | null): RecoveryRe
     userId: record.userId as string | null,
     revokedSessionCount: record.revokedSessionCount,
     completedAt: record.completedAt,
+    ...(record.recoveryMode === 'ACTIVE_LEGACY_PRODUCTION'
+      ? { recoveryMode: 'ACTIVE_LEGACY_PRODUCTION' as const }
+      : {}),
     ...(delivery ? { delivery } : {})
   };
 }
@@ -530,6 +578,488 @@ export async function executeTenantUserSuspension(args: { db: PrismaClient; inpu
 export async function executeTenantOrganisationSuspension(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_SUSPEND_ORGANISATION', now: args.now ?? new Date() }); }
 export async function executeTenantUserReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_USER', now: args.now ?? new Date() }); }
 export async function executeTenantOrganisationReactivation(args: { db: PrismaClient; input: RecoveryInput; now?: Date }) { return executeRecoveryOperation({ ...args, type: 'RECOVERY_REACTIVATE_ORGANISATION', now: args.now ?? new Date() }); }
+
+function normalizeRecoveryEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function validateProductionLegacyInput(input: ProductionLegacyCredentialReissueInput) {
+  const normalizedEmail = normalizeRecoveryEmail(input.email);
+  if (
+    input.email !== normalizedEmail ||
+    normalizedEmail.length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+  ) {
+    throw new TenantRecoveryError('INPUT_INVALID', 'A normalized recovery email is required.');
+  }
+  if (
+    !SAFE_IDENTIFIER.test(input.operatorUserId) ||
+    input.operatorUserId.length > 128 ||
+    !SAFE_IDENTIFIER.test(input.idempotencyKey) ||
+    input.idempotencyKey.length > 128
+  ) {
+    throw new TenantRecoveryError('INPUT_INVALID', 'Recovery identifiers are invalid.');
+  }
+  if (
+    !input.reason ||
+    input.reason.trim().length < 3 ||
+    input.reason.length > 500 ||
+    CONTROL_CHARACTERS.test(input.reason)
+  ) {
+    throw new TenantRecoveryError('INPUT_INVALID', 'A bounded recovery reason is required.');
+  }
+  if (input.environment !== 'production') {
+    throw new TenantRecoveryError(
+      'PRODUCTION_DISABLED',
+      'Legacy Production credential reissue requires environment=production.'
+    );
+  }
+  return normalizedEmail;
+}
+
+async function loadProductionLegacyCredentialTarget(
+  db: DbClient,
+  normalizedEmail: string
+) {
+  return db.user.findMany({
+    where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    take: 3,
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      passwordHash: true,
+      mustChangePassword: true,
+      memberships: {
+        take: 3,
+        select: {
+          id: true,
+          status: true,
+          role: true,
+          isOwner: true,
+          organisationId: true,
+          organisation: {
+            select: {
+              id: true,
+              status: true,
+              type: true,
+              verified: true,
+              installers: { take: 2, select: { id: true } }
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function productionLegacyInputReference(
+  input: ProductionLegacyCredentialReissueInput,
+  target: { userId: string; organisationId: string }
+) {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+        recoveryMode: 'ACTIVE_LEGACY_PRODUCTION',
+        email: input.email,
+        userId: target.userId,
+        organisationId: target.organisationId,
+        operatorUserId: input.operatorUserId,
+        reason: input.reason.trim(),
+        environment: input.environment
+      })
+    )
+    .digest('hex');
+}
+
+function safeOrganisationReference(organisationId: string) {
+  return `org_${createHash('sha256').update(organisationId).digest('hex').slice(0, 12)}`;
+}
+
+export async function planProductionLegacyCredentialReissue(args: {
+  db: DbClient;
+  input: ProductionLegacyCredentialReissueInput;
+}): Promise<ProductionLegacyCredentialReissuePlan> {
+  const normalizedEmail = validateProductionLegacyInput(args.input);
+  const users = await loadProductionLegacyCredentialTarget(args.db, normalizedEmail);
+  const user = users.length === 1 ? users[0] : null;
+  const memberships = user?.memberships ?? [];
+  const membership = memberships.length === 1 ? memberships[0] : null;
+  const organisation = membership?.organisation ?? null;
+  const account = {
+    exactlyOneUser: users.length === 1,
+    userStatus: user?.status ?? null,
+    exactlyOneActiveMembership:
+      memberships.length === 1 && membership?.status === 'ACTIVE',
+    organisationReference: organisation ? safeOrganisationReference(organisation.id) : null,
+    organisationStatus: organisation?.status ?? null,
+    organisationType: organisation?.type ?? null,
+    organisationVerified: organisation?.verified ?? null,
+    installerPresent: organisation ? organisation.installers.length === 1 : null,
+    mustChangePassword: user?.mustChangePassword ?? null
+  };
+
+  if (!user || !membership || !organisation) {
+    return {
+      safeToExecute: false,
+      normalizedEmail,
+      planReference: '',
+      idempotency: 'NEW',
+      operationId: null,
+      eligible: false,
+      refusalReason:
+        users.length !== 1
+          ? 'Exactly one normalized user must exist.'
+          : 'Exactly one organisation membership must exist.',
+      account,
+      intendedDatabaseActions: []
+    };
+  }
+
+  await resolveApprover(args.db, args.input.operatorUserId, user.id);
+  const planReference = productionLegacyInputReference(args.input, {
+    userId: user.id,
+    organisationId: organisation.id
+  });
+  const operation = await args.db.provisioningOperation.findUnique({
+    where: { idempotencyKey: args.input.idempotencyKey },
+    select: {
+      id: true,
+      inputHash: true,
+      status: true,
+      operationType: true,
+      completedAt: true,
+      resultSnapshot: true
+    }
+  });
+  if (operation && (operation.inputHash !== planReference || operation.operationType !== 'RECOVERY_CREDENTIAL_REISSUE')) {
+    return {
+      safeToExecute: false,
+      normalizedEmail,
+      planReference,
+      idempotency: 'MISMATCH',
+      operationId: operation.id,
+      eligible: false,
+      refusalReason: 'Idempotency key is bound to different recovery input.',
+      account,
+      intendedDatabaseActions: []
+    };
+  }
+  if (operation?.status === 'COMPLETED') {
+    const snapshot = parseRecoveryResultSnapshot(operation.resultSnapshot);
+    if (
+      !snapshot ||
+      snapshot.operationType !== 'RECOVERY_CREDENTIAL_REISSUE' ||
+      snapshot.recoveryMode !== 'ACTIVE_LEGACY_PRODUCTION' ||
+      snapshot.organisationId !== organisation.id ||
+      snapshot.userId !== user.id
+    ) {
+      return {
+        safeToExecute: false,
+        normalizedEmail,
+        planReference,
+        idempotency: 'INCOMPLETE',
+        operationId: operation.id,
+        eligible: false,
+        refusalReason: 'Completed recovery evidence is missing or invalid.',
+        account,
+        intendedDatabaseActions: []
+      };
+    }
+    return {
+      safeToExecute: true,
+      normalizedEmail,
+      planReference,
+      idempotency: 'COMPLETED_MATCH',
+      operationId: operation.id,
+      eligible: true,
+      completedResult: {
+        idempotentReplay: true,
+        operation: {
+          id: operation.id,
+          operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+          status: 'COMPLETED',
+          completedAt: new Date(snapshot.completedAt)
+        },
+        state: snapshot.state,
+        organisationId: snapshot.organisationId,
+        userId: snapshot.userId,
+        revokedSessionCount: snapshot.revokedSessionCount
+      },
+      account,
+      intendedDatabaseActions: []
+    };
+  }
+  if (operation) {
+    return {
+      safeToExecute: false,
+      normalizedEmail,
+      planReference,
+      idempotency: 'INCOMPLETE',
+      operationId: operation.id,
+      eligible: false,
+      refusalReason: 'An incomplete recovery operation requires manual review.',
+      account,
+      intendedDatabaseActions: []
+    };
+  }
+
+  const equivalentCompleted = await args.db.provisioningOperation.findFirst({
+    where: {
+      inputHash: planReference,
+      operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+      status: 'COMPLETED'
+    },
+    select: { id: true }
+  });
+  if (equivalentCompleted) {
+    return {
+      safeToExecute: false,
+      normalizedEmail,
+      planReference,
+      idempotency: 'EQUIVALENT_COMPLETED',
+      operationId: equivalentCompleted.id,
+      eligible: false,
+      refusalReason: 'An equivalent completed credential recovery already exists.',
+      account,
+      intendedDatabaseActions: []
+    };
+  }
+
+  const eligible =
+    user.email === normalizedEmail &&
+    user.status === 'ACTIVE' &&
+    Boolean(user.passwordHash?.startsWith('$argon2id$')) &&
+    !user.mustChangePassword &&
+    memberships.length === 1 &&
+    membership.status === 'ACTIVE' &&
+    membership.isOwner &&
+    membership.role === 'ORGANISATION_OWNER' &&
+    organisation.status === 'ACTIVE' &&
+    organisation.type === 'INSTALLER' &&
+    organisation.verified &&
+    organisation.installers.length === 1;
+  return {
+    safeToExecute: eligible,
+    normalizedEmail,
+    planReference,
+    idempotency: 'NEW',
+    operationId: null,
+    eligible,
+    ...(eligible
+      ? {}
+      : {
+          refusalReason:
+            'The legacy user, membership, organisation, installer, or credential state is not eligible.'
+        }),
+    account,
+    intendedDatabaseActions: eligible
+      ? [
+          'create one audited credential-reissue operation',
+          'replace the existing Argon2id password hash',
+          'require password change at next login',
+          'set a 24-hour temporary-credential expiry',
+          'invalidate existing sessions',
+          'write secret-free recovery audit events'
+        ]
+      : []
+  };
+}
+
+function validateProductionAuthorization(
+  authorization: ProductionCredentialReissueAuthorization,
+  planReference: string
+) {
+  if (
+    authorization.confirmed !== true ||
+    authorization.acknowledgement !== PRODUCTION_CREDENTIAL_REISSUE_ACKNOWLEDGEMENT ||
+    !SAFE_IDENTIFIER.test(authorization.changeId) ||
+    authorization.changeId.length > 128 ||
+    authorization.appEnvironment !== 'production' ||
+    authorization.databaseEnvironment !== 'production' ||
+    !authorization.databaseFingerprint ||
+    authorization.databaseFingerprint !== authorization.productionFingerprint ||
+    authorization.approvedPlanReference !== planReference
+  ) {
+    throw new TenantRecoveryError(
+      'PRODUCTION_AUTHORIZATION_REQUIRED',
+      'Production credential reissue requires exact approved authorization.'
+    );
+  }
+}
+
+function validateTemporaryCredential(temporaryCredential: string) {
+  if (
+    temporaryCredential.length < 12 ||
+    temporaryCredential.length > 128 ||
+    CONTROL_CHARACTERS.test(temporaryCredential)
+  ) {
+    throw new TenantRecoveryError(
+      'INPUT_INVALID',
+      'The temporary credential does not satisfy the bounded password policy.'
+    );
+  }
+}
+
+export async function executeProductionLegacyCredentialReissue(args: {
+  db: PrismaClient;
+  input: ProductionLegacyCredentialReissueInput;
+  authorization: ProductionCredentialReissueAuthorization;
+  temporaryCredential: string;
+  now?: Date;
+}): Promise<RecoveryResult> {
+  const now = args.now ?? new Date();
+  const plan = await planProductionLegacyCredentialReissue({ db: args.db, input: args.input });
+  validateProductionAuthorization(args.authorization, plan.planReference);
+  if (plan.idempotency === 'COMPLETED_MATCH' && plan.completedResult) {
+    return plan.completedResult;
+  }
+  if (!plan.safeToExecute || plan.idempotency !== 'NEW') {
+    throw new TenantRecoveryError(
+      plan.idempotency === 'MISMATCH'
+        ? 'IDEMPOTENCY_KEY_MISMATCH'
+        : plan.idempotency === 'INCOMPLETE'
+          ? 'IDEMPOTENCY_OPERATION_INCOMPLETE'
+          : 'RECOVERY_REFUSED',
+      plan.refusalReason ?? 'Production credential reissue was refused.'
+    );
+  }
+  validateTemporaryCredential(args.temporaryCredential);
+  const replacementHash = await hashPilotPassword(args.temporaryCredential);
+  const expiresAt = new Date(now.getTime() + TEMPORARY_CREDENTIAL_TTL_MS);
+
+  try {
+    return await args.db.$transaction(
+      async (tx) => {
+        const transactionPlan = await planProductionLegacyCredentialReissue({
+          db: tx,
+          input: args.input
+        });
+        if (
+          !transactionPlan.safeToExecute ||
+          transactionPlan.idempotency !== 'NEW' ||
+          transactionPlan.planReference !== plan.planReference
+        ) {
+          throw new TenantRecoveryError(
+            'RECOVERY_REFUSED',
+            'The Production recovery target changed; obtain and approve a fresh dry-run.'
+          );
+        }
+        const users = await loadProductionLegacyCredentialTarget(tx, args.input.email);
+        const user = users.length === 1 ? users[0] : null;
+        const membership = user?.memberships.length === 1 ? user.memberships[0] : null;
+        const organisation = membership?.organisation ?? null;
+        if (!user || !membership || !organisation) {
+          throw new TenantRecoveryError('RECOVERY_REFUSED', 'The Production recovery target is ambiguous.');
+        }
+        const operator = await resolveApprover(tx, args.input.operatorUserId, user.id);
+        const operation = await tx.provisioningOperation.create({
+          data: {
+            idempotencyKey: args.input.idempotencyKey,
+            inputHash: plan.planReference,
+            operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+            status: 'PENDING',
+            approvedBy: operator.id,
+            approvedAt: now,
+            organisationId: organisation.id
+          }
+        });
+        const updated = await tx.user.updateMany({
+          where: {
+            id: user.id,
+            email: args.input.email,
+            status: 'ACTIVE',
+            mustChangePassword: false,
+            passwordHash: user.passwordHash
+          },
+          data: {
+            passwordHash: replacementHash,
+            mustChangePassword: true,
+            temporaryCredentialExpiresAt: expiresAt
+          }
+        });
+        if (updated.count !== 1) {
+          throw new TenantRecoveryError(
+            'RECOVERY_REFUSED',
+            'The Production user state changed; obtain a fresh dry-run.'
+          );
+        }
+        const sessions = await tx.authSession.deleteMany({ where: { userId: user.id } });
+        const result: RecoveryResult = {
+          idempotentReplay: false,
+          operation: {
+            id: operation.id,
+            operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+            status: 'COMPLETED',
+            completedAt: now
+          },
+          state: 'HEALTHY_ACTIVE',
+          organisationId: organisation.id,
+          userId: user.id,
+          revokedSessionCount: sessions.count
+        };
+        const auditBase = {
+          actor: operator.displayName,
+          actorType: 'HUMAN_USER' as const,
+          userId: operator.id,
+          organisationId: organisation.id,
+          provisioningOperationId: operation.id,
+          source: 'tenant-recovery-production'
+        };
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'PRODUCTION_LEGACY_CREDENTIAL_REISSUE_STARTED',
+          resourceType: 'user',
+          resourceId: user.id,
+          metadata: {
+            reasonCode: 'LEGACY_PILOT_PASSWORD_MISMATCH',
+            changeId: args.authorization.changeId
+          }
+        });
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'CREDENTIAL_RESET',
+          resourceType: 'user',
+          resourceId: user.id,
+          metadata: { reasonCode: 'LEGACY_PILOT_PASSWORD_MISMATCH' }
+        });
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'SESSIONS_INVALIDATED',
+          resourceType: 'auth_session',
+          metadata: { revokedSessionCount: sessions.count }
+        });
+        await tx.provisioningOperation.update({
+          where: { id: operation.id },
+          data: {
+            status: 'COMPLETED',
+            completedAt: now,
+            resultSnapshot: {
+              ...buildRecoveryResultSnapshot(result),
+              recoveryMode: 'ACTIVE_LEGACY_PRODUCTION'
+            } as Prisma.InputJsonValue
+          }
+        });
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'RECOVERY_OPERATION_COMPLETED',
+          resourceType: 'provisioning_operation',
+          resourceId: operation.id,
+          metadata: { recoveryMode: 'ACTIVE_LEGACY_PRODUCTION' }
+        });
+        return result;
+      },
+      { isolationLevel: 'Serializable' }
+    );
+  } catch (error) {
+    if (error instanceof TenantRecoveryError) throw error;
+    throw new TenantRecoveryError(
+      'TRANSACTION_FAILED',
+      'Production credential reissue failed and was rolled back.'
+    );
+  }
+}
 
 type RecoveryCommandArgs = {
   db: PrismaClient;

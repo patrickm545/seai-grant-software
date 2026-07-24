@@ -5,13 +5,17 @@
 | Document ID | ENG-PILOT-AUTH-001 |
 | Status | Active |
 | Owner | Clada Systems Engineering |
-| Last reviewed | 2026-07-20 |
+| Last reviewed | 2026-07-24 |
 
 ## Current-versus-target notice
 
 This document describes current implemented pilot authentication and the legacy `pnpm pilot:provision` command. PR #29 adds temporary-credential expiry enforcement, a typed 30-minute restricted session, forced first-login password replacement, atomic owner/organisation activation, all-session rotation, and safe lifecycle audit. PR #28 provides the separate dry-run-first `pnpm tenant:provision` boundary and provisioning audit.
 
-PR #30 adds the dry-run-first `pnpm tenant:recover` operator command for safe inspection, credential reissue, user/organisation suspension, and approved reactivation. Mutations require an active Clada internal approver, reason, idempotency key, and explicit `--execute`; exact replay is safe and mismatched or drifted replay is refused. PR #31 adds `pnpm pilot:rehearsal`, which exercises restricted login, activation, tenant isolation, suspension, recovery, expiry, reissue, rollback, audit and cleanup only on synthetic data in a positively identified local disposable PostgreSQL database. Real transactional-email delivery, Production provisioning execution, owner replacement, and end-to-end Production onboarding validation remain deferred. The implemented flow is governed by [Clada OS Tenant Provisioning Architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md) and the [SolarGRANT Pro Pilot Organisation Onboarding Runbook](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md). No external pilot may be onboarded until that runbook's readiness gate passes.
+PR #30 adds the dry-run-first `pnpm tenant:recover` operator command for safe inspection, credential reissue, user/organisation suspension, and approved reactivation. Mutations require an active Clada internal approver, reason, idempotency key, and explicit `--execute`; exact replay is safe and mismatched or drifted replay is refused. PR #31 adds `pnpm pilot:rehearsal`, which exercises restricted login, activation, tenant isolation, suspension, recovery, expiry, reissue, rollback, audit and cleanup only on synthetic data in a positively identified local disposable PostgreSQL database.
+
+ADR-0022 separately proposes `pnpm tenant:recover:production-credential` for the incident-bound recovery of one eligible active legacy Production owner. It is read-only by default, requires a reviewed plan and exact Production acknowledgement, accepts a temporary credential only through a hidden interactive prompt, revokes sessions, and forces the existing restricted first-login replacement flow. It does not provision or alter a tenant. The command is not authorised for Production execution while its pull request or ADR remains unapproved; follow the [Production legacy credential reissue runbook](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md).
+
+Real transactional-email delivery, Production provisioning execution, owner replacement, and general end-to-end Production onboarding remain deferred. The implemented flow is governed by [Clada OS Tenant Provisioning Architecture](../01-platform/TENANT_PROVISIONING_ARCHITECTURE.md) and the [SolarGRANT Pro Pilot Organisation Onboarding Runbook](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md). No external pilot may be onboarded until that runbook's readiness gate passes.
 
 ## Approach
 

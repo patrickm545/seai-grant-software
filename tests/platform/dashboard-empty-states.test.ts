@@ -27,6 +27,10 @@ test('organisation and filtered empty states have distinct truthful copy', () =>
   assert.doesNotMatch(dashboard, /Add lead/i);
 });
 
+test('recent lead activity uses a deterministic timezone during hydration', () => {
+  assert.match(leadTable, /timeZone: 'Europe\/Dublin'/);
+});
+
 test('dashboard retains one pipeline count visualisation', () => {
   assert.match(dashboard, /<PipelineWorkflow/);
   assert.doesNotMatch(dashboard, /PipelineSummaryCards|crm-pipeline-summary-grid/);

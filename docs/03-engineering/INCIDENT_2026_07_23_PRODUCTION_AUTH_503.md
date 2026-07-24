@@ -326,11 +326,10 @@ No credential, hash, session, database URL, secret, or raw customer data was
 recorded. No Production record was changed. Preview and Production identity
 state remains isolated.
 
-ADR-0022 and the separate Draft security pull request propose a guarded,
-audited reissue path. That work does not authorise execution. The incident
-remains open until the path is approved, merged, deployed, separately
-authorised, executed by a human operator, and the authenticated Production
-tenant-isolation smoke test passes.
+ADR-0022 and PR #38 delivered a guarded, audited reissue path. Deployment does
+not authorise execution. The incident remains open until a fresh plan is
+separately authorised, the recovery is executed by a human operator, and the
+authenticated Production tenant-isolation smoke test passes.
 
 ## Prevention
 

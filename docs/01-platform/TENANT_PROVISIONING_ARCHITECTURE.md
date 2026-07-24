@@ -14,14 +14,14 @@ This document defines the approved target architecture for organisation provisio
 
 Implementation is governed by [ADR-0019](../05-decisions/ADR-0019-standardised-tenant-provisioning.md). Product operation is defined by the [SolarGRANT Pro pilot onboarding runbook](../03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md).
 
-ADR-0022 proposes a separate exceptional recovery boundary for one eligible
+ADR-0022 defines a separate exceptional recovery boundary for one eligible
 active legacy Production owner. It is not provisioning: it cannot create or
 change the organisation, Installer, membership, role, or tenant assignment.
 Its dry-run plan, exact Production guard, hidden human credential entry,
 serializable audit/idempotency, session revocation, expiry, and forced
 first-login replacement preserve this architecture's identity and tenant
-invariants. Production use remains blocked until the ADR, implementation, and
-an individual execution change are approved.
+invariants. Production use remains blocked until an individual execution change
+and fresh dry-run plan are approved.
 
 Delivery follows: Problem -> Architecture -> ADR -> Implementation -> Verification -> Production. A major platform feature must not skip these gates. An operational task is incomplete until it has a documented, repeatable process.
 

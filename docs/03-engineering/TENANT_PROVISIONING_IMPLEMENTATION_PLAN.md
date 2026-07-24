@@ -66,15 +66,15 @@ Dependencies: PRs 1-4 deployed and approved. Migration risk is none; operational
 
 ## Exceptional legacy Production credential recovery
 
-ADR-0022 proposes a separate, owner-only recovery command for an existing
+ADR-0022 defines a separate, owner-only recovery command for an existing
 active Production pilot account whose credential predates or differs from the
 approved Preview credential. This is not tenant provisioning and does not
 broaden PR 4's general recovery scope. It requires exact Production database
 identification, a reviewed read-only plan, CTO/owner approval, a change ID,
 hidden human credential entry, forced first-login replacement, serializable
-audit/idempotency, and unchanged tenant ownership. Production execution remains
-blocked until the ADR and implementation are approved, merged, deployed, and a
-separate execution change is authorised.
+audit/idempotency, and unchanged tenant ownership. The command is deployed, but
+Production execution remains blocked until a fresh plan and separate execution
+change are authorised.
 
 ## Cross-PR controls
 

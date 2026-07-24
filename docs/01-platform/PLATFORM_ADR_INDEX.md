@@ -49,7 +49,7 @@ Current platform ADRs:
 | [ADR-0019: Standardised Tenant Provisioning and Forced First-Login Password Change](../05-decisions/ADR-0019-standardised-tenant-provisioning.md) | Proposed | Defines the target transactional provisioning command, conflicts, restricted first-login flow, audit, and migration path. |
 | [ADR-0020: Organisation-Owned Work Items And Lead Task Proving Slice](../05-decisions/ADR-0020-organisation-owned-work-items.md) | Accepted | Defines the minimum tenant-owned work-item model, resource and membership boundaries, lifecycle, concurrency, migration compatibility, and SolarGRANT Pro lead-task proving slice. |
 | [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) | Accepted | Defines explicit origin, action-specific completeness, truthful unknowns, typed attribution, evidence-based migration, permissions, duplicate warning, privacy, and PR 2 gates for one SolarGRANT Pro Lead. |
-| [ADR-0022: Guarded Production Legacy Credential Reissue](../05-decisions/ADR-0022-production-legacy-credential-reissue.md) | Proposed | Defines the exceptional dry-run-first, Production-only, human-entered and audited credential reissue boundary for an eligible active legacy pilot owner. |
+| [ADR-0022: Guarded Production Legacy Credential Reissue](../05-decisions/ADR-0022-production-legacy-credential-reissue.md) | Accepted | Defines the exceptional dry-run-first, Production-only, human-entered and audited credential reissue boundary for an eligible active legacy pilot owner. |
 
 Recommended future ADR candidates:
 

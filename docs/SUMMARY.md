@@ -147,7 +147,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0019-standardised-tenant-provisioning.md](05-decisions/ADR-0019-standardised-tenant-provisioning.md)
 - [05-decisions/ADR-0020-organisation-owned-work-items.md](05-decisions/ADR-0020-organisation-owned-work-items.md) - Accepted
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
-- [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Proposed
+- [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
 
 ## Sprints
 

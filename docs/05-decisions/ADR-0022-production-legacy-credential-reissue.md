@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0022 |
-| Status | Proposed |
+| Status | Accepted |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each authorised use and when the recovery model changes |
 | Last reviewed | 2026-07-24 |
@@ -25,8 +25,9 @@ safety boundaries.
 ## Decision
 
 Add a narrowly scoped operator command for an approved, active legacy pilot
-owner. The command is proposed for Production use only after CTO/owner approval
-and an approved change record.
+owner. Deploying the command does not authorise its use. Each Production
+execution still requires owner approval, a reviewed dry-run plan, and an
+approved change record.
 
 The command:
 
@@ -80,9 +81,8 @@ available.
 - Failed transactions leave credential and sessions unchanged. A committed
   reissue is repaired by a separately approved idempotent reissue; it is not
   rolled back by restoring a previous hash.
-- The command remains non-operational until this ADR and pull request are
-  approved, merged, deployed, and a separate Production execution is explicitly
-  authorised.
+- The command remains non-operational until a separate Production execution is
+  explicitly authorised against a fresh reviewed plan.
 
 ## Alternatives Considered
 
@@ -99,11 +99,10 @@ available.
 
 ## Follow-Up
 
-1. Obtain CTO approval for this proposed ADR and implementation.
-2. Merge and deploy only through normal release governance.
-3. Obtain a separate owner-approved Production change record and execute the
+1. Retain the merge and deployment evidence produced through release governance.
+2. Obtain a separate owner-approved Production change record and execute the
    runbook with a human operator.
-4. Verify forced first login, tenant isolation, logout, denial behavior, audit,
+3. Verify forced first login, tenant isolation, logout, denial behavior, audit,
    and clean Production runtime logs.
-5. Replace this exceptional path with approved self-service or transactional
+4. Replace this exceptional path with approved self-service or transactional
    credential delivery when available.

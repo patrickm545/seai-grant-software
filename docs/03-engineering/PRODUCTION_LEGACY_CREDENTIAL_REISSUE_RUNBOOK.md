@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-PROD-LEGACY-CREDENTIAL-REISSUE-001 |
-| Status | Proposed — execution not authorised |
+| Status | Active — Production execution separately gated |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every use |
 | Last reviewed | 2026-07-24 |
@@ -15,14 +15,12 @@ pilot owner whose Production password is unknown or differs from Preview. It
 does not provision a tenant, copy environment data, or provide a general
 password-reset facility.
 
-**Do not execute a Production reissue from this Draft pull request.** Execution
-requires all of the following:
+The guarded workflow was merged and deployed on 2026-07-24. It has not been
+executed. Production execution requires all of the following:
 
-1. ADR-0022 and the implementation are approved by the CTO.
-2. The pull request is merged and its exact artifact is deployed successfully.
-3. The owner authorises the named account recovery.
-4. A Production change ID and active Clada internal operator are approved.
-5. A fresh dry-run plan is reviewed immediately before execution.
+1. The owner authorises the named account recovery.
+2. A Production change ID and active Clada internal operator are approved.
+3. A fresh dry-run plan is reviewed immediately before execution.
 
 ## Threat Model
 
@@ -168,9 +166,9 @@ safe logs and operation references to the incident, then obtain CTO direction.
 Omit credentials, hashes, secrets, tokens, database URLs, raw customer data, and
 full request or provider payloads.
 
-## Draft Implementation Validation
+## Implementation Validation And Deployment Status
 
-On 2026-07-24 the unmerged Draft implementation passed:
+On 2026-07-24 the implementation passed:
 
 - frozen pnpm 10.11.0 install with an unchanged lockfile;
 - Prisma format, generate, and validate;
@@ -184,9 +182,27 @@ On 2026-07-24 the unmerged Draft implementation passed:
 - the Next.js production build.
 
 The available validation host used Node 24.14.1 and emitted the repository's
-Node 22.x engine warning. CI must provide the authoritative Node 22 result. The
-disposable database was removed after testing. No Production or Preview
-database, configuration, deployment, credential, or data was changed.
+Node 22.x engine warning. CI supplied the authoritative Node 22 result. The
+disposable database was removed after testing.
+
+Deployment evidence:
+
+- PR #38 merge commit:
+  `1ef8c551527d4f1a72c8eb4605741ff5f152cf47`;
+- Production deployment: `dpl_HakxtUttHMAabbU1CQGtGMabMRTv`;
+- status: `READY` at 2026-07-24 12:00:44 UTC;
+- canonical URL: `https://seai-grant-software.vercel.app`;
+- the guarded Vercel preflight selected Production migration `status`, found all
+  15 committed migrations already applied, and executed no migration;
+- home and login returned 200, unauthenticated dashboard access redirected to
+  login, controlled invalid credentials returned the generic 401, and the
+  deployment error/fatal runtime scan was clean.
+
+No Production credential, user, organisation, Installer, ProvisioningOperation,
+feature flag, migration, or application data was changed. The guarded command
+is available but has not been executed. The authentication incident remains
+open pending separately authorised recovery, forced first-login replacement,
+and authenticated tenant-isolation smoke testing.
 
 ## Related Documents
 

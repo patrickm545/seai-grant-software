@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-AUTH-RESET-PLAN-001 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each implementation PR and before pilot release |
 | Last reviewed | 2026-07-24 |
@@ -13,6 +13,20 @@
 Implement the required pre-pilot capability defined by [FEAT-PRE-PILOT-AUTH-001](../04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) and [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) without weakening ADR-0018 authentication, tenant isolation, database deployment gates, or ADR-0022 exceptional recovery.
 
 This plan is documentation only. It does not authorise schema, runtime, provider, environment, database, or deployment changes.
+
+## CTO Review Amendment And Start Gate
+
+On 2026-07-24 the CTO approved the architecture decisions listed in ADR-0023. PR #40 remains Draft until this amendment is committed.
+
+No implementation may begin until all five prerequisites are approved:
+
+1. transactional email provider;
+2. Clada-controlled sender and reply-to identities;
+3. managed cross-instance atomic TTL rate-limit store;
+4. Preview recipient allowlist or provider sandbox policy;
+5. stable Preview canonical origin.
+
+The only alternative is explicit authorisation on an implementation PR to introduce provider-neutral adapters with fail-closed configuration. That exception permits interface and safe configuration-boundary work only; it does not approve live secrets, provider configuration, email delivery, migration/deployment work beyond the explicitly authorised PR, or any unsafe fallback.
 
 ## Repository Findings
 
@@ -73,14 +87,15 @@ Create a small Clada OS authentication-recovery service with a dedicated Prisma 
 | Retention | Delete terminal reset records after 30 days. |
 | Notification outbox | Not required for first pilot if dispatch is fail-closed and retry starts a new request; TD-014 remains. |
 
-## Decisions Requiring Recorded Approval
+## Outstanding Implementation Prerequisites
 
-Implementation may scaffold interfaces before these choices, but Preview/Production completion is blocked:
+Implementation is blocked until these choices are recorded, subject only to the explicit provider-neutral, fail-closed adapter exception above:
 
 1. **CTO:** transactional-email provider with sandbox/suppression, safe receipt, domain authentication, timeouts, and separate environment credentials.
 2. **CEO/product and privacy owner:** final sender address, reply handling, customer-facing email copy, and privacy/support contact.
 3. **CTO:** managed Redis-compatible rate-limit store supported by the Vercel deployment and its environment isolation/configuration.
 4. **CTO and privacy owner:** Preview internal-recipient allowlist and evidence-retention owner.
+5. **CTO:** stable Preview canonical alias, distinct from the Production hostname and validated against `APP_ENV`.
 
 Recommended sender shape is a Clada-controlled security/support mailbox on an authenticated domain. The current Gmail lead helper is not recommended. Vendor names must be selected through the approval process rather than embedded speculatively.
 
@@ -99,14 +114,16 @@ Indexes must support digest lookup, active requests by user, expiry/retention cl
 
 ## Recommended Reviewable Sequence
 
+This sequence may start only after the five-prerequisite gate is satisfied. If a specific implementation PR is instead authorised only for provider-neutral adapters with fail-closed configuration, that PR may perform the adapter/interface subset of PR 2 and no schema, route, UI, live-provider, secret, delivery, migration, or deployment work.
+
 ### PR 1 — Data and security primitives
 
-- Approve ADR-0023 and provider/rate-store configuration contracts.
+- Confirm ADR-0023 is Accepted and all five implementation prerequisites are approved.
 - Add model, migration, token generation/HMAC, state predicates, canonical-origin validation, and audit metadata allowlist.
 - Extract the existing password policy into a reusable service without changing first-login behaviour.
 - Add unit/migration tests and fresh-database verification.
 
-Dependency: approved schema/key/origin decisions.
+Dependency: all five implementation prerequisites approved.
 
 Rollback: revert application use; retain additive table until a later approved migration.
 

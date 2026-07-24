@@ -103,7 +103,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 - [04-features/README.md](04-features/README.md)
 - [04-features/FEATURE_SPEC_TEMPLATE.md](04-features/FEATURE_SPEC_TEMPLATE.md)
-- [04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md](04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) - Proposed; required before first external pilot
+- [04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md](04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) - Approved; implementation prerequisites outstanding; required before first external pilot
 - [04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md](04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md)
 - [04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md](04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md)
 - [04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md](04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md)
@@ -152,7 +152,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0020-organisation-owned-work-items.md](05-decisions/ADR-0020-organisation-owned-work-items.md) - Accepted
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 - [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
-- [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Proposed
+- [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Accepted; implementation prerequisites outstanding
 
 ## Sprints
 

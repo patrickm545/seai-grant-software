@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | FEAT-PRE-PILOT-AUTH-001 |
-| Status | Proposed |
+| Status | Approved |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Before implementation and after any authentication incident |
 | Last reviewed | 2026-07-24 |
@@ -14,6 +14,10 @@
 SolarGRANT Pro must let an eligible installer recover a forgotten password without operator intervention. This is a required pre-pilot capability for the first 5–10 installer users, not optional technical debt.
 
 The normal recovery path is a neutral forgot-password request followed by a short-lived, one-time email link and a new-password form. The guarded Production credential-reissue workflow in [ADR-0022](../05-decisions/ADR-0022-production-legacy-credential-reissue.md) remains an exceptional, separately approved operational recovery mechanism.
+
+## Approval State
+
+The CTO approved this feature architecture on 2026-07-24. Implementation remains blocked by the five prerequisites recorded in [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md), unless an implementation PR is explicitly authorised to introduce only provider-neutral adapters with fail-closed configuration. Approval of this specification does not authorise runtime code, migrations, secrets, provider configuration, deployment, or database changes in documentation PR #40.
 
 ## Problem And Pilot Rationale
 

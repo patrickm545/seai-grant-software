@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0023 |
-| Status | Proposed |
+| Status | Accepted |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before implementation and when identity, email, rate limiting, or session architecture changes |
 | Last reviewed | 2026-07-24 |
@@ -13,6 +13,36 @@
 ADR-0018 establishes Argon2id credentials, HMAC-digested database sessions, a single installer membership, and server-derived tenant context. ADR-0019 establishes forced first-login replacement. ADR-0022 establishes a guarded administrator credential-reissue workflow for exceptional Production recovery. None defines normal self-service password reset.
 
 Self-service reset introduces durable decisions about bearer-token persistence, account-enumeration behaviour, email-link origin, session revocation, rate limiting, audit, and delivery failure. A focused ADR is therefore required.
+
+## CTO Review Amendment — Approved 2026-07-24
+
+The CTO approved the overall self-service password-reset architecture and the following durable decisions:
+
+- token lifetime is 30 minutes;
+- only the newest reset request remains valid;
+- reset state uses dedicated `PasswordResetRequest` persistence;
+- the email bearer is 32 bytes from a cryptographically secure random source;
+- only HMAC-SHA-256 digests are stored, using separate environment-specific reset key material;
+- the email token is delivered in a URL fragment, exchanged by first-party POST, and rotated into a separate cookie-bound handle;
+- successful reset revokes every existing user session;
+- reset completion does not automatically authenticate the browser;
+- eligible and ineligible public requests return the same neutral `202`;
+- links use only an exact environment-owned canonical origin;
+- the current password cannot be reused;
+- successful reset clears `mustChangePassword`;
+- terminal reset records are retained for 30 days and then removed through bounded cleanup;
+- ADR-0022 remains the exceptional operator recovery path; and
+- a general notification outbox is not required for first pilot, while TD-014 remains open.
+
+The architecture approval does not approve a provider or runtime configuration. Implementation remains blocked until all five prerequisites below are approved, unless a later implementation PR is explicitly authorised to introduce provider-neutral adapters with fail-closed configuration:
+
+1. transactional email provider;
+2. Clada-controlled sender and reply-to identities;
+3. managed cross-instance atomic TTL rate-limit store;
+4. Preview recipient allowlist or provider sandbox policy;
+5. stable Preview canonical origin.
+
+Documentation PR #40 must remain Draft until this amendment is committed. The amendment adds no authority for runtime code, migrations, secrets, provider configuration, deployment, or database changes in PR #40.
 
 ## Decision
 
@@ -114,7 +144,7 @@ A dedicated model gives reset-specific lifecycle constraints without overloading
 - **Require the general notification outbox now:** rejected for first pilot if fail-closed dispatch state, bounded delivery, and safe retry are implemented; revisit with TD-014.
 - **Replace ADR-0022:** rejected. Self-service reset is normal recovery; guarded reissue remains exceptional recovery.
 
-## Required Approvals Before Implementation Completion
+## Required Implementation Prerequisites
 
 | Decision | Recommendation | Approval |
 | --- | --- | --- |
@@ -122,11 +152,14 @@ A dedicated model gives reset-specific lifecycle constraints without overloading
 | Sender identity | Use a Clada-controlled security/support mailbox on an authenticated domain; final local part and customer-facing reply handling require approval. | CEO/product and privacy owner |
 | Shared rate-limit store | Use a managed Redis-compatible atomic TTL store supported in the Vercel deployment and separately scoped per environment. | CTO |
 | Preview recipient policy | Sandbox plus explicit Clada internal inbox allowlist; no Production customer delivery. | CTO and privacy owner |
+| Preview canonical origin | Configure one stable approved Preview alias that is not the Production hostname and validate it against `APP_ENV`. | CTO |
+
+No implementation may begin until all five prerequisites are approved, unless the implementation PR is explicitly authorised to introduce provider-neutral adapters with fail-closed configuration. Such authorisation does not permit live provider credentials, unsafe fallbacks, Production delivery, or bypass of the remaining release gates.
 
 ## Follow-Up
 
-1. Approve the [feature specification](../04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md), this ADR, and the named provider/sender/rate-store decisions.
-2. Implement the [small-PR plan](../03-engineering/SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md).
+1. Record approval of the five implementation prerequisites or explicitly authorise a provider-neutral, fail-closed adapter PR.
+2. Implement the [small-PR plan](../03-engineering/SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md) only after that gate is satisfied.
 3. Execute the [test plan](../03-engineering/SELF_SERVICE_PASSWORD_RESET_TEST_PLAN.md).
 4. Update the pilot-authentication and onboarding runbooks with implemented evidence.
 5. Keep ADR-0022 historically unchanged and operational.

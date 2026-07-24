@@ -39,6 +39,11 @@ import {
 } from '@/lib/crm';
 import { adaptSolarGrantLeadForPresentation } from '@/lib/solargrant-jurisdiction-safe-view';
 import { getLeadQualificationSummary } from '@/lib/lead-qualification';
+import {
+  getAuditActionLabel,
+  getAuditActorLabel,
+  getAuditStatusSummary
+} from '@/lib/audit-presentation';
 
 export const dynamic = 'force-dynamic';
 
@@ -546,7 +551,6 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
     `Battery interest: ${formatBoolean(salesSignal?.batteryInterest ?? salesSignal?.wantsBattery)}`,
     `Recommended next action: ${getStringValue(salesSignal?.recommendedNextAction ?? quoteEstimate?.recommendedNextAction)}`
   ].join('\n');
-  const rawExportJson = JSON.stringify(exportData ?? {}, null, 2);
   const allWarnings = [...mprnWarnings, ...exportWarnings];
   const addressSummary = [lead.addressLine1, lead.addressLine2, lead.county, lead.eircode].filter(Boolean).join(', ');
   const eligibilityLabel = lead.likelyEligible === null ? 'Pending review' : lead.likelyEligible ? 'Likely eligible' : 'Needs review';
@@ -894,9 +898,9 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 <h3>Print summary</h3>
                 <p className="small">Open the PDF-friendly manual prep summary.</p>
               </a>
-              {lead.jurisdictionView.canPresentSeaiConclusions ? <a className="action-card export-action-card" href={`/api/submission-package?id=${lead.id}`} target="_blank" rel="noreferrer">
-                <h3>Application pack JSON</h3>
-                <p className="small">Export structured data for human admin review.</p>
+              {lead.jurisdictionView.canPresentSeaiConclusions ? <a className="action-card export-action-card" href={`/api/submission-package?id=${lead.id}`} download>
+                <h3>Download structured JSON</h3>
+                <p className="small">Download the advanced application data export as a JSON file.</p>
               </a> : null}
               {lead.jurisdictionView.canPresentSeaiConclusions ? <a className="action-card export-action-card" href={`/api/portal-fill-preview?id=${lead.id}`} target="_blank" rel="noreferrer">
                 <h3>Portal fill preview</h3>
@@ -909,7 +913,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 <div>
                   <div className="eyebrow">Structured export snapshot</div>
                   <h3>Operational summary</h3>
-                  <p className="small">Readable export view for installer review. Raw payload is hidden below for debugging.</p>
+                  <p className="small">Readable application and quote summary for installer review.</p>
                 </div>
                 <div className="structured-copy-actions">
                   <CopyTextButton text={copyQuoteSummary} label="Copy quote estimate" />
@@ -980,10 +984,6 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
                 </StructuredSection>
               </div>
 
-              <details className="raw-export-accordion">
-                <summary>View raw data</summary>
-                <pre className="code-block raw-export-code">{rawExportJson}</pre>
-              </details>
             </div>
           </LeadCard>
 
@@ -992,13 +992,12 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
               {auditLogs.length ? auditLogs.map((entry) => (
                 <div key={entry.id} className="audit-item">
                   <div>
-                    <strong>{entry.action}</strong>
-                    <div className="small">{formatDateTime(entry.createdAt)} by {entry.actor}</div>
+                    <strong>{getAuditActionLabel(entry.action)}</strong>
+                    <div className="small">{formatDateTime(entry.createdAt)} by {getAuditActorLabel(entry.actor)}</div>
+                    {getAuditStatusSummary(entry.metadataJson) ? (
+                      <div className="small">{getAuditStatusSummary(entry.metadataJson)}</div>
+                    ) : null}
                   </div>
-                  <details className="raw-export-accordion lead-crm-audit-metadata">
-                    <summary>View audit metadata</summary>
-                    <pre className="code-block raw-export-code">{JSON.stringify(entry.metadataJson ?? {}, null, 2)}</pre>
-                  </details>
                 </div>
               )) : (
                 <div className="empty-state">
@@ -1011,7 +1010,7 @@ export default async function HiddenLeadDetailPage({ params }: { params: Promise
         </div>
 
         <aside className="lead-crm-sidebar">
-          <LeadCard eyebrow="CRM pipeline" title="Sales stage" className="lead-crm-sticky-card">
+          <LeadCard eyebrow="CRM pipeline" title="Sales stage">
             <div className="lead-crm-current-stage">
               <span>Current stage</span>
               <strong>{getPipelineStageLabel(lead.pipelineStage)}</strong>

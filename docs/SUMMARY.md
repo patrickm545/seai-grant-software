@@ -67,6 +67,11 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [01-product/CLADA_OS_PRODUCT_MODEL.md](01-product/CLADA_OS_PRODUCT_MODEL.md)
 - [01-product/SOLARGRANT_PRO_MODULE.md](01-product/SOLARGRANT_PRO_MODULE.md)
 
+## Products
+
+- [04-products/README.md](04-products/README.md)
+- [04-products/solargrant-pro/README.md](04-products/solargrant-pro/README.md)
+- [04-products/solargrant-pro/SOLARGRANT_PRO_PRODUCT_STRATEGY_AND_ROADMAP_v1.0.md](04-products/solargrant-pro/SOLARGRANT_PRO_PRODUCT_STRATEGY_AND_ROADMAP_v1.0.md)
 ## Release Specifications
 
 - [release-specifications/README.md](release-specifications/README.md)

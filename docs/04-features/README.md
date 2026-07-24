@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-24 |
 
 Feature specifications define the problem, evidence, scope, design, architecture, risks, and verification plan before major implementation.
 
@@ -28,6 +28,7 @@ Use [FEATURE_SPEC_TEMPLATE.md](FEATURE_SPEC_TEMPLATE.md) for new feature specs.
 
 ## Active Feature Specifications
 
+- [FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md](FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) - Proposed; required before first external pilot
 - [FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md](FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md)
 - [FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md](FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md)
 - [FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md](FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md)

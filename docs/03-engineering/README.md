@@ -23,6 +23,9 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md): Production authentication schema-drift incident, recovery evidence, and preventive actions.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md): proposed CTO-gated, dry-run-first recovery procedure for an eligible active legacy Production pilot owner.
+- [SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md): pre-pilot password-reset assets, threats, mitigations, residual risk, and required evidence.
+- [SELF_SERVICE_PASSWORD_RESET_TEST_PLAN.md](SELF_SERVICE_PASSWORD_RESET_TEST_PLAN.md): unit, integration, browser, security, regression, Preview, and Production acceptance matrix.
+- [SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md](SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md): repository findings, resolved decisions, approval gates, small-PR delivery sequence, rollout, and rollback.
 - [SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md](SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md): proposed pilot approval, provisioning, secure delivery, activation, smoke-test, and support workflow.
 - [TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md](TENANT_PROVISIONING_IMPLEMENTATION_PLAN.md): proposed five-PR delivery sequence, risks, tests, gates, and approval decisions.
 - [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md): durable technical debt register for platform and repository risks.

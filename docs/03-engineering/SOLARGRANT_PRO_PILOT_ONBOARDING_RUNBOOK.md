@@ -135,6 +135,12 @@ Retain only the sanitised rehearsal report and pass/fail summary needed for read
 The first external pilot is blocked until:
 
 - architecture and ADR are approved;
+- self-service password reset is implemented under FEAT-PRE-PILOT-AUTH-001 and ADR-0023;
+- reset-email delivery and the approved sender identity are verified;
+- Preview functional, accessibility, privacy, abuse, tenant-isolation, token-leakage, and security acceptance pass;
+- the Production deployment and a controlled reset smoke are verified while normal login remains healthy;
+- the ADR-0022 guarded administrator recovery runbook remains operational;
+- no unresolved Critical or pilot-blocking High authentication issue remains;
 - the repository command, dry-run, exact-plan Production confirmation, transaction, idempotency, conflict tests, and audit logging exist;
 - secure generation, approved non-logged credential delivery, expiry, and log-redaction tests exist;
 - forced password change and non-bypass route/API guards work;
@@ -154,3 +160,5 @@ Report organisation/Installer IDs and names, owner name/email, role, operation I
 - [Database operations](DATABASE_OPERATIONS_RUNBOOK.md)
 - [Truthful dashboard empty states](../product/implementation/TRUTHFUL_DASHBOARD_EMPTY_STATES.md)
 - [ADR-0019](../05-decisions/ADR-0019-standardised-tenant-provisioning.md)
+- [Self-service password reset](../04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md)
+- [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md)

@@ -242,6 +242,22 @@ test('dashboard records, metrics, and activity remain organisation scoped', asyn
 test('structured export attachment is built only from the organisation-scoped lead', async (t) => {
   await seedTestData();
   t.after(cleanupTestData);
+  await prisma.lead.update({
+    where: { id: leadA },
+    data: {
+      privateLandlord: false,
+      priorSolarGrantAtMprn: false,
+      likelyEligible: true,
+      consentToContact: true,
+      structuredExportJson: {
+        salesSignal: {
+          monthlyElectricityBillRange: 'OVER_200',
+          roofType: 'SLATE',
+          installTimeline: 'ASAP'
+        }
+      }
+    }
+  });
 
   const ownLead = await prisma.lead.findFirst({
     where: leadOrganisationWhere(scopeA, { id: leadA }),

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Architecture |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-24 |
 
 ## Purpose
 
@@ -257,6 +257,12 @@ SolarGRANT Pro may consume platform APIs, configure platform capabilities, and o
 ## Release Roadmap
 
 This roadmap adds an explicit module configuration release because configuration is required before governed AI and reporting can safely serve SolarGRANT Pro without encoding solar-specific behaviour into Clada OS.
+
+### Required Pre-Pilot Authentication Completion
+
+Self-service password reset is a bounded completion of the existing identity foundation and is required before the first external SolarGRANT Pro installer pilot. It is governed by [FEAT-PRE-PILOT-AUTH-001](../04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) and [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md), not deferred to the later general Notifications and Communications Foundation. The first-pilot gate requires implementation, approved reset-email delivery and sender identity, shared rate limiting, Preview security acceptance, Production verification, healthy normal login, and a still-operational ADR-0022 recovery path.
+
+This targeted authentication email does not establish the general notification outbox, communication-history, consent, campaign, or provider-marketplace capabilities planned for later releases.
 
 Each Platform Release 1.x must include a small SolarGRANT Pro proving slice. Product Release 2.0 should consolidate and harden the slices into the SolarGRANT Pro MVP integration; it must not be the first meaningful point of product consumption.
 

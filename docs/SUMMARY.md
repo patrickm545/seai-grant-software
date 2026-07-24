@@ -90,6 +90,9 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
 - [03-engineering/PILOT_AUTHENTICATION.md](03-engineering/PILOT_AUTHENTICATION.md)
 - [03-engineering/PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](03-engineering/PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md)
+- [03-engineering/SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](03-engineering/SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md)
+- [03-engineering/SELF_SERVICE_PASSWORD_RESET_TEST_PLAN.md](03-engineering/SELF_SERVICE_PASSWORD_RESET_TEST_PLAN.md)
+- [03-engineering/SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md](03-engineering/SELF_SERVICE_PASSWORD_RESET_IMPLEMENTATION_PLAN.md)
 - [03-engineering/PLATFORM_RELEASE_1_5_PR2_LEAD_FIELD_CONSUMER_MIGRATION.md](03-engineering/PLATFORM_RELEASE_1_5_PR2_LEAD_FIELD_CONSUMER_MIGRATION.md)
 - [03-engineering/PLATFORM_RELEASE_1_5_PR2_VALIDATION.md](03-engineering/PLATFORM_RELEASE_1_5_PR2_VALIDATION.md)
 - [03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md](03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md)
@@ -100,6 +103,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 
 - [04-features/README.md](04-features/README.md)
 - [04-features/FEATURE_SPEC_TEMPLATE.md](04-features/FEATURE_SPEC_TEMPLATE.md)
+- [04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md](04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) - Approved; implementation prerequisites outstanding; required before first external pilot
 - [04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md](04-features/FEAT-PLATFORM-1-1-ORGANISATION-FOUNDATION.md)
 - [04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md](04-features/FEAT-PLATFORM-1-1-ACTOR-MEMBERSHIP-MODEL.md)
 - [04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md](04-features/FEAT-PLATFORM-1-1-TENANT-AWARE-DATA-ACCESS.md)
@@ -148,6 +152,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0020-organisation-owned-work-items.md](05-decisions/ADR-0020-organisation-owned-work-items.md) - Accepted
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 - [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
+- [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Accepted; implementation prerequisites outstanding
 
 ## Sprints
 

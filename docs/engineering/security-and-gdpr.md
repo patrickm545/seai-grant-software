@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Quarterly |
-| Last reviewed | 2026-07-23 |
+| Last reviewed | 2026-07-24 |
 
 ## Purpose
 
@@ -65,6 +65,8 @@ Platform Release 1.2 adds the first reusable authorisation and typed audit found
 - public homeowner portal access remains token-scoped and must not gain organisation permissions.
 
 ## Sprint requirement
+
+Self-service password reset is required before the first external installer pilot. Its public request must resist account enumeration; reset tokens and passwords must not enter logs, audit metadata, analytics, URLs after exchange, or persistent plaintext storage; environment-specific links must use an allowlisted canonical origin; all sessions must be revoked atomically on completion; and terminal reset records are retained for 30 days before deletion. [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) and the [reset threat model](../03-engineering/SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md) govern this boundary.
 
 Platform Release 1.5 PR 2 manual lead collection is not approved for Production until Clada Systems records the ADR-0021 wording, purpose/lawful basis, retention/deletion, follow-up contact, access/correction, sensitive-note, and pilot-minimisation decisions. Implementation and synthetic disposable verification do not complete that gate.
 

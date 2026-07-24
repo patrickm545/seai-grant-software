@@ -13,6 +13,7 @@ import { getDashboardMetrics } from '../../lib/dashboard-metrics';
 import { adaptSolarGrantLeadForPresentation } from '../../lib/solargrant-jurisdiction-safe-view';
 import { buildPortalFillPreview, buildSubmissionPackage } from '../../lib/submission-package';
 import { SolarGrantJurisdictionError } from '../../lib/solargrant-jurisdiction';
+import { buildSubmissionPackageDownload } from '../../lib/submission-package-download';
 
 const prisma = new PrismaClient();
 const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
@@ -236,6 +237,29 @@ test('dashboard records, metrics, and activity remain organisation scoped', asyn
   assert.equal(metrics.applicationsSubmitted, 0);
   assert.equal(metrics.pipelineCounts.NEW_LEAD, 1);
   assert.equal(metrics.pipelineCounts.QUALIFIED, 0);
+});
+
+test('structured export attachment is built only from the organisation-scoped lead', async (t) => {
+  await seedTestData();
+  t.after(cleanupTestData);
+
+  const ownLead = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(scopeA, { id: leadA }),
+    include: { installer: true, documents: true }
+  });
+  const crossTenantLead = await prisma.lead.findFirst({
+    where: leadOrganisationWhere(scopeA, { id: leadB }),
+    include: { installer: true, documents: true }
+  });
+
+  assert.ok(ownLead);
+  assert.equal(crossTenantLead, null);
+
+  const payload = buildSubmissionPackage(ownLead, ownLead.installer);
+  const response = buildSubmissionPackageDownload(payload);
+  assert.equal(response.headers.get('content-disposition'), 'attachment; filename="solargrant-application-pack.json"');
+  assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8');
+  assert.equal((await response.json() as { applicant: { fullName: string } }).applicant.fullName, 'Tenant A Homeowner');
 });
 
 test('historical unsupported records stay stored, tenant scoped, and unsafe exports are refused', async (t) => {

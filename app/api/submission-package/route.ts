@@ -3,6 +3,7 @@ import { isPilotAuthenticationError, requirePilotContext } from '@/lib/pilot-aut
 import { leadOrganisationWhere } from '@/lib/lead-access';
 import { prisma } from '@/lib/prisma';
 import { buildSubmissionPackage } from '@/lib/submission-package';
+import { buildSubmissionPackageDownload } from '@/lib/submission-package-download';
 import { SolarGrantJurisdictionError } from '@/lib/solargrant-jurisdiction';
 import { QualificationGateError } from '@/lib/lead-qualification';
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
 
     const payload = buildSubmissionPackage(lead, lead.installer);
-    return NextResponse.json(payload);
+    return buildSubmissionPackageDownload(payload);
   } catch (error) {
     if (error instanceof SolarGrantJurisdictionError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });

@@ -4231,10 +4231,6 @@ select.field-input-error {
   width: auto;
   min-width: 144px;
 }
-.lead-crm-sticky-card {
-  position: sticky;
-  top: 18px;
-}
 .lead-crm-audit-list .audit-item {
   border-radius: 14px;
 }
@@ -4251,9 +4247,6 @@ select.field-input-error {
   }
   .lead-crm-layout {
     grid-template-columns: 1fr;
-  }
-  .lead-crm-sticky-card {
-    position: static;
   }
 }
 @media (max-width: 860px) {

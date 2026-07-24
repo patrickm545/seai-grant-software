@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PrismaClient } from '@prisma/client';
+import { verify } from '@node-rs/argon2';
 import {
   FailingCredentialDeliveryAdapter,
   FakeCredentialDeliveryAdapter
@@ -11,14 +12,24 @@ import {
   executeTenantCredentialReissue,
   executeTenantUserReactivation,
   executeTenantUserSuspension,
+  executeProductionLegacyCredentialReissue,
   inspectTenantRecovery,
+  planProductionLegacyCredentialReissue,
   planTenantCredentialReissue,
   TenantRecoveryError,
+  type ProductionCredentialReissueAuthorization,
+  type ProductionLegacyCredentialReissueInput,
   type RecoveryInput
 } from '../../lib/tenant-recovery';
+import {
+  authenticatePilotCredentials,
+  completePilotFirstLogin,
+  hashPilotPassword
+} from '../../lib/pilot-auth';
 import { executeTenantProvisioning, type TenantProvisioningInput } from '../../lib/tenant-provisioning';
 
 const prisma = new PrismaClient();
+process.env.AUTH_SESSION_PEPPER = 'tenant-recovery-integration-session-pepper-2026';
 
 function suffix(label: string) {
   return `${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -72,6 +83,93 @@ function recoveryInput(tenant: Awaited<ReturnType<typeof seedTenant>>, key: stri
     idempotencyKey: key,
     reason,
     environment: 'test'
+  };
+}
+
+async function seedLegacyProductionUser(
+  label: string,
+  overrides: {
+    userStatus?: 'ACTIVE' | 'INACTIVE';
+    membershipStatus?: 'ACTIVE' | 'INACTIVE';
+    organisationStatus?: 'ACTIVE' | 'INACTIVE';
+    organisationType?: 'INSTALLER' | 'CLADA_INTERNAL';
+    verified?: boolean;
+    installer?: boolean;
+    mustChangePassword?: boolean;
+  } = {}
+) {
+  const id = suffix(`legacy-${label}`);
+  const slugKey = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const operatorUserId = `legacy-operator-${id}`;
+  await seedApprover(operatorUserId);
+  const organisation = await prisma.organisation.create({
+    data: {
+      name: `Legacy Recovery ${id}`,
+      slug: `legacy-recovery-${slugKey}`,
+      type: overrides.organisationType ?? 'INSTALLER',
+      status: overrides.organisationStatus ?? 'ACTIVE',
+      verified: overrides.verified ?? true
+    }
+  });
+  const installer = overrides.installer === false
+    ? null
+    : await prisma.installer.create({
+        data: {
+          organisationId: organisation.id,
+          name: `Legacy Installer ${id}`,
+          slug: `legacy-installer-${slugKey}`,
+          seaiCompanyId: `LEGACY-${id}`
+        }
+      });
+  const oldPassword = `Old!Legacy!Credential!${id}`;
+  const user = await prisma.user.create({
+    data: {
+      email: `legacy-${id}@example.test`,
+      displayName: `Legacy Owner ${id}`,
+      passwordHash: await hashPilotPassword(oldPassword),
+      status: overrides.userStatus ?? 'ACTIVE',
+      mustChangePassword: overrides.mustChangePassword ?? false
+    }
+  });
+  const membership = await prisma.organisationMembership.create({
+    data: {
+      organisationId: organisation.id,
+      userId: user.id,
+      status: overrides.membershipStatus ?? 'ACTIVE',
+      role: 'ORGANISATION_OWNER',
+      isOwner: true
+    }
+  });
+  return { id, operatorUserId, organisation, installer, user, membership, oldPassword };
+}
+
+function productionLegacyInput(
+  fixture: Awaited<ReturnType<typeof seedLegacyProductionUser>>,
+  key = `legacy-recovery-${fixture.id}`
+): ProductionLegacyCredentialReissueInput {
+  return {
+    email: fixture.user.email,
+    operatorUserId: fixture.operatorUserId,
+    idempotencyKey: key,
+    reason: 'Approved Production legacy pilot credential recovery',
+    environment: 'production'
+  };
+}
+
+function productionAuthorization(
+  planReference: string,
+  overrides: Partial<ProductionCredentialReissueAuthorization> = {}
+): ProductionCredentialReissueAuthorization {
+  return {
+    confirmed: true,
+    acknowledgement: 'REISSUE_APPROVED_PRODUCTION_CREDENTIAL',
+    changeId: 'INCIDENT-2026-07-23-PRODUCTION-AUTH-503',
+    appEnvironment: 'production',
+    databaseEnvironment: 'production',
+    databaseFingerprint: 'db_production_test_marker',
+    productionFingerprint: 'db_production_test_marker',
+    approvedPlanReference: planReference,
+    ...overrides
   };
 }
 
@@ -207,6 +305,340 @@ test('user and organisation suspension/re-activation revoke sessions without del
   await executeTenantOrganisationReactivation({ db: prisma, input: recoveryInput(organisationTenant, `reactivate-org-${organisationTenant.organisation.id}`) });
   assert.equal((await prisma.organisation.findUniqueOrThrow({ where: { id: organisationTenant.organisation.id } })).status, 'ACTIVE');
   assert.equal(await prisma.installer.count({ where: { organisationId: organisationTenant.organisation.id } }), 1);
+});
+
+test('Production legacy credential recovery is dry-run first, audited, tenant-stable, and forces password replacement', async () => {
+  const fixture = await seedLegacyProductionUser('success');
+  const input = productionLegacyInput(fixture);
+  const now = new Date('2026-07-24T12:00:00.000Z');
+  await prisma.authSession.create({
+    data: {
+      userId: fixture.user.id,
+      tokenHash: `legacy-existing-${fixture.user.id}`,
+      sessionType: 'NORMAL',
+      expiresAt: new Date(now.getTime() + 60 * 60 * 1000)
+    }
+  });
+  const beforeOperations = await prisma.provisioningOperation.count();
+  const beforeAudits = await prisma.auditLog.count();
+  const plan = await planProductionLegacyCredentialReissue({ db: prisma, input });
+  assert.equal(plan.safeToExecute, true);
+  assert.equal(plan.eligible, true);
+  assert.equal(plan.account.exactlyOneUser, true);
+  assert.equal(plan.account.exactlyOneActiveMembership, true);
+  assert.equal(plan.account.organisationStatus, 'ACTIVE');
+  assert.equal(plan.account.organisationType, 'INSTALLER');
+  assert.equal(plan.account.organisationVerified, true);
+  assert.equal(plan.account.installerPresent, true);
+  assert.ok(plan.account.organisationReference?.startsWith('org_'));
+  assert.equal(await prisma.provisioningOperation.count(), beforeOperations);
+  assert.equal(await prisma.auditLog.count(), beforeAudits);
+
+  const temporaryPassword = `Temporary!Legacy!${fixture.id}`;
+  const result = await executeProductionLegacyCredentialReissue({
+    db: prisma,
+    input,
+    temporaryCredential: temporaryPassword,
+    authorization: productionAuthorization(plan.planReference),
+    now
+  });
+  assert.equal(result.operation.status, 'COMPLETED');
+  assert.equal(result.revokedSessionCount, 1);
+
+  const recovered = await prisma.user.findUniqueOrThrow({ where: { id: fixture.user.id } });
+  assert.equal(recovered.status, 'ACTIVE');
+  assert.equal(recovered.mustChangePassword, true);
+  assert.equal(recovered.temporaryCredentialExpiresAt?.getTime(), now.getTime() + 24 * 60 * 60 * 1000);
+  assert.equal(await verify(recovered.passwordHash!, fixture.oldPassword), false);
+  assert.equal(await verify(recovered.passwordHash!, temporaryPassword), true);
+  assert.equal(await prisma.authSession.count({ where: { userId: fixture.user.id } }), 0);
+
+  const organisation = await prisma.organisation.findUniqueOrThrow({
+    where: { id: fixture.organisation.id }
+  });
+  assert.equal(organisation.status, 'ACTIVE');
+  assert.equal(organisation.verified, true);
+  assert.equal(await prisma.installer.count({ where: { organisationId: organisation.id } }), 1);
+  assert.equal(
+    await prisma.organisationMembership.count({
+      where: { userId: fixture.user.id, organisationId: organisation.id }
+    }),
+    1
+  );
+
+  const restricted = await authenticatePilotCredentials({
+    email: fixture.user.email,
+    password: temporaryPassword,
+    db: prisma,
+    now
+  });
+  assert.equal(restricted?.sessionKind, 'RESTRICTED_FIRST_LOGIN');
+  const newPassword = `Cobalt!River!Lantern!${Math.random().toString(36).slice(2, 8)}`;
+  const completed = await completePilotFirstLogin({
+    sessionToken: restricted?.sessionToken,
+    currentCredential: temporaryPassword,
+    newPassword,
+    confirmation: newPassword,
+    db: prisma,
+    now: new Date(now.getTime() + 1_000)
+  });
+  assert.equal(completed.ok, true);
+  const normal = await authenticatePilotCredentials({
+    email: fixture.user.email,
+    password: newPassword,
+    db: prisma,
+    now: new Date(now.getTime() + 2_000)
+  });
+  assert.equal(normal?.sessionKind, 'NORMAL');
+  assert.equal(
+    await authenticatePilotCredentials({
+      email: fixture.user.email,
+      password: temporaryPassword,
+      db: prisma,
+      now: new Date(now.getTime() + 2_000)
+    }),
+    null
+  );
+
+  const operation = await prisma.provisioningOperation.findUniqueOrThrow({
+    where: { idempotencyKey: input.idempotencyKey }
+  });
+  assert.equal(operation.approvedBy, fixture.operatorUserId);
+  const audit = await prisma.auditLog.findMany({
+    where: { provisioningOperationId: operation.id }
+  });
+  assert.ok(audit.some(({ action }) => action === 'PRODUCTION_LEGACY_CREDENTIAL_REISSUE_STARTED'));
+  assert.ok(audit.some(({ action }) => action === 'LEGACY_CREDENTIAL_RECOVERY_COMPLETED'));
+  const serialisedAudit = JSON.stringify(audit);
+  assert.doesNotMatch(serialisedAudit, /passwordHash|temporaryCredential|tokenHash/i);
+  assert.ok(!serialisedAudit.includes(temporaryPassword));
+  assert.ok(!serialisedAudit.includes(fixture.oldPassword));
+});
+
+test('Production legacy credential recovery refuses a missing user and the database prevents duplicate normalized users', async () => {
+  const fixture = await seedLegacyProductionUser('identity');
+  const missing = await planProductionLegacyCredentialReissue({
+    db: prisma,
+    input: { ...productionLegacyInput(fixture), email: `missing-${fixture.id}@example.test` }
+  });
+  assert.equal(missing.safeToExecute, false);
+  assert.equal(missing.account.exactlyOneUser, false);
+
+  await assert.rejects(
+    prisma.user.create({
+      data: {
+        email: fixture.user.email.toUpperCase(),
+        displayName: 'Duplicate Normalized Identity',
+        status: 'ACTIVE',
+        passwordHash: await hashPilotPassword(`Duplicate!Password!${fixture.id}`)
+      }
+    }),
+    /User_email_normalised_check|constraint/i
+  );
+});
+
+test('Production legacy credential recovery fails closed for ineligible tenant lifecycle states', async () => {
+  const cases = [
+    ['inactive-membership', { membershipStatus: 'INACTIVE' as const }],
+    ['inactive-organisation', { organisationStatus: 'INACTIVE' as const }],
+    ['unverified-organisation', { verified: false }],
+    ['non-installer-organisation', { organisationType: 'CLADA_INTERNAL' as const }],
+    ['missing-installer', { installer: false }],
+    ['inactive-user', { userStatus: 'INACTIVE' as const }],
+    ['already-forced', { mustChangePassword: true }]
+  ] as const;
+  for (const [label, overrides] of cases) {
+    const fixture = await seedLegacyProductionUser(label, overrides);
+    const plan = await planProductionLegacyCredentialReissue({
+      db: prisma,
+      input: productionLegacyInput(fixture)
+    });
+    assert.equal(plan.safeToExecute, false, label);
+    assert.equal(plan.eligible, false, label);
+  }
+});
+
+test('ordinary recovery evidence cannot unlock the active legacy first-login path', async () => {
+  const fixture = await seedLegacyProductionUser('unmarked-recovery', {
+    mustChangePassword: true
+  });
+  const now = new Date('2026-07-24T12:00:00.000Z');
+  await prisma.user.update({
+    where: { id: fixture.user.id },
+    data: { temporaryCredentialExpiresAt: new Date(now.getTime() + 60 * 60 * 1000) }
+  });
+  await prisma.provisioningOperation.create({
+    data: {
+      idempotencyKey: `unmarked-${fixture.id}`,
+      inputHash: 'unmarked-recovery-input',
+      operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+      status: 'COMPLETED',
+      approvedBy: fixture.operatorUserId,
+      approvedAt: now,
+      completedAt: now,
+      organisationId: fixture.organisation.id,
+      resultSnapshot: {
+        operationType: 'RECOVERY_CREDENTIAL_REISSUE',
+        state: 'INVITED_CREDENTIAL_VALID',
+        organisationId: fixture.organisation.id,
+        userId: fixture.user.id,
+        revokedSessionCount: 0,
+        completedAt: now.toISOString()
+      }
+    }
+  });
+  assert.equal(
+    await authenticatePilotCredentials({
+      email: fixture.user.email,
+      password: fixture.oldPassword,
+      db: prisma,
+      now
+    }),
+    null
+  );
+});
+
+test('database membership uniqueness prevents an ambiguous second active membership', async () => {
+  const fixture = await seedLegacyProductionUser('membership-unique');
+  const other = await prisma.organisation.create({
+    data: {
+      name: `Other ${fixture.id}`,
+      slug: `other-${fixture.id}`,
+      type: 'INSTALLER',
+      status: 'ACTIVE',
+      verified: true
+    }
+  });
+  await assert.rejects(
+    prisma.organisationMembership.create({
+      data: {
+        organisationId: other.id,
+        userId: fixture.user.id,
+        status: 'ACTIVE',
+        role: 'ORGANISATION_OWNER',
+        isOwner: true
+      }
+    }),
+    /Unique constraint|P2002/i
+  );
+});
+
+test('Production legacy credential recovery requires operator identity, reason, and exact Production authorization', async () => {
+  const fixture = await seedLegacyProductionUser('authorization');
+  const input = productionLegacyInput(fixture);
+  await assert.rejects(
+    planProductionLegacyCredentialReissue({
+      db: prisma,
+      input: { ...input, operatorUserId: 'missing-production-operator' }
+    }),
+    (error: unknown) => error instanceof TenantRecoveryError && error.code === 'APPROVER_NOT_AUTHORISED'
+  );
+  await assert.rejects(
+    planProductionLegacyCredentialReissue({ db: prisma, input: { ...input, reason: '' } }),
+    (error: unknown) => error instanceof TenantRecoveryError && error.code === 'INPUT_INVALID'
+  );
+  const plan = await planProductionLegacyCredentialReissue({ db: prisma, input });
+  const temporaryCredential = `Temporary!Authorization!${fixture.id}`;
+  for (const authorization of [
+    productionAuthorization(plan.planReference, { confirmed: false as true }),
+    productionAuthorization(plan.planReference, { appEnvironment: 'preview' as 'production' }),
+    productionAuthorization(plan.planReference, { databaseEnvironment: 'development' as 'production' }),
+    productionAuthorization(plan.planReference, { productionFingerprint: 'db_wrong_target' }),
+    productionAuthorization(plan.planReference, { acknowledgement: 'WRONG_ACKNOWLEDGEMENT' }),
+    productionAuthorization(plan.planReference, { changeId: '' }),
+    productionAuthorization('wrong-plan-reference')
+  ]) {
+    await assert.rejects(
+      executeProductionLegacyCredentialReissue({
+        db: prisma,
+        input,
+        temporaryCredential,
+        authorization
+      }),
+      (error: unknown) =>
+        error instanceof TenantRecoveryError &&
+        error.code === 'PRODUCTION_AUTHORIZATION_REQUIRED'
+    );
+  }
+  assert.equal(
+    await prisma.provisioningOperation.count({ where: { idempotencyKey: input.idempotencyKey } }),
+    0
+  );
+});
+
+test('Production legacy credential recovery is idempotent and rejects equivalent duplicate operations', async () => {
+  const fixture = await seedLegacyProductionUser('idempotency');
+  const input = productionLegacyInput(fixture);
+  const plan = await planProductionLegacyCredentialReissue({ db: prisma, input });
+  const temporaryCredential = `Temporary!Idempotency!${fixture.id}`;
+  const first = await executeProductionLegacyCredentialReissue({
+    db: prisma,
+    input,
+    temporaryCredential,
+    authorization: productionAuthorization(plan.planReference)
+  });
+  const replay = await executeProductionLegacyCredentialReissue({
+    db: prisma,
+    input,
+    temporaryCredential: '',
+    authorization: productionAuthorization(plan.planReference)
+  });
+  assert.equal(replay.idempotentReplay, true);
+  assert.equal(replay.operation.id, first.operation.id);
+  const equivalent = await planProductionLegacyCredentialReissue({
+    db: prisma,
+    input: { ...input, idempotencyKey: `${input.idempotencyKey}-duplicate` }
+  });
+  assert.equal(equivalent.safeToExecute, false);
+  assert.equal(equivalent.idempotency, 'EQUIVALENT_COMPLETED');
+  assert.equal(
+    await prisma.provisioningOperation.count({
+      where: { inputHash: plan.planReference, operationType: 'RECOVERY_CREDENTIAL_REISSUE' }
+    }),
+    1
+  );
+});
+
+test('Production legacy credential recovery rolls back user, sessions, operation, and audit together', async () => {
+  const fixture = await seedLegacyProductionUser('rollback');
+  const input = productionLegacyInput(fixture);
+  const now = new Date('2026-07-24T14:00:00.000Z');
+  await prisma.authSession.create({
+    data: {
+      userId: fixture.user.id,
+      tokenHash: `legacy-rollback-${fixture.user.id}`,
+      sessionType: 'NORMAL',
+      expiresAt: new Date(now.getTime() + 60 * 60 * 1000)
+    }
+  });
+  const plan = await planProductionLegacyCredentialReissue({ db: prisma, input });
+  const failingDb = prisma.$extends({
+    query: {
+      auditLog: {
+        async create() {
+          throw new Error('synthetic transaction-critical audit failure');
+        }
+      }
+    }
+  });
+  await assert.rejects(
+    executeProductionLegacyCredentialReissue({
+      db: failingDb as unknown as PrismaClient,
+      input,
+      temporaryCredential: `Temporary!Rollback!${fixture.id}`,
+      authorization: productionAuthorization(plan.planReference),
+      now
+    }),
+    (error: unknown) => error instanceof TenantRecoveryError && error.code === 'TRANSACTION_FAILED'
+  );
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: fixture.user.id } });
+  assert.equal(user.mustChangePassword, false);
+  assert.equal(await verify(user.passwordHash!, fixture.oldPassword), true);
+  assert.equal(await prisma.authSession.count({ where: { userId: fixture.user.id } }), 1);
+  assert.equal(
+    await prisma.provisioningOperation.count({ where: { idempotencyKey: input.idempotencyKey } }),
+    0
+  );
 });
 
 test('ProvisioningOperation requires an explicit operation type at the database boundary', async () => {

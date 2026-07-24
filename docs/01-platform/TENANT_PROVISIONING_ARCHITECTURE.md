@@ -6,13 +6,22 @@
 | Status | Proposed |
 | Owner | Clada Systems Architecture |
 | Review cycle | Before each provisioning or identity release |
-| Last reviewed | 2026-07-18 |
+| Last reviewed | 2026-07-24 |
 
 ## Purpose and authority
 
 This document defines the approved target architecture for organisation provisioning, identity lifecycle, first-login security, tenant isolation, and operational controls in Clada OS. It is documentation-only: proposed fields, states, commands, routes, and events do not exist until implemented and verified.
 
 Implementation is governed by [ADR-0019](../05-decisions/ADR-0019-standardised-tenant-provisioning.md). Product operation is defined by the [SolarGRANT Pro pilot onboarding runbook](../03-engineering/SOLARGRANT_PRO_PILOT_ONBOARDING_RUNBOOK.md).
+
+ADR-0022 proposes a separate exceptional recovery boundary for one eligible
+active legacy Production owner. It is not provisioning: it cannot create or
+change the organisation, Installer, membership, role, or tenant assignment.
+Its dry-run plan, exact Production guard, hidden human credential entry,
+serializable audit/idempotency, session revocation, expiry, and forced
+first-login replacement preserve this architecture's identity and tenant
+invariants. Production use remains blocked until the ADR, implementation, and
+an individual execution change are approved.
 
 Delivery follows: Problem -> Architecture -> ADR -> Implementation -> Verification -> Production. A major platform feature must not skip these gates. An operational task is incomplete until it has a documented, repeatable process.
 

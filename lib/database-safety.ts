@@ -14,6 +14,7 @@ export const databaseOperations = [
   'reset',
   'smoke-write',
   'pilot-provision',
+  'production-credential-reissue',
   'one-off-mutation',
   'jurisdiction-audit'
 ] as const;
@@ -49,11 +50,15 @@ type GuardInput = {
   productionMigrationChangeId?: string;
   productionProvisioningAcknowledgement?: string;
   productionProvisioningChangeId?: string;
+  productionCredentialReissueAcknowledgement?: string;
+  productionCredentialReissueChangeId?: string;
   productionJurisdictionAuditAcknowledgement?: string;
   productionJurisdictionAuditChangeId?: string;
 };
 
 const PRODUCTION_MIGRATION_ACKNOWLEDGEMENT = 'APPLY_APPROVED_PRODUCTION_MIGRATIONS';
+export const PRODUCTION_CREDENTIAL_REISSUE_ACKNOWLEDGEMENT =
+  'REISSUE_APPROVED_PRODUCTION_CREDENTIAL';
 
 export class DatabaseSafetyError extends Error {
   constructor(
@@ -344,6 +349,33 @@ export function assertDatabaseOperationAllowed(input: GuardInput) {
       block(
         'DB_OPERATION_NOT_ALLOWED',
         'Production pilot provisioning requires the exact acknowledgement and a change identifier.',
+        input,
+        identity,
+        appEnvironment,
+        databaseEnvironment
+      );
+    }
+  }
+
+  if (input.operation === 'production-credential-reissue') {
+    if (!targetsProduction || appEnvironment !== 'production' || databaseEnvironment !== 'production') {
+      block(
+        'DB_OPERATION_NOT_ALLOWED',
+        'Production credential reissue is restricted to the positively identified Production database.',
+        input,
+        identity,
+        appEnvironment,
+        databaseEnvironment
+      );
+    }
+    if (
+      input.productionCredentialReissueAcknowledgement !==
+        PRODUCTION_CREDENTIAL_REISSUE_ACKNOWLEDGEMENT ||
+      !input.productionCredentialReissueChangeId?.trim()
+    ) {
+      block(
+        'DB_OPERATION_NOT_ALLOWED',
+        'Production credential reissue requires the exact acknowledgement and an approved change identifier.',
         input,
         identity,
         appEnvironment,

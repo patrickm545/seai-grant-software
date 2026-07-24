@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-24 |
 
 Architecture Decision Records (ADRs) capture decisions that materially affect platform architecture, product boundaries, technical standards, data handling, security, automation, or long-term maintainability.
 
@@ -33,6 +33,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0019-standardised-tenant-provisioning.md](ADR-0019-standardised-tenant-provisioning.md): propose the standard idempotent command, secure interim credential, and forced first-login change for pilot onboarding.
 - [ADR-0020-organisation-owned-work-items.md](ADR-0020-organisation-owned-work-items.md): accepted minimum tenant-owned work-item model, lifecycle, assignment, concurrency, migration, and SolarGRANT Pro lead-task proving slice.
 - [ADR-0021-lead-creation-origin-and-progressive-completeness.md](ADR-0021-lead-creation-origin-and-progressive-completeness.md): accepted explicit origin enum, derived action-specific completeness, evidence-based migration, typed creator/assignment, permissions, duplicate warning, follow-up/note compatibility, privacy gate, and PR 2 stop conditions.
+- [ADR-0022-production-legacy-credential-reissue.md](ADR-0022-production-legacy-credential-reissue.md): propose a dry-run-first, Production-guarded, audited recovery path for one eligible active legacy pilot owner.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

@@ -27,7 +27,11 @@ const DUMMY_PASSWORD_HASH =
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
 type PilotOrganisation = Organisation & {
-  provisioningOperations: Array<{ id: string }>;
+  provisioningOperations: Array<{
+    id: string;
+    operationType: string;
+    resultSnapshot: Prisma.JsonValue | null;
+  }>;
 };
 
 type PilotMembership = OrganisationMembership & {
@@ -73,6 +77,7 @@ export type RestrictedFirstLoginContext = {
   organisationSlug: string;
   organisationType: 'INSTALLER';
   provisioningOperationId: string;
+  recoveryMode: 'PROVISIONING_ACTIVATION' | 'ACTIVE_LEGACY_RECOVERY';
   temporaryCredentialExpiresAt: Date;
   actor: {
     actorType: 'human_user';
@@ -184,7 +189,6 @@ function resolvePilotContext(user: PilotUser): PilotContext | null {
 
 function resolveRestrictedFirstLoginContext(user: PilotUser, now: Date): RestrictedFirstLoginContext | null {
   if (
-    user.status !== 'INVITED' ||
     !user.mustChangePassword ||
     !user.passwordHash ||
     !user.temporaryCredentialExpiresAt ||
@@ -195,14 +199,37 @@ function resolveRestrictedFirstLoginContext(user: PilotUser, now: Date): Restric
   }
 
   const membership = user.memberships[0];
-  const operation = membership.organisation.provisioningOperations[0];
+  const operation = membership.organisation.provisioningOperations.find((candidate) => {
+    if (candidate.operationType !== 'RECOVERY_CREDENTIAL_REISSUE') return user.status === 'INVITED';
+    const snapshot = candidate.resultSnapshot;
+    return Boolean(
+      snapshot &&
+        typeof snapshot === 'object' &&
+        !Array.isArray(snapshot) &&
+        (snapshot as Record<string, unknown>).userId === user.id &&
+        (user.status === 'INVITED' ||
+          (snapshot as Record<string, unknown>).recoveryMode === 'ACTIVE_LEGACY_PRODUCTION')
+    );
+  });
+  const role = toPilotRole(membership);
+  const provisioningActivation =
+    user.status === 'INVITED' &&
+    membership.isOwner &&
+    membership.role === 'ORGANISATION_OWNER' &&
+    membership.organisation.status === 'PROVISIONING';
+  const activeLegacyRecovery =
+    user.status === 'ACTIVE' &&
+    membership.isOwner &&
+    membership.role === 'ORGANISATION_OWNER' &&
+    membership.organisation.status === 'ACTIVE' &&
+    membership.organisation.verified &&
+    operation?.operationType === 'RECOVERY_CREDENTIAL_REISSUE';
   if (
     membership.status !== 'ACTIVE' ||
-    !membership.isOwner ||
-    membership.role !== 'ORGANISATION_OWNER' ||
+    !role ||
     membership.organisation.type !== 'INSTALLER' ||
-    membership.organisation.status !== 'PROVISIONING' ||
-    !operation
+    !operation ||
+    (!provisioningActivation && !activeLegacyRecovery)
   ) {
     return null;
   }
@@ -220,6 +247,7 @@ function resolveRestrictedFirstLoginContext(user: PilotUser, now: Date): Restric
     organisationSlug: membership.organisation.slug,
     organisationType: 'INSTALLER',
     provisioningOperationId: operation.id,
+    recoveryMode: activeLegacyRecovery ? 'ACTIVE_LEGACY_RECOVERY' : 'PROVISIONING_ACTIVATION',
     temporaryCredentialExpiresAt: user.temporaryCredentialExpiresAt,
     actor: {
       actorType: 'human_user',
@@ -241,7 +269,8 @@ const pilotUserInclude = {
               approvedBy: { not: null },
               approvedAt: { not: null }
             },
-            select: { id: true },
+            orderBy: { completedAt: 'desc' },
+            select: { id: true, operationType: true, resultSnapshot: true },
             take: 1
           }
         }
@@ -301,7 +330,7 @@ export async function authenticatePilotCredentials(args: {
   const restrictedContext = resolveRestrictedFirstLoginContext(user, now);
   if (!normalContext && !restrictedContext) {
     if (
-      user.status === 'INVITED' &&
+      ['INVITED', 'ACTIVE'].includes(user.status) &&
       user.mustChangePassword &&
       user.temporaryCredentialExpiresAt &&
       user.temporaryCredentialExpiresAt <= now
@@ -682,7 +711,10 @@ export async function completePilotFirstLogin(args: {
       const userUpdate = await tx.user.updateMany({
         where: {
           id: context.userId,
-          status: 'INVITED',
+          status:
+            context.recoveryMode === 'ACTIVE_LEGACY_RECOVERY'
+              ? 'ACTIVE'
+              : 'INVITED',
           mustChangePassword: true,
           passwordHash: previousPasswordHash,
           temporaryCredentialExpiresAt: { gt: now }
@@ -697,11 +729,23 @@ export async function completePilotFirstLogin(args: {
       });
       if (userUpdate.count !== 1) throw new FirstLoginActivationError('ACTIVATION_STATE_INVALID');
 
-      const organisationUpdate = await tx.organisation.updateMany({
-        where: { id: context.organisationId, status: 'PROVISIONING' },
-        data: { status: 'ACTIVE' }
-      });
-      if (organisationUpdate.count !== 1) throw new FirstLoginActivationError('ACTIVATION_STATE_INVALID');
+      if (context.recoveryMode === 'PROVISIONING_ACTIVATION') {
+        const organisationUpdate = await tx.organisation.updateMany({
+          where: { id: context.organisationId, status: 'PROVISIONING' },
+          data: { status: 'ACTIVE' }
+        });
+        if (organisationUpdate.count !== 1) throw new FirstLoginActivationError('ACTIVATION_STATE_INVALID');
+      } else {
+        const activeOrganisation = await tx.organisation.count({
+          where: {
+            id: context.organisationId,
+            status: 'ACTIVE',
+            type: 'INSTALLER',
+            verified: true
+          }
+        });
+        if (activeOrganisation !== 1) throw new FirstLoginActivationError('ACTIVATION_STATE_INVALID');
+      }
 
       const revoked = await tx.authSession.deleteMany({ where: { userId: context.userId } });
       await tx.authSession.create({
@@ -724,13 +768,21 @@ export async function completePilotFirstLogin(args: {
         source: 'FIRST_LOGIN'
       };
       await writeAuditEvent(tx, { ...auditBase, action: 'PASSWORD_CHANGED', resourceType: 'user' });
-      await writeAuditEvent(tx, { ...auditBase, action: 'USER_ACTIVATED', resourceType: 'user' });
-      await writeAuditEvent(tx, {
-        ...auditBase,
-        action: 'ORGANISATION_ACTIVATED',
-        resourceType: 'organisation',
-        resourceId: context.organisationId
-      });
+      if (context.recoveryMode === 'PROVISIONING_ACTIVATION') {
+        await writeAuditEvent(tx, { ...auditBase, action: 'USER_ACTIVATED', resourceType: 'user' });
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'ORGANISATION_ACTIVATED',
+          resourceType: 'organisation',
+          resourceId: context.organisationId
+        });
+      } else {
+        await writeAuditEvent(tx, {
+          ...auditBase,
+          action: 'LEGACY_CREDENTIAL_RECOVERY_COMPLETED',
+          resourceType: 'user'
+        });
+      }
       await writeAuditEvent(tx, {
         ...auditBase,
         action: 'SESSIONS_INVALIDATED',

@@ -28,6 +28,7 @@ function guard(args: {
   expectedFingerprint?: string;
   productionPath?: boolean;
   provisioningPath?: boolean;
+  credentialReissuePath?: boolean;
   jurisdictionAuditPath?: boolean;
   requiredEnvironment?: keyof typeof urls;
 }) {
@@ -47,6 +48,12 @@ function guard(args: {
     productionMigrationChangeId: args.productionPath ? 'PR-20' : undefined,
     productionProvisioningAcknowledgement: args.provisioningPath ? 'PROVISION_VERIFIED_PILOT' : undefined,
     productionProvisioningChangeId: args.provisioningPath ? 'PILOT-001' : undefined,
+    productionCredentialReissueAcknowledgement: args.credentialReissuePath
+      ? 'REISSUE_APPROVED_PRODUCTION_CREDENTIAL'
+      : undefined,
+    productionCredentialReissueChangeId: args.credentialReissuePath
+      ? 'INCIDENT-2026-07-23'
+      : undefined,
     productionJurisdictionAuditAcknowledgement: args.jurisdictionAuditPath ? 'AUDIT_SOLARGRANT_JURISDICTION' : undefined,
     productionJurisdictionAuditChangeId: args.jurisdictionAuditPath ? 'SGP-JURISDICTION-001' : undefined
   });
@@ -73,6 +80,37 @@ test('Production pilot provisioning requires an exact acknowledgement and change
   assert.equal(
     guard({ operation: 'pilot-provision', app: 'production', provisioningPath: true }).targetsProduction,
     true
+  );
+});
+
+test('Production credential reissue requires its exact acknowledgement and change id', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () =>
+    guard({ operation: 'production-credential-reissue', app: 'production' })
+  );
+  assert.equal(
+    guard({
+      operation: 'production-credential-reissue',
+      app: 'production',
+      credentialReissuePath: true
+    }).targetsProduction,
+    true
+  );
+});
+
+test('Production credential reissue refuses Preview and Development even with explicit confirmation', () => {
+  expectCode('DB_OPERATION_NOT_ALLOWED', () =>
+    guard({
+      operation: 'production-credential-reissue',
+      app: 'preview',
+      credentialReissuePath: true
+    })
+  );
+  expectCode('DB_OPERATION_NOT_ALLOWED', () =>
+    guard({
+      operation: 'production-credential-reissue',
+      app: 'development',
+      credentialReissuePath: true
+    })
   );
 });
 

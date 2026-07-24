@@ -29,6 +29,7 @@
     "pilot:rehearsal": "node --import tsx scripts/pilot-rehearsal.ts",
     "tenant:provision": "node --import tsx scripts/tenant-provision.ts",
     "tenant:recover": "node --import tsx scripts/tenant-recover.ts",
+    "tenant:recover:production-credential": "node --import tsx scripts/reissue-production-credential.ts",
     "solargrant:jurisdiction-audit": "node --import tsx scripts/solargrant-jurisdiction-audit.ts"
   },
   "dependencies": {

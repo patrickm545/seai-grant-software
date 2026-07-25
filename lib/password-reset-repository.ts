@@ -145,8 +145,10 @@ export class PrismaPasswordResetRequestRepository
     return this.transition(
       input.id,
       {
-        status: { in: ['DISPATCHED', 'EXCHANGED'] },
+        status: 'DISPATCHED',
         dispatchedAt: { not: null },
+        exchangedAt: null,
+        exchangeDigest: null,
         consumedAt: null,
         revokedAt: null,
         expiresAt: { gt: input.exchangedAt }

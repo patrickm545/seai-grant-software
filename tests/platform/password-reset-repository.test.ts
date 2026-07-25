@@ -206,6 +206,122 @@ test('repository supports digest lookup and guarded dispatch, exchange, consumpt
   );
 });
 
+test('repository exchanges a dispatched request exactly once without rotating the first handle', async () => {
+  const fake = createFakeDb([makeRequest({ id: 'reset-once' })]);
+  const repository = new PrismaPasswordResetRequestRepository(fake.db);
+  const firstDigest = digest('first-exchange');
+  const firstExchangedAt = new Date('2026-07-24T12:06:00.000Z');
+
+  const first = await repository.markExchanged({
+    id: 'reset-once',
+    exchangeDigest: firstDigest,
+    exchangedAt: firstExchangedAt
+  });
+  assert.equal(first?.status, 'EXCHANGED');
+  assert.equal(first?.exchangeDigest, firstDigest);
+  assert.equal(first?.exchangedAt?.toISOString(), firstExchangedAt.toISOString());
+
+  const second = await repository.markExchanged({
+    id: 'reset-once',
+    exchangeDigest: digest('second-exchange'),
+    exchangedAt: new Date('2026-07-24T12:07:00.000Z')
+  });
+  assert.equal(second, null);
+
+  const stored = fake.requests[0];
+  assert.equal(stored.status, 'EXCHANGED');
+  assert.equal(stored.exchangeDigest, firstDigest);
+  assert.equal(stored.exchangedAt?.toISOString(), firstExchangedAt.toISOString());
+});
+
+test('concurrent repository exchange attempts allow exactly one transition', async () => {
+  const fake = createFakeDb([makeRequest({ id: 'reset-concurrent' })]);
+  const repository = new PrismaPasswordResetRequestRepository(fake.db);
+  const attempts = [
+    {
+      id: 'reset-concurrent',
+      exchangeDigest: digest('concurrent-a'),
+      exchangedAt: new Date('2026-07-24T12:06:00.000Z')
+    },
+    {
+      id: 'reset-concurrent',
+      exchangeDigest: digest('concurrent-b'),
+      exchangedAt: new Date('2026-07-24T12:07:00.000Z')
+    }
+  ] as const;
+
+  const results = await Promise.all(
+    attempts.map((attempt) => repository.markExchanged(attempt))
+  );
+  assert.equal(results.filter((result) => result !== null).length, 1);
+  assert.equal(results.filter((result) => result === null).length, 1);
+
+  const successfulIndex = results.findIndex((result) => result !== null);
+  assert.ok(successfulIndex >= 0);
+  assert.equal(fake.requests[0].exchangeDigest, attempts[successfulIndex].exchangeDigest);
+  assert.equal(
+    fake.requests[0].exchangedAt?.toISOString(),
+    attempts[successfulIndex].exchangedAt.toISOString()
+  );
+});
+
+test('repository rejects exchange from expired, revoked, pending, consumed, and exchanged states', async () => {
+  const exchangeTime = new Date('2026-07-24T12:06:00.000Z');
+  const originalExchangeTime = new Date('2026-07-24T12:05:00.000Z');
+  const originalExchangeDigest = digest('original-exchange');
+  const fake = createFakeDb([
+    makeRequest({
+      id: 'expired',
+      expiresAt: exchangeTime
+    }),
+    makeRequest({
+      id: 'revoked',
+      status: 'REVOKED',
+      revokedAt: new Date('2026-07-24T12:04:00.000Z'),
+      revocationReason: 'ADMINISTRATIVE'
+    }),
+    makeRequest({
+      id: 'pending',
+      status: 'PENDING',
+      dispatchedAt: null,
+      providerName: null,
+      providerReceiptId: null
+    }),
+    makeRequest({
+      id: 'consumed',
+      status: 'CONSUMED',
+      exchangeDigest: null,
+      exchangedAt: originalExchangeTime,
+      consumedAt: new Date('2026-07-24T12:05:30.000Z')
+    }),
+    makeRequest({
+      id: 'exchanged',
+      status: 'EXCHANGED',
+      exchangeDigest: originalExchangeDigest,
+      exchangedAt: originalExchangeTime
+    })
+  ]);
+  const repository = new PrismaPasswordResetRequestRepository(fake.db);
+
+  for (const id of ['expired', 'revoked', 'pending', 'consumed', 'exchanged']) {
+    assert.equal(
+      await repository.markExchanged({
+        id,
+        exchangeDigest: digest(`replacement-${id}`),
+        exchangedAt: exchangeTime
+      }),
+      null
+    );
+  }
+
+  const alreadyExchanged = fake.requests.find(({ id }) => id === 'exchanged');
+  assert.equal(alreadyExchanged?.exchangeDigest, originalExchangeDigest);
+  assert.equal(
+    alreadyExchanged?.exchangedAt?.toISOString(),
+    originalExchangeTime.toISOString()
+  );
+});
+
 test('repository refuses expired transitions and bounds terminal cleanup', async () => {
   const old = new Date('2026-06-01T00:00:00.000Z');
   const fake = createFakeDb([

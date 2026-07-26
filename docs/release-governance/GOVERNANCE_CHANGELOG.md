@@ -6,9 +6,32 @@
 | Status | Active |
 | Owner | Clada Systems Leadership |
 | Review cycle | Every governance change |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-26 |
 
 This changelog records durable changes to release governance.
+
+## Migration Lineage Reconciliation Governance
+
+Date: 2026-07-26
+
+Status: Accepted in ADR-0024; implementation pending
+
+### Introduced
+
+- Permanently missing applied migrations require an incident record and ADR.
+- Historical SQL may not be fabricated from schema equivalence.
+- Applied Production migration records are preserved.
+- Any accepted lineage exception must bind exact database identity, full
+  migration metadata, repository inventory and schema evidence.
+- Fresh and upgrade migration paths require separate validation.
+- Production release remains blocked until a separately approved
+  attestation-aware gate and reconciliation runbook pass.
+
+### Governance Effect
+
+Migration files must be committed before application, retained immutably and
+traceable to deployment artifacts. A broad or name-only safety-gate ignore list
+is prohibited.
 
 ## Release Governance Framework v1.0
 

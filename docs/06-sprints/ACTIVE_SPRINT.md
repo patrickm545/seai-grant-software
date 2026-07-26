@@ -6,11 +6,19 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-26 |
 
 ## Sprint
 
 Platform Release 1.5 - PR 2 Manual Lead Creation implementation.
+
+## Production Release Blocker
+
+Repository work does not authorise Production promotion. The Production
+migration-history incident and ADR-0024 remediation block every Production
+release. PR #41 is merged but its password-reset migration is pending and its
+foundation is not live. Password-reset request-flow work and external pilot
+rollout remain paused.
 
 ## Objective
 

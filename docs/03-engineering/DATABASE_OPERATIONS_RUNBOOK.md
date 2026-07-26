@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; incident and Production execution owner: Patrick or delegated deployment owner |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-23 |
+| Last reviewed | 2026-07-26 |
 
 ## Guarded Commands
 
@@ -27,6 +27,18 @@ Raw `prisma migrate`, reset, and seed commands are operationally unsupported. Re
 Environment-specific command names are enforced, not descriptive aliases: Preview, test, Development, and Production migration/seed wrappers refuse to run when `APP_ENV` identifies a different environment, even if that other environment's database metadata is internally consistent.
 
 ## Migration Gate
+
+### Current Production release block
+
+Production contains the completed migration
+`20260423093000_application_pack_admin_fields`, whose repository artifact is
+permanently unavailable unless new authoritative evidence is recovered. Every
+Production migration and deployment remains blocked under
+[ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md).
+Raw Prisma status or deploy output must not be used to waive this incident.
+Only the separately approved
+[migration-history reconciliation runbook](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
+may establish the future attested path.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 

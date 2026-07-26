@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -85,6 +85,8 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/DATABASE_ENVIRONMENT_SAFETY.md](03-engineering/DATABASE_ENVIRONMENT_SAFETY.md)
 - [03-engineering/DATABASE_OPERATIONS_RUNBOOK.md](03-engineering/DATABASE_OPERATIONS_RUNBOOK.md)
 - [03-engineering/INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md](03-engineering/INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md)
+- [03-engineering/INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md](03-engineering/INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md)
+- [03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md](03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
@@ -153,6 +155,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 - [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
 - [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Accepted; implementation prerequisites outstanding
+- [05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) - Accepted; Production remediation implementation and execution pending
 
 ## Sprints
 

@@ -178,7 +178,7 @@ continues in parallel. No repair is authorised by this incident record alone.
 - No migration file added, edited, restored or fabricated.
 - No `prisma migrate resolve`, `prisma db push`, reset, seed or manual SQL.
 - No migration-gate bypass or ignore list.
-- No deployment, redeployment, alias promotion or rollback.
+- No Production deployment, redeployment, alias promotion or rollback.
 - No pending password-reset migration application.
 - No password-reset request-flow implementation.
 - No secret or credential exposure.

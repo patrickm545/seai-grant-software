@@ -354,3 +354,25 @@ digest, approved schema fingerprints and required human approvals remain
 unrecorded. Production acceptance and every deliberate migration therefore
 remain disabled. No reconciliation check, migration, deployment or alias
 promotion was executed by the implementation PR.
+
+## PR #44 Evidence-Capture Command
+
+The approved fixed interface for Stage 1 evidence capture is:
+
+```text
+pnpm db:lineage:capture-production-evidence
+```
+
+It requires `PRODUCTION_EVIDENCE_CHANGE_ID`,
+`PRODUCTION_EVIDENCE_OPERATOR`, `PRODUCTION_EVIDENCE_REVIEWER` and
+`PRODUCTION_RESTORE_POINT_REFERENCE` in addition to the existing exact
+Production identity controls. The operator and reviewer values must identify
+different people. These values are evidence metadata, not migration-execution
+authorization.
+
+Run the command twice and compare its `deterministicEvidenceDigest`, complete
+normalized ledger, manifest hash and schema fingerprint. Preserve the
+secret-free output under the approved change record. The command does not
+activate the attestation or call Prisma deploy.
+
+See [PR #44 Production Evidence And Activation Record](PR_44_ADR_0024_PRODUCTION_EVIDENCE.md).

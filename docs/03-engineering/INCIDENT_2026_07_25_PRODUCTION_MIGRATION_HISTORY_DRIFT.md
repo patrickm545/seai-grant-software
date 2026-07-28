@@ -205,10 +205,25 @@ future incident handling without a new investigation and approval.
 - No password-reset request-flow implementation.
 - No secret or credential exposure.
 
+## PR #43 Verifier Implementation
+
+The repository now has the fail-closed ADR-0024 verifier implementation and
+deterministic 16-migration manifest. The checked-in Production attestation is
+pending and cannot be activated by environment input. Exact remaining
+Production evidence and genuine CTO, database reliability, security and
+Production-owner approvals require a separate reviewed activation.
+
+This implementation did not query or mutate Production, apply the password
+reset migration, initiate a deployment or move an alias. Production remains on
+`dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`; the latest safely blocked deployment remains
+`dpl_A8aXW7JNAQSt8f1qHDJ21U1Lerkh`. The implementation does not yet authorise
+the status **Production lineage accepted under ADR-0024 attestation**.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
 - [Migration History Reconciliation Runbook](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
+- [ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md)
 - [Database Operations Runbook](DATABASE_OPERATIONS_RUNBOOK.md)
 - [Database Environment Safety](DATABASE_ENVIRONMENT_SAFETY.md)
 - [Production Authentication 503 Incident](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md)

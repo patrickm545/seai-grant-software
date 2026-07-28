@@ -7,7 +7,6 @@ import {
   type ApplicationEnvironment,
   type DatabaseOperation
 } from '../lib/database-safety';
-import { evaluateMigrationPreflight } from '../lib/migration-status';
 
 type CommandDefinition = {
   operation: DatabaseOperation;
@@ -21,7 +20,7 @@ type CommandDefinition = {
 
 const commandName = process.argv[2];
 const commands: Record<string, CommandDefinition> = {
-  status: { operation: 'migration-status', prismaArgs: ['migrate', 'status'] },
+  status: { operation: 'migration-status' },
   'migrate-preview': {
     operation: 'migration-deploy',
     prismaArgs: ['migrate', 'deploy'],
@@ -86,7 +85,7 @@ if (definition.resetAcknowledgement && process.env.ACKNOWLEDGE_DATABASE_RESET !=
   process.exit(1);
 }
 
-let guarded;
+let guarded: ReturnType<typeof assertDatabaseOperationAllowed>;
 try {
   guarded = assertDatabaseOperationAllowed({
     operation: definition.operation,
@@ -120,38 +119,35 @@ function run(program: string, args: string[], acceptedExitCodes = [0]) {
   return status;
 }
 
-function runMigrationPreflight() {
-  const result = spawnSync('prisma', ['migrate', 'status'], {
-    env: process.env,
-    shell: process.platform === 'win32',
-    encoding: 'utf8'
-  });
-  const status = result.status ?? 1;
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  let state;
-  try {
-    state = evaluateMigrationPreflight(status, output);
-  } catch {
-    console.error('DB_OPERATION_NOT_ALLOWED: Prisma migration preflight could not prove a safe pending-migration state.');
-    process.exit(status || 1);
-  }
+function verifierMode(stage: 'status' | 'preflight' | 'postflight') {
+  const production = guarded.appEnvironment === 'production';
+  if (stage === 'status') return production ? 'production-status' : 'strict-status';
+  return `${production ? 'production' : 'strict'}-${stage}`;
+}
 
-  if (state === 'up-to-date') {
-    console.log('Migration preflight: schema is currently up to date.');
-    return;
-  }
-  console.log('Migration preflight: repository migrations are pending and eligible for this deliberate deploy step.');
+function runVerifier(stage: 'status' | 'preflight' | 'postflight') {
+  run(process.execPath, [
+    '--import',
+    'tsx',
+    'scripts/verify-migration-lineage.ts',
+    verifierMode(stage)
+  ]);
+}
+
+if (definition.operation === 'migration-status') {
+  runVerifier('status');
+  process.exit(0);
 }
 
 if (definition.operation === 'migration-deploy') {
-  console.log('Running Prisma migration status before deployment.');
-  runMigrationPreflight();
+  console.log('Running independent migration lineage verifier before deployment.');
+  runVerifier('preflight');
 }
 
 if (definition.prismaArgs) run('prisma', definition.prismaArgs);
 else run(definition.command!, definition.commandArgs!);
 
 if (definition.operation === 'migration-deploy') {
-  console.log('Verifying Prisma migration status after deployment.');
-  run('prisma', ['migrate', 'status']);
+  console.log('Running independent migration lineage verifier after deployment.');
+  runVerifier('postflight');
 }

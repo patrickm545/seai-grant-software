@@ -340,3 +340,17 @@ These controls are tracked in
 This document does not authorise migration execution, `migrate resolve`,
 `db push`, manual SQL, record editing, reset, restore, deployment, rollback,
 alias promotion, password-reset runtime work or Production data creation.
+
+## PR #43 Implementation State
+
+The repository now contains the implementation described in
+[ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md):
+fixed-path attestation and manifest, exact ledger verifier, versioned catalog
+fingerprint, named assertions, read-only modes, stable exit codes and
+secret-free evidence.
+
+The attestation is intentionally `pending`. Related record IDs, exact failed-log
+digest, approved schema fingerprints and required human approvals remain
+unrecorded. Production acceptance and every deliberate migration therefore
+remain disabled. No reconciliation check, migration, deployment or alias
+promotion was executed by the implementation PR.

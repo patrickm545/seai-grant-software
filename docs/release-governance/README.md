@@ -119,6 +119,12 @@ Codex must:
 6. Every release produces ADRs before implementation.
 7. Every release produces feature specifications before implementation.
 8. Every release ends with a draft pull request, CTO review, CEO approval, merge, release tag, and roadmap update.
+9. A Production database release with ADR-0024 lineage must pass the fixed
+   attestation-aware status/preflight/postflight verifier. Pending, inactive,
+   expired, identity, inventory, ledger, schema or configuration outcomes block
+   release; raw Prisma output cannot override them.
+10. Verifier implementation, attestation activation, Production migration
+    execution and application deployment are separately approved changes.
 
 ## Documents
 

@@ -40,6 +40,13 @@ Only the separately approved
 [migration-history reconciliation runbook](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
 may establish the future attested path.
 
+PR #43 implements the independent verifier described in
+[ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md).
+`db:status` and guarded deploy now use the independent manifest, ledger and
+schema verifier. The checked-in attestation remains pending and returns exit
+`21`; it cannot accept Production until exact remaining evidence and genuine
+approvals are added in a separate reviewed activation change.
+
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 
 For Production:
@@ -57,6 +64,20 @@ For Production:
 11. Follow the non-destructive smoke checklist below.
 
 The Production command never resets or seeds. Prisma migrations are forward operations and are not automatically reversible. Rollback means a reviewed forward repair, application rollback when schema-compatible, or provider recovery after an incident decision.
+
+After separate attestation activation, the deliberate command additionally
+requires:
+
+```text
+ADR0024_ATTESTATION_ID=ADR-0024-PRODUCTION-2026-07-25
+PRODUCTION_RESTORE_POINT_CONFIRMED=CONFIRMED_CURRENT_RESTORE_POINT
+```
+
+These supplement rather than replace the existing change ID and exact
+acknowledgement. The wrapper runs `production-preflight`, Prisma deploy, then
+`production-postflight`. Any verifier exit other than zero stops execution.
+Production status-only builds never reach Prisma deploy and return the distinct
+pending-blocked exit while an approved repository migration remains pending.
 
 `vercel.json` runs the environment-aware database preflight before the
 application build. `VERCEL_ENV` and `APP_ENV` must match. The Vercel environment

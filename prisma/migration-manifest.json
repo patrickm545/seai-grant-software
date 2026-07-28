@@ -1,0 +1,137 @@
+{
+  "version": "clada-migration-manifest/v1",
+  "checksumAlgorithm": "sha256-raw-committed-git-blob-bytes",
+  "pathFormat": "repository-relative-posix",
+  "bytePolicy": "committed-git-blob-bytes-required-lf",
+  "migrations": [
+    {
+      "position": 0,
+      "name": "20260418154005_init",
+      "path": "prisma/migrations/20260418154005_init/migration.sql",
+      "filePresent": true,
+      "byteLength": 2525,
+      "checksum": "70715cb9f0bbb618d48f5bc27ddf177849b849dcdecb810b897754106789b9b9"
+    },
+    {
+      "position": 1,
+      "name": "20260428120000_manual_submission_prep",
+      "path": "prisma/migrations/20260428120000_manual_submission_prep/migration.sql",
+      "filePresent": true,
+      "byteLength": 162,
+      "checksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3"
+    },
+    {
+      "position": 2,
+      "name": "20260526193000_launch_readiness",
+      "path": "prisma/migrations/20260526193000_launch_readiness/migration.sql",
+      "filePresent": true,
+      "byteLength": 741,
+      "checksum": "e9c41aaebadfc6881a358b09896610e318ae734e92fad7af06ef8388a88498f4"
+    },
+    {
+      "position": 3,
+      "name": "20260604172000_quote_cost_breakdown",
+      "path": "prisma/migrations/20260604172000_quote_cost_breakdown/migration.sql",
+      "filePresent": true,
+      "byteLength": 58,
+      "checksum": "3c4e63cba4f62d645111f5ef232d11536ce5d02cf615afe2849b600ac3270d54"
+    },
+    {
+      "position": 4,
+      "name": "20260604193000_installer_quote_pricing",
+      "path": "prisma/migrations/20260604193000_installer_quote_pricing/migration.sql",
+      "filePresent": true,
+      "byteLength": 3000,
+      "checksum": "5ecb70024512561983c1233344aa982267dfcb35f2e470fa3eef1357cc1be5f0"
+    },
+    {
+      "position": 5,
+      "name": "20260624131500_clada_os_crm_foundation",
+      "path": "prisma/migrations/20260624131500_clada_os_crm_foundation/migration.sql",
+      "filePresent": true,
+      "byteLength": 1985,
+      "checksum": "4c67aa406364e4a2b6831702b8ce736bc14c63fb3df6cf8deeda012f17d5706a"
+    },
+    {
+      "position": 6,
+      "name": "20260624162000_clada_os_customer_portal_foundation",
+      "path": "prisma/migrations/20260624162000_clada_os_customer_portal_foundation/migration.sql",
+      "filePresent": true,
+      "byteLength": 2789,
+      "checksum": "8847135dc27db4e029c1e5213b4ef174da91426d56a92a7234177b08e6a5e298"
+    },
+    {
+      "position": 7,
+      "name": "20260710120000_identity_organisation_foundation",
+      "path": "prisma/migrations/20260710120000_identity_organisation_foundation/migration.sql",
+      "filePresent": true,
+      "byteLength": 6162,
+      "checksum": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3"
+    },
+    {
+      "position": 8,
+      "name": "20260710130000_users_roles_permissions_audit",
+      "path": "prisma/migrations/20260710130000_users_roles_permissions_audit/migration.sql",
+      "filePresent": true,
+      "byteLength": 3951,
+      "checksum": "cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf"
+    },
+    {
+      "position": 9,
+      "name": "20260710140000_workflow_foundation",
+      "path": "prisma/migrations/20260710140000_workflow_foundation/migration.sql",
+      "filePresent": true,
+      "byteLength": 12927,
+      "checksum": "7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d"
+    },
+    {
+      "position": 10,
+      "name": "20260716183000_pilot_installer_auth",
+      "path": "prisma/migrations/20260716183000_pilot_installer_auth/migration.sql",
+      "filePresent": true,
+      "byteLength": 2572,
+      "checksum": "d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb"
+    },
+    {
+      "position": 11,
+      "name": "20260718130000_tenant_provisioning_data_model",
+      "path": "prisma/migrations/20260718130000_tenant_provisioning_data_model/migration.sql",
+      "filePresent": true,
+      "byteLength": 3795,
+      "checksum": "a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7"
+    },
+    {
+      "position": 12,
+      "name": "20260718150000_tenant_first_login_activation",
+      "path": "prisma/migrations/20260718150000_tenant_first_login_activation/migration.sql",
+      "filePresent": true,
+      "byteLength": 575,
+      "checksum": "f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f"
+    },
+    {
+      "position": 13,
+      "name": "20260720100000_tenant_operator_recovery",
+      "path": "prisma/migrations/20260720100000_tenant_operator_recovery/migration.sql",
+      "filePresent": true,
+      "byteLength": 804,
+      "checksum": "e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215"
+    },
+    {
+      "position": 14,
+      "name": "20260722190000_manual_lead_creation",
+      "path": "prisma/migrations/20260722190000_manual_lead_creation/migration.sql",
+      "filePresent": true,
+      "byteLength": 4491,
+      "checksum": "443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160"
+    },
+    {
+      "position": 15,
+      "name": "20260724180000_password_reset_foundation",
+      "path": "prisma/migrations/20260724180000_password_reset_foundation/migration.sql",
+      "filePresent": true,
+      "byteLength": 1858,
+      "checksum": "cd79313c15a7343aa101a8509552e7cc76b101c7f602799857b0951d8eb02cd7"
+    }
+  ],
+  "manifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872"
+}

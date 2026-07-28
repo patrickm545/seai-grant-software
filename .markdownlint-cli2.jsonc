@@ -1,0 +1,7 @@
+{
+  "config": {
+    // COM metadata tables and controlled identifier/checksum rows are
+    // intentionally not wrapped. All other Markdown rules remain enabled.
+    "MD013": false
+  }
+}

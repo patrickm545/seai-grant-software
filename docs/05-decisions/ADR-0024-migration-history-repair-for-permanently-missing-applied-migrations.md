@@ -411,7 +411,9 @@ Before execution:
 
 1. Review and accept this ADR.
 2. Continue artifact recovery without blocking the controlled implementation.
-3. Implement the attestation, verifier and tests in a separate remediation PR.
+3. Review PR #43's implemented attestation, manifest, verifier and tests. The
+   checked-in attestation remains pending and cannot accept Production until
+   exact remaining evidence and genuine approvals are separately recorded.
 4. Execute the [runbook](../03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
    under a separately approved Production change.
 5. Add the migration-governance controls tracked in TD-019.

@@ -31,6 +31,16 @@ test('Production and Development builds are status-only', () => {
   );
 });
 
+test('guarded database status and deploy use the independent lineage verifier', () => {
+  const command = readFileSync('scripts/run-database-command.ts', 'utf8');
+  assert.match(command, /verify-migration-lineage\.ts/);
+  assert.match(command, /production-status/);
+  assert.match(command, /production' : 'strict'}-\$\{stage}/);
+  assert.match(command, /runVerifier\('preflight'\)/);
+  assert.match(command, /runVerifier\('postflight'\)/);
+  assert.doesNotMatch(command, /run\('prisma', \['migrate', 'status'\]\)/);
+});
+
 test('Vercel build preflight fails closed on missing or mismatched classification', () => {
   assert.throws(
     () => resolveVercelDatabasePreflight({ VERCEL_ENV: 'production', APP_ENV: 'preview' }),

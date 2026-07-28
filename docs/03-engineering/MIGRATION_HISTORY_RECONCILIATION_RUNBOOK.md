@@ -355,9 +355,9 @@ unrecorded. Production acceptance and every deliberate migration therefore
 remain disabled. No reconciliation check, migration, deployment or alias
 promotion was executed by the implementation PR.
 
-## PR #44 Evidence-Capture Command
+## PR #44 Evidence-Capture Tooling
 
-The approved fixed interface for Stage 1 evidence capture is:
+PR #44 prepares this fixed interface for the later Stage 1 operation:
 
 ```text
 pnpm db:lineage:capture-production-evidence
@@ -370,9 +370,19 @@ Production identity controls. The operator and reviewer values must identify
 different people. These values are evidence metadata, not migration-execution
 authorization.
 
-Run the command twice and compare its `deterministicEvidenceDigest`, complete
-normalized ledger, manifest hash and schema fingerprint. Preserve the
-secret-free output under the approved change record. The command does not
-activate the attestation or call Prisma deploy.
+Each invocation performs two read-only repeatable-read captures and terminates
+if they differ. In the separate operational PR, run the command twice and
+compare its `deterministicEvidenceDigest`, complete normalized ledger, manifest
+hash, schema fingerprint and pending set. Output is not automatically written
+or committed. Preserve reviewed secret-free fields in repository evidence;
+retain raw evidence only under the controlled external change record and
+reference it by stable identifier and SHA-256 digest. Any state change between
+capture and activation invalidates the evidence.
 
-See [PR #44 Production Evidence And Activation Record](PR_44_ADR_0024_PRODUCTION_EVIDENCE.md).
+PR #44 performs no Production query, evidence capture, attestation activation
+or migration. See [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md).
+
+After PR #44, use a separate **Capture ADR-0024 Production Evidence and Activate
+Attestation** operational PR. Production migration execution then requires a
+different PR and explicit approval. Resume password-reset request-flow work
+only after that execution is verified.

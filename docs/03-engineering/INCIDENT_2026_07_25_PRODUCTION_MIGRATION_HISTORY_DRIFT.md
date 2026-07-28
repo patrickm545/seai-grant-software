@@ -220,17 +220,16 @@ reset migration, initiate a deployment or move an alias. Production remains on
 `dpl_2qGpjKQrGCCHRJazwRR1X8nNiDRD`. The implementation does not yet authorise
 the status **Production lineage accepted under ADR-0024 attestation**.
 
-## PR #44 Evidence-Capture State
+## PR #44 Tooling-Preparation State
 
 PR #44 records deterministic disposable fresh-head and post-password-reset
-fingerprints and adds a fixed read-only command for the exact Production ledger
-evidence that cannot be captured while `production-status` is correctly blocked
-by the pending attestation.
+fingerprints and prepares a fixed read-only command for a later, separately
+approved Production evidence operation.
 
-Production was not queried because genuine operator/reviewer, change and
-restore-point preconditions are incomplete. The attestation remains pending,
-the incident remains open, the password-reset migration remains unapplied in
-Production and the only live status remains the contained safety state.
+Production was not queried and no live evidence or approval was retained. The
+attestation remains pending, the incident remains open, Preview remains
+unresolved, the password-reset migration remains unapplied in Production and
+the only live status remains the contained safety state.
 
 ## Related Documents
 
@@ -241,4 +240,4 @@ Production and the only live status remains the contained safety state.
 - [Database Environment Safety](DATABASE_ENVIRONMENT_SAFETY.md)
 - [Production Authentication 503 Incident](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md)
 - [Technical Debt Register](TECHNICAL_DEBT_REGISTER.md)
-- [PR #44 Production Evidence And Activation Record](PR_44_ADR_0024_PRODUCTION_EVIDENCE.md)
+- [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)

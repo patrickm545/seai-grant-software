@@ -174,3 +174,31 @@ export function captureProductionLineageEvidence(input: {
     capturedAt: (input.capturedAt ?? new Date()).toISOString()
   };
 }
+
+export function assertRepeatedProductionLineageEvidence(
+  first: ReturnType<typeof captureProductionLineageEvidence>,
+  second: ReturnType<typeof captureProductionLineageEvidence>
+) {
+  const firstDigest = first.deterministicEvidenceDigest;
+  const secondDigest = second.deterministicEvidenceDigest;
+  const firstDeterministicEvidence: Record<string, unknown> = structuredClone(first);
+  const secondDeterministicEvidence: Record<string, unknown> = structuredClone(second);
+  delete firstDeterministicEvidence.capturedAt;
+  delete firstDeterministicEvidence.deterministicEvidenceDigest;
+  delete secondDeterministicEvidence.capturedAt;
+  delete secondDeterministicEvidence.deterministicEvidenceDigest;
+  if (
+    firstDigest !== secondDigest ||
+    canonicalJson(firstDeterministicEvidence) !== canonicalJson(secondDeterministicEvidence)
+  ) {
+    throw new Error(
+      'Repeated Production evidence differs; discard the evidence and stop the operation.'
+    );
+  }
+  return {
+    result: 'matched' as const,
+    deterministicEvidenceDigest: firstDigest,
+    firstCapturedAt: first.capturedAt,
+    secondCapturedAt: second.capturedAt
+  };
+}

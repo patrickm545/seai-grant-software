@@ -7,6 +7,7 @@ import { assertVerifierEvidenceSecretFree } from '../../lib/lineage-verifier';
 import type { MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import {
+  assertRepeatedProductionLineageEvidence,
   assertProductionEvidenceControls,
   captureProductionLineageEvidence
 } from '../../lib/production-lineage-evidence';
@@ -118,6 +119,7 @@ test('pending attestation can capture exact secret-free Production evidence dete
     capturedAt: new Date('2026-07-28T10:01:00.000Z')
   });
   assert.equal(first.deterministicEvidenceDigest, second.deterministicEvidenceDigest);
+  assert.equal(assertRepeatedProductionLineageEvidence(first, second).result, 'matched');
   assert.equal(first.schema.fingerprint, second.schema.fingerprint);
   assert.deepEqual(first.ledger.pendingMigrations, [
     '20260724180000_password_reset_foundation'
@@ -132,6 +134,29 @@ test('pending attestation can capture exact secret-free Production evidence dete
   );
   assert.equal(JSON.stringify(first).includes('duplicate Lead.internalNotes'), false);
   assert.doesNotThrow(() => assertVerifierEvidenceSecretFree(first));
+});
+
+test('repeated capture terminates when any deterministic evidence differs', () => {
+  const input = {
+    environment: 'production',
+    identity: identity(),
+    connectedDatabaseName: 'clada',
+    repositoryRevision: 'e4bde0c21f1e8135a82761ad4ea08d1c89a658eb',
+    manifest,
+    attestation: pending,
+    ledgerRows: ledgerFixture(),
+    catalog: preMigrationCatalog(),
+    controls: controls()
+  };
+  const first = captureProductionLineageEvidence(input);
+  const second = captureProductionLineageEvidence({
+    ...input,
+    repositoryRevision: 'c745f55cc4141e900b95c0f91be89a0968db27ec'
+  });
+  assert.throws(
+    () => assertRepeatedProductionLineageEvidence(first, second),
+    /differs; discard the evidence and stop/
+  );
 });
 
 test('capture rejects wrong identity, changed ledger, and non-pending attestation', () => {

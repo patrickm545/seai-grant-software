@@ -65,7 +65,7 @@ export type LineageAttestation = {
   owner: 'Clada Systems Engineering';
   createdAt: string;
   reviewedAt: string | null;
-  expiresAt: string;
+  expiresAt: string | null;
   reason: string;
   historicalSqlKnown: false;
   retirementConditions: string[];
@@ -281,9 +281,15 @@ export function validateLineageAttestation(
   }
 
   const created = parseTimestamp(value.createdAt, 'createdAt');
-  const expiry = parseTimestamp(value.expiresAt, 'expiresAt');
-  if (expiry <= created || expiry - created > 90 * 24 * 60 * 60 * 1000) {
-    throw new AttestationValidationError('ATTESTATION_INVALID', 'Attestation expiry must be within 90 days.');
+  const expiry = value.expiresAt === null ? null : parseTimestamp(value.expiresAt, 'expiresAt');
+  if (
+    active &&
+    (expiry === null || expiry <= created || expiry - created > 90 * 24 * 60 * 60 * 1000)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Active attestation expiry must be within 90 days.'
+    );
   }
   const approvals = new Map(value.approvals.map((approval) => [approval.role, approval]));
   if (
@@ -382,7 +388,7 @@ export function validateLineageAttestation(
     );
     if (
       reviewed < created ||
-      reviewed > expiry ||
+      reviewed > expiry! ||
       approvalTimes.some((approved) => approved < created || approved > reviewed)
     ) {
       throw new AttestationValidationError(
@@ -394,7 +400,7 @@ export function validateLineageAttestation(
 
   if (options.requireActive) {
     if (!active) throw new AttestationValidationError('ATTESTATION_INACTIVE', `Attestation is ${value.status}.`);
-    if ((options.now ?? new Date()).getTime() >= expiry) {
+    if ((options.now ?? new Date()).getTime() >= expiry!) {
       throw new AttestationValidationError('ATTESTATION_EXPIRED', 'Attestation has expired.');
     }
   }

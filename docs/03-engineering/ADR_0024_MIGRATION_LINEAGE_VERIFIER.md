@@ -239,9 +239,9 @@ preflight, run raw Prisma deploy, resolve a migration, push schema, edit the
 ledger, apply manual SQL or bypass the gate. Follow the migration-history
 incident runbook with the incident owner and independent reviewer.
 
-## PR #44 Pending-Evidence Capture
+## PR #44 Evidence-Capture Tooling Preparation
 
-PR #44 adds the fixed
+PR #44 prepares the fixed
 `pnpm db:lineage:capture-production-evidence` command because the pending
 attestation correctly blocks `production-status` before a database read and
 the schema-only command does not retain exact normalized ledger records.
@@ -249,8 +249,9 @@ the schema-only command does not retain exact normalized ledger records.
 The capture command remains fail closed. It requires the exact Production
 identity, a named operator, a distinct independent reviewer, an approved
 read-only change ID and a restore-point evidence reference. It uses the same
-fixed queries and read-only repeatable-read transaction, emits log digests
-without raw logs, and produces a deterministic evidence digest.
+fixed queries and read-only repeatable-read transactions, emits log digests
+without raw logs, produces a deterministic evidence digest and stops when its
+two internal captures differ.
 
 Active validation rejects placeholder reviewer/evidence values, missing or
 duplicate roles, unindexed or missing repository evidence, altered approval
@@ -258,7 +259,8 @@ scope/acknowledgements, approval timestamps outside the lifecycle and a
 database reliability reviewer who is not independent from the Production
 owner.
 
-The [PR #44 evidence record](PR_44_ADR_0024_PRODUCTION_EVIDENCE.md) retains the
-disposable fingerprints and outstanding Production gates. The Production
-attestation remains pending until exact live evidence and genuine approvals
-are available.
+The [PR #44 preparation record](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
+defines the retention boundary, disposable fingerprints and outstanding
+Production gates. PR #44 performs no Production query and captures no live
+evidence. The attestation remains pending; activation belongs to a separate
+operational PR.

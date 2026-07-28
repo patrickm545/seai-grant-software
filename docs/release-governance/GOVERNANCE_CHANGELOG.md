@@ -10,26 +10,29 @@
 
 This changelog records durable changes to release governance.
 
-## ADR-0024 Pending-Evidence Capture Boundary
+## ADR-0024 Evidence-Capture Tooling Preparation
 
 Date: 2026-07-28
 
-Status: Draft PR #44; activation pending
+Status: Draft PR #44; tooling preparation only
 
-### Pending-Evidence Controls Introduced
+### Tooling Controls Introduced
 
-- Pending-attestation Production evidence uses one fixed read-only command.
+- A later pending-attestation Production operation uses one fixed read-only
+  command prepared by PR #44.
 - The command requires an approved change ID, named operator, distinct named
   reviewer and restore-point evidence reference.
 - Exact ledger IDs and failed-log digests are retained without raw logs.
-- Repeated captures are compared through a deterministic evidence digest.
+- Each invocation compares two read-only captures; the later operation also
+  compares two command artifacts through a deterministic evidence digest.
 
-### Pending-Evidence Governance Effect
+### Governance Effect
 
-Evidence capture does not activate the attestation and never authorizes
-migration execution. Exact live evidence and all four genuine approvals remain
-mandatory before the status can become **Production lineage accepted under
-ADR-0024 attestation**.
+PR #44 performs no Production query, captures no live evidence, activates
+nothing and never authorizes migration execution. Exact live evidence and all
+four genuine approvals belong to a separate operational PR. Migration
+execution requires a later, separately approved PR; Preview and password-reset
+request-flow scope remain unchanged.
 
 ## Migration Lineage Reconciliation Governance
 

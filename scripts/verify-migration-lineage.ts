@@ -33,6 +33,7 @@ import {
   readMigrationLedger
 } from '../lib/postgres-catalog';
 import {
+  assertRepeatedProductionLineageEvidence,
   assertProductionEvidenceControls,
   captureProductionLineageEvidence
 } from '../lib/production-lineage-evidence';
@@ -171,18 +172,35 @@ async function main() {
       independentReviewer: process.env.PRODUCTION_EVIDENCE_REVIEWER,
       restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE
     });
-    const state = await readDatabaseState();
-    const evidence = captureProductionLineageEvidence({
+    const firstState = await readDatabaseState();
+    const firstEvidence = captureProductionLineageEvidence({
       environment: guarded.appEnvironment,
       identity: guarded.identity,
-      connectedDatabaseName: state.identity.database_name,
+      connectedDatabaseName: firstState.identity.database_name,
       repositoryRevision: repositoryRevision(),
       manifest,
       attestation,
-      ledgerRows: state.ledgerRows,
-      catalog: state.catalog,
+      ledgerRows: firstState.ledgerRows,
+      catalog: firstState.catalog,
       controls
     });
+    const secondState = await readDatabaseState();
+    const secondEvidence = captureProductionLineageEvidence({
+      environment: guarded.appEnvironment,
+      identity: guarded.identity,
+      connectedDatabaseName: secondState.identity.database_name,
+      repositoryRevision: firstEvidence.repositoryRevision,
+      manifest,
+      attestation,
+      ledgerRows: secondState.ledgerRows,
+      catalog: secondState.catalog,
+      controls
+    });
+    const repeatCapture = assertRepeatedProductionLineageEvidence(
+      firstEvidence,
+      secondEvidence
+    );
+    const evidence = { ...firstEvidence, repeatCapture };
     assertVerifierEvidenceSecretFree(evidence);
     process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
     return 0;

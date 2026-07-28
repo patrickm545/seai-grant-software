@@ -17,6 +17,7 @@ export function activeAttestation(): LineageAttestation {
   const value = structuredClone(pending);
   value.status = 'active';
   value.reviewedAt = '2026-07-28T01:00:00.000Z';
+  value.expiresAt = '2026-10-26T00:00:00.000Z';
   value.relatedMigration.failedRecord.id = '11111111-1111-4111-8111-111111111111';
   value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
   value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
@@ -47,6 +48,8 @@ export function activeAttestation(): LineageAttestation {
 
 test('checked-in attestation is complete enough to review but inactive by design', () => {
   assert.equal(validateLineageAttestation(pending).status, 'pending');
+  assert.equal(pending.reviewedAt, null);
+  assert.equal(pending.expiresAt, null);
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),
     (error: unknown) =>
@@ -88,9 +91,18 @@ test('attestation rejects wildcards, unsupported versions, wrong target, and ove
   const wrongTarget = structuredClone(pending) as unknown as { approvedDatabaseFingerprint: string };
   wrongTarget.approvedDatabaseFingerprint = 'db_31449de1074844bb';
   assert.throws(() => validateLineageAttestation(wrongTarget as LineageAttestation), /target identity/);
-  const overlong = structuredClone(pending);
+  const overlong = activeAttestation();
   overlong.expiresAt = '2026-10-27T00:00:00.000Z';
   assert.throws(() => validateLineageAttestation(overlong), /within 90 days/);
+});
+
+test('changing pending status alone cannot activate without exact evidence, approvals, and lifecycle', () => {
+  const statusOnly = structuredClone(pending);
+  statusOnly.status = 'active';
+  assert.throws(
+    () => validateLineageAttestation(statusOnly, { requireActive: true }),
+    /must be an exact UUID/
+  );
 });
 
 test('active approval boundary rejects placeholders, altered scope, unindexed evidence, and lost independence', () => {

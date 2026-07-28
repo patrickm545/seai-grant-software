@@ -24,7 +24,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md): contained Production migration-lineage incident, read-only evidence, unknown root cause, and release block.
 - [MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md): proposed non-executed controlled reconciliation, approvals, evidence, execution boundaries, verification, and rollback decisions.
 - [ADR_0024_MIGRATION_LINEAGE_VERIFIER.md](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md): implemented fail-closed inventory, ledger, schema and attestation verifier; Production activation remains separately controlled.
-- [PR_44_ADR_0024_PRODUCTION_EVIDENCE.md](PR_44_ADR_0024_PRODUCTION_EVIDENCE.md): Draft PR #44 read-only capture plan, deterministic disposable fingerprints, Production preconditions and outstanding genuine approvals.
+- [PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md): Draft PR #44 tooling-only preparation, evidence-retention boundary, deterministic disposable fingerprints and separately pending Production operation.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md): proposed CTO-gated, dry-run-first recovery procedure for an eligible active legacy Production pilot owner.
 - [SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md): pre-pilot password-reset assets, threats, mitigations, residual risk, and required evidence.

@@ -176,6 +176,34 @@ test('malformed database URLs fail safely', () => {
   );
 });
 
+test('Production evidence rejects malformed environment metadata before connecting', () => {
+  expectCode('DB_IDENTITY_MISSING', () =>
+    assertDatabaseOperationAllowed({
+      operation: 'read-only-diagnostic',
+      requiredApplicationEnvironment: 'production',
+      appEnvironment: 'prod' as 'production',
+      databaseEnvironment: 'production',
+      databaseUrl: urls.production,
+      expectedFingerprint: fingerprints.production,
+      productionFingerprint: fingerprints.production
+    })
+  );
+});
+
+test('Production environment variables alone cannot spoof the database fingerprint', () => {
+  expectCode('DB_FINGERPRINT_MISMATCH', () =>
+    assertDatabaseOperationAllowed({
+      operation: 'read-only-diagnostic',
+      requiredApplicationEnvironment: 'production',
+      appEnvironment: 'production',
+      databaseEnvironment: 'production',
+      databaseUrl: urls.preview,
+      expectedFingerprint: fingerprints.production,
+      productionFingerprint: fingerprints.production
+    })
+  );
+});
+
 test('formatted diagnostics never expose credentials or complete URLs', () => {
   let diagnostic = '';
   try {

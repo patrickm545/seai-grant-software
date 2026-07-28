@@ -5,6 +5,7 @@
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
 | Status | Contained; remediation approval and execution pending |
 | Owner | Clada Systems Engineering |
+| Review cycle | Before every ADR-0024 evidence, activation or execution change |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -216,8 +217,19 @@ Production-owner approvals require a separate reviewed activation.
 This implementation did not query or mutate Production, apply the password
 reset migration, initiate a deployment or move an alias. Production remains on
 `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`; the latest safely blocked deployment remains
-`dpl_A8aXW7JNAQSt8f1qHDJ21U1Lerkh`. The implementation does not yet authorise
+`dpl_2qGpjKQrGCCHRJazwRR1X8nNiDRD`. The implementation does not yet authorise
 the status **Production lineage accepted under ADR-0024 attestation**.
+
+## PR #44 Tooling-Preparation State
+
+PR #44 records deterministic disposable fresh-head and post-password-reset
+fingerprints and prepares a fixed read-only command for a later, separately
+approved Production evidence operation.
+
+Production was not queried and no live evidence or approval was retained. The
+attestation remains pending, the incident remains open, Preview remains
+unresolved, the password-reset migration remains unapplied in Production and
+the only live status remains the contained safety state.
 
 ## Related Documents
 
@@ -228,3 +240,4 @@ the status **Production lineage accepted under ADR-0024 attestation**.
 - [Database Environment Safety](DATABASE_ENVIRONMENT_SAFETY.md)
 - [Production Authentication 503 Incident](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md)
 - [Technical Debt Register](TECHNICAL_DEBT_REGISTER.md)
+- [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)

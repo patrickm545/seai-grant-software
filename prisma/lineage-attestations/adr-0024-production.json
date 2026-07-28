@@ -7,7 +7,7 @@
   "owner": "Clada Systems Engineering",
   "createdAt": "2026-07-28T00:00:00.000Z",
   "reviewedAt": null,
-  "expiresAt": "2026-10-26T00:00:00.000Z",
+  "expiresAt": null,
   "reason": "Single-incident operational lineage acceptance because the exact historical SQL artifact is unavailable.",
   "historicalSqlKnown": false,
   "retirementConditions": [
@@ -80,28 +80,40 @@
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "DATABASE_RELIABILITY_REVIEWER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "SECURITY_REVIEWER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "PRODUCTION_OWNER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     }
   ]
 }

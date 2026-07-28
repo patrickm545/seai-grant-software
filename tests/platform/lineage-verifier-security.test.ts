@@ -14,6 +14,8 @@ test('lineage verifier uses repository-fixed attestation and manifest paths', ()
   assert.match(command, /prisma',\s*'migration-manifest\.json'/);
   assert.doesNotMatch(command, /process\.argv\[[^\]]+\].*(?:attestation|manifest).*Path/i);
   assert.match(command, /new Set<VerifierMode>/);
+  assert.match(command, /verifyRepositoryEvidenceReferences/);
+  assert.match(command, /existsSync/);
 });
 
 test('gitless manifest verification is restricted to an identified Vercel checkout', () => {
@@ -36,6 +38,23 @@ test('database inspection runs in a read-only repeatable-read transaction with f
   assert.match(catalog, /pg_get_expr\(ix\.indexprs/);
   assert.match(catalog, /pg_get_expr\(ix\.indpred/);
   assert.doesNotMatch(schemaFingerprint, /new RegExp/);
+  assert.match(command, /production-evidence-capture/);
+  assert.match(command, /captureProductionLineageEvidence/);
+  assert.match(command, /assertRepeatedProductionLineageEvidence/);
+});
+
+test('Production evidence command cannot invoke deploy, resolve, DDL, DML, or caller SQL', () => {
+  const start = command.indexOf("if (command === 'production-evidence-capture')");
+  const end = command.indexOf("if (command === 'schema-fingerprint')", start);
+  const captureBoundary = command.slice(start, end);
+  assert.ok(start > 0 && end > start);
+  assert.doesNotMatch(captureBoundary, /migrate\s+(?:deploy|resolve)/i);
+  assert.doesNotMatch(
+    captureBoundary,
+    /\b(?:ALTER|CREATE|DELETE|DROP|GRANT|INSERT|MERGE|REVOKE|TRUNCATE|UPDATE)\b/i
+  );
+  assert.doesNotMatch(captureBoundary, /\$executeRaw|\$queryRaw|process\.argv\[[3-9]\]/);
+  assert.equal((captureBoundary.match(/readDatabaseState\(\)/g) ?? []).length, 2);
 });
 
 test('guarded deploy cannot reach Prisma before verifier preflight or omit postflight', () => {
@@ -68,4 +87,5 @@ test('verifier output has no URL, arbitrary SQL, or raw migration log output pat
   assert.doesNotMatch(command, /console\.(?:log|error)\([^)]*ledgerRows/);
   assert.doesNotMatch(command, /console\.(?:log|error)\([^)]*catalog/);
   assert.match(command, /assertVerifierEvidenceSecretFree/);
+  assert.doesNotMatch(command, /failedRecord\.logs/);
 });

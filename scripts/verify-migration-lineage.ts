@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -32,6 +32,11 @@ import {
   readConnectedDatabaseIdentity,
   readMigrationLedger
 } from '../lib/postgres-catalog';
+import {
+  assertRepeatedProductionLineageEvidence,
+  assertProductionEvidenceControls,
+  captureProductionLineageEvidence
+} from '../lib/production-lineage-evidence';
 import { assertNamedCatalog, fingerprintCatalog, type SchemaProfile } from '../lib/schema-fingerprint';
 
 const repositoryRoot = resolve(__dirname, '..');
@@ -53,6 +58,19 @@ const modes = new Set<VerifierMode>([
 
 function readFixedJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
+}
+
+function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
+  for (const reference of attestation.evidenceReferences) {
+    if (!reference.startsWith('docs/')) continue;
+    const evidencePath = resolve(repositoryRoot, reference);
+    if (!existsSync(evidencePath)) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        `Repository evidence reference does not exist: ${reference}`
+      );
+    }
+  }
 }
 
 function safeMessage(error: unknown) {
@@ -128,8 +146,64 @@ async function main() {
   if (command === 'attestation-verify') {
     const attestation = readFixedJson<LineageAttestation>(attestationPath);
     validateLineageAttestation(attestation);
+    verifyRepositoryEvidenceReferences(attestation);
     console.log(`ADR-0024 attestation is structurally valid and status=${attestation.status}.`);
     return attestation.status === 'active' ? 0 : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
+  }
+  if (command === 'production-evidence-capture') {
+    const environment = process.env.APP_ENV?.trim().toLowerCase() as ApplicationEnvironment;
+    const guarded = assertDatabaseOperationAllowed({
+      operation: 'read-only-diagnostic',
+      requiredApplicationEnvironment: 'production',
+      appEnvironment: environment,
+      databaseEnvironment: process.env.DATABASE_ENVIRONMENT,
+      databaseUrl: process.env.DATABASE_URL,
+      expectedFingerprint: process.env.DATABASE_FINGERPRINT,
+      productionFingerprint: process.env.PRODUCTION_DATABASE_FINGERPRINT,
+      branchId: process.env.DATABASE_BRANCH_ID
+    });
+    const manifest = readFixedJson<MigrationManifest>(manifestPath);
+    verifyApprovedManifest(manifest);
+    const attestation = readFixedJson<LineageAttestation>(attestationPath);
+    verifyRepositoryEvidenceReferences(attestation);
+    const controls = assertProductionEvidenceControls({
+      changeId: process.env.PRODUCTION_EVIDENCE_CHANGE_ID,
+      operator: process.env.PRODUCTION_EVIDENCE_OPERATOR,
+      independentReviewer: process.env.PRODUCTION_EVIDENCE_REVIEWER,
+      restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE
+    });
+    const firstState = await readDatabaseState();
+    const firstEvidence = captureProductionLineageEvidence({
+      environment: guarded.appEnvironment,
+      identity: guarded.identity,
+      connectedDatabaseName: firstState.identity.database_name,
+      repositoryRevision: repositoryRevision(),
+      manifest,
+      attestation,
+      ledgerRows: firstState.ledgerRows,
+      catalog: firstState.catalog,
+      controls
+    });
+    const secondState = await readDatabaseState();
+    const secondEvidence = captureProductionLineageEvidence({
+      environment: guarded.appEnvironment,
+      identity: guarded.identity,
+      connectedDatabaseName: secondState.identity.database_name,
+      repositoryRevision: firstEvidence.repositoryRevision,
+      manifest,
+      attestation,
+      ledgerRows: secondState.ledgerRows,
+      catalog: secondState.catalog,
+      controls
+    });
+    const repeatCapture = assertRepeatedProductionLineageEvidence(
+      firstEvidence,
+      secondEvidence
+    );
+    const evidence = { ...firstEvidence, repeatCapture };
+    assertVerifierEvidenceSecretFree(evidence);
+    process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
+    return 0;
   }
   if (command === 'schema-fingerprint') {
     const profile = process.argv[3] as SchemaProfile;
@@ -188,6 +262,7 @@ async function main() {
     : undefined;
   if (attestation) {
     validateLineageAttestation(attestation, { requireActive: true });
+    verifyRepositoryEvidenceReferences(attestation);
     if (mode === 'production-preflight') {
       assertDeliberateProductionControls({
         attestationId: process.env.ADR0024_ATTESTATION_ID,

@@ -25,6 +25,12 @@ attestation is pending and Production acceptance remains disabled until a
 separately reviewed evidence/approval activation. The implementation does not
 change this sprint's product scope and does not authorise Production execution.
 
+PR #44 prepares the fixed read-only evidence-capture tooling and records
+deterministic disposable fresh/post fingerprints. It performs no Production
+query or live capture. A separate operational PR must capture evidence and
+activate the attestation; a later execution PR must apply and verify the
+migration. The attestation and release blocker remain unchanged.
+
 ## Objective
 
 Implement and validate protected minimum manual lead capture into the existing SolarGRANT Pro `Lead`, then continue directly into the canonical workspace without fabricating qualification or consent facts.

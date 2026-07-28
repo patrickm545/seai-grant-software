@@ -354,3 +354,35 @@ digest, approved schema fingerprints and required human approvals remain
 unrecorded. Production acceptance and every deliberate migration therefore
 remain disabled. No reconciliation check, migration, deployment or alias
 promotion was executed by the implementation PR.
+
+## PR #44 Evidence-Capture Tooling
+
+PR #44 prepares this fixed interface for the later Stage 1 operation:
+
+```text
+pnpm db:lineage:capture-production-evidence
+```
+
+It requires `PRODUCTION_EVIDENCE_CHANGE_ID`,
+`PRODUCTION_EVIDENCE_OPERATOR`, `PRODUCTION_EVIDENCE_REVIEWER` and
+`PRODUCTION_RESTORE_POINT_REFERENCE` in addition to the existing exact
+Production identity controls. The operator and reviewer values must identify
+different people. These values are evidence metadata, not migration-execution
+authorization.
+
+Each invocation performs two read-only repeatable-read captures and terminates
+if they differ. In the separate operational PR, run the command twice and
+compare its `deterministicEvidenceDigest`, complete normalized ledger, manifest
+hash, schema fingerprint and pending set. Output is not automatically written
+or committed. Preserve reviewed secret-free fields in repository evidence;
+retain raw evidence only under the controlled external change record and
+reference it by stable identifier and SHA-256 digest. Any state change between
+capture and activation invalidates the evidence.
+
+PR #44 performs no Production query, evidence capture, attestation activation
+or migration. See [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md).
+
+After PR #44, use a separate **Capture ADR-0024 Production Evidence and Activate
+Attestation** operational PR. Production migration execution then requires a
+different PR and explicit approval. Resume password-reset request-flow work
+only after that execution is verified.

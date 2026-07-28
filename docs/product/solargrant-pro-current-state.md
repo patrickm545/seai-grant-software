@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-26 |
 
 ## Purpose
 
@@ -46,6 +46,15 @@ The PR 1 workspace shell read requires `lead.read`, derives organisation and mem
 The PR 2 migration makes only genuinely progressive facts nullable while the public homeowner Zod contract remains strict. Accepted ADR-0021 governs explicit origin, derived action-specific completeness, truthful unknown fields, field/consumer inspection, permissions, migration, privacy, and stop conditions. Placeholder property, grant, eligibility, or consent values are not used.
 
 The current baseline contains uploaded `LeadDocument` evidence but not the governed Release 1.4 generated-document runtime. Under the Approved sequence, Customer Document Centre is PR 7 and remains blocked until that separate Release 1.4 implementation is reviewed and merged. Release 1.5 must not create a substitute.
+
+## Production Release Containment
+
+PR #41 merged the password-reset foundation, but the post-merge Production
+deployment was blocked by migration-history drift. Production remains healthy
+on the previous Ready deployment. The password-reset foundation migration is
+pending, no user-facing reset functionality is live, and request-flow work has
+not started. ADR-0024 migration-history reconciliation blocks further
+Production promotion and external pilot rollout.
 
 ## Product risks
 

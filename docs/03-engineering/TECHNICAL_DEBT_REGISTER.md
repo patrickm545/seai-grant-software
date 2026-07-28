@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 ## Purpose
 
@@ -34,7 +34,7 @@ These items are intentionally scheduled platform capabilities. They are not impl
 | PCG-001 | Full roles and permissions foundation | Platform Release 1.2 | Implemented in Platform Release 1.2 as a platform role enum, code-defined permission catalogue, role-to-permission mapping, and proving-slice authorisation. | No longer a planned gap after the release merges; future custom roles and user administration remain out of scope rather than debt. |
 | PCG-002 | Actor-aware audit foundation | Platform Release 1.2 | Implemented in Platform Release 1.2 as typed audit fields, a typed audit writer, compatibility wrapper, backfill migration, and proving-slice audit event. | No longer a planned gap after the release merges; remaining string-field compatibility is tracked as technical debt. |
 | PCG-003 | Workflow foundation | Platform Release 1.3 | Implemented in Platform Release 1.3 as workflow definitions, stages, transitions, instances, history, execution service, migration backfill, and SolarGRANT Pro lead pipeline proving slice. | No longer a planned gap after the release merges; projection drift and future stricter transition modelling are tracked as technical debt or future platform work. |
-| PCG-004 | Self-service password reset | Required before first external installer pilot | Architecture approved in FEAT-PRE-PILOT-AUTH-001 and ADR-0023; five provider/infrastructure prerequisites remain outstanding and implementation has not begun. | This is a planned security capability, not optional debt. Its absence blocks first-pilot readiness until prerequisites, implementation, approved email delivery, Preview security acceptance, and Production verification are complete. |
+| PCG-004 | Self-service password reset | Required before first external installer pilot | Architecture approved; PR #41 foundation merged but Production promotion is blocked, its migration is pending, provider/infrastructure prerequisites remain outstanding, and request-flow work is paused. | This is a planned security capability, not optional debt. Migration-history reconciliation now precedes the remaining implementation, approved email delivery, Preview security acceptance and Production verification. |
 
 ## Current Technical Debt
 
@@ -58,10 +58,14 @@ These items are intentionally scheduled platform capabilities. They are not impl
 | TD-016 | Medium | Privacy and communications | The SolarGRANT Pro intake flow currently supports SMS notifications containing or relating to customer lead information. SMS may place customer information on installer-owned or employee-owned mobile phones outside centrally managed company systems. | Customer information may be distributed across personal or unmanaged devices, making access control, retention, deletion, offboarding, audit, and GDPR compliance harder to manage. | Remove SMS notifications from the intake flow and retire the current SMS integration, configuration, environment variables, tests, and documentation. Use centrally managed email as the supported external notification channel. Preserve a product-neutral notification service boundary for future managed channels such as in-app notifications, Microsoft Teams, Slack, or WhatsApp Business if later approved. | No. Schedule as a focused product maintenance PR before wider installer onboarding or commercial-scale use. |
 | TD-017 | Low | Product navigation | **Resolved:** the non-pilot Sales Playbook page, route, navigation entry, middleware reference, and page-only code have been removed. | The pilot navigation now stays focused on daily installer workflows. | Reassess the full authenticated navigation during a future pilot UX cleanup only if user evidence supports it. | No. |
 | TD-018 | Low | Login usability and accessibility | **Resolved:** the password field now includes a keyboard-accessible show/hide control with state-aware screen-reader labels. | Users can verify their password entry without changing validation, password-manager, or authentication behaviour. | Retain the accessible toggle and cover it in login UI regression checks. | No. |
+| TD-019 | Critical | Migration provenance | Production contains completed migration `20260423093000_application_pack_admin_fields`, but its repository artifact and checksum-identical SQL are unavailable. Root cause remains G - Unknown; current evidence is most consistent with an uncommitted migration. | Raw Prisma status remains divergent, release promotion is blocked, and future migration safety cannot rely on Prisma deploy alone. | Accept ADR-0024; implement an exact Production lineage attestation and attestation-aware inventory/schema gate; add immutable inventory, retention, ownership and deletion/rename controls; execute the approved reconciliation runbook before any further Production release. | Yes. Blocks every Production release, password-reset request-flow work and pilot rollout. |
 
 ## Critical Debt
 
-No critical technical debt was identified during Architecture Checkpoint 1.
+TD-019 is the sole current critical item. Its containment is healthy, but it
+blocks every Production release until ADR-0024 remediation is implemented and
+verified. The earlier Architecture Checkpoint 1 assessment predated this
+incident.
 
 ## Review Rules
 

@@ -6,13 +6,21 @@
 | Status | Proposed |
 | Owner | Clada Systems Product |
 | Review cycle | Quarterly |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 This roadmap is a supporting planning reference. It does not override the [Company Strategy](../00-company/strategy.md), [Clada OS Product Model](../01-product/CLADA_OS_PRODUCT_MODEL.md), or active sprint documents.
 
 ## Required Pre-Pilot Authentication Gate
 
 Before the first 5–10 external installer users are onboarded, SolarGRANT Pro must implement the [self-service password reset specification](../04-features/FEAT-PRE-PILOT-SELF-SERVICE-PASSWORD-RESET.md) and [ADR-0023](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md). Reset email delivery, shared abuse controls, Preview security acceptance, Production verification, normal login health, and the ADR-0022 exceptional recovery runbook must all pass. This gate takes precedence over feature sequencing below and is not optional technical debt.
+
+PR #41 has merged its password-reset foundation, but Production promotion is
+blocked by the missing-migration incident and the foundation migration remains
+pending. [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
+and its separately approved remediation now block every Production release.
+Password-reset request-flow implementation and the external pilot remain paused
+until reconciliation, migration application and Production deployment
+verification are complete.
 
 ## Phase 0: Foundation
 

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 This section defines engineering standards, architecture context, and AI-assisted development rules for Clada OS.
 
@@ -21,6 +21,8 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [DATABASE_ENVIRONMENT_SAFETY.md](DATABASE_ENVIRONMENT_SAFETY.md): environment classification, safe fingerprints, and Vercel/Neon isolation contract.
 - [DATABASE_OPERATIONS_RUNBOOK.md](DATABASE_OPERATIONS_RUNBOOK.md): guarded commands, migration gate, recovery verification, and smoke checks.
 - [INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md): Production authentication schema-drift incident, recovery evidence, and preventive actions.
+- [INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md): contained Production migration-lineage incident, read-only evidence, unknown root cause, and release block.
+- [MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md): proposed non-executed controlled reconciliation, approvals, evidence, execution boundaries, verification, and rollback decisions.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md): proposed CTO-gated, dry-run-first recovery procedure for an eligible active legacy Production pilot owner.
 - [SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md): pre-pilot password-reset assets, threats, mitigations, residual risk, and required evidence.

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-AUTH-RESET-PLAN-001 |
-| Status | Approved |
+| Status | Foundation merged; Production promotion blocked; request-flow implementation paused |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each implementation PR and before pilot release |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 ## Objective And Boundary
 
@@ -17,6 +17,14 @@ This plan is documentation only. It does not authorise schema, runtime, provider
 ## CTO Review Amendment And Start Gate
 
 On 2026-07-24 the CTO approved the architecture decisions listed in ADR-0023. PR #40 remains Draft until this amendment is committed.
+
+PR #41 subsequently merged the authentication-recovery foundation at
+`a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, but its Production deployment was
+blocked by the migration-history incident recorded in
+[INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md).
+The foundation is not Production-complete, its migration remains pending, and
+no request-flow PR may begin until ADR-0024 reconciliation is implemented,
+executed and verified in Production.
 
 No implementation may begin until all five prerequisites are approved:
 

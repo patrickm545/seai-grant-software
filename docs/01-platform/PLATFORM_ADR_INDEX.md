@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Architecture |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 ## Purpose
 
@@ -51,6 +51,7 @@ Current platform ADRs:
 | [ADR-0021: Lead Creation Origin And Progressive Completeness](../05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) | Accepted | Defines explicit origin, action-specific completeness, truthful unknowns, typed attribution, evidence-based migration, permissions, duplicate warning, privacy, and PR 2 gates for one SolarGRANT Pro Lead. |
 | [ADR-0022: Guarded Production Legacy Credential Reissue](../05-decisions/ADR-0022-production-legacy-credential-reissue.md) | Accepted | Defines the exceptional dry-run-first, Production-only, human-entered and audited credential reissue boundary for an eligible active legacy pilot owner. |
 | [ADR-0023: Self-Service Password Reset Security Boundary](../05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) | Accepted | Defines the normal pre-pilot recovery token, origin, enumeration, rate-limit, email, audit, and atomic all-session-revocation boundary while preserving ADR-0022 exceptional recovery; provider, sender, rate store, Preview delivery policy, and Preview origin remain implementation prerequisites. |
+| [ADR-0024: Migration History Repair for Permanently Missing Applied Migrations](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) | Accepted | Defines exact lineage attestation, independent schema/inventory proof and a fail-closed reconciliation gate for a permanently missing applied Production migration. |
 
 Recommended future ADR candidates:
 

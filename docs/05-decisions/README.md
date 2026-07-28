@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-24 |
+| Last reviewed | 2026-07-26 |
 
 Architecture Decision Records (ADRs) capture decisions that materially affect platform architecture, product boundaries, technical standards, data handling, security, automation, or long-term maintainability.
 
@@ -35,6 +35,7 @@ Architecture Decision Records (ADRs) capture decisions that materially affect pl
 - [ADR-0021-lead-creation-origin-and-progressive-completeness.md](ADR-0021-lead-creation-origin-and-progressive-completeness.md): accepted explicit origin enum, derived action-specific completeness, evidence-based migration, typed creator/assignment, permissions, duplicate warning, follow-up/note compatibility, privacy gate, and PR 2 stop conditions.
 - [ADR-0022-production-legacy-credential-reissue.md](ADR-0022-production-legacy-credential-reissue.md): accept a dry-run-first, Production-guarded, audited recovery path for one eligible active legacy pilot owner.
 - [ADR-0023-self-service-password-reset-security-boundary.md](ADR-0023-self-service-password-reset-security-boundary.md): accept the dedicated reset-token lifecycle, canonical link origin, enumeration resistance, shared rate limiting, atomic all-session revocation, and relationship to ADR-0022; five implementation prerequisites remain outstanding.
+- [ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md): accept controlled reconciliation through an exact Production lineage attestation and attestation-aware migration gate without fabricating SQL or mutating applied history.
 
 Platform-specific ADR navigation is maintained in [../01-platform/PLATFORM_ADR_INDEX.md](../01-platform/PLATFORM_ADR_INDEX.md).
 

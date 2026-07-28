@@ -6,14 +6,15 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; incident and Production execution owner: Patrick or delegated deployment owner |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-07-28 |
 
 ## Guarded Commands
 
 | Command | Intended target | Notes |
 | --- | --- | --- |
 | `pnpm db:fingerprint` | Any configured URL | Parses only; does not connect. Prints safe identity. |
-| `pnpm db:status` | Matching environment | Read-only Prisma migration status. |
+| `pnpm db:status` | Matching environment | Read-only independent lineage status. Production pending status preserves exit `20`. |
+| `pnpm db:lineage:capture-production-evidence` | Production only | Fixed two-pass, repeatable-read evidence capture; requires an approved read-only change and genuine named roles. |
 | `pnpm db:migrate:development` | Development | Prisma `migrate dev`; never Preview or Production. |
 | `pnpm db:migrate:preview` | Preview | Runs guarded status, deploy, then clean status. |
 | `pnpm db:migrate:test` | test | Runs guarded status, deploy, then clean status. |
@@ -38,7 +39,7 @@ Production migration and deployment remains blocked under
 Raw Prisma status or deploy output must not be used to waive this incident.
 Only the separately approved
 [migration-history reconciliation runbook](MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
-may establish the future attested path.
+governs the attested path.
 
 PR #43 implements the independent verifier described in
 [ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md).
@@ -49,13 +50,19 @@ approvals are added in a separate reviewed activation change.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 
-For Production:
+The following sequence is for a later, separately approved Production
+migration execution. It is prohibited until PR #45 has activated the
+attestation from reviewed evidence and `pnpm db:status` has returned the exact
+expected `verified-pending-blocked` decision with exit `20`.
+
+For that later Production execution:
 
 1. Confirm the approved commit/PR and assign a change identifier.
 2. Confirm a recent recovery point and named rollback/escalation owner.
 3. Export the Production-scoped variables into a controlled, non-shared operator shell. Do not echo them.
 4. Run `pnpm db:fingerprint` and compare the safe fingerprint with the approved Production record.
-5. Run `pnpm db:status`. Investigate any failed state; do not continue.
+5. Run `pnpm db:status`. Require the approved `verified-pending-blocked`
+   decision and exact exit `20`; every other result stops execution.
 6. Set `PRODUCTION_MIGRATION_CHANGE_ID` to the approved PR/change reference.
 7. Set `ACKNOWLEDGE_PRODUCTION_MIGRATION=APPLY_APPROVED_PRODUCTION_MIGRATIONS`.
 8. Run `pnpm db:migrate:production` once. Preserve the output and exit code without storing credentials.

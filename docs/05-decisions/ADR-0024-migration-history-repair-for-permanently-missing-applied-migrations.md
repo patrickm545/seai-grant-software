@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; implementation and Production execution require separate approval |
+| Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
 | Last reviewed | 2026-07-28 |
@@ -76,8 +76,8 @@ SQL and is not a migration.
 
 ### Required lineage attestation
 
-A future implementation PR must define a machine-readable, review-owned
-attestation containing at least:
+The merged verifier implementation defines a fixed-path, machine-readable,
+review-owned attestation containing at least:
 
 - exact approved database fingerprint and environment;
 - migration name, Production record ID and checksum;
@@ -117,14 +117,15 @@ partially matched or wildcard field is invalid.
 | Production schema | Exact approved versioned schema fingerprint plus named catalog assertions |
 
 The deterministic repository manifest hash and Production schema fingerprint
-must be generated, independently reviewed and inserted as exact values in the
-future attestation implementation. ADR-0024 supplies no placeholder acceptance:
-missing or unapproved values fail closed.
+must be generated, independently reviewed and inserted as exact values before
+the fixed attestation is activated. ADR-0024 supplies no placeholder
+acceptance: missing or unapproved values fail closed.
 
 ### Attestation-aware gate
 
-A separately approved code PR must replace reliance on raw Prisma status output
-with an independent inventory verifier for this path. The verifier must:
+The separately approved verifier implementation replaces reliance on raw
+Prisma status output with an independent inventory verifier for this path. The
+verifier must:
 
 1. establish the exact database identity before connecting;
 2. read migration metadata and catalog state without mutation;
@@ -301,7 +302,8 @@ drift detection and exact exception handling that Prisma deploy omits.
 
 - Production's `_prisma_migrations` record and current schema remain unchanged
   by the attestation itself.
-- Future gate code is more complex and security-sensitive.
+- The attestation-aware gate is more complex and security-sensitive than raw
+  Prisma status.
 - Raw `prisma migrate status` will continue reporting divergence and cannot be
   the sole operational success criterion for this Production database.
 - Every future migration must be validated against both a fresh database and
@@ -312,7 +314,8 @@ drift detection and exact exception handling that Prisma deploy omits.
   new Prisma migration record and may change schema as approved, but those are
   release effects, not restoration of historical equivalence.
 - Password-reset request-flow work and pilot rollout remain blocked until the
-  attestation implementation and PR #41 Production verification complete.
+  attestation is activated from reviewed evidence and PR #41 Production
+  execution and verification complete.
 
 ## Alternatives Considered
 
@@ -321,7 +324,7 @@ drift detection and exact exception handling that Prisma deploy omits.
 | A - Continue recovery | None unless an exact artifact is recovered and separately reviewed | None | None | Open-ended delay with low probability of recovery | Continue in parallel |
 | B - Fabricated historical migration | Add inferred SQL under the missing name | None initially | Misrepresents repository history; checksum still differs | False provenance and unsafe gate pressure | Reject |
 | C - Modify/delete Production record | None or misleading documentation | Direct `_prisma_migrations` mutation | Destroys audit evidence | Prisma inconsistency and concealed incident | Reject |
-| D - Controlled reconciliation | Add exact attestation, verifier and tests in a future PR | Read-only reconciliation; later normal approved migration deploy | Preserves legacy rows; later deploy adds only its ordinary record | Verifier defect or under-scoped schema proof | Accept |
+| D - Controlled reconciliation | Add exact attestation, verifier and tests | Read-only reconciliation; later normal approved migration deploy | Preserves legacy rows; later deploy adds only its ordinary record | Verifier defect or under-scoped schema proof | Accept |
 | E - New baseline | Replace/consolidate executable history and archive old inventory | Mark/reconcile existing environments under a new baseline | Creates an intentional history discontinuity | High tooling, audit and environment complexity | Reject for this incident |
 | F - Gate exception alone | Add special-case gate logic | None | Leaves history divergent | Exception expands or hides new drift | Reject except as an expiring transition inside D |
 

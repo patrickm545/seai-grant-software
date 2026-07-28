@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Proposed; non-executable until ADR and remediation implementation approval |
+| Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; Production execution owner Patrick or delegated deployment owner |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
 | Last reviewed | 2026-07-28 |
@@ -11,15 +11,16 @@
 
 ## Purpose And Authority
 
-This runbook defines a future, separately approved acceptance of the
-Production lineage for
+This runbook governs the separately approved acceptance of the Production
+lineage for
 `20260423093000_application_pack_admin_fields`. It is documentation, not
 execution authority.
 
 The selected attestation preserves the Production record, adds no historical
-SQL and changes no schema or data. A future implementation PR must first add
-the exact lineage attestation, attestation-aware verifier and tests required by
-ADR-0024.
+SQL and changes no schema or data. PR #43 added the fixed attestation,
+attestation-aware verifier and tests required by ADR-0024. PR #44 added the
+fixed read-only evidence-capture command. Neither repository-preparation PR
+authorised Production access.
 
 ## Retained Divergence And Allowed Status
 
@@ -28,7 +29,8 @@ unknown, the existing Production record remains untouched and no replacement
 migration may pretend to be the original. This runbook does not restore
 historical equivalence.
 
-After successful implementation, the only permitted status description is:
+After successful evidence review and attestation activation, the only
+permitted status description is:
 
 > **Production lineage accepted under ADR-0024 attestation.**
 
@@ -68,54 +70,59 @@ Missing, wildcard, inferred or partially matching values fail closed.
 
 The operator and independent reviewer must be different people.
 
-## Preconditions
+## Phase-Specific Preconditions
 
-All items are mandatory:
+Repository preparation is complete when ADR-0024 is Accepted, PRs #43 and #44
+are merged, the fixed manifest and attestation validate, immutable migration
+history passes, and the capture command remains strictly read-only.
 
-- [ ] ADR-0024 is Accepted.
-- [ ] The documentation PR is merged.
-- [ ] A separate remediation implementation PR is approved and merged.
-- [ ] The implementation contains no migration SQL or Production record
-      mutation.
-- [ ] Exact implementation commit and current `main` SHA are recorded.
-- [ ] The approved repository inventory is pinned to
-      `a4bd4e2c184c745520a1484fcfbe94595ef58b3f` or an explicitly reviewed
-      successor commit.
-- [ ] Production database identity is independently verified against the
-      approved fingerprint.
-- [ ] A current, restorable Production recovery point and retention window are
-      recorded.
-- [ ] The previous Ready deployment
-      `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` remains available and healthy.
-- [ ] No concurrent deployment, schema change, migration command or maintenance
-      operation is in flight.
-- [ ] A read-only `_prisma_migrations` snapshot is retained without credentials.
-- [ ] The versioned schema fingerprint and catalog assertions match the
-      approved attestation.
-- [ ] The attestation owner, approvers, creation date, review date, expiry,
-      reason and evidence references are complete.
-- [ ] The attestation is active, within its 90-day approval window and not
-      withdrawn or subject to a retirement condition.
-- [ ] Fresh-database and baseline-upgrade validation pass from the exact commit.
-- [ ] Preview has no unexpected migration and cannot accept the Production
-      attestation.
-- [ ] Named operator, reviewer, incident owner and recovery owner are present.
-- [ ] The maintenance/release window and change ID are approved.
-- [ ] Rollback decision points below are acknowledged.
+Before operational evidence capture:
 
-Any failed or ambiguous item is a stop.
+- [ ] Exact PR #45 repository SHA and branch are approved.
+- [ ] Approved read-only change ID and operation window are recorded.
+- [ ] Named Production operator and different independent reviewer are present.
+- [ ] Current restore point, retention window, evidence reference and recovery
+      owner are recorded.
+- [ ] Production identity is independently verified against
+      `db_4e1d3bd23cff6801`.
+- [ ] Previous Ready deployment
+      `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` remains healthy and aliased.
+- [ ] No concurrent deployment, schema change, migration command, maintenance
+      operation or alias promotion is in flight.
+- [ ] The fixed attestation remains `pending`.
+- [ ] Preview remains outside scope and receives no exception.
+
+After capture and before activation:
+
+- [ ] Two external command artifacts and all internal repeat captures match.
+- [ ] Exact ledger, record IDs, failed-log digest, schema fingerprint, named
+      assertions, catalog counts and evidence digest are independently reviewed.
+- [ ] All four genuine attestation approvals and their evidence exist.
+- [ ] Lifecycle timestamps and expiry are valid.
+- [ ] Active-attestation validation and all repository checks pass.
+
+Before Production migration execution:
+
+- [ ] PR #45 attestation activation is approved and merged.
+- [ ] Read-only `production-status` returns exact exit `20` with
+      `verified-pending-blocked`.
+- [ ] A different change explicitly authorises the password-reset migration.
+- [ ] A current restore point and deliberate execution controls are rechecked.
+
+The detailed operational fields and sign-off spaces are maintained in the
+[PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md).
+Any failed, blank, stale or ambiguous item is a stop.
 
 ## Read-Only Verification
 
-The future implementation must expose an approved, secret-safe verification
-mechanism. Names below describe the intended interface; they do not exist or
-authorise execution in this documentation PR.
+The repository exposes fixed, secret-safe verification mechanisms. Their
+existence does not authorise Production use.
 
 | Step | Mechanism | Expected result | Database effect | Stop condition |
 | --- | --- | --- | --- | --- |
 | 1 | `pnpm db:fingerprint` in the controlled Production shell | Exact approved Production fingerprint; no URL | None; parses configuration | Missing or different identity |
-| 2 | Future `pnpm db:reconcile:check -- --change-id <approved-id>` | Exact attested legacy record, related duplicate records, repository inventory and schema fingerprint pass | Read-only | Any field, checksum, count, schema assertion or environment differs |
-| 3 | `pnpm db:status` | Divergence is reported or translated as the one attested lineage plus the exact pending set | Read-only | Any unapproved pending, failed, unfinished or additional database-only migration |
+| 2 | `pnpm db:lineage:capture-production-evidence` | Two internal captures match and emit exact secret-free ledger/schema evidence | Read-only repeatable-read | Any identity, record, digest, count, assertion or repeat differs |
+| 3 | `pnpm db:status`, only after activation | Invokes `production-status`; exact attested lineage plus the approved pending set returns `verified-pending-blocked`, exit `20` | Read-only repeatable-read | Any other decision or exit |
 | 4 | Provider and Vercel inspection | Previous Ready alias and blocked deployment references match the change record | None | Alias, commit or environment differs |
 | 5 | Non-mutating application health checks | Previous Ready public shell and unauthenticated protections are healthy | No intended database write | 5xx, unsafe log, or unexpected write path |
 
@@ -141,22 +148,21 @@ Before go:
 - restore point timestamp and retention window;
 - approvals, change ID, operator and reviewer.
 
-## Future Attestation Implementation
+## Implemented Attestation Controls
 
-The separately approved code PR must:
+The merged repository implementation:
 
-1. add a machine-readable lineage attestation matching ADR-0024;
-2. add a read-only inventory and schema verifier;
-3. make Production status-only builds pass only when there are no pending
-   migrations and the exact attested lineage is otherwise valid;
-4. make deliberate Production migration execution accept the exact attested
-   lineage plus only the approved pending set;
-5. keep Preview, Development and test on strict repository-only lineage;
-6. run the same verifier after deploy;
-7. fail closed on every unknown output or connection error; and
-8. add unit and disposable PostgreSQL tests for changed metadata, additional
-   database-only migrations, wrong fingerprints, pending-set changes,
-   concurrency and post-check failure.
+1. uses a fixed machine-readable lineage attestation matching ADR-0024;
+2. provides read-only inventory, ledger and schema verification;
+3. keeps Production status-only builds blocked with exit `20` while the exact
+   approved repository migration is pending;
+4. requires exact deliberate controls before a later Production migration;
+5. keeps Preview, Development and test on strict repository-only lineage;
+6. runs the same verifier after deploy;
+7. fails closed on every unknown output or connection error; and
+8. includes unit, security and disposable PostgreSQL tests for changed
+   metadata, additional database-only migrations, wrong fingerprints,
+   pending-set changes, concurrency and post-check failure.
 
 The implementation must reject another unexpected migration, any changed
 checksum or pinned timestamp/state, another failed or unfinished migration,
@@ -169,14 +175,16 @@ The attestation supplements Prisma. It does not waive the normal Prisma
 inventory, pending-migration, failure-state or schema checks. Only the single
 exact discrepancy in ADR-0024 may be accepted.
 
-No code from that future PR may edit `_prisma_migrations`, execute repair SQL or
-apply a migration automatically during a status-only Production build.
+No verifier or capture code may edit `_prisma_migrations`, execute repair SQL
+or apply a migration automatically during a status-only Production build.
 
 ## Execution Sequence
 
-### Stage 1 - Approve the attested lineage
+### Stage 1 - Capture, review and activate the attested lineage
 
-Run the future read-only reconciliation check against Production.
+Complete the PR #45 readiness checklist, run the fixed capture command twice,
+compare the complete artifacts, obtain genuine approvals and activate only
+after every exact field is known.
 
 - **Environment:** Production, exact approved fingerprint.
 - **Expected output:** one attested legacy record, all repository records
@@ -191,28 +199,29 @@ The incident owner and independent reviewer sign the evidence. This approval
 accepts the exact lineage under ADR-0024; it does not repair the historical
 ledger or apply a migration.
 
-### Stage 2 - Merge the remediation implementation
+### Stage 2 - Verify the guarded pending state
 
-Merge the reviewed gate/attestation implementation only after Stage 1 evidence
-is approved.
+After PR #45 activation and repository validation, run the approved read-only
+`production-status` verifier.
 
-- **Environment:** repository and CI.
-- **Expected output:** all required tests pass; Production status-only behavior
-  remains blocked while a migration is pending.
+- **Environment:** controlled Production operator shell, exact approved
+  fingerprint.
+- **Expected output:** exact decision `verified-pending-blocked`, exit `20`,
+  `deploymentAllowed=false` and `migrationApplied=false`.
 - **Migration-history effect:** none.
 - **Schema effect:** none.
 - **Data effect:** none.
-- **Stop:** automatic deploy could apply a migration, accept another database,
-  or promote the application while pending.
+- **Stop:** any other decision or exit, Prisma deploy, application-build
+  continuation, deployment or alias movement.
 
-The resulting Production build is expected to remain blocked because
-`20260724180000_password_reset_foundation` is pending. A blocked build at this
-point is correct.
+The status-only boundary remains blocked because
+`20260724180000_password_reset_foundation` is pending. Exit `20` at this point
+is correct and must not continue an application build.
 
 ### Stage 3 - Deliberately apply the approved pending migration
 
 Only after separate approval for the PR #41 migration, the operator uses the
-existing guarded Production command from the exact remediation commit:
+existing guarded Production command from the exact approved execution commit:
 
 ```text
 PRODUCTION_MIGRATION_CHANGE_ID=<approved-change-id>

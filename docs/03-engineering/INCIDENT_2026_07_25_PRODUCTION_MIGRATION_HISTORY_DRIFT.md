@@ -156,7 +156,7 @@ but that hypothesis is not proven. Confidence is:
 | Password-reset schema | Pending; no partial application |
 | Current data | No known loss or mutation from this incident |
 | Runtime dependency | Current code depends on the associated `Lead` columns |
-| Deployment | All further Production promotion is blocked pending attestation implementation and approval |
+| Deployment | All further Production promotion is blocked pending operational evidence, attestation activation and later execution approval |
 | Auditability | Historical SQL identity and applying provenance are permanently uncertain unless an authoritative artifact is recovered |
 | Fresh databases | Reproducible from current committed migrations |
 
@@ -167,11 +167,12 @@ missing applied migration.
 
 ## Current Safety Position
 
-The approved direction is documented in ADR-0024. It preserves the existing
-Production record and requires a future, separately reviewed implementation of
-an exact lineage attestation and attestation-aware gate. Artifact recovery
-continues in parallel. No Production operation is authorised by this incident
-record alone.
+The approved direction is documented in ADR-0024. The repository now contains
+the exact fixed attestation, attestation-aware gate and evidence-capture
+tooling. The attestation remains pending until a separately approved read-only
+operation captures and reviews the exact Production evidence and records
+genuine approvals. Artifact recovery continues in parallel. No Production
+operation is authorised by this incident record alone.
 
 ### Retained historical divergence
 
@@ -180,7 +181,8 @@ missing historical SQL remains unknown, the existing Production migration
 record remains untouched and no repository migration will pretend to be the
 original. ADR-0024 does not restore historical equivalence.
 
-If the separately approved implementation succeeds, record the status only as:
+Only after the separately approved attestation activation succeeds, record the
+status as:
 
 > **Production lineage accepted under ADR-0024 attestation.**
 
@@ -216,8 +218,7 @@ Production-owner approvals require a separate reviewed activation.
 
 This implementation did not query or mutate Production, apply the password
 reset migration, initiate a deployment or move an alias. Production remains on
-`dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`; the latest safely blocked deployment remains
-`dpl_2qGpjKQrGCCHRJazwRR1X8nNiDRD`. The implementation does not yet authorise
+`dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`. The implementation does not yet authorise
 the status **Production lineage accepted under ADR-0024 attestation**.
 
 ## PR #44 Tooling-Preparation State
@@ -231,6 +232,20 @@ attestation remains pending, the incident remains open, Preview remains
 unresolved, the password-reset migration remains unapplied in Production and
 the only live status remains the contained safety state.
 
+## PR #45 Operational Readiness State
+
+PR #45 remains Draft and stopped before Production access because genuine
+operational inputs and approvals were unavailable. Its authoritative stop
+record remains in force. The
+[operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
+now provides the single resume package for change control, human roles,
+restore safety, identity, two captures, comparison, independent review,
+activation and expected exit `20` status verification.
+
+Repository preparation is complete. Operational evidence and activation remain
+pending. Production migration execution and application deployment remain
+later, separately approved stages.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -241,3 +256,5 @@ the only live status remains the contained safety state.
 - [Production Authentication 503 Incident](INCIDENT_2026_07_23_PRODUCTION_AUTH_503.md)
 - [Technical Debt Register](TECHNICAL_DEBT_REGISTER.md)
 - [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
+- [PR #45 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md)
+- [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-EVIDENCE-CAPTURE-PREPARATION-2026-07-28 |
-| Status | Draft; tooling prepared, live evidence and activation separately pending |
+| Status | Merged; tooling prepared, live evidence and activation separately pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before the separate Production evidence operation |
 | Repository baseline | `e4bde0c21f1e8135a82761ad4ea08d1c89a658eb` |
@@ -145,4 +145,5 @@ The sequence is fixed:
 4. resume password-reset request-flow work only after the execution PR proves
    the required live state.
 
-PR #44 remains Draft and does not authorize any follow-on operation.
+PR #44 is repository preparation only and does not authorize any follow-on
+operation.

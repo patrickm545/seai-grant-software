@@ -35,7 +35,9 @@ Draft PR #45 stopped before Production access because its approved change ID,
 named operator, distinct independent reviewer, current restore-point reference,
 controlled Production connection metadata and genuine human approvals were not
 available. The attestation remains pending, no capture or Production status
-command ran, and the release blocker remains unchanged.
+command ran, and the release blocker remains unchanged. Its operational
+readiness checklist is the single resume package; completing it will not
+authorise the later Production migration execution or application deployment.
 
 ## Objective
 

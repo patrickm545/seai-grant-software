@@ -11,6 +11,7 @@
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Preparation record | [PR #44 evidence-capture preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md) |
+| Resume checklist | [PR #45 operational readiness](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md) |
 
 ## Decision
 
@@ -226,7 +227,8 @@ Neither the application build nor Prisma migration execution was started.
 - The unrelated July 23 incident edit in the primary worktree remains untouched
   and excluded.
 
-The next task is to obtain the genuine operational inputs and approvals above,
-then resume this Draft PR from the Phase 2 boundary. Migration execution remains
-a different, separately approved change after attestation activation and exit
-`20` status verification.
+The next task is to complete the
+[PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
+with genuine operational inputs and approvals, then resume this Draft PR from
+the Phase 2 boundary. Migration execution remains a different, separately
+approved change after attestation activation and exit `20` status verification.

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-MIGRATION-LINEAGE-VERIFIER-001 |
-| Status | Implemented; Production attestation inactive pending separate evidence and approval |
+| Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
 | Last reviewed | 2026-07-28 |
@@ -264,3 +264,17 @@ defines the retention boundary, disposable fingerprints and outstanding
 Production gates. PR #44 performs no Production query and captures no live
 evidence. The attestation remains pending; activation belongs to a separate
 operational PR.
+
+## PR #45 Operational Readiness
+
+PR #45 stopped before Production access and retains its
+[authoritative stop record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md).
+Its
+[operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
+is the single resume package for the later approved read-only operation. It
+does not change the verifier, capture command or attestation.
+
+The stage boundaries are fixed: repository preparation is complete; Production
+evidence and attestation activation belong to PR #45; migration execution
+requires a different approved change; and application deployment follows only
+after successful execution and postflight.

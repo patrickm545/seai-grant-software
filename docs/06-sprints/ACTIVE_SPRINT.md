@@ -20,6 +20,11 @@ release. PR #41 is merged but its password-reset migration is pending and its
 foundation is not live. Password-reset request-flow work and external pilot
 rollout remain paused.
 
+PR #43 implements the ADR-0024 verifier on a separate focused branch. Its
+attestation is pending and Production acceptance remains disabled until a
+separately reviewed evidence/approval activation. The implementation does not
+change this sprint's product scope and does not authorise Production execution.
+
 ## Objective
 
 Implement and validate protected minimum manual lead capture into the existing SolarGRANT Pro `Lead`, then continue directly into the canonical workspace without fabricating qualification or consent facts.

@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import {
+  AttestationValidationError,
+  validateLineageAttestation,
+  type LineageAttestation
+} from '../../lib/lineage-attestation';
+
+const pending = JSON.parse(
+  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
+) as LineageAttestation;
+
+export function activeAttestation(): LineageAttestation {
+  const value = structuredClone(pending);
+  value.status = 'active';
+  value.reviewedAt = '2026-07-28T01:00:00.000Z';
+  value.relatedMigration.failedRecord.id = '11111111-1111-4111-8111-111111111111';
+  value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
+  value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
+  value.schema.preMigrationFingerprint = 'b'.repeat(64);
+  value.schema.postMigrationFingerprint = 'c'.repeat(64);
+  value.schema.freshHeadFingerprint = 'c'.repeat(64);
+  value.approvals = value.approvals.map((approval, index) => ({
+    ...approval,
+    status: 'approved',
+    reviewer: `reviewer-${index + 1}`,
+    approvedAt: '2026-07-28T01:00:00.000Z',
+    evidenceReference: `CHANGE-ADR0024-${index + 1}`
+  }));
+  return value;
+}
+
+test('checked-in attestation is complete enough to review but inactive by design', () => {
+  assert.equal(validateLineageAttestation(pending).status, 'pending');
+  assert.throws(
+    () => validateLineageAttestation(pending, { requireActive: true }),
+    (error: unknown) =>
+      error instanceof AttestationValidationError && error.code === 'ATTESTATION_INACTIVE'
+  );
+});
+
+test('active attestation requires exact approvals and non-expired lifecycle', () => {
+  const active = activeAttestation();
+  assert.equal(
+    validateLineageAttestation(active, {
+      requireActive: true,
+      now: new Date('2026-08-01T00:00:00.000Z')
+    }).status,
+    'active'
+  );
+  const expired = structuredClone(active);
+  assert.throws(
+    () =>
+      validateLineageAttestation(expired, {
+        requireActive: true,
+        now: new Date('2026-10-26T00:00:00.000Z')
+      }),
+    (error: unknown) =>
+      error instanceof AttestationValidationError && error.code === 'ATTESTATION_EXPIRED'
+  );
+  const incomplete = structuredClone(active);
+  incomplete.approvals[0].reviewer = null;
+  assert.throws(() => validateLineageAttestation(incomplete, { requireActive: true }), /incomplete/);
+});
+
+test('attestation rejects wildcards, unsupported versions, wrong target, and overlong expiry', () => {
+  const wildcard = structuredClone(pending);
+  wildcard.reason = '*';
+  assert.throws(() => validateLineageAttestation(wildcard), /non-wildcard/);
+  const unsupported = structuredClone(pending) as unknown as { version: string };
+  unsupported.version = 'v2';
+  assert.throws(() => validateLineageAttestation(unsupported as LineageAttestation), /Unsupported/);
+  const wrongTarget = structuredClone(pending) as unknown as { approvedDatabaseFingerprint: string };
+  wrongTarget.approvedDatabaseFingerprint = 'db_31449de1074844bb';
+  assert.throws(() => validateLineageAttestation(wrongTarget as LineageAttestation), /target identity/);
+  const overlong = structuredClone(pending);
+  overlong.expiresAt = '2026-10-27T00:00:00.000Z';
+  assert.throws(() => validateLineageAttestation(overlong), /within 90 days/);
+});

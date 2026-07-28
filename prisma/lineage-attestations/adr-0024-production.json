@@ -1,0 +1,107 @@
+{
+  "version": "clada-adr-0024-lineage-attestation/v1",
+  "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
+  "status": "pending",
+  "incidentReference": "ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT",
+  "adrReference": "ADR-0024",
+  "owner": "Clada Systems Engineering",
+  "createdAt": "2026-07-28T00:00:00.000Z",
+  "reviewedAt": null,
+  "expiresAt": "2026-10-26T00:00:00.000Z",
+  "reason": "Single-incident operational lineage acceptance because the exact historical SQL artifact is unavailable.",
+  "historicalSqlKnown": false,
+  "retirementConditions": [
+    "Production database replacement",
+    "Formal migration-history re-baseline",
+    "Recovery of the checksum-identical original artifact",
+    "Material schema-lineage change",
+    "ADR-0024 superseded",
+    "Supporting evidence invalidated"
+  ],
+  "evidenceReferences": [
+    "docs/03-engineering/INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md",
+    "docs/05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md",
+    "docs/03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md",
+    "Draft PR #43 implementation evidence"
+  ],
+  "environment": "production",
+  "approvedDatabaseFingerprint": "db_4e1d3bd23cff6801",
+  "historicalEvidenceBaseline": "0ee3c67e8295ca8f988e5b60ec75b66c0f18741b",
+  "verifierImplementationVersion": "adr-0024-lineage-verifier/v1",
+  "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
+  "manifestVersion": "clada-migration-manifest/v1",
+  "missingMigration": {
+    "id": "2305f52e-af2f-4717-bc37-a6a88bc1ec33",
+    "migrationName": "20260423093000_application_pack_admin_fields",
+    "checksum": "affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589",
+    "startedAt": "2026-04-23T07:04:10.395Z",
+    "finishedAt": "2026-04-23T07:04:10.527Z",
+    "appliedStepsCount": 1,
+    "rolledBackAt": null,
+    "logsState": "none",
+    "logsDigest": null
+  },
+  "relatedMigration": {
+    "name": "20260428120000_manual_submission_prep",
+    "repositoryChecksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
+    "failedRecord": {
+      "id": null,
+      "migrationName": "20260428120000_manual_submission_prep",
+      "checksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
+      "startedAt": "2026-04-29T06:01:05.497Z",
+      "finishedAt": null,
+      "appliedStepsCount": 0,
+      "rolledBackAt": "2026-04-29T06:01:38.423Z",
+      "logsState": "sha256",
+      "logsDigest": null
+    },
+    "completedZeroStepRecord": {
+      "id": null,
+      "migrationName": "20260428120000_manual_submission_prep",
+      "checksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
+      "startedAt": "2026-04-29T06:01:38.543Z",
+      "finishedAt": "2026-04-29T06:01:38.543Z",
+      "appliedStepsCount": 0,
+      "rolledBackAt": null,
+      "logsState": "none",
+      "logsDigest": null
+    }
+  },
+  "schema": {
+    "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
+    "preMigrationFingerprint": null,
+    "postMigrationFingerprint": null,
+    "freshHeadFingerprint": null,
+    "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
+  },
+  "approvals": [
+    {
+      "role": "CTO",
+      "status": "pending",
+      "reviewer": null,
+      "approvedAt": null,
+      "evidenceReference": null
+    },
+    {
+      "role": "DATABASE_RELIABILITY_REVIEWER",
+      "status": "pending",
+      "reviewer": null,
+      "approvedAt": null,
+      "evidenceReference": null
+    },
+    {
+      "role": "SECURITY_REVIEWER",
+      "status": "pending",
+      "reviewer": null,
+      "approvedAt": null,
+      "evidenceReference": null
+    },
+    {
+      "role": "PRODUCTION_OWNER",
+      "status": "pending",
+      "reviewer": null,
+      "approvedAt": null,
+      "evidenceReference": null
+    }
+  ]
+}

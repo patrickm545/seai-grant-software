@@ -7,7 +7,11 @@ import {
   type ApplicationEnvironment,
   type DatabaseOperation
 } from '../lib/database-safety';
-import { evaluateMigrationPreflight } from '../lib/migration-status';
+import {
+  classifyVerifierExit,
+  productionPendingBlockEvidence
+} from '../lib/verifier-command-policy';
+import type { VerifierMode } from '../lib/lineage-verifier';
 
 type CommandDefinition = {
   operation: DatabaseOperation;
@@ -21,7 +25,7 @@ type CommandDefinition = {
 
 const commandName = process.argv[2];
 const commands: Record<string, CommandDefinition> = {
-  status: { operation: 'migration-status', prismaArgs: ['migrate', 'status'] },
+  status: { operation: 'migration-status' },
   'migrate-preview': {
     operation: 'migration-deploy',
     prismaArgs: ['migrate', 'deploy'],
@@ -86,7 +90,7 @@ if (definition.resetAcknowledgement && process.env.ACKNOWLEDGE_DATABASE_RESET !=
   process.exit(1);
 }
 
-let guarded;
+let guarded: ReturnType<typeof assertDatabaseOperationAllowed>;
 try {
   guarded = assertDatabaseOperationAllowed({
     operation: definition.operation,
@@ -109,49 +113,65 @@ console.log(
   `Database safety guard passed: operation=${definition.operation} app=${guarded.appEnvironment} database=${guarded.databaseEnvironment} ${formatSafeDatabaseIdentity(guarded.identity)}`
 );
 
-function run(program: string, args: string[], acceptedExitCodes = [0]) {
+function spawn(program: string, args: string[]) {
   const result = spawnSync(program, args, {
     env: process.env,
     shell: process.platform === 'win32',
     stdio: 'inherit'
   });
-  const status = result.status ?? 1;
-  if (!acceptedExitCodes.includes(status)) process.exit(status);
-  return status;
+  return result.status ?? 1;
 }
 
-function runMigrationPreflight() {
-  const result = spawnSync('prisma', ['migrate', 'status'], {
-    env: process.env,
-    shell: process.platform === 'win32',
-    encoding: 'utf8'
-  });
-  const status = result.status ?? 1;
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  let state;
-  try {
-    state = evaluateMigrationPreflight(status, output);
-  } catch {
-    console.error('DB_OPERATION_NOT_ALLOWED: Prisma migration preflight could not prove a safe pending-migration state.');
-    process.exit(status || 1);
-  }
+function run(program: string, args: string[]) {
+  const status = spawn(program, args);
+  if (status !== 0) process.exit(status);
+}
 
-  if (state === 'up-to-date') {
-    console.log('Migration preflight: schema is currently up to date.');
-    return;
+function verifierMode(stage: 'status' | 'preflight' | 'postflight'): VerifierMode {
+  const production = guarded.appEnvironment === 'production';
+  if (stage === 'status') return production ? 'production-status' : 'strict-status';
+  return `${production ? 'production' : 'strict'}-${stage}`;
+}
+
+function runVerifier(stage: 'status' | 'preflight' | 'postflight') {
+  const mode = verifierMode(stage);
+  const status = spawn(process.execPath, [
+    '--import',
+    'tsx',
+    'scripts/verify-migration-lineage.ts',
+    mode
+  ]);
+  const decision = classifyVerifierExit(mode, status);
+  if (decision.kind === 'unsafe-failure') {
+    console.error(
+      `MIGRATION_LINEAGE_VERIFIER_FAILED: mode=${mode} exitCode=${decision.exitCode}`
+    );
+    process.exit(decision.exitCode);
   }
-  console.log('Migration preflight: repository migrations are pending and eligible for this deliberate deploy step.');
+  if (decision.kind === 'verified-pending-blocked') {
+    console.error(JSON.stringify(productionPendingBlockEvidence()));
+    console.error(
+      'Production lineage verification passed, but an approved repository migration remains pending. ' +
+        'The status-only Production deployment is intentionally blocked; no migration was applied.'
+    );
+    process.exit(decision.exitCode);
+  }
+}
+
+if (definition.operation === 'migration-status') {
+  runVerifier('status');
+  process.exit(0);
 }
 
 if (definition.operation === 'migration-deploy') {
-  console.log('Running Prisma migration status before deployment.');
-  runMigrationPreflight();
+  console.log('Running independent migration lineage verifier before deployment.');
+  runVerifier('preflight');
 }
 
 if (definition.prismaArgs) run('prisma', definition.prismaArgs);
 else run(definition.command!, definition.commandArgs!);
 
 if (definition.operation === 'migration-deploy') {
-  console.log('Verifying Prisma migration status after deployment.');
-  run('prisma', ['migrate', 'status']);
+  console.log('Running independent migration lineage verifier after deployment.');
+  runVerifier('postflight');
 }

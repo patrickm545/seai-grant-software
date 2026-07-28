@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# ADR-0024 inventory hashes the checked-out raw migration bytes. Pin executable
+# migration artifacts to LF so Windows and Linux calculate identical checksums.
+prisma/migrations/**/migration.sql text eol=lf

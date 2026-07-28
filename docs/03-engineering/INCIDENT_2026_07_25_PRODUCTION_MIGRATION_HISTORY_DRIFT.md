@@ -13,7 +13,7 @@
 | Blocked deployment | `dpl_HGdsWDXmfnNYFSyaomEmjDcAnXPZ` |
 | Previous Ready deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Related decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-07-28 |
 
 ## Summary
 
@@ -155,7 +155,7 @@ but that hypothesis is not proven. Confidence is:
 | Password-reset schema | Pending; no partial application |
 | Current data | No known loss or mutation from this incident |
 | Runtime dependency | Current code depends on the associated `Lead` columns |
-| Deployment | All further Production promotion is blocked pending repair |
+| Deployment | All further Production promotion is blocked pending attestation implementation and approval |
 | Auditability | Historical SQL identity and applying provenance are permanently uncertain unless an authoritative artifact is recovered |
 | Fresh databases | Reproducible from current committed migrations |
 
@@ -169,7 +169,29 @@ missing applied migration.
 The approved direction is documented in ADR-0024. It preserves the existing
 Production record and requires a future, separately reviewed implementation of
 an exact lineage attestation and attestation-aware gate. Artifact recovery
-continues in parallel. No repair is authorised by this incident record alone.
+continues in parallel. No Production operation is authorised by this incident
+record alone.
+
+### Retained historical divergence
+
+The historical migration ledger remains divergent after attestation. The
+missing historical SQL remains unknown, the existing Production migration
+record remains untouched and no repository migration will pretend to be the
+original. ADR-0024 does not restore historical equivalence.
+
+If the separately approved implementation succeeds, record the status only as:
+
+> **Production lineage accepted under ADR-0024 attestation.**
+
+Do not record history repaired, migration history restored, drift eliminated,
+ledger normalised or historical migration recovered. The attestation is valid
+only for the exact Production identity, missing-migration record,
+duplicate-migration state, repository inventory, schema fingerprint and
+approved baseline defined in ADR-0024. Every other divergence fails closed.
+
+This incident creates no precedent for ignore lists, wildcards, name-only or
+checksum-free exclusions, automatic acceptance of unknown migrations, or
+future incident handling without a new investigation and approval.
 
 ## Actions Explicitly Not Taken
 

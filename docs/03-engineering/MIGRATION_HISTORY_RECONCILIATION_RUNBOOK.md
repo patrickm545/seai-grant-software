@@ -5,21 +5,56 @@
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
 | Status | Proposed; non-executable until ADR and remediation implementation approval |
 | Owner | Clada Systems Engineering; Production execution owner Patrick or delegated deployment owner |
-| Review cycle | Before each authorised reconciliation and after migration tooling changes |
-| Last reviewed | 2026-07-26 |
+| Review cycle | Before each authorised attestation use and after migration tooling changes |
+| Last reviewed | 2026-07-28 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
 
-This runbook defines a future, separately approved reconciliation of the
+This runbook defines a future, separately approved acceptance of the
 Production lineage for
 `20260423093000_application_pack_admin_fields`. It is documentation, not
 execution authority.
 
-The selected repair preserves the Production record, adds no historical SQL
-and changes no schema or data during reconciliation. A future implementation
-PR must first add the exact lineage attestation, attestation-aware verifier and
-tests required by ADR-0024.
+The selected attestation preserves the Production record, adds no historical
+SQL and changes no schema or data. A future implementation PR must first add
+the exact lineage attestation, attestation-aware verifier and tests required by
+ADR-0024.
+
+## Retained Divergence And Allowed Status
+
+The historical migration ledger remains divergent. The missing SQL remains
+unknown, the existing Production record remains untouched and no replacement
+migration may pretend to be the original. This runbook does not restore
+historical equivalence.
+
+After successful implementation, the only permitted status description is:
+
+> **Production lineage accepted under ADR-0024 attestation.**
+
+Do not describe the result as history repaired, migration history restored,
+drift eliminated, ledger normalised or historical migration recovered.
+
+## Exact Attestation Identity
+
+The executable attestation must pin all values in ADR-0024, including:
+
+- Production environment and fingerprint `db_4e1d3bd23cff6801`;
+- migration `20260423093000_application_pack_admin_fields`;
+- ID `2305f52e-af2f-4717-bc37-a6a88bc1ec33`;
+- checksum
+  `affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589`;
+- started `2026-04-23T07:04:10.395Z`, finished
+  `2026-04-23T07:04:10.527Z`, one applied step, no rollback and no error;
+- the exact failed/rolled-back and zero-step completed records for
+  `20260428120000_manual_submission_prep`;
+- the exact 16-migration manifest at
+  `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed
+  successor;
+- the exact approved Production schema fingerprint and catalog assertions; and
+- the incident, approvals, owner, evidence, creation/review dates and expiry.
+
+Missing, wildcard, inferred or partially matching values fail closed.
 
 ## Roles
 
@@ -43,6 +78,9 @@ All items are mandatory:
 - [ ] The implementation contains no migration SQL or Production record
       mutation.
 - [ ] Exact implementation commit and current `main` SHA are recorded.
+- [ ] The approved repository inventory is pinned to
+      `a4bd4e2c184c745520a1484fcfbe94595ef58b3f` or an explicitly reviewed
+      successor commit.
 - [ ] Production database identity is independently verified against the
       approved fingerprint.
 - [ ] A current, restorable Production recovery point and retention window are
@@ -54,6 +92,10 @@ All items are mandatory:
 - [ ] A read-only `_prisma_migrations` snapshot is retained without credentials.
 - [ ] The versioned schema fingerprint and catalog assertions match the
       approved attestation.
+- [ ] The attestation owner, approvers, creation date, review date, expiry,
+      reason and evidence references are complete.
+- [ ] The attestation is active, within its 90-day approval window and not
+      withdrawn or subject to a retirement condition.
 - [ ] Fresh-database and baseline-upgrade validation pass from the exact commit.
 - [ ] Preview has no unexpected migration and cannot accept the Production
       attestation.
@@ -99,7 +141,7 @@ Before go:
 - restore point timestamp and retention window;
 - approvals, change ID, operator and reviewer.
 
-## Future Repair Implementation
+## Future Attestation Implementation
 
 The separately approved code PR must:
 
@@ -116,12 +158,23 @@ The separately approved code PR must:
    database-only migrations, wrong fingerprints, pending-set changes,
    concurrency and post-check failure.
 
+The implementation must reject another unexpected migration, any changed
+checksum or pinned timestamp/state, another failed or unfinished migration,
+changed duplicate-migration metadata, identity or schema mismatch, missing,
+renamed, deleted or modified repository migrations, additional unapproved
+schema objects, expired or withdrawn approval, and every non-attested
+environment or database.
+
+The attestation supplements Prisma. It does not waive the normal Prisma
+inventory, pending-migration, failure-state or schema checks. Only the single
+exact discrepancy in ADR-0024 may be accepted.
+
 No code from that future PR may edit `_prisma_migrations`, execute repair SQL or
 apply a migration automatically during a status-only Production build.
 
 ## Execution Sequence
 
-### Stage 1 - Approve the reconciled lineage
+### Stage 1 - Approve the attested lineage
 
 Run the future read-only reconciliation check against Production.
 
@@ -135,7 +188,8 @@ Run the future read-only reconciliation check against Production.
 - **Stop:** any mismatch or insufficient evidence.
 
 The incident owner and independent reviewer sign the evidence. This approval
-recognises the lineage; it does not yet apply a migration.
+accepts the exact lineage under ADR-0024; it does not repair the historical
+ledger or apply a migration.
 
 ### Stage 2 - Merge the remediation implementation
 
@@ -201,9 +255,13 @@ Stage 3 passes.
 - **Stop:** preflight, build, runtime health, alias, logs or schema verification
   differs.
 
-## Post-Repair Validation
+## Post-Attestation Validation
 
 - [ ] Exact database identity remains unchanged.
+- [ ] Recorded status is exactly `Production lineage accepted under ADR-0024
+      attestation`.
+- [ ] The historical ledger is still documented as divergent and the original
+      artifact as unavailable.
 - [ ] Attestation-aware migration inventory passes.
 - [ ] No unexpected, failed, unfinished or unapproved pending migrations remain.
 - [ ] The password-reset foundation migration has exactly one new successful
@@ -241,7 +299,25 @@ The historical lineage attestation is not rolled back by hiding the legacy
 record. If its evidence is later disproven, disable Production migration
 execution and open a new incident.
 
-## Governance Controls After Repair
+## Attestation Lifecycle And Retirement
+
+Clada Systems Engineering owns the attestation. CTO, database reliability,
+security and Production owners approve creation and renewal. Review occurs
+before every Production database release and at least quarterly. Approval
+expires no later than 90 days after creation or renewal; expiry fails closed.
+
+Retire the attestation immediately when the Production database is replaced,
+history is formally re-baselined, the checksum-identical original artifact is
+recovered, schema lineage materially changes, a later ADR supersedes ADR-0024,
+or supporting evidence is invalidated. Retirement blocks Production migration
+and deployment until the new governing path is approved.
+
+The attestation creates no precedent. It cannot become a permanent ignore list,
+wildcard, name-only or checksum-free exclusion, automatic unknown-migration
+acceptance, or reusable incident template without a new investigation and
+approval.
+
+## Governance Controls After Lineage Acceptance
 
 - Migration files must be committed and reviewed before any environment
   application.

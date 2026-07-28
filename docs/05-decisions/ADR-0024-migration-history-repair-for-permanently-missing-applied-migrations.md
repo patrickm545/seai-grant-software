@@ -5,8 +5,8 @@
 | Document ID | ADR-0024 |
 | Status | Accepted; implementation and Production execution require separate approval |
 | Owner | Clada Systems Engineering |
-| Review cycle | Before each migration-history repair and after any Prisma migration-tooling change |
-| Last reviewed | 2026-07-26 |
+| Review cycle | Before each attestation use and after any Prisma migration-tooling change |
+| Last reviewed | 2026-07-28 |
 
 ## Context
 
@@ -38,11 +38,29 @@ See:
 
 ## Decision
 
-Clada Systems will use **controlled migration-history reconciliation through a
-pinned lineage attestation and an attestation-aware migration gate**.
+Clada Systems will use a **single-incident, fail-closed Production lineage
+attestation and an attestation-aware migration gate**.
 
-The repair is prospective repository governance. It does not recreate the lost
-SQL and does not mutate the existing Production migration record.
+This is prospective repository governance for the one incident documented
+below. It does not recreate the lost SQL, mutate the existing Production
+migration record or establish a general migration-history repair mechanism.
+
+### Retained historical divergence
+
+The historical migration ledger remains divergent. The missing historical SQL
+is still unknown. The existing Production migration record remains untouched,
+and the repository does not acquire a replacement migration pretending to be
+the original.
+
+ADR-0024 does not claim that historical equivalence has been restored.
+Implementation may establish only this operational status:
+
+> **Production lineage accepted under ADR-0024 attestation.**
+
+It must not be described as history repaired, migration history restored, drift
+eliminated, ledger normalised or historical migration recovered. The underlying
+historical artifact remains unavailable unless a checksum-identical artifact is
+separately recovered and reviewed.
 
 ### Authoritative histories
 
@@ -74,6 +92,35 @@ attestation containing at least:
 The attestation must contain no credential, connection URL, customer data or
 fabricated SQL.
 
+### Exact attestation scope
+
+The attestation is valid only when every field below matches. An unset,
+partially matched or wildcard field is invalid.
+
+| Identity field | Exact required value or approval rule |
+| --- | --- |
+| Environment | Production only |
+| Database fingerprint | `db_4e1d3bd23cff6801` |
+| Missing migration | `20260423093000_application_pack_admin_fields` |
+| Migration ID | `2305f52e-af2f-4717-bc37-a6a88bc1ec33` |
+| Checksum | `affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589` |
+| Started | `2026-04-23T07:04:10.395Z` |
+| Finished | `2026-04-23T07:04:10.527Z` |
+| Applied steps | `1` |
+| Rollback/error state | `rolled_back_at IS NULL`; no error log |
+| Related repository migration | `20260428120000_manual_submission_prep` |
+| Related migration checksum | `42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3` |
+| Related failed attempt | Started `2026-04-29T06:01:05.497Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423Z`; duplicate `Lead.internalNotes` error |
+| Related completed record | Started and finished `2026-04-29T06:01:38.543Z`; zero applied steps; not rolled back; no error log |
+| Repository baseline | `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed successor commit containing the approved inventory |
+| Repository inventory | Exact names and checksums of all 16 migrations at the baseline, represented by an approved deterministic manifest hash |
+| Production schema | Exact approved versioned schema fingerprint plus named catalog assertions |
+
+The deterministic repository manifest hash and Production schema fingerprint
+must be generated, independently reviewed and inserted as exact values in the
+future attestation implementation. ADR-0024 supplies no placeholder acceptance:
+missing or unapproved values fail closed.
+
 ### Attestation-aware gate
 
 A separately approved code PR must replace reliance on raw Prisma status output
@@ -96,6 +143,21 @@ with an independent inventory verifier for this path. The verifier must:
     pending; and
 12. produce secret-free evidence suitable for the change record.
 
+It must specifically reject:
+
+- another unexpected migration;
+- a changed checksum;
+- changed pinned timestamps, applied-step count, completion or rollback state;
+- another failed or unfinished migration;
+- any change to the duplicate-migration ledger state;
+- a database-identity or environment mismatch;
+- a schema-fingerprint or catalog-assertion mismatch;
+- a missing repository migration;
+- a renamed, deleted or modified committed migration;
+- an additional unapproved schema object;
+- an expired, withdrawn or retired attestation; and
+- use in Preview, Development, test or another Production database.
+
 The ordinary Production migration command may call `prisma migrate deploy`
 only after that verifier passes and the existing Production acknowledgement
 and change-ID controls pass. It must run the verifier again afterward. The
@@ -103,10 +165,14 @@ post-check accepts the exact attested lineage plus all expected repository
 migrations; raw Prisma's divergent status is not treated as proof of failure or
 success by itself.
 
+The attestation supplements Prisma; it does not waive Prisma checks. Normal
+migration inventory, pending-migration, failed/unfinished-state and schema
+checks still run. Only the single exact discrepancy described in the scope
+table may be accepted.
+
 ### Evidence threshold
 
-Before reconciliation can be executed, two reviewers must approve evidence
-that:
+Before the attestation can be used, two reviewers must approve evidence that:
 
 - the target is the intended Production database;
 - the migration metadata exactly matches the incident record;
@@ -152,6 +218,33 @@ The incident record, ADR, lineage attestation, implementation PR, approval,
 pre/post inventories, schema fingerprints, command output and deployment
 references form one retained audit package.
 
+The attestation must record:
+
+| Lifecycle field | Requirement |
+| --- | --- |
+| Owner | Clada Systems Engineering |
+| Approvers | CTO, database reliability reviewer, security reviewer and Production owner |
+| Creation date | Exact date of the separately approved implementation |
+| Review date | Before every Production database release and at least quarterly |
+| Expiry | No later than 90 days after creation or renewal |
+| Incident | `ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT` |
+| Database identity | Exact Production fingerprint and environment |
+| Repository baseline | Exact approved commit and migration manifest hash |
+| Schema identity | Exact approved schema fingerprint and catalog-assertion version |
+| Migration evidence | Full missing-migration and duplicate-migration metadata |
+| Reason | Historical artifact unavailable; operational lineage acceptance only |
+| Evidence references | Investigation, approval, implementation PR and pre/post verification records |
+
+An expired attestation blocks Production migration and deployment until the same
+approvers review and renew it. It must be retired immediately on:
+
+- replacement of the Production database;
+- a formal future re-baselining;
+- recovery of the original checksum-identical artifact;
+- a material schema-lineage change;
+- a superseding ADR; or
+- invalidation or contradiction of any supporting evidence.
+
 Any temporary transition flag used while the attestation-aware gate is
 introduced must be exact, disabled by default and removed after the governed
 path is operational. The durable attestation remains visible because
@@ -161,6 +254,19 @@ fact, not a permanent unscoped ignore rule.
 Artifact recovery continues in parallel. If checksum-identical SQL is later
 recovered, a new ADR review decides whether restoring it improves the history
 without changing Production.
+
+### No precedent
+
+ADR-0024 does not authorise:
+
+- a permanent ignore list;
+- wildcard, name-only or checksum-free migration exclusions;
+- automatic acceptance of an unknown migration;
+- future incident handling without a new investigation, ADR and approval; or
+- current schema equivalence as proof of historical migration identity.
+
+No attestation may be copied, generalised or reused for another database,
+migration or incident.
 
 ## Explicit Prohibitions
 
@@ -194,7 +300,7 @@ drift detection and exact exception handling that Prisma deploy omits.
 ## Consequences
 
 - Production's `_prisma_migrations` record and current schema remain unchanged
-  by reconciliation itself.
+  by the attestation itself.
 - Future gate code is more complex and security-sensitive.
 - Raw `prisma migrate status` will continue reporting divergence and cannot be
   the sole operational success criterion for this Production database.
@@ -202,11 +308,11 @@ drift detection and exact exception handling that Prisma deploy omits.
   the attested Production lineage.
 - Preview, Development and test receive no exception; they must match the
   repository history exactly.
-- The first post-repair Production migration will add an ordinary new Prisma
-  migration record and may change schema as approved, but those are release
-  effects, not historical repair.
+- The first Production migration after lineage acceptance will add an ordinary
+  new Prisma migration record and may change schema as approved, but those are
+  release effects, not restoration of historical equivalence.
 - Password-reset request-flow work and pilot rollout remain blocked until the
-  repair and PR #41 Production verification complete.
+  attestation implementation and PR #41 Production verification complete.
 
 ## Alternatives Considered
 
@@ -281,7 +387,8 @@ The remediation implementation and follow-up governance work must establish:
 The planned control set includes an immutable or signed migration inventory,
 historical deployment artifact retention, automated schema fingerprinting and
 protected migration-directory review ownership. TD-019 remains open until the
-implemented controls and first reconciled Production release are evidenced.
+implemented controls and first Production release under the ADR-0024
+attestation are evidenced.
 
 ## Required Approvals
 

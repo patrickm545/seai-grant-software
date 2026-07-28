@@ -2,6 +2,9 @@ const sha256Pattern = /^[a-f0-9]{64}$/;
 const fingerprintPattern = /^db_[a-f0-9]{16}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const wildcardPattern = /[*?]|\.\*/;
+const placeholderApprovalPattern =
+  /^(?:unknown|tbd|todo|placeholder|reviewer(?:-\d+)?|codex|chatgpt|openai)$/i;
+const repositoryApprovalEvidencePattern = /^docs\/[A-Za-z0-9_./-]+\.md$/;
 
 export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v1' as const;
 export const ATTESTATION_ID = 'ADR-0024-PRODUCTION-2026-07-25' as const;
@@ -10,6 +13,16 @@ export const REQUIRED_APPROVAL_ROLES = [
   'DATABASE_RELIABILITY_REVIEWER',
   'SECURITY_REVIEWER',
   'PRODUCTION_OWNER'
+] as const;
+export const REQUIRED_APPROVAL_SCOPE =
+  'ADR-0024 single-incident Production lineage evidence and attestation activation' as const;
+export const REQUIRED_APPROVAL_ACKNOWLEDGEMENTS = [
+  'Historical SQL remains unknown',
+  'Existing Production migration records remain untouched',
+  'Schema equivalence is operational evidence only',
+  'No Production migration has been applied',
+  'Production migration execution remains separately approved',
+  'Preview mismatch remains outside scope'
 ] as const;
 const REQUIRED_RETIREMENT_CONDITIONS = [
   'Production database replacement',
@@ -27,6 +40,9 @@ export type Approval = {
   reviewer: string | null;
   approvedAt: string | null;
   evidenceReference: string | null;
+  scopeAccepted: string | null;
+  acknowledgements: string[];
+  conditions: string[];
 };
 export type AttestedMigrationRecord = {
   id: string | null;
@@ -111,6 +127,14 @@ function requireExactString(value: unknown, label: string) {
     throw new AttestationValidationError('ATTESTATION_INVALID', `${label} must be an exact non-wildcard string.`);
   }
   return value;
+}
+
+function requireHumanApprovalString(value: unknown, label: string) {
+  const exact = requireExactString(value, label);
+  if (placeholderApprovalPattern.test(exact)) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', `${label} cannot be a placeholder.`);
+  }
+  return exact;
 }
 
 function parseTimestamp(value: unknown, label: string) {
@@ -262,6 +286,12 @@ export function validateLineageAttestation(
     throw new AttestationValidationError('ATTESTATION_INVALID', 'Attestation expiry must be within 90 days.');
   }
   const approvals = new Map(value.approvals.map((approval) => [approval.role, approval]));
+  if (
+    value.approvals.length !== REQUIRED_APPROVAL_ROLES.length ||
+    approvals.size !== REQUIRED_APPROVAL_ROLES.length
+  ) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', 'Approval roles must be unique and exact.');
+  }
   for (const role of REQUIRED_APPROVAL_ROLES) {
     const approval = approvals.get(role);
     if (!approval) throw new AttestationValidationError('ATTESTATION_INVALID', `Missing ${role} approval.`);
@@ -275,12 +305,63 @@ export function validateLineageAttestation(
         throw new AttestationValidationError('ATTESTATION_INVALID', `${role} approval is incomplete.`);
       }
       parseTimestamp(approval.approvedAt, `${role}.approvedAt`);
-      requireExactString(approval.reviewer, `${role}.reviewer`);
-      requireExactString(approval.evidenceReference, `${role}.evidenceReference`);
+      requireHumanApprovalString(approval.reviewer, `${role}.reviewer`);
+      const evidenceReference = requireHumanApprovalString(
+        approval.evidenceReference,
+        `${role}.evidenceReference`
+      );
+      if (
+        !repositoryApprovalEvidencePattern.test(evidenceReference) ||
+        evidenceReference.split('/').includes('..')
+      ) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          `${role} approval evidence must be a repository Markdown path.`
+        );
+      }
+      if (approval.scopeAccepted !== REQUIRED_APPROVAL_SCOPE) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          `${role} approval scope is incomplete.`
+        );
+      }
+      if (
+        JSON.stringify(approval.acknowledgements) !==
+        JSON.stringify(REQUIRED_APPROVAL_ACKNOWLEDGEMENTS)
+      ) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          `${role} approval acknowledgements are incomplete.`
+        );
+      }
+      if (!Array.isArray(approval.conditions)) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          `${role} approval conditions are invalid.`
+        );
+      }
+      approval.conditions.forEach((condition, index) =>
+        requireExactString(condition, `${role}.conditions[${index}]`)
+      );
+      if (!value.evidenceReferences.includes(approval.evidenceReference)) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          `${role} approval evidence is not indexed.`
+        );
+      }
     }
   }
-  if (new Set(value.approvals.map((approval) => approval.role)).size !== REQUIRED_APPROVAL_ROLES.length) {
-    throw new AttestationValidationError('ATTESTATION_INVALID', 'Approval roles must be unique and exact.');
+  if (
+    active &&
+    approvals
+      .get('DATABASE_RELIABILITY_REVIEWER')!
+      .reviewer!.toLocaleLowerCase() ===
+      approvals.get('PRODUCTION_OWNER')!.reviewer!.toLocaleLowerCase()
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Database reliability reviewer must be independent from the Production owner.'
+    );
   }
   if (active) {
     for (const [label, fingerprint] of Object.entries({
@@ -295,7 +376,20 @@ export function validateLineageAttestation(
     if (!value.reviewedAt) {
       throw new AttestationValidationError('ATTESTATION_INVALID', 'Active attestation requires a review timestamp.');
     }
-    parseTimestamp(value.reviewedAt, 'reviewedAt');
+    const reviewed = parseTimestamp(value.reviewedAt, 'reviewedAt');
+    const approvalTimes = value.approvals.map((approval) =>
+      parseTimestamp(approval.approvedAt, `${approval.role}.approvedAt`)
+    );
+    if (
+      reviewed < created ||
+      reviewed > expiry ||
+      approvalTimes.some((approved) => approved < created || approved > reviewed)
+    ) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Approval and review timestamps must fall within the attestation lifecycle.'
+      );
+    }
   }
 
   if (options.requireActive) {

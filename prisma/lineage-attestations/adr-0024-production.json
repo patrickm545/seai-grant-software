@@ -80,28 +80,40 @@
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "DATABASE_RELIABILITY_REVIEWER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "SECURITY_REVIEWER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     },
     {
       "role": "PRODUCTION_OWNER",
       "status": "pending",
       "reviewer": null,
       "approvedAt": null,
-      "evidenceReference": null
+      "evidenceReference": null,
+      "scopeAccepted": null,
+      "acknowledgements": [],
+      "conditions": []
     }
   ]
 }

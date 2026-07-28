@@ -109,8 +109,14 @@ export function generateMigrationManifest(
   return { ...body, manifestHash: calculateManifestHash(body) };
 }
 
-export function verifyMigrationManifest(repositoryRoot: string, approved: MigrationManifest) {
-  const generated = generateMigrationManifest(repositoryRoot);
+export function verifyMigrationManifest(
+  repositoryRoot: string,
+  approved: MigrationManifest,
+  options: { byteSource?: 'git' | 'working-tree' } = {}
+) {
+  const generated = generateMigrationManifest(repositoryRoot, {
+    byteSource: options.byteSource ?? 'git'
+  });
   if (canonicalJson(generated) !== canonicalJson(approved)) {
     throw new Error('Committed migration inventory differs from the approved manifest.');
   }

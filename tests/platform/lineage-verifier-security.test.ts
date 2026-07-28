@@ -13,6 +13,14 @@ test('lineage verifier uses repository-fixed attestation and manifest paths', ()
   assert.match(command, /new Set<VerifierMode>/);
 });
 
+test('gitless manifest verification is restricted to an identified Vercel checkout', () => {
+  assert.match(command, /process\.env\.VERCEL === '1'/);
+  assert.match(command, /VERCEL_GIT_COMMIT_SHA/);
+  assert.match(command, /\^\[a-f0-9\]\{40\}\$/);
+  assert.match(command, /isTrustedVercelCheckout \? 'working-tree' : 'git'/);
+  assert.match(command, /'INVENTORY_MISMATCH'/);
+});
+
 test('database inspection runs in a read-only repeatable-read transaction with fixed SQL', () => {
   assert.match(command, /SET TRANSACTION READ ONLY/);
   assert.match(command, /isolationLevel:\s*'RepeatableRead'/);

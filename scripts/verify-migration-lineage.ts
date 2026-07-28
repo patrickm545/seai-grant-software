@@ -71,6 +71,22 @@ function repositoryRevision() {
   }).trim();
 }
 
+function verifyApprovedManifest(manifest: MigrationManifest) {
+  const vercelRevision = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
+  const isTrustedVercelCheckout =
+    process.env.VERCEL === '1' && Boolean(vercelRevision && /^[a-f0-9]{40}$/.test(vercelRevision));
+  try {
+    return verifyMigrationManifest(repositoryRoot, manifest, {
+      byteSource: isTrustedVercelCheckout ? 'working-tree' : 'git'
+    });
+  } catch {
+    throw new LineageVerifierError(
+      'INVENTORY_MISMATCH',
+      'Repository migration inventory differs from the approved manifest.'
+    );
+  }
+}
+
 async function readDatabaseState() {
   const prisma = new PrismaClient();
   try {
@@ -98,7 +114,7 @@ async function main() {
   }
   if (command === 'manifest-verify') {
     const approved = readFixedJson<MigrationManifest>(manifestPath);
-    verifyMigrationManifest(repositoryRoot, approved);
+    verifyApprovedManifest(approved);
     console.log(`Migration manifest verified: ${approved.manifestHash}`);
     return 0;
   }
@@ -166,7 +182,7 @@ async function main() {
     branchId: process.env.DATABASE_BRANCH_ID
   });
   const manifest = readFixedJson<MigrationManifest>(manifestPath);
-  verifyMigrationManifest(repositoryRoot, manifest);
+  verifyApprovedManifest(manifest);
   const attestation = productionMode
     ? readFixedJson<LineageAttestation>(attestationPath)
     : undefined;

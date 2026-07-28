@@ -31,6 +31,12 @@ query or live capture. A separate operational PR must capture evidence and
 activate the attestation; a later execution PR must apply and verify the
 migration. The attestation and release blocker remain unchanged.
 
+Draft PR #45 stopped before Production access because its approved change ID,
+named operator, distinct independent reviewer, current restore-point reference,
+controlled Production connection metadata and genuine human approvals were not
+available. The attestation remains pending, no capture or Production status
+command ran, and the release blocker remains unchanged.
+
 ## Objective
 
 Implement and validate protected minimum manual lead capture into the existing SolarGRANT Pro `Lead`, then continue directly into the canonical workspace without fabricating qualification or consent facts.

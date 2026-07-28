@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { canonicalJson } from './canonical-json';
 
-export const SCHEMA_FINGERPRINT_VERSION = 'clada-postgres-schema-fingerprint/v1' as const;
-export const NAMED_ASSERTIONS_VERSION = 'adr-0024-catalog-assertions/v1' as const;
+export const SCHEMA_FINGERPRINT_VERSION = 'clada-postgres-schema-fingerprint/v2' as const;
+export const NAMED_ASSERTIONS_VERSION = 'adr-0024-catalog-assertions/v2' as const;
 
 export type CatalogSnapshot = {
   namespaces: Array<{ name: string }>;
@@ -35,6 +35,13 @@ export type CatalogSnapshot = {
     name: string;
     unique: boolean;
     primary: boolean;
+    keyColumns: Array<string | null>;
+    includedColumns: string[];
+    hasExpressions: boolean;
+    expression: string | null;
+    partial: boolean;
+    predicate: string | null;
+    constraintBacked: boolean;
     definition: string;
   }>;
   enums: Array<{ schema: string; name: string; values: string[] }>;
@@ -130,7 +137,8 @@ export function assertNamedCatalog(snapshot: CatalogSnapshot, profile: SchemaPro
       (index) =>
         index.schema === 'public' &&
         index.table === 'Lead' &&
-        new RegExp(`\\("${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\)`).test(index.definition)
+        index.keyColumns.length === 1 &&
+        index.keyColumns[0] === name
     );
     const dedicatedConstraint = snapshot.constraints.some(
       (constraint) =>

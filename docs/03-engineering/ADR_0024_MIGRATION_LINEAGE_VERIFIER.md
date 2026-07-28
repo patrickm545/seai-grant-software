@@ -111,7 +111,8 @@ connection. It binds that value to `APP_ENV`, `DATABASE_ENVIRONMENT`,
 parsed database name. An environment label alone cannot activate acceptance.
 
 The ledger query returns only Prisma migration metadata. Timestamps are
-normalized to exact UTC ISO milliseconds; step counts must be safe
+normalized to exact UTC ISO values without discarding significant
+microseconds; step counts must be safe
 non-negative integers. Empty logs normalize to `none`; non-empty logs are not
 emitted and normalize only to a SHA-256 digest. Comparison pins ID, name,
 checksum, start/finish, step count, rollback and log state. It rejects every
@@ -124,7 +125,7 @@ expression exception or name-only match.
 
 ## Schema Fingerprint
 
-Version `clada-postgres-schema-fingerprint/v1` canonicalizes the `public`
+Version `clada-postgres-schema-fingerprint/v2` canonicalizes the `public`
 namespace, tables, ordered columns, PostgreSQL and information-schema types,
 nullability, defaults, identity/generated expressions, primary/foreign/unique/
 check constraints, indexes, enums, installed extensions, non-internal
@@ -137,10 +138,22 @@ statistics, physical storage/tablespace details and
 fingerprinting because the ledger verifier checks it separately and exactly.
 Changing these semantics requires a new explicit algorithm version.
 
-Named assertions version `adr-0024-catalog-assertions/v1` proves the four
+Index evidence includes ordered key-column names, separately ordered included
+columns, expression and predicate state, uniqueness, primary status and
+constraint linkage. `pg_get_indexdef` remains fingerprint evidence but is not
+parsed to make named-assertion decisions.
+
+Named assertions version `adr-0024-catalog-assertions/v2` proves the four
 nullable, default-free `Lead` columns have the exact PostgreSQL types and no
-dedicated index or constraint. It proves `PasswordResetRequest` is absent for
-preflight and present for postflight/fresh head.
+dedicated index or constraint. Any ordinary single-key-column index is
+rejected, including unique, partial and constraint-backed forms. A
+multi-column index is retained in the whole-schema fingerprint but is not
+misclassified as dedicated. Expression-only keys are represented by a null
+ordinary-column slot plus their catalog expression, and INCLUDE-only
+occurrences remain separate from keys; neither is silently treated as a
+dedicated ordinary-column index. The assertions also prove
+`PasswordResetRequest` is absent for preflight and present for
+postflight/fresh head.
 
 ## Modes
 
@@ -172,8 +185,21 @@ receive no lineage exception.
 | `27` | Unsafe or incomplete configuration/attestation. |
 | `70` | Internal verifier/query failure. |
 
-Every non-zero outcome is fail closed. The guarded deploy never treats a
-verifier failure as permission to continue.
+Every non-zero outcome is fail closed. Only `production-status` recognizes
+exit `20` as the expected `verified-pending-blocked` decision, logs that no
+migration was applied, and immediately terminates the status/build operation
+with the original exit code. Strict modes, Production preflight and Production
+postflight accept only exit `0`. The guarded deploy never treats exit `20` or
+any verifier failure as permission to continue.
+
+## Preview Drift Record
+
+Automatic Preview deployment `dpl_3UQs1dFpJrXnHiTugjjs1N7fvSho` reached the
+strict verifier and stopped with exit `25` because the existing Preview ledger
+record for `20260710120000_identity_organisation_foundation` does not match the
+approved raw-byte checksum. The verifier stopped before Prisma deploy, so no
+migration was applied. PR #43 does not repair, attest or bypass this Preview
+state; a separate investigation must determine its provenance and remediation.
 
 ## Evidence And Redaction
 

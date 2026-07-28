@@ -68,11 +68,11 @@ export type LineageAttestation = {
     completedZeroStepRecord: AttestedMigrationRecord;
   };
   schema: {
-    fingerprintVersion: 'clada-postgres-schema-fingerprint/v1';
+    fingerprintVersion: 'clada-postgres-schema-fingerprint/v2';
     preMigrationFingerprint: string | null;
     postMigrationFingerprint: string | null;
     freshHeadFingerprint: string | null;
-    namedAssertionsVersion: 'adr-0024-catalog-assertions/v1';
+    namedAssertionsVersion: 'adr-0024-catalog-assertions/v2';
   };
   approvals: Approval[];
 };
@@ -174,8 +174,8 @@ export function validateLineageAttestation(
     value.historicalSqlKnown !== false ||
     value.historicalEvidenceBaseline !== '0ee3c67e8295ca8f988e5b60ec75b66c0f18741b' ||
     value.manifestVersion !== 'clada-migration-manifest/v1' ||
-    value.schema.fingerprintVersion !== 'clada-postgres-schema-fingerprint/v1' ||
-    value.schema.namedAssertionsVersion !== 'adr-0024-catalog-assertions/v1'
+    value.schema.fingerprintVersion !== 'clada-postgres-schema-fingerprint/v2' ||
+    value.schema.namedAssertionsVersion !== 'adr-0024-catalog-assertions/v2'
   ) {
     throw new AttestationValidationError('ATTESTATION_INVALID', 'Attestation governance identity is invalid.');
   }

@@ -7,6 +7,11 @@ import {
   type ApplicationEnvironment,
   type DatabaseOperation
 } from '../lib/database-safety';
+import {
+  classifyVerifierExit,
+  productionPendingBlockEvidence
+} from '../lib/verifier-command-policy';
+import type { VerifierMode } from '../lib/lineage-verifier';
 
 type CommandDefinition = {
   operation: DatabaseOperation;
@@ -108,30 +113,49 @@ console.log(
   `Database safety guard passed: operation=${definition.operation} app=${guarded.appEnvironment} database=${guarded.databaseEnvironment} ${formatSafeDatabaseIdentity(guarded.identity)}`
 );
 
-function run(program: string, args: string[], acceptedExitCodes = [0]) {
+function spawn(program: string, args: string[]) {
   const result = spawnSync(program, args, {
     env: process.env,
     shell: process.platform === 'win32',
     stdio: 'inherit'
   });
-  const status = result.status ?? 1;
-  if (!acceptedExitCodes.includes(status)) process.exit(status);
-  return status;
+  return result.status ?? 1;
 }
 
-function verifierMode(stage: 'status' | 'preflight' | 'postflight') {
+function run(program: string, args: string[]) {
+  const status = spawn(program, args);
+  if (status !== 0) process.exit(status);
+}
+
+function verifierMode(stage: 'status' | 'preflight' | 'postflight'): VerifierMode {
   const production = guarded.appEnvironment === 'production';
   if (stage === 'status') return production ? 'production-status' : 'strict-status';
   return `${production ? 'production' : 'strict'}-${stage}`;
 }
 
 function runVerifier(stage: 'status' | 'preflight' | 'postflight') {
-  run(process.execPath, [
+  const mode = verifierMode(stage);
+  const status = spawn(process.execPath, [
     '--import',
     'tsx',
     'scripts/verify-migration-lineage.ts',
-    verifierMode(stage)
+    mode
   ]);
+  const decision = classifyVerifierExit(mode, status);
+  if (decision.kind === 'unsafe-failure') {
+    console.error(
+      `MIGRATION_LINEAGE_VERIFIER_FAILED: mode=${mode} exitCode=${decision.exitCode}`
+    );
+    process.exit(decision.exitCode);
+  }
+  if (decision.kind === 'verified-pending-blocked') {
+    console.error(JSON.stringify(productionPendingBlockEvidence()));
+    console.error(
+      'Production lineage verification passed, but an approved repository migration remains pending. ' +
+        'The status-only Production deployment is intentionally blocked; no migration was applied.'
+    );
+    process.exit(decision.exitCode);
+  }
 }
 
 if (definition.operation === 'migration-status') {

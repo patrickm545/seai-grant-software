@@ -8,6 +8,28 @@ type QueryClient = {
 
 const safeArray = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : []);
 
+function requireStringArray(value: unknown, label: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    throw new Error('Catalog response ' + label + ' is malformed.');
+  }
+  return value;
+}
+
+function requireNullableStringArray(value: unknown, label: string): Array<string | null> {
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => item !== null && typeof item !== 'string')
+  ) {
+    throw new Error('Catalog response ' + label + ' is malformed.');
+  }
+  return value;
+}
+
+function requireBoolean(value: unknown, label: string): boolean {
+  if (typeof value !== 'boolean') throw new Error('Catalog response ' + label + ' is malformed.');
+  return value;
+}
+
 export async function readMigrationLedger(client: QueryClient) {
   return client.$queryRawUnsafe<MigrationLedgerRow[]>(`
     SELECT id, migration_name, checksum,
@@ -86,9 +108,30 @@ export async function readCatalogSnapshot(client: QueryClient): Promise<CatalogS
       GROUP BY n.nspname, c.relname, con.conname, con.contype, con.oid, rn.nspname, rc.relname
       ORDER BY n.nspname, c.relname, con.conname
     `),
-    client.$queryRawUnsafe<CatalogSnapshot['indexes']>(`
+    client.$queryRawUnsafe<Array<Record<string, unknown>>>(`
       SELECT n.nspname AS "schema", t.relname AS "table", i.relname AS "name",
              ix.indisunique AS "unique", ix.indisprimary AS "primary",
+             ARRAY(
+               SELECT a.attname::text
+               FROM unnest(ix.indkey) WITH ORDINALITY AS key(attnum, position)
+               LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = key.attnum
+               WHERE key.position <= ix.indnkeyatts
+               ORDER BY key.position
+             ) AS "keyColumns",
+             ARRAY(
+               SELECT a.attname::text
+               FROM unnest(ix.indkey) WITH ORDINALITY AS included(attnum, position)
+               JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = included.attnum
+               WHERE included.position > ix.indnkeyatts
+               ORDER BY included.position
+             ) AS "includedColumns",
+             (ix.indexprs IS NOT NULL) AS "hasExpressions",
+             pg_get_expr(ix.indexprs, ix.indrelid, true) AS expression,
+             (ix.indpred IS NOT NULL) AS partial,
+             pg_get_expr(ix.indpred, ix.indrelid, true) AS predicate,
+             EXISTS (
+               SELECT 1 FROM pg_constraint con WHERE con.conindid = ix.indexrelid
+             ) AS "constraintBacked",
              pg_get_indexdef(i.oid) AS definition
       FROM pg_index ix
       JOIN pg_class i ON i.oid = ix.indexrelid
@@ -161,7 +204,21 @@ export async function readCatalogSnapshot(client: QueryClient): Promise<CatalogS
       referencedSchema: row.referencedSchema === null ? null : String(row.referencedSchema),
       referencedTable: row.referencedTable === null ? null : String(row.referencedTable)
     })),
-    indexes,
+    indexes: indexes.map((row) => ({
+      schema: String(row.schema),
+      table: String(row.table),
+      name: String(row.name),
+      unique: requireBoolean(row.unique, 'index.unique'),
+      primary: requireBoolean(row.primary, 'index.primary'),
+      keyColumns: requireNullableStringArray(row.keyColumns, 'index.keyColumns'),
+      includedColumns: requireStringArray(row.includedColumns, 'index.includedColumns'),
+      hasExpressions: requireBoolean(row.hasExpressions, 'index.hasExpressions'),
+      expression: row.expression === null ? null : String(row.expression),
+      partial: requireBoolean(row.partial, 'index.partial'),
+      predicate: row.predicate === null ? null : String(row.predicate),
+      constraintBacked: requireBoolean(row.constraintBacked, 'index.constraintBacked'),
+      definition: String(row.definition)
+    })),
     enums: enums.map((item) => ({ ...item, values: safeArray(item.values) })),
     extensions,
     triggers,

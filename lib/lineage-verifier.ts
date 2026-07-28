@@ -5,7 +5,11 @@ import type { MigrationLedgerRow } from './migration-ledger';
 import { normaliseMigrationRecord, verifyAttestedLedger } from './migration-ledger';
 import type { MigrationManifest } from './migration-manifest';
 import type { CatalogSnapshot, SchemaProfile } from './schema-fingerprint';
-import { assertNamedCatalog, fingerprintCatalog } from './schema-fingerprint';
+import {
+  assertNamedCatalog,
+  fingerprintCatalog,
+  SCHEMA_FINGERPRINT_VERSION
+} from './schema-fingerprint';
 
 export const VERIFIER_VERSION = 'adr-0024-lineage-verifier/v1' as const;
 export const VERIFIER_EXIT_CODES = {
@@ -226,7 +230,7 @@ export function verifyLineage(input: {
     pendingMigrations: pending,
     attestedDiscrepancy,
     relatedDuplicateState,
-    schemaFingerprintVersion: 'clada-postgres-schema-fingerprint/v1',
+    schemaFingerprintVersion: SCHEMA_FINGERPRINT_VERSION,
     schemaFingerprint,
     schemaFingerprintResult: 'verified',
     namedCatalogAssertions,

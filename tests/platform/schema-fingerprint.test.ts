@@ -37,6 +37,27 @@ export function preMigrationCatalog(): CatalogSnapshot {
   };
 }
 
+function index(
+  overrides: Partial<CatalogSnapshot['indexes'][number]> = {}
+): CatalogSnapshot['indexes'][number] {
+  return {
+    schema: 'public',
+    table: 'Lead',
+    name: 'ADR0024_structured_index',
+    unique: false,
+    primary: false,
+    keyColumns: ['internalNotes'],
+    includedColumns: [],
+    hasExpressions: false,
+    expression: null,
+    partial: false,
+    predicate: null,
+    constraintBacked: false,
+    definition: 'formatted SQL is fingerprint evidence only',
+    ...overrides
+  };
+}
+
 test('schema fingerprint is deterministic under unordered database rows', () => {
   const first = preMigrationCatalog();
   const second = structuredClone(first);
@@ -45,7 +66,7 @@ test('schema fingerprint is deterministic under unordered database rows', () => 
   assert.deepEqual(assertNamedCatalog(first, 'pre-password-reset').results.length, 5);
 });
 
-test('schema and named assertions fail on nullable, default, index, or reset-object drift', () => {
+test('schema and named assertions fail on nullable, default, dedicated index, or reset-object drift', () => {
   const nullable = preMigrationCatalog();
   nullable.columns[0].nullable = false;
   assert.throws(() => assertNamedCatalog(nullable, 'pre-password-reset'), /nullability/);
@@ -55,18 +76,54 @@ test('schema and named assertions fail on nullable, default, index, or reset-obj
   assert.throws(() => assertNamedCatalog(withDefault, 'pre-password-reset'), /default/);
 
   const withIndex = preMigrationCatalog();
-  withIndex.indexes.push({
-    schema: 'public',
-    table: 'Lead',
-    name: 'Lead_internalNotes_idx',
-    unique: false,
-    primary: false,
-    definition: 'CREATE INDEX "Lead_internalNotes_idx" ON public."Lead" ("internalNotes")'
-  });
+  withIndex.indexes.push(index());
   assert.throws(() => assertNamedCatalog(withIndex, 'pre-password-reset'), /index or constraint/);
 
   const earlyReset = preMigrationCatalog();
   earlyReset.tables.push({ schema: 'public', name: 'PasswordResetRequest', kind: 'table' });
   assert.throws(() => assertNamedCatalog(earlyReset, 'pre-password-reset'), /must be absent/);
   assert.notEqual(fingerprintCatalog(earlyReset).fingerprint, fingerprintCatalog(preMigrationCatalog()).fingerprint);
+});
+
+test('dedicated index assertion uses structured key metadata for unique, partial, and quoted forms', () => {
+  for (const dedicated of [
+    index({ unique: true }),
+    index({ partial: true, predicate: '"internalNotes" IS NOT NULL' }),
+    index({
+      name: 'odd "quoted" index',
+      definition: 'arbitrary formatting that does not mention the column'
+    }),
+    index({ constraintBacked: true, unique: true })
+  ]) {
+    const catalog = preMigrationCatalog();
+    catalog.indexes.push(dedicated);
+    assert.throws(() => assertNamedCatalog(catalog, 'pre-password-reset'), /index or constraint/);
+  }
+});
+
+test('multi-column, expression, and INCLUDE-only occurrences are represented without false dedicated matches', () => {
+  const catalog = preMigrationCatalog();
+  catalog.indexes.push(
+    index({ keyColumns: ['internalNotes', 'assignedAdmin'] }),
+    index({
+      name: 'expression_index',
+      keyColumns: [null],
+      hasExpressions: true,
+      expression: 'lower("internalNotes")'
+    }),
+    index({
+      name: 'include_index',
+      keyColumns: ['id'],
+      includedColumns: ['internalNotes']
+    })
+  );
+  assert.equal(assertNamedCatalog(catalog, 'pre-password-reset').results.length, 5);
+});
+
+test('all structural index fields participate in the schema fingerprint', () => {
+  const base = preMigrationCatalog();
+  base.indexes.push(index({ keyColumns: ['id'], includedColumns: ['internalNotes'] }));
+  const changed = structuredClone(base);
+  changed.indexes[0].includedColumns = ['assignedAdmin'];
+  assert.notEqual(fingerprintCatalog(base).fingerprint, fingerprintCatalog(changed).fingerprint);
 });

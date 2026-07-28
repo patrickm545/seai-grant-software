@@ -68,11 +68,11 @@
     }
   },
   "schema": {
-    "fingerprintVersion": "clada-postgres-schema-fingerprint/v1",
+    "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
     "preMigrationFingerprint": null,
     "postMigrationFingerprint": null,
     "freshHeadFingerprint": null,
-    "namedAssertionsVersion": "adr-0024-catalog-assertions/v1"
+    "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
   },
   "approvals": [
     {

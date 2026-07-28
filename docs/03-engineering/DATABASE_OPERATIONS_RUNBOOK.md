@@ -75,9 +75,12 @@ PRODUCTION_RESTORE_POINT_CONFIRMED=CONFIRMED_CURRENT_RESTORE_POINT
 
 These supplement rather than replace the existing change ID and exact
 acknowledgement. The wrapper runs `production-preflight`, Prisma deploy, then
-`production-postflight`. Any verifier exit other than zero stops execution.
-Production status-only builds never reach Prisma deploy and return the distinct
-pending-blocked exit while an approved repository migration remains pending.
+`production-postflight`. Deliberate preflight and postflight accept only exit
+`0`; exit `20` and every other non-zero result stop before continuation.
+Production status-only handling recognizes exit `20` only as the expected
+`verified-pending-blocked` decision, emits a secret-free boundary record, then
+terminates the build with exit `20`. It never converts the result to success or
+reaches Prisma deploy while an approved repository migration remains pending.
 
 `vercel.json` runs the environment-aware database preflight before the
 application build. `VERCEL_ENV` and `APP_ENV` must match. The Vercel environment

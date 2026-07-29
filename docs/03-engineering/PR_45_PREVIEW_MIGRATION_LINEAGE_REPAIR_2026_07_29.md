@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-PR-45-PREVIEW-LINEAGE-REPAIR-2026-07-29 |
-| Status | Implemented; final Git-backed Preview validation pending |
+| Status | Implemented and validated |
 | Owner | Clada Systems Engineering |
 | Review cycle | Retain with PR #45 and the migration-history incident record |
 | Last reviewed | 2026-07-29 |
@@ -165,7 +165,7 @@ and intentionally prevented an application deployment.
 | Initial read-only diagnosis | `dpl_zwmxVkVaLgaJpxXqWZLAULVtcdLv` | Expected diagnostic stop; no write |
 | Complete schema/data diagnosis | `dpl_CDpP626BoFBFG4JeLqCDB7XFcSLU` | Expected diagnostic stop; no write |
 | Guarded rebuild | `dpl_EixUfYtrxQoyhdvp7Gdaf7Edqnga` | Reset and all 16 migrations succeeded; application build intentionally absent |
-| Final Git-backed Preview | Pending | Pending validation |
+| Final Git-backed Preview | `dpl_FQ3VJKsvzgZ7Sw11z9srUJ6KjTUg` | Ready; strict preflight and postflight verified clean |
 
 ## Resulting Ledger
 
@@ -211,11 +211,23 @@ Completed local validation:
 - secret-pattern scan: pass;
 - `git diff --check`: pass.
 
-Git-backed validation still to be recorded:
+Git-backed validation:
 
-- strict Preview preflight and postflight: pending;
-- Prisma Preview migration status: pending;
-- Vercel Preview deployment: pending.
+- database safety guard: pass for Preview identity
+  `db_d4111aafcb4de645`;
+- strict Preview preflight: `verified-clean`;
+- Prisma Preview migration inventory/status: 16 found, 16 applied, no pending
+  migrations;
+- strict Preview postflight: `verified-clean`;
+- schema fingerprint:
+  `d9478bcc85c224ccdcab8920f1899ff0a6783711b75fd277e583af7064cbf649`,
+  verified with the `fresh-head` profile and all named assertions passing;
+- application compilation, type checking, static generation and packaging:
+  pass;
+- Git-backed Preview deployment
+  `dpl_FQ3VJKsvzgZ7Sw11z9srUJ6KjTUg`: Ready;
+- immutable Preview URL:
+  `https://seai-grant-software-2r262punx-patrick-mc-kennas-projects.vercel.app`.
 
 ## Production Controls Preserved
 

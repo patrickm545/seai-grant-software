@@ -6,7 +6,11 @@ import {
   PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
   type LineageAttestation
 } from '../../lib/lineage-attestation';
-import { assertVerifierEvidenceSecretFree } from '../../lib/lineage-verifier';
+import {
+  assertVerifierEvidenceSecretFree,
+  exitCodeFor,
+  LineageVerifierError
+} from '../../lib/lineage-verifier';
 import type { MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import {
@@ -181,13 +185,23 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
         ...base,
         identity: { ...identity(), fingerprint: 'db_31449de1074844bb' }
       }),
-    /target identity/
+    (error: unknown) =>
+      error instanceof LineageVerifierError &&
+      error.code === 'IDENTITY_MISMATCH' &&
+      exitCodeFor(error) === 23
   );
   const changedRows = ledgerFixture();
   changedRows[0].checksum = 'f'.repeat(64);
   assert.throws(
     () => captureProductionLineageEvidence({ ...base, ledgerRows: changedRows }),
-    /not an exact successful application/
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'LEDGER_MISMATCH');
+      assert.equal(exitCodeFor(error), 25);
+      assert.match(error.message, /not an exact successful application/);
+      assert.ok(error.cause instanceof Error);
+      return true;
+    }
   );
   assert.throws(
     () =>
@@ -195,7 +209,37 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
         ...base,
         attestation: { ...pending, status: 'active' }
       }),
-    /restricted to the pending attestation/
+    (error: unknown) =>
+      error instanceof LineageVerifierError &&
+      error.code === 'UNSAFE_CONFIGURATION' &&
+      exitCodeFor(error) === 27
+  );
+});
+
+test('catalog mismatch is classified instead of collapsing to exit 70', () => {
+  const catalog = structuredClone(preMigrationCatalog());
+  catalog.columns[0].nullable = !catalog.columns[0].nullable;
+
+  assert.throws(
+    () =>
+      captureProductionLineageEvidence({
+        environment: 'production',
+        identity: identity(),
+        connectedDatabaseName: 'clada',
+        repositoryRevision: 'e4bde0c21f1e8135a82761ad4ea08d1c89a658eb',
+        manifest,
+        attestation: pending,
+        ledgerRows: ledgerFixture(),
+        catalog,
+        controls: controls()
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'SCHEMA_MISMATCH');
+      assert.equal(exitCodeFor(error), 26);
+      assert.ok(error.cause instanceof Error);
+      return true;
+    }
   );
 });
 

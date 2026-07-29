@@ -13,6 +13,7 @@
 | Preparation record | [PR #44 evidence-capture preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md) |
 | Resume checklist | [PR #45 operational readiness](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md) |
 | Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
+| Exit 70 investigation | [R2 repository root-cause investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md) |
 
 ## Decision
 
@@ -42,6 +43,20 @@ activated.
 The capture command and Production status verifier were not run. No migration
 command, Prisma deploy, manual SQL, database console, deployment, promotion or
 alias operation was run.
+
+## Second Authorised Operation
+
+The separate operation
+`CHG-2026-07-29-ADR0024-PROD-EVIDENCE-R2` successfully used the repaired
+launcher, established a guarded read-only Production connection and stopped
+with exit `70` before emitting evidence. It did not run Production status,
+activate the attestation, migrate, deploy or move an alias. That change ID is
+also closed and must not be reused.
+
+The retained generic diagnostic did not include the failing stage or original
+exception. The exact supported findings, retained-evidence limits and
+repository-only diagnostic repair are recorded in the
+[exit 70 investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md).
 
 The only permitted successful status remains:
 

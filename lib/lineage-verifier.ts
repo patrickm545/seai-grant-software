@@ -35,8 +35,12 @@ export type VerifierMode =
   | 'production-postflight';
 
 export class LineageVerifierError extends Error {
-  constructor(public readonly code: VerifierFailureCode, message: string) {
-    super(message);
+  constructor(
+    public readonly code: VerifierFailureCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
     this.name = 'LineageVerifierError';
   }
 }

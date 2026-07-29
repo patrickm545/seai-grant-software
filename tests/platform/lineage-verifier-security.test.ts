@@ -54,7 +54,11 @@ test('Production evidence command cannot invoke deploy, resolve, DDL, DML, or ca
     /\b(?:ALTER|CREATE|DELETE|DROP|GRANT|INSERT|MERGE|REVOKE|TRUNCATE|UPDATE)\b/i
   );
   assert.doesNotMatch(captureBoundary, /\$executeRaw|\$queryRaw|process\.argv\[[3-9]\]/);
-  assert.equal((captureBoundary.match(/readDatabaseState\(\)/g) ?? []).length, 2);
+  assert.equal((captureBoundary.match(/readDatabaseState\(\{/g) ?? []).length, 2);
+  assert.match(captureBoundary, /first-migration-ledger/);
+  assert.match(captureBoundary, /first-catalog/);
+  assert.match(captureBoundary, /second-migration-ledger/);
+  assert.match(captureBoundary, /second-catalog/);
 });
 
 test('guarded deploy cannot reach Prisma before verifier preflight or omit postflight', () => {
@@ -88,4 +92,6 @@ test('verifier output has no URL, arbitrary SQL, or raw migration log output pat
   assert.doesNotMatch(command, /console\.(?:log|error)\([^)]*catalog/);
   assert.match(command, /assertVerifierEvidenceSecretFree/);
   assert.doesNotMatch(command, /failedRecord\.logs/);
+  assert.match(command, /safeProductionEvidenceStageDiagnostic/);
+  assert.match(command, /Migration lineage verification failed safely/);
 });

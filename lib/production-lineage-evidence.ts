@@ -8,6 +8,7 @@ import {
   type GovernanceMode,
   type LineageAttestation
 } from './lineage-attestation';
+import { LineageVerifierError } from './lineage-verifier';
 import {
   normaliseMigrationRecord,
   verifyAttestedLedger,
@@ -29,7 +30,10 @@ const wildcardPattern = /[*?]|\.\*/;
 function exactControl(value: string | undefined, label: string) {
   const exact = value?.trim();
   if (!exact || wildcardPattern.test(exact) || prohibitedControlValue.test(exact)) {
-    throw new Error(`${label} must be an exact, non-placeholder value.`);
+    throw new LineageVerifierError(
+      'UNSAFE_CONFIGURATION',
+      `${label} must be an exact, non-placeholder value.`
+    );
   }
   return exact;
 }
@@ -55,19 +59,29 @@ export function assertProductionEvidenceControls(input: {
     governanceMode !== 'standard-independent-human' &&
     governanceMode !== 'pilot-stage-compensating-control'
   ) {
-    throw new Error('Production evidence governance mode is unsupported.');
+    throw new LineageVerifierError(
+      'UNSAFE_CONFIGURATION',
+      'Production evidence governance mode is unsupported.'
+    );
   }
   if (governanceMode === 'pilot-stage-compensating-control') {
     if (input.independentReviewer?.trim()) {
-      throw new Error(
+      throw new LineageVerifierError(
+        'UNSAFE_CONFIGURATION',
         'Pilot-stage compensating-control mode must not identify an independent reviewer who is unavailable.'
       );
     }
     if (common.operator !== PILOT_STAGE_ACCOUNTABLE_PERSON) {
-      throw new Error(`Pilot-stage Production operator must be ${PILOT_STAGE_ACCOUNTABLE_PERSON}.`);
+      throw new LineageVerifierError(
+        'UNSAFE_CONFIGURATION',
+        `Pilot-stage Production operator must be ${PILOT_STAGE_ACCOUNTABLE_PERSON}.`
+      );
     }
     if (input.pilotStageAccountabilityAcknowledgement !== PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT) {
-      throw new Error('Pilot-stage Production owner accountability acknowledgement is incomplete.');
+      throw new LineageVerifierError(
+        'UNSAFE_CONFIGURATION',
+        'Pilot-stage Production owner accountability acknowledgement is incomplete.'
+      );
     }
     return {
       governanceMode,
@@ -81,7 +95,10 @@ export function assertProductionEvidenceControls(input: {
     'Production evidence independent reviewer'
   );
   if (common.operator.toLocaleLowerCase() === independentReviewer.toLocaleLowerCase()) {
-    throw new Error('Production operator and independent reviewer must be different people.');
+    throw new LineageVerifierError(
+      'UNSAFE_CONFIGURATION',
+      'Production operator and independent reviewer must be different people.'
+    );
   }
   return {
     governanceMode,
@@ -108,17 +125,29 @@ export function captureProductionLineageEvidence(input: {
     input.identity.fingerprint !== 'db_4e1d3bd23cff6801' ||
     input.connectedDatabaseName !== input.identity.databaseName
   ) {
-    throw new Error('Production evidence capture target identity differs from ADR-0024.');
+    throw new LineageVerifierError(
+      'IDENTITY_MISMATCH',
+      'Production evidence capture target identity differs from ADR-0024.'
+    );
   }
   if (input.attestation.status !== 'pending') {
-    throw new Error('Production evidence capture is restricted to the pending attestation.');
+    throw new LineageVerifierError(
+      'UNSAFE_CONFIGURATION',
+      'Production evidence capture is restricted to the pending attestation.'
+    );
   }
   validateLineageAttestation(input.attestation);
   if (input.attestation.governanceMode !== input.controls.governanceMode) {
-    throw new Error('Production evidence governance mode differs from the pending attestation.');
+    throw new LineageVerifierError(
+      'UNSAFE_CONFIGURATION',
+      'Production evidence governance mode differs from the pending attestation.'
+    );
   }
   if (input.attestation.approvedManifestHash !== input.manifest.manifestHash) {
-    throw new Error('Production evidence manifest differs from the pending attestation.');
+    throw new LineageVerifierError(
+      'INVENTORY_MISMATCH',
+      'Production evidence manifest differs from the pending attestation.'
+    );
   }
 
   const records = input.ledgerRows
@@ -147,23 +176,45 @@ export function captureProductionLineageEvidence(input: {
     failed.length !== 1 ||
     completedZeroStep.length !== 1
   ) {
-    throw new Error('Production evidence contains an ambiguous ADR-0024 record set.');
+    throw new LineageVerifierError(
+      'LEDGER_MISMATCH',
+      'Production evidence contains an ambiguous ADR-0024 record set.'
+    );
   }
 
   const observedAttestation = structuredClone(input.attestation);
   observedAttestation.relatedMigration.failedRecord.id = failed[0].id;
   observedAttestation.relatedMigration.failedRecord.logsDigest = failed[0].logsDigest;
   observedAttestation.relatedMigration.completedZeroStepRecord.id = completedZeroStep[0].id;
-  const ledgerResult = verifyAttestedLedger({
-    rows: input.ledgerRows,
-    manifest: input.manifest,
-    attestation: observedAttestation,
-    mode: 'production-status',
-    approvedPendingMigrations: ['20260724180000_password_reset_foundation']
-  });
+  let ledgerResult: ReturnType<typeof verifyAttestedLedger>;
+  try {
+    ledgerResult = verifyAttestedLedger({
+      rows: input.ledgerRows,
+      manifest: input.manifest,
+      attestation: observedAttestation,
+      mode: 'production-status',
+      approvedPendingMigrations: ['20260724180000_password_reset_foundation']
+    });
+  } catch (error) {
+    throw new LineageVerifierError(
+      'LEDGER_MISMATCH',
+      error instanceof Error ? error.message : 'Production ledger verification failed.',
+      { cause: error }
+    );
+  }
 
-  const namedAssertions = assertNamedCatalog(input.catalog, 'pre-password-reset');
-  const schema = fingerprintCatalog(input.catalog);
+  let namedAssertions: ReturnType<typeof assertNamedCatalog>;
+  let schema: ReturnType<typeof fingerprintCatalog>;
+  try {
+    namedAssertions = assertNamedCatalog(input.catalog, 'pre-password-reset');
+    schema = fingerprintCatalog(input.catalog);
+  } catch (error) {
+    throw new LineageVerifierError(
+      'SCHEMA_MISMATCH',
+      error instanceof Error ? error.message : 'Production schema verification failed.',
+      { cause: error }
+    );
+  }
   const deterministicEvidence = {
     evidenceVersion: PRODUCTION_EVIDENCE_VERSION,
     environment: input.environment,
@@ -230,7 +281,8 @@ export function assertRepeatedProductionLineageEvidence(
     firstDigest !== secondDigest ||
     canonicalJson(firstDeterministicEvidence) !== canonicalJson(secondDeterministicEvidence)
   ) {
-    throw new Error(
+    throw new LineageVerifierError(
+      'INTERNAL_ERROR',
       'Repeated Production evidence differs; discard the evidence and stop the operation.'
     );
   }

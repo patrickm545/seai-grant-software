@@ -6,8 +6,22 @@ const placeholderApprovalPattern =
   /^(?:unknown|tbd|todo|placeholder|reviewer(?:-\d+)?|codex|chatgpt|openai)$/i;
 const repositoryApprovalEvidencePattern = /^docs\/[A-Za-z0-9_./-]+\.md$/;
 
-export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v1' as const;
+export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v2' as const;
 export const ATTESTATION_ID = 'ADR-0024-PRODUCTION-2026-07-25' as const;
+export const PILOT_STAGE_ACCOUNTABLE_PERSON = 'Patrick McKenna' as const;
+export const PILOT_STAGE_SCOPE =
+  'Pilot-stage read-only ADR-0024 Production evidence capture, status verification and attestation activation only' as const;
+export const PILOT_STAGE_TECHNICAL_REVIEW_METHOD =
+  'AI-assisted CTO review using retained deterministic evidence, repository-enforced controls and CEO accountability; AI is not a human approver' as const;
+export const PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT =
+  'I acknowledge that no independent human technical reviewer is currently available and accept final accountability for this pilot-stage read-only evidence and attestation operation' as const;
+export const PILOT_STAGE_LATER_REVIEW_TRIGGER =
+  'Before onboarding the first 10 pilot installers or when another engineer or qualified external database reviewer joins, whichever occurs first' as const;
+export const PILOT_STAGE_PROHIBITED_ACTIONS = [
+  'Production migration execution',
+  'Application deployment',
+  'Alias movement'
+] as const;
 export const REQUIRED_APPROVAL_ROLES = [
   'CTO',
   'DATABASE_RELIABILITY_REVIEWER',
@@ -22,7 +36,7 @@ export const REQUIRED_APPROVAL_ACKNOWLEDGEMENTS = [
   'Schema equivalence is operational evidence only',
   'No Production migration has been applied',
   'Production migration execution remains separately approved',
-  'Preview mismatch remains outside scope'
+  'Preview lineage was repaired independently and receives no Production exception'
 ] as const;
 const REQUIRED_RETIREMENT_CONDITIONS = [
   'Production database replacement',
@@ -43,6 +57,42 @@ export type Approval = {
   scopeAccepted: string | null;
   acknowledgements: string[];
   conditions: string[];
+};
+export type GovernanceMode =
+  | 'standard-independent-human'
+  | 'pilot-stage-compensating-control';
+export type PilotStageCaptureEvidence = {
+  artifactReference: string;
+  artifactSha256: string;
+  deterministicEvidenceDigest: string;
+  repositoryRevision: string;
+  changeId: string;
+  databaseFingerprint: 'db_4e1d3bd23cff6801';
+  connectedDatabaseName: string;
+  operator: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  restorePointReference: string;
+  schemaFingerprint: string;
+  namedAssertionsVersion: 'adr-0024-catalog-assertions/v2';
+};
+export type PilotStageCompensatingControl = {
+  scope: typeof PILOT_STAGE_SCOPE;
+  chiefExecutiveOfficer: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  productionOwner: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  productionOperator: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  recoveryOwner: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  finalAccountableApprover: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
+  technicalReviewMethod: typeof PILOT_STAGE_TECHNICAL_REVIEW_METHOD;
+  independentHumanTechnicalReviewer: null;
+  independentHumanTechnicalReviewerStatus: 'unavailable-during-pilot-stage';
+  accountabilityAcknowledgement: typeof PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT;
+  laterQualifiedHumanReviewRequired: true;
+  laterQualifiedHumanReviewTrigger: typeof PILOT_STAGE_LATER_REVIEW_TRIGGER;
+  prohibitedActions: string[];
+  activatedAt: string | null;
+  captures: PilotStageCaptureEvidence[];
+  repeatedDeterministicFieldsMatch: boolean | null;
+  requiredProductionStatusDecision: 'verified-pending-blocked';
+  requiredProductionStatusExitCode: 20;
 };
 export type AttestedMigrationRecord = {
   id: string | null;
@@ -90,6 +140,8 @@ export type LineageAttestation = {
     freshHeadFingerprint: string | null;
     namedAssertionsVersion: 'adr-0024-catalog-assertions/v2';
   };
+  governanceMode: GovernanceMode;
+  pilotStageCompensatingControl: PilotStageCompensatingControl | null;
   approvals: Approval[];
 };
 
@@ -147,6 +199,198 @@ function parseTimestamp(value: unknown, label: string) {
     throw new AttestationValidationError('ATTESTATION_INVALID', `${label} is invalid.`);
   }
   return parsed;
+}
+
+function validateApproval(
+  approval: Approval,
+  role: Approval['role'],
+  value: LineageAttestation,
+  created: number,
+  reviewed: number
+) {
+  if (
+    approval.status !== 'approved' ||
+    !approval.reviewer ||
+    !approval.approvedAt ||
+    !approval.evidenceReference
+  ) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', `${role} approval is incomplete.`);
+  }
+  const approved = parseTimestamp(approval.approvedAt, `${role}.approvedAt`);
+  requireHumanApprovalString(approval.reviewer, `${role}.reviewer`);
+  const evidenceReference = requireHumanApprovalString(
+    approval.evidenceReference,
+    `${role}.evidenceReference`
+  );
+  if (
+    !repositoryApprovalEvidencePattern.test(evidenceReference) ||
+    evidenceReference.split('/').includes('..')
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      `${role} approval evidence must be a repository Markdown path.`
+    );
+  }
+  if (approval.scopeAccepted !== REQUIRED_APPROVAL_SCOPE) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', `${role} approval scope is incomplete.`);
+  }
+  if (
+    JSON.stringify(approval.acknowledgements) !==
+    JSON.stringify(REQUIRED_APPROVAL_ACKNOWLEDGEMENTS)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      `${role} approval acknowledgements are incomplete.`
+    );
+  }
+  if (!Array.isArray(approval.conditions)) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', `${role} approval conditions are invalid.`);
+  }
+  approval.conditions.forEach((condition, index) =>
+    requireExactString(condition, `${role}.conditions[${index}]`)
+  );
+  if (!value.evidenceReferences.includes(approval.evidenceReference)) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      `${role} approval evidence is not indexed.`
+    );
+  }
+  if (approved < created || approved > reviewed) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Approval and review timestamps must fall within the attestation lifecycle.'
+    );
+  }
+}
+
+function validatePilotStageGovernance(
+  value: LineageAttestation,
+  active: boolean,
+  created: number,
+  reviewed: number | null,
+  expiry: number | null
+) {
+  const pilot = value.pilotStageCompensatingControl;
+  if (!pilot) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage compensating-control governance is required.'
+    );
+  }
+  if (
+    pilot.scope !== PILOT_STAGE_SCOPE ||
+    pilot.chiefExecutiveOfficer !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+    pilot.productionOwner !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+    pilot.productionOperator !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+    pilot.recoveryOwner !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+    pilot.finalAccountableApprover !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+    pilot.technicalReviewMethod !== PILOT_STAGE_TECHNICAL_REVIEW_METHOD ||
+    pilot.independentHumanTechnicalReviewer !== null ||
+    pilot.independentHumanTechnicalReviewerStatus !== 'unavailable-during-pilot-stage' ||
+    pilot.accountabilityAcknowledgement !== PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT ||
+    pilot.laterQualifiedHumanReviewRequired !== true ||
+    pilot.laterQualifiedHumanReviewTrigger !== PILOT_STAGE_LATER_REVIEW_TRIGGER ||
+    JSON.stringify(pilot.prohibitedActions) !== JSON.stringify(PILOT_STAGE_PROHIBITED_ACTIONS) ||
+    pilot.requiredProductionStatusDecision !== 'verified-pending-blocked' ||
+    pilot.requiredProductionStatusExitCode !== 20
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage governance allocation and compensating controls must be exact.'
+    );
+  }
+  if (!active) {
+    if (
+      pilot.activatedAt !== null ||
+      pilot.captures.length !== 0 ||
+      pilot.repeatedDeterministicFieldsMatch !== null ||
+      value.approvals.length !== 0
+    ) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Pending pilot-stage attestation cannot contain activation, evidence or approval values.'
+      );
+    }
+    return;
+  }
+  if (reviewed === null || expiry === null || !pilot.activatedAt) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Active pilot-stage governance requires activation, review and expiry timestamps.'
+    );
+  }
+  const activated = parseTimestamp(pilot.activatedAt, 'pilotStageCompensatingControl.activatedAt');
+  if (activated < created || activated !== reviewed || activated >= expiry) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage activation must equal the reviewed timestamp and precede expiry.'
+    );
+  }
+  if (
+    pilot.captures.length !== 2 ||
+    pilot.repeatedDeterministicFieldsMatch !== true
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage activation requires two matching captures.'
+    );
+  }
+  const [first, second] = pilot.captures;
+  for (const [index, capture] of pilot.captures.entries()) {
+    requireExactString(capture.artifactReference, `pilot capture ${index + 1} artifactReference`);
+    requireExactString(capture.repositoryRevision, `pilot capture ${index + 1} repositoryRevision`);
+    requireExactString(capture.changeId, `pilot capture ${index + 1} changeId`);
+    requireExactString(capture.connectedDatabaseName, `pilot capture ${index + 1} connectedDatabaseName`);
+    requireExactString(capture.restorePointReference, `pilot capture ${index + 1} restorePointReference`);
+    if (
+      !sha256Pattern.test(capture.artifactSha256) ||
+      !sha256Pattern.test(capture.deterministicEvidenceDigest) ||
+      !sha256Pattern.test(capture.schemaFingerprint) ||
+      !/^[a-f0-9]{40}$/.test(capture.repositoryRevision) ||
+      capture.databaseFingerprint !== value.approvedDatabaseFingerprint ||
+      capture.operator !== PILOT_STAGE_ACCOUNTABLE_PERSON ||
+      capture.namedAssertionsVersion !== value.schema.namedAssertionsVersion
+    ) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        `Pilot capture ${index + 1} has incomplete deterministic evidence.`
+      );
+    }
+  }
+  const fieldsThatMustMatch: Array<keyof PilotStageCaptureEvidence> = [
+    'deterministicEvidenceDigest',
+    'repositoryRevision',
+    'changeId',
+    'databaseFingerprint',
+    'connectedDatabaseName',
+    'operator',
+    'restorePointReference',
+    'schemaFingerprint',
+    'namedAssertionsVersion'
+  ];
+  if (fieldsThatMustMatch.some((field) => first[field] !== second[field])) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage capture deterministic fields must match exactly.'
+    );
+  }
+  if (first.artifactReference === second.artifactReference) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage captures require two distinct external artifact references.'
+    );
+  }
+  if (
+    value.approvals.length !== 1 ||
+    value.approvals[0].role !== 'PRODUCTION_OWNER' ||
+    value.approvals[0].reviewer !== PILOT_STAGE_ACCOUNTABLE_PERSON
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Pilot-stage activation requires Patrick McKenna as the sole human Production owner approval.'
+    );
+  }
+  validateApproval(value.approvals[0], 'PRODUCTION_OWNER', value, created, reviewed);
 }
 
 function validateRecord(record: AttestedMigrationRecord, label: string, active: boolean) {
@@ -291,83 +535,8 @@ export function validateLineageAttestation(
       'Active attestation expiry must be within 90 days.'
     );
   }
-  const approvals = new Map(value.approvals.map((approval) => [approval.role, approval]));
-  if (
-    value.approvals.length !== REQUIRED_APPROVAL_ROLES.length ||
-    approvals.size !== REQUIRED_APPROVAL_ROLES.length
-  ) {
-    throw new AttestationValidationError('ATTESTATION_INVALID', 'Approval roles must be unique and exact.');
-  }
-  for (const role of REQUIRED_APPROVAL_ROLES) {
-    const approval = approvals.get(role);
-    if (!approval) throw new AttestationValidationError('ATTESTATION_INVALID', `Missing ${role} approval.`);
-    if (active) {
-      if (
-        approval.status !== 'approved' ||
-        !approval.reviewer ||
-        !approval.approvedAt ||
-        !approval.evidenceReference
-      ) {
-        throw new AttestationValidationError('ATTESTATION_INVALID', `${role} approval is incomplete.`);
-      }
-      parseTimestamp(approval.approvedAt, `${role}.approvedAt`);
-      requireHumanApprovalString(approval.reviewer, `${role}.reviewer`);
-      const evidenceReference = requireHumanApprovalString(
-        approval.evidenceReference,
-        `${role}.evidenceReference`
-      );
-      if (
-        !repositoryApprovalEvidencePattern.test(evidenceReference) ||
-        evidenceReference.split('/').includes('..')
-      ) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          `${role} approval evidence must be a repository Markdown path.`
-        );
-      }
-      if (approval.scopeAccepted !== REQUIRED_APPROVAL_SCOPE) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          `${role} approval scope is incomplete.`
-        );
-      }
-      if (
-        JSON.stringify(approval.acknowledgements) !==
-        JSON.stringify(REQUIRED_APPROVAL_ACKNOWLEDGEMENTS)
-      ) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          `${role} approval acknowledgements are incomplete.`
-        );
-      }
-      if (!Array.isArray(approval.conditions)) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          `${role} approval conditions are invalid.`
-        );
-      }
-      approval.conditions.forEach((condition, index) =>
-        requireExactString(condition, `${role}.conditions[${index}]`)
-      );
-      if (!value.evidenceReferences.includes(approval.evidenceReference)) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          `${role} approval evidence is not indexed.`
-        );
-      }
-    }
-  }
-  if (
-    active &&
-    approvals
-      .get('DATABASE_RELIABILITY_REVIEWER')!
-      .reviewer!.toLocaleLowerCase() ===
-      approvals.get('PRODUCTION_OWNER')!.reviewer!.toLocaleLowerCase()
-  ) {
-    throw new AttestationValidationError(
-      'ATTESTATION_INVALID',
-      'Database reliability reviewer must be independent from the Production owner.'
-    );
+  if (!['standard-independent-human', 'pilot-stage-compensating-control'].includes(value.governanceMode)) {
+    throw new AttestationValidationError('ATTESTATION_INVALID', 'Unsupported governance mode.');
   }
   if (active) {
     for (const [label, fingerprint] of Object.entries({
@@ -383,19 +552,45 @@ export function validateLineageAttestation(
       throw new AttestationValidationError('ATTESTATION_INVALID', 'Active attestation requires a review timestamp.');
     }
     const reviewed = parseTimestamp(value.reviewedAt, 'reviewedAt');
-    const approvalTimes = value.approvals.map((approval) =>
-      parseTimestamp(approval.approvedAt, `${approval.role}.approvedAt`)
-    );
+    if (reviewed < created || reviewed > expiry!) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Review timestamp must fall within the attestation lifecycle.'
+      );
+    }
+  }
+  const reviewed = value.reviewedAt === null ? null : parseTimestamp(value.reviewedAt, 'reviewedAt');
+  if (value.governanceMode === 'standard-independent-human') {
+    if (value.pilotStageCompensatingControl !== null) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Standard governance cannot include pilot-stage compensating controls.'
+      );
+    }
+    const approvals = new Map(value.approvals.map((approval) => [approval.role, approval]));
     if (
-      reviewed < created ||
-      reviewed > expiry! ||
-      approvalTimes.some((approved) => approved < created || approved > reviewed)
+      value.approvals.length !== REQUIRED_APPROVAL_ROLES.length ||
+      approvals.size !== REQUIRED_APPROVAL_ROLES.length
+    ) {
+      throw new AttestationValidationError('ATTESTATION_INVALID', 'Approval roles must be unique and exact.');
+    }
+    for (const role of REQUIRED_APPROVAL_ROLES) {
+      const approval = approvals.get(role);
+      if (!approval) throw new AttestationValidationError('ATTESTATION_INVALID', `Missing ${role} approval.`);
+      if (active) validateApproval(approval, role, value, created, reviewed!);
+    }
+    if (
+      active &&
+      approvals.get('DATABASE_RELIABILITY_REVIEWER')!.reviewer!.toLocaleLowerCase() ===
+        approvals.get('PRODUCTION_OWNER')!.reviewer!.toLocaleLowerCase()
     ) {
       throw new AttestationValidationError(
         'ATTESTATION_INVALID',
-        'Approval and review timestamps must fall within the attestation lifecycle.'
+        'Database reliability reviewer must be independent from the Production owner.'
       );
     }
+  } else {
+    validatePilotStageGovernance(value, active, created, reviewed, expiry);
   }
 
   if (options.requireActive) {

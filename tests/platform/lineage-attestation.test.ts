@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   AttestationValidationError,
+  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
   REQUIRED_APPROVAL_ACKNOWLEDGEMENTS,
+  REQUIRED_APPROVAL_ROLES,
   REQUIRED_APPROVAL_SCOPE,
   validateLineageAttestation,
   type LineageAttestation
@@ -15,6 +17,8 @@ const pending = JSON.parse(
 
 export function activeAttestation(): LineageAttestation {
   const value = structuredClone(pending);
+  value.governanceMode = 'standard-independent-human';
+  value.pilotStageCompensatingControl = null;
   value.status = 'active';
   value.reviewedAt = '2026-07-28T01:00:00.000Z';
   value.expiresAt = '2026-10-26T00:00:00.000Z';
@@ -30,8 +34,8 @@ export function activeAttestation(): LineageAttestation {
     "Niamh O'Sullivan",
     'Patrick McKenna'
   ];
-  value.approvals = value.approvals.map((approval, index) => ({
-    ...approval,
+  value.approvals = REQUIRED_APPROVAL_ROLES.map((role, index) => ({
+    role,
     status: 'approved',
     reviewer: reviewers[index],
     approvedAt: '2026-07-28T01:00:00.000Z',
@@ -46,15 +50,84 @@ export function activeAttestation(): LineageAttestation {
   return value;
 }
 
+function activePilotStageAttestation(): LineageAttestation {
+  const value = structuredClone(pending);
+  value.status = 'active';
+  value.reviewedAt = '2026-07-28T01:00:00.000Z';
+  value.expiresAt = '2026-10-26T00:00:00.000Z';
+  value.relatedMigration.failedRecord.id = '11111111-1111-4111-8111-111111111111';
+  value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
+  value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
+  value.schema.preMigrationFingerprint = 'b'.repeat(64);
+  value.schema.postMigrationFingerprint = 'c'.repeat(64);
+  value.schema.freshHeadFingerprint = 'c'.repeat(64);
+  const evidenceReference = 'docs/approvals/ADR0024-pilot-production-owner.md';
+  value.evidenceReferences.push(evidenceReference);
+  value.approvals = [{
+    role: 'PRODUCTION_OWNER',
+    status: 'approved',
+    reviewer: 'Patrick McKenna',
+    approvedAt: value.reviewedAt,
+    evidenceReference,
+    scopeAccepted: REQUIRED_APPROVAL_SCOPE,
+    acknowledgements: [...REQUIRED_APPROVAL_ACKNOWLEDGEMENTS],
+    conditions: []
+  }];
+  const commonCapture = {
+    artifactSha256: 'd'.repeat(64),
+    deterministicEvidenceDigest: 'e'.repeat(64),
+    repositoryRevision: '1'.repeat(40),
+    changeId: 'CLADA-CHG-ADR0024-PILOT-001',
+    databaseFingerprint: 'db_4e1d3bd23cff6801' as const,
+    connectedDatabaseName: 'clada-production',
+    operator: 'Patrick McKenna' as const,
+    restorePointReference: 'NEON-PITR-2026-07-28T00:30:00.000Z',
+    schemaFingerprint: 'b'.repeat(64),
+    namedAssertionsVersion: 'adr-0024-catalog-assertions/v2' as const
+  };
+  value.pilotStageCompensatingControl!.activatedAt = value.reviewedAt;
+  value.pilotStageCompensatingControl!.captures = [
+    { ...commonCapture, artifactReference: 'CHANGE-001/CAPTURE-1' },
+    { ...commonCapture, artifactReference: 'CHANGE-001/CAPTURE-2', artifactSha256: 'f'.repeat(64) }
+  ];
+  value.pilotStageCompensatingControl!.repeatedDeterministicFieldsMatch = true;
+  return value;
+}
+
 test('checked-in attestation is complete enough to review but inactive by design', () => {
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.reviewedAt, null);
   assert.equal(pending.expiresAt, null);
+  assert.equal(pending.governanceMode, 'pilot-stage-compensating-control');
+  assert.equal(
+    pending.pilotStageCompensatingControl?.accountabilityAcknowledgement,
+    PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
+  );
+  assert.deepEqual(pending.approvals, []);
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),
     (error: unknown) =>
       error instanceof AttestationValidationError && error.code === 'ATTESTATION_INACTIVE'
   );
+});
+
+test('pilot-stage mode activates only with exact compensating controls and Patrick accountability', () => {
+  const active = activePilotStageAttestation();
+  assert.equal(validateLineageAttestation(active, { requireActive: true }).status, 'active');
+
+  const mismatched = activePilotStageAttestation();
+  mismatched.pilotStageCompensatingControl!.captures[1].changeId = 'DIFFERENT-CHANGE';
+  assert.throws(() => validateLineageAttestation(mismatched), /must match exactly/);
+
+  const weakenedStatusRequirement = activePilotStageAttestation();
+  weakenedStatusRequirement.pilotStageCompensatingControl!.requiredProductionStatusExitCode =
+    0 as never;
+  assert.throws(() => validateLineageAttestation(weakenedStatusRequirement), /must be exact/);
+
+  const fakeHumanReviewer = activePilotStageAttestation();
+  fakeHumanReviewer.pilotStageCompensatingControl!.independentHumanTechnicalReviewer =
+    'ChatGPT' as never;
+  assert.throws(() => validateLineageAttestation(fakeHumanReviewer), /must be exact/);
 });
 
 test('active attestation requires exact approvals and non-expired lifecycle', () => {

@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-07-29 |
 
 ## Sprint
 
@@ -31,13 +31,17 @@ query or live capture. A separate operational PR must capture evidence and
 activate the attestation; a later execution PR must apply and verify the
 migration. The attestation and release blocker remain unchanged.
 
-Draft PR #45 stopped before Production access because its approved change ID,
-named operator, distinct independent reviewer, current restore-point reference,
-controlled Production connection metadata and genuine human approvals were not
-available. The attestation remains pending, no capture or Production status
-command ran, and the release blocker remains unchanged. Its operational
-readiness checklist is the single resume package; completing it will not
-authorise the later Production migration execution or application deployment.
+Draft PR #45 now records the temporary pilot-stage operating model: Patrick
+McKenna is CEO, Production Owner, Production Operator, Recovery Owner and final
+accountable approver; no independent human technical reviewer is currently
+available; and AI-assisted CTO review is a method rather than a human approval.
+The narrow compensating-control mode applies only to two read-only Production
+captures, attestation activation and exact blocked status verification. The
+approved change ID, restore evidence, controlled connection metadata, capture
+artifacts and activation evidence remain pending. No Production capture or
+status command ran and the release blocker remains unchanged. Preview lineage
+is repaired and strict. This does not authorise migration execution,
+application deployment or alias movement.
 
 ## Objective
 

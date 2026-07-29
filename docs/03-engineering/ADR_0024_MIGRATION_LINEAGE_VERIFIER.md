@@ -237,7 +237,8 @@ both Production deployment and migration.
 Preserve secret-free JSON and the exit code. Do not retry an ambiguous
 preflight, run raw Prisma deploy, resolve a migration, push schema, edit the
 ledger, apply manual SQL or bypass the gate. Follow the migration-history
-incident runbook with the incident owner and independent reviewer.
+incident runbook with the incident owner and the reviewer required by the
+selected explicit governance mode.
 
 ## PR #44 Evidence-Capture Tooling Preparation
 
@@ -247,17 +248,22 @@ attestation correctly blocks `production-status` before a database read and
 the schema-only command does not retain exact normalized ledger records.
 
 The capture command remains fail closed. It requires the exact Production
-identity, a named operator, a distinct independent reviewer, an approved
-read-only change ID and a restore-point evidence reference. It uses the same
-fixed queries and read-only repeatable-read transactions, emits log digests
-without raw logs, produces a deterministic evidence digest and stops when its
-two internal captures differ.
+identity, explicit governance mode, named operator, approved read-only change
+ID and restore-point evidence reference. Standard mode requires a distinct
+independent reviewer. Pilot-stage mode requires Patrick McKenna as operator,
+prohibits an invented reviewer and requires his exact accountability
+acknowledgement. It uses the same fixed queries and read-only repeatable-read
+transactions, emits log digests without raw logs, produces a deterministic
+evidence digest and stops when its two internal captures differ.
 
-Active validation rejects placeholder reviewer/evidence values, missing or
-duplicate roles, unindexed or missing repository evidence, altered approval
-scope/acknowledgements, approval timestamps outside the lifecycle and a
-database reliability reviewer who is not independent from the Production
-owner.
+Active standard validation rejects placeholder reviewer/evidence values,
+missing or duplicate roles, unindexed or missing repository evidence, altered
+approval scope/acknowledgements, lifecycle errors and lost reviewer
+independence. Active pilot-stage validation instead requires Patrick McKenna's
+sole human Production-owner approval, two distinct external artifacts and
+digests, exact matching deterministic identity/control/schema fields, exact
+`verified-pending-blocked` exit `20` proof, activation and expiry timestamps,
+and the later qualified-human-review trigger.
 
 The [PR #44 preparation record](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
 defines the retention boundary, disposable fingerprints and outstanding
@@ -267,12 +273,14 @@ operational PR.
 
 ## PR #45 Operational Readiness
 
-PR #45 stopped before Production access and retains its
-[authoritative stop record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md).
+PR #45 remains before Production access and retains its
+[authoritative operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md).
 Its
 [operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
-is the single resume package for the later approved read-only operation. It
-does not change the verifier, capture command or attestation.
+is the single resume package for the later approved read-only operation. PR #45
+adds the narrow dual-mode governance schema and command controls without
+relaxing ledger, schema, identity or status verification. See
+[PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
 
 The stage boundaries are fixed: repository preparation is complete; Production
 evidence and attestation activation belong to PR #45; migration execution

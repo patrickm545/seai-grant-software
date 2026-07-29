@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Leadership |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-29 |
 
 This document defines the official engineering lifecycle for future Clada OS platform releases.
 
@@ -108,6 +108,15 @@ The draft PR should summarize scope, decisions, implementation, migrations, test
 CTO review validates engineering readiness using [CTO_REVIEW_CHECKLIST.md](CTO_REVIEW_CHECKLIST.md).
 
 The CTO may approve, request changes, require additional ADRs, require additional tests, narrow scope, or return the release to architecture.
+
+The temporary PR #45 pilot-stage ADR-0024 governance mode is a narrowly
+documented exception to reviewer availability, not to technical evidence. It
+allows AI-assisted CTO review for that read-only evidence and attestation
+operation while Patrick McKenna remains the sole human final accountable
+approver. It cannot authorise migration execution, deployment, alias movement
+or later changes and must be reviewed at the first-10-pilot-installers/new
+qualified reviewer trigger. Normal independent-human review remains the
+standard lifecycle.
 
 ### CEO Approval
 

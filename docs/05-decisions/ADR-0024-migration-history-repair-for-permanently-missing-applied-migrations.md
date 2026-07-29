@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-07-29 |
 
 ## Context
 
@@ -86,7 +86,8 @@ review-owned attestation containing at least:
 - repository baseline SHA and repository migration inventory hash;
 - versioned schema fingerprint and catalog assertions;
 - incident, ADR, approval and change-record references;
-- date, named operator, independent reviewer and expiry/review policy; and
+- date, named operator, governance mode, accountable approver and expiry/review
+  policy;
 - an explicit statement that the historical SQL is unknown.
 
 The attestation must contain no credential, connection URL, customer data or
@@ -117,9 +118,35 @@ partially matched or wildcard field is invalid.
 | Production schema | Exact approved versioned schema fingerprint plus named catalog assertions |
 
 The deterministic repository manifest hash and Production schema fingerprint
-must be generated, independently reviewed and inserted as exact values before
-the fixed attestation is activated. ADR-0024 supplies no placeholder
-acceptance: missing or unapproved values fail closed.
+must be generated, reviewed under the selected explicit governance mode and
+inserted as exact values before the fixed attestation is activated. ADR-0024
+supplies no placeholder acceptance: missing or unapproved values fail closed.
+
+### Pilot-stage governance exception
+
+The standard `standard-independent-human` mode remains the preferred path and
+retains all four human approval roles and independence rules below. While Clada
+Systems is operating at pilot stage without another qualified human technical
+reviewer, this single attestation may instead use the explicit
+`pilot-stage-compensating-control` mode defined in
+[PR #45 Pilot-Stage Production Governance](../03-engineering/PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
+
+In that mode Patrick McKenna is the CEO, Production Owner, Production
+Operator, Recovery Owner and final accountable human approver. Technical review
+is AI-assisted CTO review based on retained deterministic evidence and
+repository controls; AI is not a human approver. The exception is restricted to
+two fixed read-only evidence captures, attestation activation and exact
+`verified-pending-blocked` status verification. It authorises no migration,
+deployment or alias movement and cannot apply automatically to another change.
+
+Activation requires two complete secret-free external artifacts whose
+repository SHA, change ID, Production identity, connected database name,
+operator, restore evidence, deterministic evidence digest, schema fingerprint
+and assertions match exactly. Both artifact digests and references must be
+recorded. Any mismatch or unknown value stops. Qualified human review becomes
+mandatory before onboarding the first 10 pilot installers or when another
+engineer or qualified external database reviewer joins, whichever occurs
+first, and the attestation remains subject to its maximum 90-day expiry.
 
 ### Attestation-aware gate
 
@@ -173,7 +200,9 @@ table may be accepted.
 
 ### Evidence threshold
 
-Before the attestation can be used, two reviewers must approve evidence that:
+Before the attestation can be used, either the standard independent-human
+reviewers or the explicit pilot-stage compensating-control path must approve
+evidence that:
 
 - the target is the intended Production database;
 - the migration metadata exactly matches the incident record;
@@ -224,7 +253,7 @@ The attestation must record:
 | Lifecycle field | Requirement |
 | --- | --- |
 | Owner | Clada Systems Engineering |
-| Approvers | CTO, database reliability reviewer, security reviewer and Production owner |
+| Approvers | Standard mode: CTO, database reliability reviewer, security reviewer and Production owner. Pilot-stage mode: Patrick McKenna as sole human Production owner and final accountable approver under the mandatory compensating controls. |
 | Creation date | Exact date of the separately approved implementation |
 | Review date | Before every Production database release and at least quarterly |
 | Expiry | No later than 90 days after creation or renewal |
@@ -236,8 +265,10 @@ The attestation must record:
 | Reason | Historical artifact unavailable; operational lineage acceptance only |
 | Evidence references | Investigation, approval, implementation PR and pre/post verification records |
 
-An expired attestation blocks Production migration and deployment until the same
-approvers review and renew it. It must be retired immediately on:
+An expired attestation blocks Production migration and deployment until the
+applicable governance mode is reviewed and renewed. Pilot-stage renewal does
+not defer its first-10-installers/new-reviewer trigger. It must be retired
+immediately on:
 
 - replacement of the Production database;
 - a formal future re-baselining;
@@ -397,16 +428,24 @@ attestation are evidenced.
 
 Before implementation:
 
+Under standard governance:
+
 1. CTO accepts this ADR.
 2. Database reliability reviewer approves the verifier design and tests.
 3. Security reviewer approves identity binding, fail-closed behavior and
    secret-free evidence.
 4. Production owner approves the future change record and recovery point.
 
+Under the temporary pilot-stage mode, Patrick McKenna records the exact
+accountability acknowledgement and sole human Production-owner approval only
+after all deterministic compensating-control evidence exists. No AI system,
+vendor or invented identity is recorded as a human approver.
+
 Before execution:
 
 1. the remediation implementation PR is merged and its exact commit approved;
-2. the runbook preconditions and two-person evidence review pass; and
+2. the runbook preconditions and the selected explicit governance mode pass;
+   and
 3. the pending PR #41 migration receives separate Production execution
    approval.
 

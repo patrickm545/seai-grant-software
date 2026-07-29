@@ -6,11 +6,28 @@
 | Status | Active |
 | Owner | Clada Systems CTO |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-29 |
 
 Use this checklist before every Clada OS platform release is approved for merge.
 
 The CTO may approve, request changes, narrow scope, require additional ADRs, require additional tests, or return the release to architecture.
+
+## Pilot-Stage ADR-0024 Exception
+
+The normal independent-human CTO review path remains the default. PR #45 has a
+single temporary exception because no independent human technical reviewer is
+currently available. For its read-only ADR-0024 evidence and attestation
+operation only, technical review may be AI-assisted when it is grounded in two
+complete matching deterministic capture artifacts, exact repository controls
+and Patrick McKenna's final CEO accountability.
+
+AI is the review method, not the approver. Patrick McKenna is the sole human
+Production Owner and final accountable approver. This exception does not
+authorise migration execution, deployment or alias movement, does not apply to
+later changes and must be reviewed before the first 10 pilot installers or
+when another engineer or qualified external database reviewer joins, whichever
+occurs first. The full controls are in
+[PR #45 Pilot-Stage Production Governance](../03-engineering/PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
 
 ## Architecture
 

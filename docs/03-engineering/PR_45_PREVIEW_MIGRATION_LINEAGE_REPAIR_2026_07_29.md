@@ -165,7 +165,7 @@ and intentionally prevented an application deployment.
 | Initial read-only diagnosis | `dpl_zwmxVkVaLgaJpxXqWZLAULVtcdLv` | Expected diagnostic stop; no write |
 | Complete schema/data diagnosis | `dpl_CDpP626BoFBFG4JeLqCDB7XFcSLU` | Expected diagnostic stop; no write |
 | Guarded rebuild | `dpl_EixUfYtrxQoyhdvp7Gdaf7Edqnga` | Reset and all 16 migrations succeeded; application build intentionally absent |
-| Final Git-backed Preview | `dpl_FQ3VJKsvzgZ7Sw11z9srUJ6KjTUg` | Ready; strict preflight and postflight verified clean |
+| Final Git-backed Preview | `dpl_EKRwycWsgG5SMfbim6ABYQ5FxfX4` | Ready; strict preflight and postflight verified clean |
 
 ## Resulting Ledger
 
@@ -202,7 +202,8 @@ Completed local validation:
 - Prisma schema validation: pass;
 - TypeScript: pass;
 - ESLint: pass;
-- unit, platform and security tests: 281 passed;
+- unit, platform and security tests: 283 passed, including the governance-mode
+  amendment tests;
 - disposable PostgreSQL integration tests: 68 passed after all 16 migrations
   applied to a temporary local PostgreSQL 16 container;
 - temporary PostgreSQL container: removed;
@@ -225,15 +226,16 @@ Git-backed validation:
 - application compilation, type checking, static generation and packaging:
   pass;
 - Git-backed Preview deployment
-  `dpl_FQ3VJKsvzgZ7Sw11z9srUJ6KjTUg`: Ready;
+  `dpl_EKRwycWsgG5SMfbim6ABYQ5FxfX4`: Ready;
 - immutable Preview URL:
-  `https://seai-grant-software-2r262punx-patrick-mc-kennas-projects.vercel.app`.
+  `https://seai-grant-software-k6y4tf2h2-patrick-mc-kennas-projects.vercel.app`.
 
 ## Production Controls Preserved
 
 - PR #45 remains Draft.
-- The fixed Production attestation remains `pending`; its four approvals remain
-  pending and unchanged.
+- The fixed Production attestation remains `pending`; its pilot-stage
+  governance allocation is recorded, but capture, approval and activation
+  evidence remain empty.
 - No Production evidence capture or Production database status command ran.
 - No Production migration, schema/data/ledger change, deployment, promotion or
   alias movement occurred.

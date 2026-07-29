@@ -2,7 +2,10 @@ import { createHash } from 'node:crypto';
 import type { SafeDatabaseIdentity } from './database-safety';
 import { canonicalJson } from './canonical-json';
 import {
+  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
+  PILOT_STAGE_ACCOUNTABLE_PERSON,
   validateLineageAttestation,
+  type GovernanceMode,
   type LineageAttestation
 } from './lineage-attestation';
 import {
@@ -32,27 +35,60 @@ function exactControl(value: string | undefined, label: string) {
 }
 
 export function assertProductionEvidenceControls(input: {
+  governanceMode?: GovernanceMode;
   changeId?: string;
   operator?: string;
   independentReviewer?: string;
   restorePointReference?: string;
+  pilotStageAccountabilityAcknowledgement?: string;
 }) {
-  const controls = {
+  const common = {
     changeId: exactControl(input.changeId, 'Production evidence change ID'),
     operator: exactControl(input.operator, 'Production evidence operator'),
-    independentReviewer: exactControl(
-      input.independentReviewer,
-      'Production evidence independent reviewer'
-    ),
     restorePointReference: exactControl(
       input.restorePointReference,
       'Production restore-point reference'
     )
   };
-  if (controls.operator.toLocaleLowerCase() === controls.independentReviewer.toLocaleLowerCase()) {
+  const governanceMode = input.governanceMode ?? 'standard-independent-human';
+  if (
+    governanceMode !== 'standard-independent-human' &&
+    governanceMode !== 'pilot-stage-compensating-control'
+  ) {
+    throw new Error('Production evidence governance mode is unsupported.');
+  }
+  if (governanceMode === 'pilot-stage-compensating-control') {
+    if (input.independentReviewer?.trim()) {
+      throw new Error(
+        'Pilot-stage compensating-control mode must not identify an independent reviewer who is unavailable.'
+      );
+    }
+    if (common.operator !== PILOT_STAGE_ACCOUNTABLE_PERSON) {
+      throw new Error(`Pilot-stage Production operator must be ${PILOT_STAGE_ACCOUNTABLE_PERSON}.`);
+    }
+    if (input.pilotStageAccountabilityAcknowledgement !== PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT) {
+      throw new Error('Pilot-stage Production owner accountability acknowledgement is incomplete.');
+    }
+    return {
+      governanceMode,
+      ...common,
+      independentReviewer: null,
+      pilotStageAccountabilityAcknowledgement: PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
+    } as const;
+  }
+  const independentReviewer = exactControl(
+    input.independentReviewer,
+    'Production evidence independent reviewer'
+  );
+  if (common.operator.toLocaleLowerCase() === independentReviewer.toLocaleLowerCase()) {
     throw new Error('Production operator and independent reviewer must be different people.');
   }
-  return controls;
+  return {
+    governanceMode,
+    ...common,
+    independentReviewer,
+    pilotStageAccountabilityAcknowledgement: null
+  } as const;
 }
 
 export function captureProductionLineageEvidence(input: {
@@ -78,6 +114,9 @@ export function captureProductionLineageEvidence(input: {
     throw new Error('Production evidence capture is restricted to the pending attestation.');
   }
   validateLineageAttestation(input.attestation);
+  if (input.attestation.governanceMode !== input.controls.governanceMode) {
+    throw new Error('Production evidence governance mode differs from the pending attestation.');
+  }
   if (input.attestation.approvedManifestHash !== input.manifest.manifestHash) {
     throw new Error('Production evidence manifest differs from the pending attestation.');
   }

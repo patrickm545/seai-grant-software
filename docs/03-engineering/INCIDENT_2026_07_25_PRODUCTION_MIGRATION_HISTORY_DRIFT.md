@@ -228,19 +228,21 @@ fingerprints and prepares a fixed read-only command for a later, separately
 approved Production evidence operation.
 
 Production was not queried and no live evidence or approval was retained. The
-attestation remains pending, the incident remains open, Preview remains
-unresolved, the password-reset migration remains unapplied in Production and
-the only live status remains the contained safety state.
+attestation remains pending, the incident remains open, Preview lineage is
+repaired and strict, the password-reset migration remains unapplied in
+Production and the only live status remains the contained safety state.
 
 ## PR #45 Operational Readiness State
 
-PR #45 remains Draft and stopped before Production access because genuine
-operational inputs and approvals were unavailable. Its authoritative stop
-record remains in force. The
+PR #45 remains Draft and before Production access. It now documents the
+temporary pilot-stage compensating-control mode with Patrick McKenna as the
+real human CEO, Production Owner, Production Operator, Recovery Owner and final
+accountable approver. No independent human technical reviewer is currently
+available; AI-assisted CTO review is a method, not a human approval. The
 [operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 now provides the single resume package for change control, human roles,
-restore safety, identity, two captures, comparison, independent review,
-activation and expected exit `20` status verification.
+restore safety, identity, two captures, deterministic comparison, accountable
+review, activation and expected exit `20` status verification.
 
 Repository preparation is complete. Operational evidence and activation remain
 pending. Production migration execution and application deployment remain
@@ -258,3 +260,4 @@ later, separately approved stages.
 - [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
 - [PR #45 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
+- [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

@@ -4,9 +4,9 @@
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
-| Owner | Clada Systems Engineering; Production execution owner Patrick or delegated deployment owner |
+| Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-07-29 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -68,7 +68,14 @@ Missing, wildcard, inferred or partially matching values fail closed.
 | Application reviewer | Confirms previous Ready compatibility and post-release behavior |
 | Recovery owner | Confirms restore point and decides whether provider recovery is required |
 
-The operator and independent reviewer must be different people.
+The normal `standard-independent-human` path requires different Production
+operator and independent reviewer identities. The explicit temporary
+`pilot-stage-compensating-control` path records that no independent human
+technical reviewer is currently available and names Patrick McKenna as CEO,
+Production Owner, Production Operator, Recovery Owner and final accountable
+approver. See
+[PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
+AI-assisted CTO review is a review method, not a human approval identity.
 
 ## Phase-Specific Preconditions
 
@@ -80,7 +87,9 @@ Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
 - [ ] Approved read-only change ID and operation window are recorded.
-- [ ] Named Production operator and different independent reviewer are present.
+- [ ] Governance mode is exact. Standard mode has a different named operator
+      and independent reviewer; pilot-stage mode names Patrick McKenna and
+      records the exact accountability acknowledgement.
 - [ ] Current restore point, retention window, evidence reference and recovery
       owner are recorded.
 - [ ] Production identity is independently verified against
@@ -90,14 +99,17 @@ Before operational evidence capture:
 - [ ] No concurrent deployment, schema change, migration command, maintenance
       operation or alias promotion is in flight.
 - [ ] The fixed attestation remains `pending`.
-- [ ] Preview remains outside scope and receives no exception.
+- [ ] Repaired Preview remains strict, clean and receives no exception.
 
 After capture and before activation:
 
-- [ ] Two external command artifacts and all internal repeat captures match.
+- [ ] Two distinct externally retained complete command artifacts and all
+      internal repeat captures match every deterministic field.
 - [ ] Exact ledger, record IDs, failed-log digest, schema fingerprint, named
       assertions, catalog counts and evidence digest are independently reviewed.
-- [ ] All four genuine attestation approvals and their evidence exist.
+- [ ] Standard mode has all four genuine approvals; pilot-stage mode has
+      Patrick McKenna's sole human Production-owner approval and every
+      mandatory compensating-control field.
 - [ ] Lifecycle timestamps and expiry are valid.
 - [ ] Active-attestation validation and all repository checks pass.
 
@@ -195,9 +207,12 @@ after every exact field is known.
 - **Data effect:** none.
 - **Stop:** any mismatch or insufficient evidence.
 
-The incident owner and independent reviewer sign the evidence. This approval
-accepts the exact lineage under ADR-0024; it does not repair the historical
-ledger or apply a migration.
+Under standard governance, the incident owner and independent reviewer sign the
+evidence. Under pilot-stage governance, Patrick McKenna signs the exact
+accountability acknowledgement and final approval only after two complete
+external artifacts match and their references and SHA-256 digests are
+recorded. Either path accepts the exact lineage under ADR-0024; neither repairs
+the historical ledger nor applies a migration.
 
 ### Stage 2 - Verify the guarded pending state
 
@@ -310,10 +325,15 @@ execution and open a new incident.
 
 ## Attestation Lifecycle And Retirement
 
-Clada Systems Engineering owns the attestation. CTO, database reliability,
-security and Production owners approve creation and renewal. Review occurs
-before every Production database release and at least quarterly. Approval
-expires no later than 90 days after creation or renewal; expiry fails closed.
+Clada Systems Engineering owns the attestation. Standard mode requires CTO,
+database reliability, security and Production-owner approvals. The temporary
+pilot-stage mode makes Patrick McKenna the sole human final accountable
+approver under the fixed compensating controls. Review occurs before every
+Production database release and at least quarterly. Approval expires no later
+than 90 days after creation or renewal; expiry fails closed. The pilot-stage
+exception must additionally be reviewed before onboarding the first 10 pilot
+installers or when another engineer or qualified external database reviewer
+joins, whichever occurs first.
 
 Retire the attestation immediately when the Production database is replaced,
 history is formally re-baselined, the checksum-identical original artifact is
@@ -372,12 +392,14 @@ PR #44 prepares this fixed interface for the later Stage 1 operation:
 pnpm db:lineage:capture-production-evidence
 ```
 
-It requires `PRODUCTION_EVIDENCE_CHANGE_ID`,
-`PRODUCTION_EVIDENCE_OPERATOR`, `PRODUCTION_EVIDENCE_REVIEWER` and
+It requires `PRODUCTION_EVIDENCE_GOVERNANCE_MODE`,
+`PRODUCTION_EVIDENCE_CHANGE_ID`, `PRODUCTION_EVIDENCE_OPERATOR` and
 `PRODUCTION_RESTORE_POINT_REFERENCE` in addition to the existing exact
-Production identity controls. The operator and reviewer values must identify
-different people. These values are evidence metadata, not migration-execution
-authorization.
+Production identity controls. Standard mode also requires
+`PRODUCTION_EVIDENCE_REVIEWER` to identify a different person. Pilot-stage mode
+prohibits a reviewer value, requires operator `Patrick McKenna` and requires
+the exact `PRODUCTION_EVIDENCE_PILOT_ACCOUNTABILITY_ACKNOWLEDGEMENT`. These
+values are evidence metadata, not migration-execution authorization.
 
 Each invocation performs two read-only repeatable-read captures and terminates
 if they differ. In the separate operational PR, run the command twice and

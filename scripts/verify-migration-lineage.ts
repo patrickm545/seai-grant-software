@@ -167,10 +167,16 @@ async function main() {
     const attestation = readFixedJson<LineageAttestation>(attestationPath);
     verifyRepositoryEvidenceReferences(attestation);
     const controls = assertProductionEvidenceControls({
+      governanceMode: process.env.PRODUCTION_EVIDENCE_GOVERNANCE_MODE as
+        | 'standard-independent-human'
+        | 'pilot-stage-compensating-control'
+        | undefined,
       changeId: process.env.PRODUCTION_EVIDENCE_CHANGE_ID,
       operator: process.env.PRODUCTION_EVIDENCE_OPERATOR,
       independentReviewer: process.env.PRODUCTION_EVIDENCE_REVIEWER,
-      restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE
+      restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE,
+      pilotStageAccountabilityAcknowledgement:
+        process.env.PRODUCTION_EVIDENCE_PILOT_ACCOUNTABILITY_ACKNOWLEDGEMENT
     });
     const firstState = await readDatabaseState();
     const firstEvidence = captureProductionLineageEvidence({

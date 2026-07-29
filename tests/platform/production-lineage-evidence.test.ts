@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import type { LineageAttestation } from '../../lib/lineage-attestation';
+import {
+  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
+  type LineageAttestation
+} from '../../lib/lineage-attestation';
 import { assertVerifierEvidenceSecretFree } from '../../lib/lineage-verifier';
 import type { MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
@@ -22,10 +25,11 @@ const pending = JSON.parse(
 
 function controls() {
   return assertProductionEvidenceControls({
+    governanceMode: 'pilot-stage-compensating-control',
     changeId: 'CLADA-CHG-2026-07-28-044',
-    operator: 'Patrick',
-    independentReviewer: 'Independent Reviewer',
-    restorePointReference: 'NEON-PITR-2026-07-28T09:00:00Z'
+    operator: 'Patrick McKenna',
+    restorePointReference: 'NEON-PITR-2026-07-28T09:00:00Z',
+    pilotStageAccountabilityAcknowledgement: PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
   });
 }
 
@@ -215,5 +219,27 @@ test('capture controls require exact distinct human operators and evidence refer
         restorePointReference: 'restore'
       }),
     /different people/
+  );
+  assert.throws(
+    () =>
+      assertProductionEvidenceControls({
+        governanceMode: 'pilot-stage-compensating-control',
+        changeId: 'CLADA-CHG-044',
+        operator: 'Patrick McKenna',
+        independentReviewer: 'Invented Reviewer',
+        restorePointReference: 'restore',
+        pilotStageAccountabilityAcknowledgement: PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
+      }),
+    /must not identify an independent reviewer/
+  );
+  assert.throws(
+    () =>
+      assertProductionEvidenceControls({
+        governanceMode: 'pilot-stage-compensating-control',
+        changeId: 'CLADA-CHG-044',
+        operator: 'Patrick McKenna',
+        restorePointReference: 'restore'
+      }),
+    /accountability acknowledgement/
   );
 });

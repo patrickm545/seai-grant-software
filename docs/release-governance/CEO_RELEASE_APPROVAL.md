@@ -6,11 +6,25 @@
 | Status | Active |
 | Owner | Clada Systems CEO |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-29 |
 
 Use this checklist before a platform release is approved for merge.
 
 CEO approval confirms that the release is worth shipping from a business, customer, commercial, scope, risk, and timing perspective. It does not replace CTO engineering review.
+
+For the temporary PR #45 pilot-stage ADR-0024 exception, Patrick McKenna is
+CEO, Production Owner, Production Operator, Recovery Owner and final
+accountable approver. He must explicitly acknowledge that no independent human
+technical reviewer is currently available. AI-assisted CTO review may support
+his decision through retained deterministic evidence and repository controls,
+but AI is not a human approver.
+
+That exception is limited to read-only Production evidence capture, attestation
+activation and exact blocked status verification. It authorises no migration,
+deployment or alias movement, creates no authority for later changes and must
+be reviewed before the first 10 pilot installers or when another engineer or
+qualified external database reviewer joins, whichever occurs first. See
+[PR #45 Pilot-Stage Production Governance](../03-engineering/PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
 
 ## Customer Value
 

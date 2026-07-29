@@ -9,6 +9,7 @@
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
 | Capture preparation | [PR #44 evidence-capture preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md) |
+| Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
 
 ## Purpose And Authority
 
@@ -23,7 +24,7 @@ alias movement or password-reset request-flow work. The controlled stages are:
 | Stage | Scope | Current state | Authority boundary |
 | --- | --- | --- | --- |
 | Repository preparation | Manifest, verifier, fixed capture command, tests and runbooks | Complete in PRs #43 and #44 | No Production access |
-| Operational evidence and activation | Read-only Production capture, independent review, approvals and fixed attestation edit | PR #45 Draft; stopped before access | Requires this completed checklist and approved read-only change |
+| Operational evidence and activation | Read-only Production capture, deterministic evidence review, approval and fixed attestation edit | PR #45 Draft; pending | Requires this completed checklist and approved read-only change |
 | Production execution | Deliberate application of `20260724180000_password_reset_foundation` | Not started | Requires a different approved change after PR #45 |
 | Application deployment | Build, postflight, deployment and alias promotion | Not started | Requires successful execution and separate release approval |
 
@@ -61,28 +62,33 @@ Production access.
 
 ## Human Roles
 
-Record genuine people and exact approval evidence. Codex, ChatGPT, OpenAI,
-automation and placeholder identities are prohibited.
+Record genuine people and exact approval evidence. Sam, Codex, ChatGPT, OpenAI,
+automation, AI systems and placeholder identities are prohibited as human
+approvers. This operation selects `pilot-stage-compensating-control`; the
+standard independent-human path remains unchanged.
 
 | Required role | Human name | Status | Exact UTC timestamp | Evidence reference |
 | --- | --- | --- | --- | --- |
-| Production Operator |  |  |  |  |
-| Independent Reviewer |  |  |  |  |
-| CTO Approval |  |  |  |  |
-| Database Reliability Reviewer |  |  |  |  |
-| Security Reviewer |  |  |  |  |
-| Production Owner |  |  |  |  |
+| Chief Executive Officer | Patrick McKenna | Allocated; operation pending |  | Governance record |
+| Production Operator | Patrick McKenna | Allocated; operation pending |  | Governance record |
+| Recovery Owner | Patrick McKenna | Allocated; operation pending |  | Governance record |
+| Final Accountable Approver / Production Owner | Patrick McKenna | Approval pending evidence |  |  |
+| Independent Human Technical Reviewer | Unavailable during pilot stage | Exception documented |  | Governance record |
+| Technical review method | AI-assisted CTO review | Method only; not a human approval |  | Deterministic evidence and repository controls |
 
-Independence rules:
+Mode rules:
 
-- [ ] Production Operator and Independent Reviewer are different people.
-- [ ] Database Reliability Reviewer and Production Owner are different people.
-- [ ] Role combinations are permitted only where governance allows them and
-      neither required independence rule is compromised.
-- [ ] Independent Reviewer performs the evidence comparison rather than merely
-      accepting the operator's conclusion.
-- [ ] Every approval is attributable to a human, timestamped and linked to
-      repository and operational evidence.
+- [ ] Governance mode is exactly `pilot-stage-compensating-control`.
+- [ ] Patrick McKenna is recorded exactly as CEO, Production Owner, Production
+      Operator, Recovery Owner and final accountable approver.
+- [ ] Independent human technical reviewer status is accurately recorded as
+      unavailable; no invented reviewer is supplied.
+- [ ] AI-assisted CTO review is recorded as a method and never as a human
+      identity or approval.
+- [ ] Patrick's sole human Production-owner approval is timestamped and linked
+      to repository and operational evidence.
+- [ ] The normal standard path still requires four approvals and retains both
+      independence rules.
 - [ ] Every approver accepts the exact scope
       `ADR-0024 single-incident Production lineage evidence and attestation activation`.
 - [ ] Every approver records conditions explicitly, including an empty list
@@ -95,7 +101,8 @@ Required acknowledgements for each attestation approver:
 - [ ] Schema equivalence is operational evidence only.
 - [ ] No Production migration has been applied.
 - [ ] Production migration execution remains separately approved.
-- [ ] Preview mismatch remains outside scope.
+- [ ] Preview lineage was repaired independently and receives no Production
+      exception.
 
 The operational review must additionally acknowledge that the attestation is
 restricted to this incident and exact Production identity, exit `20` is the
@@ -181,11 +188,16 @@ pnpm db:lineage:capture-production-evidence
 Set the exact approved metadata without printing it:
 
 ```text
+PRODUCTION_EVIDENCE_GOVERNANCE_MODE=pilot-stage-compensating-control
 PRODUCTION_EVIDENCE_CHANGE_ID=<approved-change-id>
-PRODUCTION_EVIDENCE_OPERATOR=<named-human-operator>
-PRODUCTION_EVIDENCE_REVIEWER=<different-named-human-reviewer>
+PRODUCTION_EVIDENCE_OPERATOR=Patrick McKenna
+PRODUCTION_EVIDENCE_PILOT_ACCOUNTABILITY_ACKNOWLEDGEMENT=I acknowledge that no independent human technical reviewer is currently available and accept final accountability for this pilot-stage read-only evidence and attestation operation
 PRODUCTION_RESTORE_POINT_REFERENCE=<exact-evidence-reference>
 ```
+
+Do not set `PRODUCTION_EVIDENCE_REVIEWER` in pilot-stage mode. The command
+rejects an invented or supplied independent reviewer. Standard mode continues
+to require that variable and enforces a different person from the operator.
 
 Do not run manual SQL, ad hoc `psql`, a database console, Prisma deploy,
 `migrate resolve`, `db push`, reset, seed or arbitrary scripts.
@@ -212,7 +224,8 @@ Do not run manual SQL, ad hoc `psql`, a database console, Prisma deploy,
 ### Capture 2
 
 Run the same fixed command again with the same repository SHA, change ID,
-operator, reviewer, restore-point reference, connection and verifier version.
+operator, governance mode, accountability acknowledgement, restore-point
+reference, connection and verifier version.
 
 | Field | Value |
 | --- | --- |
@@ -241,7 +254,8 @@ outside the deterministic digest. These fields must match exactly:
 - [ ] Verifier implementation version.
 - [ ] Manifest version and manifest hash.
 - [ ] Ordered 16-migration inventory: position, name and checksum.
-- [ ] Change ID, operator, reviewer and restore-point reference.
+- [ ] Governance mode, change ID, operator, null independent reviewer, exact
+      accountability acknowledgement and restore-point reference.
 - [ ] Total ledger record count.
 - [ ] Every normalised record ID, migration name and checksum.
 - [ ] Every started, finished and rolled-back timestamp.
@@ -261,8 +275,10 @@ material difference invalidates both artifacts and stops the operation.
 
 ## Evidence Review
 
-The Independent Reviewer completes this section against both external
-artifacts and the repository sources.
+Patrick McKenna completes this section as final accountable approver against
+both external artifacts and the repository sources, supported by the
+AI-assisted CTO review method. The retained artifacts, not an AI identity, are
+the technical evidence.
 
 ### Ledger
 
@@ -329,11 +345,11 @@ artifacts and the repository sources.
 - [ ] Only reviewed secret-free fields needed by the attestation and
       repository evidence record will enter Git.
 
-### Independent Review Record
+### Pilot-Stage Accountable Review Record
 
 | Required field | Value |
 | --- | --- |
-| Reviewer |  |
+| Final accountable reviewer | Patrick McKenna |
 | Review UTC timestamp |  |
 | Capture 1 reference |  |
 | Capture 2 reference |  |
@@ -349,7 +365,7 @@ attestation, accept a caller-supplied path or weaken validation.
 
 Every item below must exist and be exact before changing `status` to `active`:
 
-- [ ] Version `clada-adr-0024-lineage-attestation/v1`.
+- [ ] Version `clada-adr-0024-lineage-attestation/v2`.
 - [ ] Attestation ID `ADR-0024-PRODUCTION-2026-07-25`.
 - [ ] Incident reference
       `ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT`.
@@ -384,13 +400,23 @@ Every item below must exist and be exact before changing `status` to `active`:
 - [ ] Exact reviewed disposable fresh-head fingerprint is present.
 - [ ] Named assertions version remains
       `adr-0024-catalog-assertions/v2`.
-- [ ] Exactly four unique approval objects exist.
-- [ ] Each approval status is `approved`.
-- [ ] Each approval has a genuine reviewer, exact approval timestamp,
+- [ ] Governance mode is exactly `pilot-stage-compensating-control`.
+- [ ] Exactly one human approval object exists for `PRODUCTION_OWNER`, naming
+      Patrick McKenna.
+- [ ] The approval status is `approved` and has an exact approval timestamp,
       repository Markdown evidence reference, exact accepted scope, all six
       acknowledgements and explicit conditions.
-- [ ] Every approval timestamp is between creation and review.
-- [ ] Database Reliability Reviewer remains independent from Production Owner.
+- [ ] The approval timestamp is between creation and review.
+- [ ] Both distinct external artifact references and artifact SHA-256 digests
+      are recorded.
+- [ ] Repository SHA, change ID, Production fingerprint, connected database
+      name, operator, restore reference, deterministic evidence digest, schema
+      fingerprint and named assertion version match between both captures.
+- [ ] Activation timestamp equals the reviewed timestamp and expiry is no later
+      than 90 days after creation.
+- [ ] Later qualified human review is mandatory before the first 10 pilot
+      installers or when another engineer or qualified external database
+      reviewer joins, whichever occurs first.
 - [ ] Every evidence reference is secret-free and exists.
 - [ ] No wildcard, placeholder, alternate migration identity, optional
       acceptance value or unknown active field exists.
@@ -404,9 +430,10 @@ history, apply a migration or authorise Production execution.
 
 ## Production Status Verification
 
-Run this read-only verifier only after both external captures match, the
-Independent Reviewer signs the evidence, every approval is genuine, the fixed
-attestation is active and all local validation passes:
+Run this read-only verifier only after both external captures match, Patrick
+McKenna signs the exact accountability acknowledgement, the sole human
+Production-owner approval is genuine, the fixed attestation is active and all
+local validation passes:
 
 ```text
 pnpm db:status
@@ -454,7 +481,8 @@ execution as a remedy.
 - [ ] Current live deployment remains
       `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`.
 - [ ] Production alias remains unchanged.
-- [ ] Preview remains unresolved, strict and outside scope.
+- [ ] Preview lineage remains repaired, strict, clean and outside the
+      Production exception.
 - [ ] Password-reset request-flow work remains paused.
 - [ ] Incident remains open.
 - [ ] No raw log, credential, token or connection URL entered Git, terminal

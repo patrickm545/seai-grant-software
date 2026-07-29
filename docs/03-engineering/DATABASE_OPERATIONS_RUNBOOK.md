@@ -4,9 +4,9 @@
 | --- | --- |
 | Document ID | ENG-DATABASE-OPERATIONS-RUNBOOK-001 |
 | Status | Active; environment isolation verified, recovery evidence pending |
-| Owner | Clada Systems Engineering; incident and Production execution owner: Patrick or delegated deployment owner |
+| Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner: Patrick McKenna |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-07-29 |
 
 ## Guarded Commands
 
@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | `pnpm db:fingerprint` | Any configured URL | Parses only; does not connect. Prints safe identity. |
 | `pnpm db:status` | Matching environment | Read-only independent lineage status. Production pending status preserves exit `20`. |
-| `pnpm db:lineage:capture-production-evidence` | Production only | Fixed two-pass, repeatable-read evidence capture; requires an approved read-only change and genuine named roles. |
+| `pnpm db:lineage:capture-production-evidence` | Production only | Fixed two-pass, repeatable-read evidence capture; requires an approved read-only change, explicit governance mode and its exact role controls. |
 | `pnpm db:migrate:development` | Development | Prisma `migrate dev`; never Preview or Production. |
 | `pnpm db:migrate:preview` | Preview | Runs guarded status, deploy, then clean status. |
 | `pnpm db:migrate:test` | test | Runs guarded status, deploy, then clean status. |
@@ -45,8 +45,20 @@ PR #43 implements the independent verifier described in
 [ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md).
 `db:status` and guarded deploy now use the independent manifest, ledger and
 schema verifier. The checked-in attestation remains pending and returns exit
-`21`; it cannot accept Production until exact remaining evidence and genuine
-approvals are added in a separate reviewed activation change.
+`21`; it cannot accept Production until exact remaining evidence and the
+approval required by its explicit governance mode are added in a separate
+reviewed activation change.
+
+PR #45 selects the temporary
+`pilot-stage-compensating-control` mode documented in
+[PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
+Patrick McKenna is the real human CEO, Production Owner, Production Operator,
+Recovery Owner and final accountable approver. No independent human technical
+reviewer is currently available; AI-assisted CTO review is a method, not an
+approver. This mode is limited to two read-only captures, activation and exact
+blocked status verification. It authorises no migration, deployment or alias
+movement and must be reviewed before the first 10 pilot installers or when a
+qualified reviewer joins.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 

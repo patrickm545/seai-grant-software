@@ -45,6 +45,7 @@ Avoid introducing new language that treats SolarGRANT Pro as the overall company
 - [00-company](00-company/README.md): Company Handbook covering vision, mission, values, strategy, positioning, customers, competitors, and glossary.
 - [01-platform](01-platform/README.md): Clada OS platform architecture, capability ownership, module composition, evolution policy, and Platform Release 1.x execution roadmap.
 - [01-product](01-product/README.md): platform and module strategy.
+- [04-products](04-products/README.md): commercial product-specific strategy, roadmaps, and product-module direction.
 - [release-governance](release-governance/README.md): release lifecycle, approval gates, release specification template, CTO review, CEO approval, and governance changelog.
 - [02-design](02-design/README.md): product design standards.
 - [release-specifications](release-specifications/README.md): permanent Master Release Specifications for future platform releases.

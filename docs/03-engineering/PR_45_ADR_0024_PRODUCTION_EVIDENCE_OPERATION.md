@@ -3,9 +3,9 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-PRODUCTION-EVIDENCE-OPERATION-2026-07-28 |
-| Status | Draft; pilot-stage governance prepared, operational evidence and activation pending |
+| Status | Draft; first operation stopped before connection, launcher repaired locally, operational evidence and activation pending |
 | Owner | Patrick McKenna |
-| Operation date | Pending |
+| Operation date | First attempt stopped 2026-07-29; any future attempt requires a new approval |
 | Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
@@ -16,14 +16,25 @@
 
 ## Decision
 
-The operation remains at the Phase 2 precondition boundary. No Production
-database connection or query was made. This amendment records an honest
-pilot-stage operating model because no independent human technical reviewer is
-currently available. Patrick McKenna is CEO, Production Owner, Production
-Operator, Recovery Owner and final accountable human approver. The approved
-change ID, current restore-point evidence, controlled guarded Production
-connection metadata, two capture artifacts and activation evidence are still
-unavailable.
+The first authorised operation is closed as a clean stop. It reached the
+Stage 3 Capture 1 launcher but stopped before the fixed repository command
+started and before any Production connection or query. The stopped change ID
+`CHG-2026-07-29-ADR0024-PROD-EVIDENCE` is historical evidence only and must
+never be reused.
+
+| Stop field | Recorded value |
+| --- | --- |
+| Start | 2026-07-29 13:54:55 IST / 12:54:55 UTC |
+| Stop | 2026-07-29 13:59:02 IST / 12:59:02 UTC |
+| Stop stage | Stage 3 - Capture 1 launcher |
+| Root symptom | Node `spawnSync` returned `EINVAL` for Windows `corepack.cmd` |
+| Fixed command | Did not launch |
+| Production connection or query | Not opened or executed |
+| Capture artifact | None created |
+| Production status | Not run |
+| Repository or Production mutation | None |
+| Retry | None |
+| Change ID disposition | Closed; must not be reused |
 
 The fixed attestation remains `pending`. Its governance mode was prepared, but
 no operational evidence or approval evidence was populated and it was not
@@ -37,6 +48,47 @@ The only permitted successful status remains:
 > **Production lineage accepted under ADR-0024 attestation.**
 
 That status has not been reached by this Draft PR.
+
+## Windows Launcher Root Cause And Repair
+
+The stopped operation used a one-off inline Node wrapper whose exact child
+process call resolved the executable string to `corepack.cmd`, passed the
+package-manager arguments as an array and set `shell: false`. The working
+directory and stdio configuration were valid. On this Windows/Node runtime,
+direct process creation cannot execute a batch-file shim, so `spawnSync`
+returned `EINVAL` with `status=null` before Corepack, pnpm or the fixed package
+script could start. The cause was not argument quoting, an invalid working
+directory, unsupported stdio, the verifier or a Production response.
+
+The reviewed repository launcher now resolves exactly one `corepack.cmd` from
+Windows `PATH`, validates the expected adjacent
+`node_modules/corepack/dist/corepack.js`, and invokes that JavaScript entry
+point with the current `process.execPath`. POSIX continues to resolve and
+execute exactly one extensionless `corepack` executable. Both paths pin
+`pnpm@10.11.0`, pass an argument array, set `shell: false`, preserve the child
+environment, stdout, stderr, exit status and signal, and fail closed on missing
+or ambiguous resolution.
+
+The operator entry point
+`node --import tsx scripts/launch-production-evidence-capture.ts` accepts no
+arguments and can invoke only the existing fixed package script
+`db:lineage:capture-production-evidence`. It is a launcher, not a replacement
+verifier. It was not executed during this repair. No `cmd.exe`, PowerShell,
+interpolated command string or general shell fallback was added. Control
+characters in resolved programs or arguments are rejected, and launch errors
+report only a safe OS error code rather than environment values.
+
+The harmless Windows smoke probe invoked only pinned pnpm's `--version`
+operation through the repaired path and returned `10.11.0`. It did not load a
+database URL or run a repository database command.
+
+This repair is not authority to retry. A future attempt requires all of:
+
+- a new change ID;
+- fresh recovery and restore-point verification;
+- review of this launcher fix;
+- a clean worktree at the exact approved SHA; and
+- explicit approval to retry the read-only Production evidence operation.
 
 ## Repository And Deployment Review
 

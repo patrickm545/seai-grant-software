@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-OPERATIONAL-READINESS-2026-07-28 |
-| Status | Ready for completion; not Production authority |
+| Status | First change closed after clean launcher stop; not Production authority |
 | Owner | Clada Systems Engineering |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -17,6 +17,13 @@ Use this single checklist to resume PR #45 only after genuine operational
 inputs become available. Blank cells are intentional and must be completed by
 the authorised humans or from reviewed operational evidence. Do not infer,
 guess or copy stale values into a blank.
+
+The stopped change `CHG-2026-07-29-ADR0024-PROD-EVIDENCE` is closed historical
+evidence. It stopped at the Stage 3 Capture 1 launcher on 2026-07-29 before the
+fixed command launched, before a Production connection, and without an
+artifact, status command, retry or mutation. It must not be entered below or
+reused. A future attempt requires a new change ID, fresh recovery verification,
+a reviewed Windows launcher fix, a clean worktree and explicit retry approval.
 
 Completing this checklist does not authorise migration execution, deployment,
 alias movement or password-reset request-flow work. The controlled stages are:
@@ -48,6 +55,13 @@ Production access.
 
 - [ ] Change ID explicitly authorises two read-only evidence-command
       invocations, evidence review and repository attestation activation.
+- [ ] Change ID is new and is not
+      `CHG-2026-07-29-ADR0024-PROD-EVIDENCE`.
+- [ ] The repaired cross-platform launcher has been reviewed at the exact
+      repository SHA.
+- [ ] Worktree is clean immediately before the authorised attempt.
+- [ ] Recovery and restore-point verification is fresh for the new attempt.
+- [ ] Approval explicitly authorises retry after the recorded launcher stop.
 - [ ] Change ID does not authorise Prisma deploy, SQL, migration execution,
       deployment or alias movement.
 - [ ] Operation date and approved maintenance window are current.
@@ -179,11 +193,22 @@ different.
 
 ## Evidence Capture
 
-The only permitted database command in this stage is:
+The only permitted repository database command in this stage remains:
 
 ```text
 pnpm db:lineage:capture-production-evidence
 ```
+
+On Windows, invoke that exact fixed package script only through the reviewed
+no-argument launcher:
+
+```text
+node --import tsx scripts/launch-production-evidence-capture.ts
+```
+
+The launcher resolves the pinned package manager without a general shell and
+does not accept a replacement command or caller arguments. Do not run this
+entry point until a new change and every precondition above are approved.
 
 Set the exact approved metadata without printing it:
 

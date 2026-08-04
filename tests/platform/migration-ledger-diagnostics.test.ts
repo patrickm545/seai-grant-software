@@ -93,19 +93,26 @@ test('timestamp precision is significant but trailing zero precision is equivale
     assertExactAttestedMigrationRecord(
       normaliseMigrationRecord(
         row({
-          started_at: '2026-04-23T07:04:10.395000Z',
-          finished_at: '2026-04-23T07:04:10.527000Z'
+          started_at: '2026-04-23T07:04:10.395540Z',
+          finished_at: '2026-04-23T07:04:10.527739Z'
         })
       ),
       expected,
       'Database-only migration'
     )
   );
-  const error = mismatch(row({ started_at: '2026-04-23T07:04:10.395001Z' }));
+  const error = mismatch(row({ started_at: '2026-04-23T07:04:10.395541Z' }));
   assert.deepEqual(field(error, 'startedAt').observed, {
     kind: 'string',
-    value: '2026-04-23T07:04:10.395001Z'
+    value: '2026-04-23T07:04:10.395541Z'
   });
+});
+
+test('the superseded millisecond-only expected timestamps fail exact comparison', () => {
+  const started = mismatch(row({ started_at: '2026-04-23T07:04:10.395Z' }));
+  assert.deepEqual(started.report.mismatches.map((item) => item.field), ['startedAt']);
+  const finished = mismatch(row({ finished_at: '2026-04-23T07:04:10.527Z' }));
+  assert.deepEqual(finished.report.mismatches.map((item) => item.field), ['finishedAt']);
 });
 
 test('null and absent rollback state are reported distinctly', () => {

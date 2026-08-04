@@ -104,11 +104,25 @@ test('checked-in attestation is complete enough to review but inactive by design
     PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
   );
   assert.deepEqual(pending.approvals, []);
+  assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
+  assert.equal(pending.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
+  assert.equal(pending.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),
     (error: unknown) =>
       error instanceof AttestationValidationError && error.code === 'ATTESTATION_INACTIVE'
   );
+});
+
+test('migration-record timestamps must already use canonical significant precision', () => {
+  for (const value of [
+    '2026-04-23T07:04:10.395540Z',
+    '2026-04-23T07:04:10.395000Z'
+  ]) {
+    const attestation = structuredClone(pending);
+    attestation.missingMigration.startedAt = value;
+    assert.throws(() => validateLineageAttestation(attestation), /must already be.*canonical/);
+  }
 });
 
 test('pilot-stage mode activates only with exact compensating controls and Patrick accountability', () => {

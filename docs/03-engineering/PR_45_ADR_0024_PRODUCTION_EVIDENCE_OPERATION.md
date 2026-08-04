@@ -92,6 +92,14 @@ is permanently closed and grants no retry, remediation, migration or
 attestation-activation authority. See the
 [R4 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md).
 
+A later repository-only evidence-accuracy amendment established the observed
+R4 timestamps as the canonical normalized values and corrected the pending
+attestation to `2026-04-23T07:04:10.39554Z` and
+`2026-04-23T07:04:10.527739Z`. The amendment used the retained R4 boundary
+artifact (SHA-256
+`b59168be39582cc8854214b5ccc2a9ace6dcb1ced0a23813955485649b9c5196`),
+did not connect to Production and grants no authority for another capture.
+
 The only permitted successful status remains:
 
 > **Production lineage accepted under ADR-0024 attestation.**

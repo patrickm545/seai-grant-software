@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-07-29 |
+| Last reviewed | 2026-08-04 |
 
 ## Context
 
@@ -105,8 +105,8 @@ partially matched or wildcard field is invalid.
 | Missing migration | `20260423093000_application_pack_admin_fields` |
 | Migration ID | `2305f52e-af2f-4717-bc37-a6a88bc1ec33` |
 | Checksum | `affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589` |
-| Started | `2026-04-23T07:04:10.395Z` |
-| Finished | `2026-04-23T07:04:10.527Z` |
+| Started | `2026-04-23T07:04:10.39554Z` |
+| Finished | `2026-04-23T07:04:10.527739Z` |
 | Applied steps | `1` |
 | Rollback/error state | `rolled_back_at IS NULL`; no error log |
 | Related repository migration | `20260428120000_manual_submission_prep` |
@@ -121,6 +121,12 @@ The deterministic repository manifest hash and Production schema fingerprint
 must be generated, reviewed under the selected explicit governance mode and
 inserted as exact values before the fixed attestation is activated. ADR-0024
 supplies no placeholder acceptance: missing or unapproved values fail closed.
+
+The timestamps above are the canonical values established by the closed R4
+read-only evidence record under
+`adr-0024-migration-record-normalization/v1`. The earlier millisecond-only
+values were precision-truncated documentation and are superseded; this
+accuracy amendment does not change Production or authorise another capture.
 
 ### Pilot-stage governance exception
 

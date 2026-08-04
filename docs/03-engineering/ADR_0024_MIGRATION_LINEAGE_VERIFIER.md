@@ -6,7 +6,7 @@
 | Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-08-04 |
 
 ## Purpose And Boundary
 
@@ -117,6 +117,12 @@ non-negative integers. Empty logs normalize to `none`; non-empty logs are not
 emitted and normalize only to a SHA-256 digest. Comparison pins ID, name,
 checksum, start/finish, step count, rollback and log state. It rejects every
 additional, missing, duplicate, failed, unfinished, changed or ambiguous row.
+
+Attested migration-record timestamps must already be canonical under
+`adr-0024-migration-record-normalization/v1`: exactly 3 to 6 fractional digits
+with no insignificant trailing zero. Validation is string-only, so significant
+microseconds are preserved. Expected attestation values are never silently
+normalized before the exact ledger comparison.
 
 The only special states available to an active attestation are the exact
 database-only record and exact two-record

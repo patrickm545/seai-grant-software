@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { canonicalJson } from './canonical-json';
 import type { LineageAttestation, AttestedMigrationRecord } from './lineage-attestation';
 import type { MigrationManifest } from './migration-manifest';
+import { canonicaliseMigrationTimestamp } from './migration-timestamp';
 
 export type MigrationLedgerRow = {
   id: string;
@@ -179,10 +180,11 @@ function mismatchReport(
 function timestamp(value: Date | string | null) {
   if (value === null) return null;
   if (typeof value === 'string') {
-    const match = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.(\d{3,6})Z$/);
-    if (!match) throw new Error('Ledger contains a non-canonical timestamp.');
-    const fraction = match[2].replace(/0+$/, '').padEnd(3, '0');
-    return `${match[1]}.${fraction}Z`;
+    try {
+      return canonicaliseMigrationTimestamp(value);
+    } catch {
+      throw new Error('Ledger contains a non-canonical timestamp.');
+    }
   }
   const date = value;
   if (!Number.isFinite(date.getTime())) throw new Error('Ledger contains an invalid timestamp.');

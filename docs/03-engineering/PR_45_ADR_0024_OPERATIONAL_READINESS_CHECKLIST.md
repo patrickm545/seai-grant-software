@@ -39,6 +39,12 @@ The only permitted successful lineage description after valid activation is:
 
 > **Production lineage accepted under ADR-0024 attestation.**
 
+The pending attestation now pins the canonical R4 database-only migration
+timestamps `2026-04-23T07:04:10.39554Z` and
+`2026-04-23T07:04:10.527739Z`. The closed R4 operation remains historical and
+supplies no retry authority; any complete capture requires a new change ID and
+fresh precondition verification.
+
 ## Change Control
 
 Complete every field against the approved change record immediately before

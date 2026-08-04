@@ -73,8 +73,27 @@ Report version: `adr-0024-migration-record-mismatch/v1`.
 | `finishedAt` | string `2026-04-23T07:04:10.527Z` | string `2026-04-23T07:04:10.527739Z` | Exact canonical UTC ISO-8601 value with significant fractional precision; null and absent are distinct |
 
 No other normalized field was reported as different. R4 establishes only
-that these exact normalized values differ. It does not establish which value
-is correct and provides no authority to edit an expected or observed value.
+that these exact normalized values differ. At operation close it did not
+establish which value was correct and provided no authority to edit an
+expected or observed value.
+
+## Evidence Accuracy Amendment
+
+Subsequent repository-only review of the retained, secret-free R4 boundary
+artifact established that the observed values are the canonical normalized
+ledger values. Under `adr-0024-migration-record-normalization/v1`, the
+governing expected timestamps are therefore corrected from
+`2026-04-23T07:04:10.395Z` to `2026-04-23T07:04:10.39554Z` and from
+`2026-04-23T07:04:10.527Z` to `2026-04-23T07:04:10.527739Z`.
+
+Evidence reference:
+`ADR0024/CHG-2026-08-04-ADR0024-PROD-EVIDENCE-R4/operation-boundary.json`;
+SHA-256:
+`b59168be39582cc8854214b5ccc2a9ace6dcb1ced0a23813955485649b9c5196`.
+The amendment preserves significant fractional digits and removes only
+insignificant trailing zero precision. It does not reopen R4, accept a capture,
+activate the attestation or authorise Production access. A complete capture
+still requires a new authorised operation.
 
 ## Stop Boundary
 

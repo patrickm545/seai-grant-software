@@ -6,7 +6,7 @@
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-07-29 |
+| Last reviewed | 2026-08-04 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -46,8 +46,8 @@ The executable attestation must pin all values in ADR-0024, including:
 - ID `2305f52e-af2f-4717-bc37-a6a88bc1ec33`;
 - checksum
   `affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589`;
-- started `2026-04-23T07:04:10.395Z`, finished
-  `2026-04-23T07:04:10.527Z`, one applied step, no rollback and no error;
+- started `2026-04-23T07:04:10.39554Z`, finished
+  `2026-04-23T07:04:10.527739Z`, one applied step, no rollback and no error;
 - the exact failed/rolled-back and zero-step completed records for
   `20260428120000_manual_submission_prep`;
 - the exact 16-migration manifest at
@@ -57,6 +57,14 @@ The executable attestation must pin all values in ADR-0024, including:
 - the incident, approvals, owner, evidence, creation/review dates and expiry.
 
 Missing, wildcard, inferred or partially matching values fail closed.
+
+The closed R4 boundary artifact
+`ADR0024/CHG-2026-08-04-ADR0024-PROD-EVIDENCE-R4/operation-boundary.json`
+(SHA-256
+`b59168be39582cc8854214b5ccc2a9ace6dcb1ced0a23813955485649b9c5196`)
+established those exact canonical timestamps under
+`adr-0024-migration-record-normalization/v1`. A later capture requires fresh
+authority; this repository accuracy correction supplies none.
 
 ## Roles
 

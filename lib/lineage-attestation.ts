@@ -1,3 +1,5 @@
+import { isCanonicalMigrationTimestamp } from './migration-timestamp';
+
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const fingerprintPattern = /^db_[a-f0-9]{16}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -201,6 +203,17 @@ function parseTimestamp(value: unknown, label: string) {
   return parsed;
 }
 
+function requireCanonicalMigrationTimestamp(value: unknown, label: string) {
+  const exact = requireExactString(value, label);
+  if (!isCanonicalMigrationTimestamp(exact)) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      `${label} must already be an exact canonical UTC timestamp with 3 to 6 fractional digits and no insignificant trailing zero.`
+    );
+  }
+  return exact;
+}
+
 function validateApproval(
   approval: Approval,
   role: Approval['role'],
@@ -401,12 +414,16 @@ function validateRecord(record: AttestedMigrationRecord, label: string, active: 
   if (!sha256Pattern.test(record.checksum)) {
     throw new AttestationValidationError('ATTESTATION_INVALID', `${label}.checksum must be SHA-256.`);
   }
-  parseTimestamp(record.startedAt, `${label}.startedAt`);
-  if (record.finishedAt !== null) parseTimestamp(record.finishedAt, `${label}.finishedAt`);
+  requireCanonicalMigrationTimestamp(record.startedAt, `${label}.startedAt`);
+  if (record.finishedAt !== null) {
+    requireCanonicalMigrationTimestamp(record.finishedAt, `${label}.finishedAt`);
+  }
   if (!Number.isInteger(record.appliedStepsCount) || record.appliedStepsCount < 0) {
     throw new AttestationValidationError('ATTESTATION_INVALID', `${label}.appliedStepsCount is invalid.`);
   }
-  if (record.rolledBackAt !== null) parseTimestamp(record.rolledBackAt, `${label}.rolledBackAt`);
+  if (record.rolledBackAt !== null) {
+    requireCanonicalMigrationTimestamp(record.rolledBackAt, `${label}.rolledBackAt`);
+  }
   if (record.logsState === 'none' && record.logsDigest !== null) {
     throw new AttestationValidationError('ATTESTATION_INVALID', `${label} no-log state cannot have a digest.`);
   }
@@ -482,8 +499,8 @@ export function validateLineageAttestation(
     {
       migrationName: '20260423093000_application_pack_admin_fields',
       checksum: 'affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589',
-      startedAt: '2026-04-23T07:04:10.395Z',
-      finishedAt: '2026-04-23T07:04:10.527Z',
+      startedAt: '2026-04-23T07:04:10.39554Z',
+      finishedAt: '2026-04-23T07:04:10.527739Z',
       appliedStepsCount: 1,
       rolledBackAt: null,
       logsState: 'none'

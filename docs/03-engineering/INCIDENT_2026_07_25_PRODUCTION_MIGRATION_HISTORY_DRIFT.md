@@ -14,7 +14,7 @@
 | Blocked deployment | `dpl_HGdsWDXmfnNYFSyaomEmjDcAnXPZ` |
 | Previous Ready deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Related decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-08-04 |
 
 ## Summary
 
@@ -59,6 +59,13 @@ Containment is therefore:
 | Applied steps | `1` |
 | Rolled back | No |
 | Error log | None |
+
+These values record the initial millisecond-precision understanding. The
+closed R4 read-only evidence record later established canonical normalized
+timestamps `2026-04-23T07:04:10.39554Z` and
+`2026-04-23T07:04:10.527739Z` under
+`adr-0024-migration-record-normalization/v1`. That evidence-accuracy
+clarification changes neither Production nor the incident's open status.
 
 The record proves that Prisma recorded a completed step. It does not prove the
 content of the unavailable SQL or the process that submitted it.

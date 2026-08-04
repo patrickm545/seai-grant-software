@@ -3,9 +3,12 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-PRODUCTION-EVIDENCE-OPERATION-2026-07-28 |
-| Status | Draft; first operation stopped before connection, launcher repaired locally, operational evidence and activation pending |
+| Status | Draft |
 | Owner | Patrick McKenna |
-| Operation date | First attempt stopped 2026-07-29; any future attempt requires a new approval |
+| Review cycle | After every separately authorised ADR-0024 operation |
+| Last reviewed | 2026-08-04 |
+| Operational state | R5 stopped before repository launch; final launcher boundary validated; Production evidence and activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; any future attempt requires a new approval |
 | Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
@@ -16,6 +19,7 @@
 | Exit 70 investigation | [R2 repository root-cause investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md) |
 | R3 operation | [Typed database-only metadata mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md) |
 | R4 operation | [Safe field-level timestamp mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md) |
+| Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
 ## Decision
 
@@ -99,6 +103,21 @@ attestation to `2026-04-23T07:04:10.39554Z` and
 artifact (SHA-256
 `b59168be39582cc8854214b5ccc2a9ace6dcb1ced0a23813955485649b9c5196`),
 did not connect to Production and grants no authority for another capture.
+
+## Fifth Authorised Operation
+
+`CHG-2026-08-04-ADR0024-PROD-EVIDENCE-R5` stopped at the external local
+launcher handoff. Windows PowerShell 5.1/.NET Framework exposed no
+`ProcessStartInfo.ArgumentList` property, so the orchestration wrapper started
+`node.exe` without the intended script or arguments. Node exited `0` with no
+repository output; the wrapper stopped on that impossible condition with exit
+`91`.
+
+The repository launcher, verifier and database client did not execute. No
+Production connection, transaction or query occurred, and no artifact was
+created. R5 was not retried and is permanently closed. The exact investigation
+and harmless smoke boundary are recorded in the
+[final Windows launcher reliability record](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md).
 
 The only permitted successful status remains:
 

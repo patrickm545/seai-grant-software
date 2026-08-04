@@ -24,6 +24,8 @@
     "db:history:verify-base": "node --import tsx scripts/verify-migration-lineage.ts history-verify-base",
     "db:attestation:verify": "node --import tsx scripts/verify-migration-lineage.ts attestation-verify",
     "db:lineage:capture-production-evidence": "node --import tsx scripts/verify-migration-lineage.ts production-evidence-capture",
+    "launcher:smoke": "node --import tsx scripts/smoke-package-manager-launcher.ts",
+    "launcher:smoke:target": "node --import tsx scripts/fixed-launcher-smoke-target.ts --fixed-launcher-smoke-v1",
     "db:migrate:development": "node --import tsx scripts/run-database-command.ts migrate-development",
     "db:migrate:preview": "node --import tsx scripts/run-database-command.ts migrate-preview",
     "db:migrate:test": "node --import tsx scripts/run-database-command.ts migrate-test",

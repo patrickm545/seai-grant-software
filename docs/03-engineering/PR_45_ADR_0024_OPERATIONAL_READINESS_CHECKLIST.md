@@ -3,13 +3,17 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-OPERATIONAL-READINESS-2026-07-28 |
-| Status | First change closed after clean launcher stop; not Production authority |
+| Status | Active |
 | Owner | Clada Systems Engineering |
+| Review cycle | Before every separately authorised ADR-0024 operation |
+| Last reviewed | 2026-08-04 |
+| Operational state | R1-R5 closed; final launcher boundary validated; not Production authority |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
 | Capture preparation | [PR #44 evidence-capture preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md) |
 | Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
+| Final launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
 ## Purpose And Authority
 

@@ -9,6 +9,9 @@ import {
 export const PINNED_PACKAGE_MANAGER = 'pnpm@10.11.0' as const;
 export const FIXED_PRODUCTION_EVIDENCE_SCRIPT =
   'db:lineage:capture-production-evidence' as const;
+export const FIXED_LAUNCHER_SMOKE_SCRIPT = 'launcher:smoke:target' as const;
+export const FIXED_LAUNCHER_SMOKE_ARGUMENT = '--fixed-launcher-smoke-v1' as const;
+export const FIXED_LAUNCHER_SMOKE_MARKER = 'fixed-launcher-smoke-ok/v1' as const;
 
 const controlCharacterPattern = /[\u0000-\u001f\u007f]/;
 
@@ -44,6 +47,15 @@ function exactSafeArgument(value: string, label: string) {
     throw new Error(`${label} contains an unsupported control character.`);
   }
   return value;
+}
+
+export function assertFixedLauncherArgumentVector(arguments_: readonly string[]) {
+  if (!arguments_.length) {
+    throw new Error('FIXED_LAUNCHER_UNSAFE: fixed argument vector is empty.');
+  }
+  return arguments_.map((argument, index) =>
+    exactSafeArgument(argument, `Fixed launcher argument ${index}`)
+  );
 }
 
 function uniqueExistingCandidates(input: {
@@ -153,8 +165,9 @@ function launchFixedArguments(
   const launcher = resolvePinnedPackageManagerLauncher(options);
   const spawn = options.spawn ?? spawnSync;
   const safeProgram = exactSafeArgument(launcher.program, 'Fixed launcher program');
-  const safeArguments = [...launcher.prefixArguments, ...arguments_].map((argument, index) =>
-    exactSafeArgument(argument, `Fixed launcher argument ${index}`)
+  const fixedArguments = assertFixedLauncherArgumentVector(arguments_);
+  const safeArguments = [...launcher.prefixArguments, ...fixedArguments].map(
+    (argument, index) => exactSafeArgument(argument, `Resolved launcher argument ${index}`)
   );
   const result = spawn(safeProgram, safeArguments, {
     cwd: options.cwd ?? process.cwd(),
@@ -193,4 +206,13 @@ export function launchHarmlessPackageManagerVersionProbe(
   options: PackageManagerLaunchOptions = {}
 ) {
   return launchFixedArguments(['--version'], options);
+}
+
+export function launchFixedLauncherSmoke(
+  options: PackageManagerLaunchOptions = {}
+) {
+  return launchFixedArguments(
+    ['--silent', 'run', FIXED_LAUNCHER_SMOKE_SCRIPT],
+    options
+  );
 }

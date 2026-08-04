@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { SpawnSyncReturns } from 'node:child_process';
 import {
+  assertFixedLauncherArgumentVector,
+  FIXED_LAUNCHER_SMOKE_SCRIPT,
   FIXED_PRODUCTION_EVIDENCE_SCRIPT,
+  launchFixedLauncherSmoke,
   launchFixedProductionEvidenceCapture,
   launchHarmlessPackageManagerVersionProbe,
   resolvePinnedPackageManagerLauncher,
@@ -82,6 +85,65 @@ test('Windows fixed capture launch preserves exact arguments without a shell', (
   });
 });
 
+test('fixed smoke uses the same Windows executable and exact argv boundary', () => {
+  let observed:
+    | { program: string; arguments_: readonly string[]; shell: string | boolean | undefined }
+    | undefined;
+  launchFixedLauncherSmoke({
+    ...windowsDependencies(),
+    spawn: (program, arguments_, options) => {
+      observed = { program, arguments_, shell: options.shell };
+      return spawnResult({ stdout: 'fixed-launcher-smoke-ok/v1\n' });
+    }
+  });
+  assert.deepEqual(observed, {
+    program: 'C:\\Runtime\\node.exe',
+    arguments_: [
+      'C:\\Node\\node_modules\\corepack\\dist\\corepack.js',
+      'pnpm@10.11.0',
+      '--silent',
+      'run',
+      FIXED_LAUNCHER_SMOKE_SCRIPT
+    ],
+    shell: false
+  });
+});
+
+test('PowerShell, cmd, and Windows Terminal environment markers cannot change argv', () => {
+  for (const env of [
+    { PSModulePath: 'C:\\PowerShell', SHELL: 'powershell.exe' },
+    { ComSpec: 'C:\\Windows\\System32\\cmd.exe' },
+    { WT_SESSION: 'terminal-session', TERM_PROGRAM: 'vscode' }
+  ]) {
+    let observedArguments: readonly string[] | undefined;
+    let observedShell: string | boolean | undefined;
+    launchFixedLauncherSmoke({
+      ...windowsDependencies(),
+      env: { ...process.env, ...env },
+      spawn: (_program, arguments_, options) => {
+        observedArguments = arguments_;
+        observedShell = options.shell;
+        return spawnResult({ stdout: 'fixed-launcher-smoke-ok/v1\n' });
+      }
+    });
+    assert.deepEqual(observedArguments, [
+      'C:\\Node\\node_modules\\corepack\\dist\\corepack.js',
+      'pnpm@10.11.0',
+      '--silent',
+      'run',
+      FIXED_LAUNCHER_SMOKE_SCRIPT
+    ]);
+    assert.equal(observedShell, false);
+  }
+});
+
+test('an impossible empty fixed argv fails before process creation', () => {
+  assert.throws(
+    () => assertFixedLauncherArgumentVector([]),
+    /fixed argument vector is empty/
+  );
+});
+
 test('POSIX keeps direct Corepack execution and the pinned package manager', () => {
   const launcher = resolvePinnedPackageManagerLauncher({
     platform: 'linux',
@@ -92,6 +154,22 @@ test('POSIX keeps direct Corepack execution and the pinned package manager', () 
   });
   assert.deepEqual(launcher, {
     program: '/usr/local/bin/corepack',
+    prefixArguments: ['pnpm@10.11.0'],
+    shell: false,
+    mechanism: 'posix-corepack-executable'
+  });
+});
+
+test('macOS uses the identical POSIX executable and argv architecture', () => {
+  const launcher = resolvePinnedPackageManagerLauncher({
+    platform: 'darwin',
+    pathValue: '/opt/homebrew/bin:/usr/bin',
+    execPath: '/usr/bin/node',
+    exists: (path) => path === '/opt/homebrew/bin/corepack',
+    realpath: (path) => path
+  });
+  assert.deepEqual(launcher, {
+    program: '/opt/homebrew/bin/corepack',
     prefixArguments: ['pnpm@10.11.0'],
     shell: false,
     mechanism: 'posix-corepack-executable'

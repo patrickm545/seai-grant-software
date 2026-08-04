@@ -15,6 +15,7 @@
 | Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
 | Exit 70 investigation | [R2 repository root-cause investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md) |
 | R3 operation | [Typed database-only metadata mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md) |
+| R4 operation | [Safe field-level timestamp mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md) |
 
 ## Decision
 
@@ -73,6 +74,23 @@ No claim is made about which field differed. R3 is permanently closed and must
 not be retried or reused. Another Production operation is prohibited until the
 field-level secret-safe diagnostic amendment is reviewed and separately
 approved. See the [R3 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md).
+
+## Fourth Authorised Operation
+
+The diagnostic-only operation
+`CHG-2026-08-04-ADR0024-PROD-EVIDENCE-R4` invoked the fixed launcher exactly
+once at approved head `31d5a73cb820d12e0a8904c06244dfa443865126` and stopped
+with `LEDGER_MISMATCH`, repository typed exit `25`, during
+`first-evidence-generation`. The safe versioned report identified exactly two
+mismatching fields: `startedAt` and `finishedAt`. Both observed values retain
+significant microsecond precision beyond the pending attestation values.
+
+R4 did not decide which value is correct and did not change the attestation.
+The first read-only fixed query set completed, the second transaction did not
+start, and no complete evidence or deterministic comparison was produced. R4
+is permanently closed and grants no retry, remediation, migration or
+attestation-activation authority. See the
+[R4 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md).
 
 The only permitted successful status remains:
 

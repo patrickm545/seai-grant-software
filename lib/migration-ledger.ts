@@ -26,6 +26,156 @@ export type NormalisedMigrationRecord = {
   logsDigest: string | null;
 };
 
+export const MIGRATION_RECORD_NORMALIZATION_VERSION =
+  'adr-0024-migration-record-normalization/v1' as const;
+export const MIGRATION_RECORD_MISMATCH_REPORT_VERSION =
+  'adr-0024-migration-record-mismatch/v1' as const;
+
+const comparedRecordFields = [
+  'id',
+  'migrationName',
+  'checksum',
+  'startedAt',
+  'finishedAt',
+  'appliedStepsCount',
+  'rolledBackAt',
+  'logsState',
+  'logsDigest'
+] as const satisfies ReadonlyArray<keyof NormalisedMigrationRecord>;
+
+type ComparedRecordField = (typeof comparedRecordFields)[number];
+type MismatchField = ComparedRecordField | 'recordShape';
+type SafeComparedValue =
+  | { kind: 'absent' }
+  | { kind: 'null'; value: null }
+  | { kind: 'string'; value: string }
+  | { kind: 'number'; value: number }
+  | { kind: 'boolean'; value: boolean }
+  | { kind: 'redacted-invalid-format' };
+
+export type MigrationRecordMismatch = {
+  field: MismatchField;
+  expected: SafeComparedValue;
+  observed: SafeComparedValue;
+  comparisonRule: string;
+};
+
+export type MigrationRecordMismatchReport = {
+  reportVersion: typeof MIGRATION_RECORD_MISMATCH_REPORT_VERSION;
+  migrationIdentity: string;
+  normalizationVersion: typeof MIGRATION_RECORD_NORMALIZATION_VERSION;
+  mismatches: MigrationRecordMismatch[];
+};
+
+export class MigrationRecordMismatchError extends Error {
+  constructor(
+    label: string,
+    public readonly report: MigrationRecordMismatchReport
+  ) {
+    super(
+      `${label} metadata differs from the attestation; mismatchReport=${canonicalJson(report)}`
+    );
+    this.name = 'MigrationRecordMismatchError';
+  }
+}
+
+const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const sha256Pattern = /^[a-f0-9]{64}$/;
+const migrationNamePattern = /^\d{14}_[a-z0-9_]+$/;
+const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}Z$/;
+
+function comparisonRule(field: MismatchField) {
+  if (field === 'startedAt' || field === 'finishedAt' || field === 'rolledBackAt') {
+    return 'exact canonical UTC ISO-8601 value with significant fractional precision; null and absent are distinct';
+  }
+  if (field === 'appliedStepsCount') {
+    return 'exact non-negative safe integer; zero and absent are distinct';
+  }
+  if (field === 'logsState') {
+    return 'exact log-state classification: none or sha256';
+  }
+  if (field === 'logsDigest') {
+    return 'exact lowercase SHA-256 digest or null; raw logs are excluded';
+  }
+  if (field === 'recordShape') {
+    return 'exact canonical object shape; unapproved field names and values are excluded';
+  }
+  return 'exact safe string and property presence';
+}
+
+function safeComparedValue(
+  record: Partial<Record<ComparedRecordField, unknown>>,
+  field: ComparedRecordField
+): SafeComparedValue {
+  if (!Object.prototype.hasOwnProperty.call(record, field)) return { kind: 'absent' };
+  const value = record[field];
+  if (value === null) return { kind: 'null', value: null };
+  if (typeof value === 'number') return { kind: 'number', value };
+  if (typeof value === 'boolean') return { kind: 'boolean', value };
+  if (typeof value !== 'string') return { kind: 'redacted-invalid-format' };
+  if (value === '') return { kind: 'string', value };
+
+  const safe =
+    (field === 'id' && uuidPattern.test(value)) ||
+    (field === 'migrationName' && migrationNamePattern.test(value)) ||
+    ((field === 'checksum' || field === 'logsDigest') && sha256Pattern.test(value)) ||
+    ((field === 'startedAt' || field === 'finishedAt' || field === 'rolledBackAt') &&
+      timestampPattern.test(value)) ||
+    (field === 'logsState' && (value === 'none' || value === 'sha256'));
+  return safe ? { kind: 'string', value } : { kind: 'redacted-invalid-format' };
+}
+
+function safeMigrationIdentity(
+  actual: NormalisedMigrationRecord,
+  expected: AttestedMigrationRecord
+) {
+  const expectedValue = safeComparedValue(expected, 'migrationName');
+  if (expectedValue.kind === 'string' && expectedValue.value) return expectedValue.value;
+  const actualValue = safeComparedValue(actual, 'migrationName');
+  return actualValue.kind === 'string' && actualValue.value
+    ? actualValue.value
+    : '[redacted-invalid-format]';
+}
+
+function mismatchReport(
+  actual: NormalisedMigrationRecord,
+  expected: AttestedMigrationRecord
+): MigrationRecordMismatchReport {
+  const mismatches: MigrationRecordMismatch[] = [];
+  for (const field of comparedRecordFields) {
+    const expectedValue = safeComparedValue(expected, field);
+    const observedValue = safeComparedValue(actual, field);
+    const expectedPresent = Object.prototype.hasOwnProperty.call(expected, field);
+    const observedPresent = Object.prototype.hasOwnProperty.call(actual, field);
+    if (
+      expectedPresent === observedPresent &&
+      (!expectedPresent || canonicalJson(expected[field]) === canonicalJson(actual[field]))
+    ) {
+      continue;
+    }
+    mismatches.push({
+      field,
+      expected: expectedValue,
+      observed: observedValue,
+      comparisonRule: comparisonRule(field)
+    });
+  }
+  if (!mismatches.length) {
+    mismatches.push({
+      field: 'recordShape',
+      expected: { kind: 'string', value: 'approved-fields-only' },
+      observed: { kind: 'string', value: 'non-canonical-shape' },
+      comparisonRule: comparisonRule('recordShape')
+    });
+  }
+  return {
+    reportVersion: MIGRATION_RECORD_MISMATCH_REPORT_VERSION,
+    migrationIdentity: safeMigrationIdentity(actual, expected),
+    normalizationVersion: MIGRATION_RECORD_NORMALIZATION_VERSION,
+    mismatches
+  };
+}
+
 function timestamp(value: Date | string | null) {
   if (value === null) return null;
   if (typeof value === 'string') {
@@ -58,10 +208,14 @@ export function normaliseMigrationRecord(row: MigrationLedgerRow): NormalisedMig
   };
 }
 
-function exactRecord(actual: NormalisedMigrationRecord, expected: AttestedMigrationRecord, label: string) {
+export function assertExactAttestedMigrationRecord(
+  actual: NormalisedMigrationRecord,
+  expected: AttestedMigrationRecord,
+  label: string
+) {
   const expectedComparable = { ...expected };
   if (canonicalJson(actual) !== canonicalJson(expectedComparable)) {
-    throw new Error(`${label} metadata differs from the attestation.`);
+    throw new MigrationRecordMismatchError(label, mismatchReport(actual, expected));
   }
 }
 
@@ -95,7 +249,11 @@ export function verifyAttestedLedger(input: {
 
   const missingRecords = grouped.get(input.attestation.missingMigration.migrationName) ?? [];
   if (missingRecords.length !== 1) throw new Error('Attested database-only migration is missing or ambiguous.');
-  exactRecord(missingRecords[0], input.attestation.missingMigration, 'Database-only migration');
+  assertExactAttestedMigrationRecord(
+    missingRecords[0],
+    input.attestation.missingMigration,
+    'Database-only migration'
+  );
 
   const relatedRecords = grouped.get(input.attestation.relatedMigration.name) ?? [];
   if (relatedRecords.length !== 2) throw new Error('Related migration state is missing or ambiguous.');
@@ -104,8 +262,16 @@ export function verifyAttestedLedger(input: {
     (record) => record.finishedAt !== null && record.rolledBackAt === null && record.appliedStepsCount === 0
   );
   if (!failed || !zeroStep || failed === zeroStep) throw new Error('Related migration terminal states differ.');
-  exactRecord(failed, input.attestation.relatedMigration.failedRecord, 'Related failed record');
-  exactRecord(zeroStep, input.attestation.relatedMigration.completedZeroStepRecord, 'Related zero-step record');
+  assertExactAttestedMigrationRecord(
+    failed,
+    input.attestation.relatedMigration.failedRecord,
+    'Related failed record'
+  );
+  assertExactAttestedMigrationRecord(
+    zeroStep,
+    input.attestation.relatedMigration.completedZeroStepRecord,
+    'Related zero-step record'
+  );
 
   const pending: string[] = [];
   for (const migration of input.manifest.migrations) {

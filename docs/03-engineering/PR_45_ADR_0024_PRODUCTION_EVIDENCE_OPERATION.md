@@ -14,6 +14,7 @@
 | Resume checklist | [PR #45 operational readiness](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md) |
 | Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
 | Exit 70 investigation | [R2 repository root-cause investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md) |
+| R3 operation | [Typed database-only metadata mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md) |
 
 ## Decision
 
@@ -57,6 +58,21 @@ The retained generic diagnostic did not include the failing stage or original
 exception. The exact supported findings, retained-evidence limits and
 repository-only diagnostic repair are recorded in the
 [exit 70 investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md).
+
+## Third Authorised Operation
+
+The separate operation
+`CHG-2026-08-04-ADR0024-PROD-EVIDENCE-R3` invoked the repaired fixed launcher
+once and stopped with `LEDGER_MISMATCH`, exit `25`, during
+`first-evidence-generation`. The first read-only fixed query set completed,
+but the database-only migration metadata differed from the pending
+attestation. No complete evidence was emitted and the exact differing field
+was not retained.
+
+No claim is made about which field differed. R3 is permanently closed and must
+not be retried or reused. Another Production operation is prohibited until the
+field-level secret-safe diagnostic amendment is reviewed and separately
+approved. See the [R3 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md).
 
 The only permitted successful status remains:
 

@@ -243,6 +243,39 @@ test('catalog mismatch is classified instead of collapsing to exit 70', () => {
   );
 });
 
+test('database-only metadata mismatch remains exit 25 and emits no complete evidence', () => {
+  const rows = ledgerFixture();
+  const missing = rows.find(
+    (record) => record.migration_name === pending.missingMigration.migrationName
+  )!;
+  missing.checksum = 'f'.repeat(64);
+  let completeEvidence: ReturnType<typeof captureProductionLineageEvidence> | undefined;
+
+  assert.throws(
+    () => {
+      completeEvidence = captureProductionLineageEvidence({
+        environment: 'production',
+        identity: identity(),
+        connectedDatabaseName: 'clada',
+        repositoryRevision: 'e4bde0c21f1e8135a82761ad4ea08d1c89a658eb',
+        manifest,
+        attestation: pending,
+        ledgerRows: rows,
+        catalog: preMigrationCatalog(),
+        controls: controls()
+      });
+    },
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'LEDGER_MISMATCH');
+      assert.equal(exitCodeFor(error), 25);
+      assert.match(error.message, /mismatchReport=/);
+      return true;
+    }
+  );
+  assert.equal(completeEvidence, undefined);
+});
+
 test('capture controls require exact distinct human operators and evidence references', () => {
   assert.throws(
     () =>

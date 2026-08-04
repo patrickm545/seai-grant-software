@@ -214,6 +214,27 @@ external artifacts match and their references and SHA-256 digests are
 recorded. Either path accepts the exact lineage under ADR-0024; neither repairs
 the historical ledger nor applies a migration.
 
+#### Interpreting a migration-record mismatch
+
+Exit `25` remains a hard stop. A diagnostic beginning with
+`mismatchReport=` identifies the migration and lists only approved safe fields
+whose expected and observed values differ. Each value has an explicit kind so
+`null`, `absent`, empty string, zero and false cannot be confused. The report
+also names the fixed comparison rule and normalization version.
+
+Timestamp values are canonical UTC ISO-8601 strings. Three to six fractional
+digits are supported; insignificant trailing zeros are removed while every
+significant microsecond is retained. Raw migration logs are never shown. Only
+the `none` or `sha256` classification and an existing SHA-256 digest may
+appear. A malformed UUID, digest, timestamp or other string is shown as
+`redacted-invalid-format`, not echoed.
+
+Use the report only to prepare a repository investigation. It is not evidence
+that the attestation is wrong, permission to edit an expected value, authority
+to query Production manually or permission to retry. Preserve the failed
+artifact, close the authorized operation and require separate review and
+authorization before any future read-only capture.
+
 ### Stage 2 - Verify the guarded pending state
 
 After PR #45 activation and repository validation, run the approved read-only

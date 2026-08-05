@@ -112,7 +112,7 @@ partially matched or wildcard field is invalid.
 | Related repository migration | `20260428120000_manual_submission_prep` |
 | Related migration checksum | `42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3` |
 | Related failed attempt | Started `2026-04-29T06:01:05.497406Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423504Z`; duplicate `Lead.internalNotes` error |
-| Related completed record | Started and finished `2026-04-29T06:01:38.543Z`; zero applied steps; not rolled back; no error log |
+| Related completed record | Started and finished `2026-04-29T06:01:38.54346Z`; zero applied steps; not rolled back; no error log |
 | Repository baseline | `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed successor commit containing the approved inventory |
 | Repository inventory | Exact names and checksums of all 16 migrations at the baseline, represented by an approved deterministic manifest hash |
 | Production schema | Exact approved versioned schema fingerprint plus named catalog assertions |
@@ -128,6 +128,13 @@ established by the closed R7 read-only evidence record under
 `adr-0024-migration-record-normalization/v1`. Earlier records used
 millisecond-truncated timestamps. These evidence-accuracy amendments do not
 change Production or authorise another capture.
+
+The related completed zero-step timestamps were established by the closed R8
+read-only evidence record under the same normalization version. Earlier
+governing metadata recorded `2026-04-29T06:01:38.543Z`; R8 established
+`2026-04-29T06:01:38.54346Z` for both `startedAt` and `finishedAt`. This
+repository-only correction does not accept lineage or activate the
+attestation, which remains pending with zero captures and zero approvals.
 
 ### Pilot-stage governance exception
 

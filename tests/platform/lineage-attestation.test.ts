@@ -117,11 +117,11 @@ test('checked-in attestation is complete enough to review but inactive by design
   );
   assert.equal(
     pending.relatedMigration.completedZeroStepRecord.startedAt,
-    '2026-04-29T06:01:38.543Z'
+    '2026-04-29T06:01:38.54346Z'
   );
   assert.equal(
     pending.relatedMigration.completedZeroStepRecord.finishedAt,
-    '2026-04-29T06:01:38.543Z'
+    '2026-04-29T06:01:38.54346Z'
   );
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),

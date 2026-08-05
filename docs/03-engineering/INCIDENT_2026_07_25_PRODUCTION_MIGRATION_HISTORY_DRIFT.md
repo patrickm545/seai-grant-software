@@ -110,6 +110,13 @@ millisecond-truncated values. This repository-only evidence correction did not
 modify Production, accept lineage, activate the attestation or close the
 incident.
 
+The closed R8 read-only verifier established the completed zero-step record's
+canonical `startedAt` and `finishedAt` as
+`2026-04-29T06:01:38.54346Z` under the same normalization version. The earlier
+governing value `2026-04-29T06:01:38.543Z` was millisecond-truncated. The R8
+repository-only evidence correction likewise did not modify Production,
+accept lineage, activate the attestation or close the incident.
+
 This explains why fresh databases can reproduce the current intended schema
 from repository history while Production has a different lineage for the four
 columns. It does not establish who applied or resolved either historical

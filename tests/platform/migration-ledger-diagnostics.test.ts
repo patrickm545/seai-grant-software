@@ -22,6 +22,10 @@ const failedExpected: AttestedMigrationRecord = {
   id: '33333333-3333-4333-8333-333333333333',
   logsDigest: createHash('sha256').update(failedLog).digest('hex')
 };
+const completedExpected: AttestedMigrationRecord = {
+  ...structuredClone(attestation.relatedMigration.completedZeroStepRecord),
+  id: '44444444-4444-4444-8444-444444444444'
+};
 
 function row(overrides: Partial<MigrationLedgerRow> = {}): MigrationLedgerRow {
   return {
@@ -84,6 +88,36 @@ function failedMismatch(actualRow: MigrationLedgerRow) {
     return error;
   }
   assert.fail('Expected a failed-record migration mismatch.');
+}
+
+function completedRow(overrides: Partial<MigrationLedgerRow> = {}): MigrationLedgerRow {
+  return {
+    id: completedExpected.id!,
+    migration_name: completedExpected.migrationName,
+    checksum: completedExpected.checksum,
+    started_at: completedExpected.startedAt,
+    finished_at: completedExpected.finishedAt,
+    applied_steps_count: completedExpected.appliedStepsCount,
+    rolled_back_at: completedExpected.rolledBackAt,
+    logs: null,
+    ...overrides
+  };
+}
+
+function completedMismatch(actualRow: MigrationLedgerRow) {
+  try {
+    assertExactAttestedMigrationRecord(
+      normaliseMigrationRecord(actualRow),
+      completedExpected,
+      'Related zero-step record'
+    );
+  } catch (error) {
+    assert.ok(error instanceof MigrationRecordMismatchError);
+    assert.equal(error.report.migrationIdentity, completedExpected.migrationName);
+    assert.equal(error.report.normalizationVersion, MIGRATION_RECORD_NORMALIZATION_VERSION);
+    return error;
+  }
+  assert.fail('Expected a completed zero-step record mismatch.');
 }
 
 function field(error: MigrationRecordMismatchError, name: MigrationRecordMismatch['field']) {
@@ -179,6 +213,54 @@ test('R7 failed-record microseconds are exact and millisecond truncation fails c
     kind: 'string',
     value: '2026-04-29T06:01:38.423504Z'
   });
+});
+
+test('R8 completed zero-step microseconds are exact and millisecond truncation fails closed', () => {
+  assert.doesNotThrow(() =>
+    assertExactAttestedMigrationRecord(
+      normaliseMigrationRecord(completedRow()),
+      completedExpected,
+      'Related zero-step record'
+    )
+  );
+
+  const started = completedMismatch(
+    completedRow({ started_at: '2026-04-29T06:01:38.543Z' })
+  );
+  assert.deepEqual(started.report.mismatches.map((item) => item.field), ['startedAt']);
+  assert.deepEqual(field(started, 'startedAt').expected, {
+    kind: 'string',
+    value: '2026-04-29T06:01:38.54346Z'
+  });
+
+  const finished = completedMismatch(
+    completedRow({ finished_at: '2026-04-29T06:01:38.543Z' })
+  );
+  assert.deepEqual(finished.report.mismatches.map((item) => item.field), ['finishedAt']);
+  assert.deepEqual(field(finished, 'finishedAt').expected, {
+    kind: 'string',
+    value: '2026-04-29T06:01:38.54346Z'
+  });
+
+  assert.equal(completedExpected.appliedStepsCount, 0);
+  assert.equal(completedExpected.rolledBackAt, null);
+  assert.equal(completedExpected.logsState, 'none');
+  assert.deepEqual(attestation.relatedMigration.failedRecord, {
+    id: null,
+    migrationName: '20260428120000_manual_submission_prep',
+    checksum: '42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3',
+    startedAt: '2026-04-29T06:01:05.497406Z',
+    finishedAt: null,
+    appliedStepsCount: 0,
+    rolledBackAt: '2026-04-29T06:01:38.423504Z',
+    logsState: 'sha256',
+    logsDigest: null
+  });
+  assert.equal(attestation.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
+  assert.equal(attestation.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
+  assert.equal(attestation.status, 'pending');
+  assert.equal(attestation.pilotStageCompensatingControl?.captures.length, 0);
+  assert.equal(attestation.approvals.length, 0);
 });
 
 test('null and absent rollback state are reported distinctly', () => {

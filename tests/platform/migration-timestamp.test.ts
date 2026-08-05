@@ -12,7 +12,8 @@ test('migration timestamps preserve every significant fractional digit', () => {
     '2026-04-23T07:04:10.39554Z',
     '2026-04-23T07:04:10.527739Z',
     '2026-04-29T06:01:05.497406Z',
-    '2026-04-29T06:01:38.423504Z'
+    '2026-04-29T06:01:38.423504Z',
+    '2026-04-29T06:01:38.54346Z'
   ]) {
     assert.equal(canonicaliseMigrationTimestamp(value), value);
     assert.equal(isCanonicalMigrationTimestamp(value), true);
@@ -46,5 +47,13 @@ test('migration timestamp normalization is string-only and platform-independent'
   assert.equal(
     JSON.stringify(failedRecordTimestamps.map(canonicaliseMigrationTimestamp)),
     '["2026-04-29T06:01:05.497406Z","2026-04-29T06:01:38.423504Z"]'
+  );
+  const completedRecordTimestamps = [
+    '2026-04-29T06:01:38.54346Z',
+    '2026-04-29T06:01:38.54346Z'
+  ];
+  assert.equal(
+    JSON.stringify(completedRecordTimestamps.map(canonicaliseMigrationTimestamp)),
+    '["2026-04-29T06:01:38.54346Z","2026-04-29T06:01:38.54346Z"]'
   );
 });

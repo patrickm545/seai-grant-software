@@ -144,6 +144,23 @@ connecting to Production. R7 remains closed; no complete evidence, digest,
 attestation activation or Production status resulted. See the
 [R7 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R7.md).
 
+## Eighth Authorised Operation
+
+`CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R8` invoked the fixed direct Node
+launcher exactly once at approved head
+`d3cbb5b76fc4d2608d4efbd486b77466f1457aaa`. The first read-only query set
+completed, then `first-evidence-generation` stopped with `LEDGER_MISMATCH`,
+repository typed exit `25`. Exactly two completed zero-step record fields
+differed: `startedAt` and `finishedAt`.
+
+The retained R8 diagnostic established the canonical value
+`2026-04-29T06:01:38.54346Z` for both fields under
+`adr-0024-migration-record-normalization/v1`. The repository-only accuracy
+amendment replaced the earlier millisecond-truncated governing values without
+connecting to Production. R8 remains closed; no complete evidence, digest,
+attestation activation or Production status resulted. See the
+[R8 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R8.md).
+
 The only permitted successful status remains:
 
 > **Production lineage accepted under ADR-0024 attestation.**

@@ -74,6 +74,14 @@ values were millisecond-truncated. The R7 repository-only accuracy amendment
 changed no Production state, accepted capture, approval or activation status;
 another complete capture requires separate authority.
 
+The closed R8 operation established the completed zero-step record's exact
+`startedAt` and `finishedAt` as `2026-04-29T06:01:38.54346Z` under
+`adr-0024-migration-record-normalization/v1`. Earlier governing metadata used
+the millisecond-truncated value `2026-04-29T06:01:38.543Z`. The amendment was
+repository-only: Production was not accessed or modified, the attestation
+remains pending with zero captures and zero approvals, and another complete
+capture requires fresh separate authority.
+
 ## Roles
 
 | Role | Responsibility |

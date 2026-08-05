@@ -192,17 +192,23 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
   );
   const changedRows = ledgerFixture();
   changedRows[0].checksum = 'f'.repeat(64);
+  let completeEvidence: ReturnType<typeof captureProductionLineageEvidence> | undefined;
   assert.throws(
-    () => captureProductionLineageEvidence({ ...base, ledgerRows: changedRows }),
+    () => {
+      completeEvidence = captureProductionLineageEvidence({ ...base, ledgerRows: changedRows });
+    },
     (error: unknown) => {
       assert.ok(error instanceof LineageVerifierError);
       assert.equal(error.code, 'LEDGER_MISMATCH');
       assert.equal(exitCodeFor(error), 25);
       assert.match(error.message, /not an exact successful application/);
+      assert.match(error.message, /exactSuccessReport=/);
+      assert.match(error.message, /checksum-mismatch/);
       assert.ok(error.cause instanceof Error);
       return true;
     }
   );
+  assert.equal(completeEvidence, undefined);
   assert.throws(
     () =>
       captureProductionLineageEvidence({

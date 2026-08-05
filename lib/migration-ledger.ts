@@ -31,6 +31,8 @@ export const MIGRATION_RECORD_NORMALIZATION_VERSION =
   'adr-0024-migration-record-normalization/v1' as const;
 export const MIGRATION_RECORD_MISMATCH_REPORT_VERSION =
   'adr-0024-migration-record-mismatch/v1' as const;
+export const REPOSITORY_MIGRATION_EXACT_SUCCESS_REPORT_VERSION =
+  'adr-0024-repository-migration-exact-success/v1' as const;
 
 const comparedRecordFields = [
   'id',
@@ -53,6 +55,44 @@ type SafeComparedValue =
   | { kind: 'number'; value: number }
   | { kind: 'boolean'; value: boolean }
   | { kind: 'redacted-invalid-format' };
+
+export type RepositoryMigrationExactSuccessReason =
+  | 'missing-record'
+  | 'duplicate-records'
+  | 'migration-name-mismatch'
+  | 'checksum-mismatch'
+  | 'unfinished'
+  | 'rolled-back'
+  | 'applied-step-count-mismatch'
+  | 'unexpected-log-state'
+  | 'unexpected-log-digest'
+  | 'unexpected-lifecycle-state';
+
+export type RepositoryMigrationExactSuccessFailure = {
+  reason: RepositoryMigrationExactSuccessReason;
+  field: 'recordCount' | ComparedRecordField | 'lifecycle';
+  expected: SafeComparedValue;
+  observed: SafeComparedValue;
+  comparisonRule: string;
+};
+
+export type RepositoryMigrationExactSuccessReport = {
+  reportVersion: typeof REPOSITORY_MIGRATION_EXACT_SUCCESS_REPORT_VERSION;
+  migrationName: string;
+  normalizationVersion: typeof MIGRATION_RECORD_NORMALIZATION_VERSION;
+  recordCount: number;
+  recordIds: SafeComparedValue[];
+  failures: RepositoryMigrationExactSuccessFailure[];
+};
+
+export class RepositoryMigrationExactSuccessError extends Error {
+  constructor(public readonly report: RepositoryMigrationExactSuccessReport) {
+    super(
+      `Repository migration is not an exact successful application: ${report.migrationName}; exactSuccessReport=${canonicalJson(report)}`
+    );
+    this.name = 'RepositoryMigrationExactSuccessError';
+  }
+}
 
 export type MigrationRecordMismatch = {
   field: MismatchField;
@@ -124,6 +164,172 @@ function safeComparedValue(
       timestampPattern.test(value)) ||
     (field === 'logsState' && (value === 'none' || value === 'sha256'));
   return safe ? { kind: 'string', value } : { kind: 'redacted-invalid-format' };
+}
+
+function safeLiteral(value: string): SafeComparedValue {
+  return { kind: 'string', value };
+}
+
+function exactSuccessFailure(
+  reason: RepositoryMigrationExactSuccessReason,
+  field: RepositoryMigrationExactSuccessFailure['field'],
+  expected: SafeComparedValue,
+  observed: SafeComparedValue,
+  rule: string
+): RepositoryMigrationExactSuccessFailure {
+  return { reason, field, expected, observed, comparisonRule: rule };
+}
+
+function lifecycleState(record: NormalisedMigrationRecord) {
+  if (record.finishedAt === null && record.rolledBackAt !== null) return 'unfinished-and-rolled-back';
+  if (record.rolledBackAt !== null) return 'rolled-back';
+  if (record.finishedAt === null) return 'unfinished';
+  return 'finished-not-rolled-back';
+}
+
+export function repositoryMigrationExactSuccessReport(
+  records: NormalisedMigrationRecord[],
+  migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>
+): RepositoryMigrationExactSuccessReport | null {
+  const failures: RepositoryMigrationExactSuccessFailure[] = [];
+  if (records.length === 0) {
+    failures.push(
+      exactSuccessFailure(
+        'missing-record',
+        'recordCount',
+        { kind: 'number', value: 1 },
+        { kind: 'number', value: 0 },
+        'exactly one ledger row must exist for the repository migration'
+      )
+    );
+  } else if (records.length !== 1) {
+    failures.push(
+      exactSuccessFailure(
+        'duplicate-records',
+        'recordCount',
+        { kind: 'number', value: 1 },
+        { kind: 'number', value: records.length },
+        'exactly one ledger row must exist for the repository migration'
+      )
+    );
+  } else {
+    const record = records[0];
+    if (record.migrationName !== migration.name) {
+      failures.push(
+        exactSuccessFailure(
+          'migration-name-mismatch',
+          'migrationName',
+          safeComparedValue({ migrationName: migration.name }, 'migrationName'),
+          safeComparedValue(record, 'migrationName'),
+          'exact repository manifest migration name'
+        )
+      );
+    }
+    if (record.checksum !== migration.checksum) {
+      failures.push(
+        exactSuccessFailure(
+          'checksum-mismatch',
+          'checksum',
+          safeComparedValue({ checksum: migration.checksum }, 'checksum'),
+          safeComparedValue(record, 'checksum'),
+          'exact immutable-manifest SHA-256 checksum'
+        )
+      );
+    }
+    if (record.finishedAt === null) {
+      failures.push(
+        exactSuccessFailure(
+          'unfinished',
+          'finishedAt',
+          safeLiteral('present-valid-canonical-utc-timestamp'),
+          { kind: 'null', value: null },
+          'finishedAt must be a present valid canonical UTC timestamp'
+        )
+      );
+    }
+    if (record.rolledBackAt !== null) {
+      failures.push(
+        exactSuccessFailure(
+          'rolled-back',
+          'rolledBackAt',
+          { kind: 'null', value: null },
+          safeComparedValue(record, 'rolledBackAt'),
+          'rolledBackAt must be null'
+        )
+      );
+    }
+    if (record.appliedStepsCount !== 1) {
+      failures.push(
+        exactSuccessFailure(
+          'applied-step-count-mismatch',
+          'appliedStepsCount',
+          { kind: 'number', value: 1 },
+          safeComparedValue(record, 'appliedStepsCount'),
+          'appliedStepsCount must equal one'
+        )
+      );
+    }
+    if (record.logsState !== 'none') {
+      failures.push(
+        exactSuccessFailure(
+          'unexpected-log-state',
+          'logsState',
+          safeLiteral('none'),
+          safeComparedValue(record, 'logsState'),
+          'normalized logs state must equal none; raw logs are excluded'
+        )
+      );
+    }
+    if (record.logsDigest !== null) {
+      failures.push(
+        exactSuccessFailure(
+          'unexpected-log-digest',
+          'logsDigest',
+          { kind: 'null', value: null },
+          safeComparedValue(record, 'logsDigest'),
+          'normalized logs digest must be null; raw logs are excluded'
+        )
+      );
+    }
+    const observedLifecycle = lifecycleState(record);
+    if (observedLifecycle !== 'finished-not-rolled-back') {
+      failures.push(
+        exactSuccessFailure(
+          'unexpected-lifecycle-state',
+          'lifecycle',
+          safeLiteral('finished-not-rolled-back'),
+          safeLiteral(observedLifecycle),
+          'lifecycle must be finished and not rolled back'
+        )
+      );
+    }
+  }
+  if (!failures.length) return null;
+  return {
+    reportVersion: REPOSITORY_MIGRATION_EXACT_SUCCESS_REPORT_VERSION,
+    migrationName:
+      safeComparedValue({ migrationName: migration.name }, 'migrationName').kind === 'string'
+        ? migration.name
+        : '[redacted-invalid-format]',
+    normalizationVersion: MIGRATION_RECORD_NORMALIZATION_VERSION,
+    recordCount: records.length,
+    recordIds: records
+      .map((record) => safeComparedValue(record, 'id'))
+      .sort((left, right) => {
+        const leftJson = canonicalJson(left);
+        const rightJson = canonicalJson(right);
+        return leftJson < rightJson ? -1 : leftJson > rightJson ? 1 : 0;
+      }),
+    failures
+  };
+}
+
+export function assertExactSuccessfulRepositoryMigration(
+  records: NormalisedMigrationRecord[],
+  migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>
+) {
+  const report = repositoryMigrationExactSuccessReport(records, migration);
+  if (report) throw new RepositoryMigrationExactSuccessError(report);
 }
 
 function safeMigrationIdentity(
@@ -280,20 +486,14 @@ export function verifyAttestedLedger(input: {
     if (migration.name === input.attestation.relatedMigration.name) continue;
     const records = grouped.get(migration.name) ?? [];
     if (!records.length) {
+      const expectedPending =
+        input.mode !== 'production-postflight' &&
+        input.approvedPendingMigrations.includes(migration.name);
+      if (!expectedPending) assertExactSuccessfulRepositoryMigration(records, migration);
       pending.push(migration.name);
       continue;
     }
-    if (records.length !== 1) throw new Error(`Repository migration is ambiguous: ${migration.name}`);
-    const record = records[0];
-    if (
-      record.checksum !== migration.checksum ||
-      record.finishedAt === null ||
-      record.rolledBackAt !== null ||
-      record.appliedStepsCount !== 1 ||
-      record.logsState !== 'none'
-    ) {
-      throw new Error(`Repository migration is not an exact successful application: ${migration.name}`);
-    }
+    assertExactSuccessfulRepositoryMigration(records, migration);
   }
 
   const expectedPending =

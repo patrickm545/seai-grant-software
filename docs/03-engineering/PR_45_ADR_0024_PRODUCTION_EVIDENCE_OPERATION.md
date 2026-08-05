@@ -6,9 +6,9 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-04 |
-| Operational state | R5 stopped before repository launch; final launcher boundary validated; Production evidence and activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; any future attempt requires a new approval |
+| Last reviewed | 2026-08-05 |
+| Operational state | R7 stopped on exact failed-record timestamp precision; corrected evidence remains pending; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R7 closed 2026-08-05; any future attempt requires a new approval |
 | Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
@@ -19,6 +19,7 @@
 | Exit 70 investigation | [R2 repository root-cause investigation](PR_45_ADR_0024_EXIT_70_INVESTIGATION_2026_07_29.md) |
 | R3 operation | [Typed database-only metadata mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md) |
 | R4 operation | [Safe field-level timestamp mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md) |
+| R7 operation | [Failed-record timestamp precision mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R7.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
 ## Decision
@@ -118,6 +119,30 @@ Production connection, transaction or query occurred, and no artifact was
 created. R5 was not retried and is permanently closed. The exact investigation
 and harmless smoke boundary are recorded in the
 [final Windows launcher reliability record](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md).
+
+## Sixth Authorised Operation
+
+`CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R6` stopped during pre-access
+verification because its approved SHA preceded the final launcher repair. No
+Production connection or repository command ran. R6 is permanently closed.
+
+## Seventh Authorised Operation
+
+`CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R7` invoked the fixed direct Node
+launcher exactly once at approved head
+`613363693f897e9666279c06e3a66c2713bc2af6`. The first read-only query set
+completed, then `first-evidence-generation` stopped with `LEDGER_MISMATCH`,
+typed exit `25`. Exactly two related failed-record fields differed:
+`startedAt` and `rolledBackAt`.
+
+The retained R7 diagnostic established canonical values
+`2026-04-29T06:01:05.497406Z` and
+`2026-04-29T06:01:38.423504Z` under
+`adr-0024-migration-record-normalization/v1`. The repository-only accuracy
+amendment replaced the earlier millisecond-truncated governing values without
+connecting to Production. R7 remains closed; no complete evidence, digest,
+attestation activation or Production status resulted. See the
+[R7 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R7.md).
 
 The only permitted successful status remains:
 

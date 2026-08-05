@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-04 |
+| Last reviewed | 2026-08-05 |
 
 ## Context
 
@@ -111,7 +111,7 @@ partially matched or wildcard field is invalid.
 | Rollback/error state | `rolled_back_at IS NULL`; no error log |
 | Related repository migration | `20260428120000_manual_submission_prep` |
 | Related migration checksum | `42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3` |
-| Related failed attempt | Started `2026-04-29T06:01:05.497Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423Z`; duplicate `Lead.internalNotes` error |
+| Related failed attempt | Started `2026-04-29T06:01:05.497406Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423504Z`; duplicate `Lead.internalNotes` error |
 | Related completed record | Started and finished `2026-04-29T06:01:38.543Z`; zero applied steps; not rolled back; no error log |
 | Repository baseline | `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed successor commit containing the approved inventory |
 | Repository inventory | Exact names and checksums of all 16 migrations at the baseline, represented by an approved deterministic manifest hash |
@@ -122,11 +122,12 @@ must be generated, reviewed under the selected explicit governance mode and
 inserted as exact values before the fixed attestation is activated. ADR-0024
 supplies no placeholder acceptance: missing or unapproved values fail closed.
 
-The timestamps above are the canonical values established by the closed R4
-read-only evidence record under
-`adr-0024-migration-record-normalization/v1`. The earlier millisecond-only
-values were precision-truncated documentation and are superseded; this
-accuracy amendment does not change Production or authorise another capture.
+The database-only migration timestamps above were established by the closed
+R4 read-only evidence record. The related failed-record timestamps were
+established by the closed R7 read-only evidence record under
+`adr-0024-migration-record-normalization/v1`. Earlier records used
+millisecond-truncated timestamps. These evidence-accuracy amendments do not
+change Production or authorise another capture.
 
 ### Pilot-stage governance exception
 

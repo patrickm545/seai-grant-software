@@ -6,7 +6,7 @@
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-04 |
+| Last reviewed | 2026-08-05 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -49,7 +49,9 @@ The executable attestation must pin all values in ADR-0024, including:
 - started `2026-04-23T07:04:10.39554Z`, finished
   `2026-04-23T07:04:10.527739Z`, one applied step, no rollback and no error;
 - the exact failed/rolled-back and zero-step completed records for
-  `20260428120000_manual_submission_prep`;
+  `20260428120000_manual_submission_prep`, including failed-record start
+  `2026-04-29T06:01:05.497406Z` and rollback
+  `2026-04-29T06:01:38.423504Z`;
 - the exact 16-migration manifest at
   `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed
   successor;
@@ -65,6 +67,12 @@ The closed R4 boundary artifact
 established those exact canonical timestamps under
 `adr-0024-migration-record-normalization/v1`. A later capture requires fresh
 authority; this repository accuracy correction supplies none.
+
+The closed R7 operation separately established the related failed-record
+timestamps above under the same normalization version. Earlier governing
+values were millisecond-truncated. The R7 repository-only accuracy amendment
+changed no Production state, accepted capture, approval or activation status;
+another complete capture requires separate authority.
 
 ## Roles
 

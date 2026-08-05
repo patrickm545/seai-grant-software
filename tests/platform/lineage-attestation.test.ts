@@ -107,6 +107,22 @@ test('checked-in attestation is complete enough to review but inactive by design
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.equal(pending.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
   assert.equal(pending.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
+  assert.equal(
+    pending.relatedMigration.failedRecord.startedAt,
+    '2026-04-29T06:01:05.497406Z'
+  );
+  assert.equal(
+    pending.relatedMigration.failedRecord.rolledBackAt,
+    '2026-04-29T06:01:38.423504Z'
+  );
+  assert.equal(
+    pending.relatedMigration.completedZeroStepRecord.startedAt,
+    '2026-04-29T06:01:38.543Z'
+  );
+  assert.equal(
+    pending.relatedMigration.completedZeroStepRecord.finishedAt,
+    '2026-04-29T06:01:38.543Z'
+  );
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),
     (error: unknown) =>

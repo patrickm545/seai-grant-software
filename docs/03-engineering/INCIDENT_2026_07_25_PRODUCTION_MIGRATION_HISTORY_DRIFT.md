@@ -14,7 +14,7 @@
 | Blocked deployment | `dpl_HGdsWDXmfnNYFSyaomEmjDcAnXPZ` |
 | Previous Ready deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Related decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
-| Last reviewed | 2026-08-04 |
+| Last reviewed | 2026-08-05 |
 
 ## Summary
 
@@ -101,6 +101,14 @@ Production contains:
 2. a rolled-back ledger status for that failed attempt; and
 3. a later completed record for the same committed migration with zero applied
    steps.
+
+The closed R7 read-only verifier established the failed record's canonical
+timestamps as `2026-04-29T06:01:05.497406Z` started and
+`2026-04-29T06:01:38.423504Z` rolled back under
+`adr-0024-migration-record-normalization/v1`. Earlier records used
+millisecond-truncated values. This repository-only evidence correction did not
+modify Production, accept lineage, activate the attestation or close the
+incident.
 
 This explains why fresh databases can reproduce the current intended schema
 from repository history while Production has a different lineage for the four

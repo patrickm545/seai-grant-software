@@ -512,10 +512,10 @@ export function validateLineageAttestation(
     {
       migrationName: '20260428120000_manual_submission_prep',
       checksum: '42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3',
-      startedAt: '2026-04-29T06:01:05.497Z',
+      startedAt: '2026-04-29T06:01:05.497406Z',
       finishedAt: null,
       appliedStepsCount: 0,
-      rolledBackAt: '2026-04-29T06:01:38.423Z',
+      rolledBackAt: '2026-04-29T06:01:38.423504Z',
       logsState: 'sha256'
     },
     'Related failed record'

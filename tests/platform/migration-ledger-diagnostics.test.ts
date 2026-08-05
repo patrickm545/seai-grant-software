@@ -16,6 +16,12 @@ const attestation = JSON.parse(
   readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
 ) as LineageAttestation;
 const expected = attestation.missingMigration;
+const failedLog = 'synthetic failed migration log';
+const failedExpected: AttestedMigrationRecord = {
+  ...structuredClone(attestation.relatedMigration.failedRecord),
+  id: '33333333-3333-4333-8333-333333333333',
+  logsDigest: createHash('sha256').update(failedLog).digest('hex')
+};
 
 function row(overrides: Partial<MigrationLedgerRow> = {}): MigrationLedgerRow {
   return {
@@ -48,6 +54,36 @@ function mismatch(
     return error;
   }
   assert.fail('Expected a migration-record mismatch.');
+}
+
+function failedRow(overrides: Partial<MigrationLedgerRow> = {}): MigrationLedgerRow {
+  return {
+    id: failedExpected.id!,
+    migration_name: failedExpected.migrationName,
+    checksum: failedExpected.checksum,
+    started_at: failedExpected.startedAt,
+    finished_at: failedExpected.finishedAt,
+    applied_steps_count: failedExpected.appliedStepsCount,
+    rolled_back_at: failedExpected.rolledBackAt,
+    logs: failedLog,
+    ...overrides
+  };
+}
+
+function failedMismatch(actualRow: MigrationLedgerRow) {
+  try {
+    assertExactAttestedMigrationRecord(
+      normaliseMigrationRecord(actualRow),
+      failedExpected,
+      'Related failed record'
+    );
+  } catch (error) {
+    assert.ok(error instanceof MigrationRecordMismatchError);
+    assert.equal(error.report.migrationIdentity, failedExpected.migrationName);
+    assert.equal(error.report.normalizationVersion, MIGRATION_RECORD_NORMALIZATION_VERSION);
+    return error;
+  }
+  assert.fail('Expected a failed-record migration mismatch.');
 }
 
 function field(error: MigrationRecordMismatchError, name: MigrationRecordMismatch['field']) {
@@ -113,6 +149,36 @@ test('the superseded millisecond-only expected timestamps fail exact comparison'
   assert.deepEqual(started.report.mismatches.map((item) => item.field), ['startedAt']);
   const finished = mismatch(row({ finished_at: '2026-04-23T07:04:10.527Z' }));
   assert.deepEqual(finished.report.mismatches.map((item) => item.field), ['finishedAt']);
+});
+
+test('R7 failed-record microseconds are exact and millisecond truncation fails closed', () => {
+  assert.doesNotThrow(() =>
+    assertExactAttestedMigrationRecord(
+      normaliseMigrationRecord(failedRow()),
+      failedExpected,
+      'Related failed record'
+    )
+  );
+
+  const started = failedMismatch(
+    failedRow({ started_at: '2026-04-29T06:01:05.497Z' })
+  );
+  assert.deepEqual(started.report.mismatches.map((item) => item.field), ['startedAt']);
+  assert.deepEqual(field(started, 'startedAt').expected, {
+    kind: 'string',
+    value: '2026-04-29T06:01:05.497406Z'
+  });
+
+  const rolledBack = failedMismatch(
+    failedRow({ rolled_back_at: '2026-04-29T06:01:38.423Z' })
+  );
+  assert.deepEqual(rolledBack.report.mismatches.map((item) => item.field), [
+    'rolledBackAt'
+  ]);
+  assert.deepEqual(field(rolledBack, 'rolledBackAt').expected, {
+    kind: 'string',
+    value: '2026-04-29T06:01:38.423504Z'
+  });
 });
 
 test('null and absent rollback state are reported distinctly', () => {

@@ -7,8 +7,8 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-05 |
-| Operational state | R7 stopped on exact failed-record timestamp precision; corrected evidence remains pending; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R7 closed 2026-08-05; any future attempt requires a new approval |
+| Operational state | R8 stopped on exact completed zero-step timestamp precision; timestamp audit found no further supported correction; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R8 closed 2026-08-05; any future attempt requires a new approval |
 | Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
@@ -20,6 +20,8 @@
 | R3 operation | [Typed database-only metadata mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R3.md) |
 | R4 operation | [Safe field-level timestamp mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md) |
 | R7 operation | [Failed-record timestamp precision mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R7.md) |
+| R8 operation | [Completed zero-step timestamp precision mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R8.md) |
+| Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
 ## Decision

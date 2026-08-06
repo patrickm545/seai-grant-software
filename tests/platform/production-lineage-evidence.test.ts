@@ -60,9 +60,15 @@ function ledgerFixture() {
     )
     .map((migration, index) =>
       row({
-        id: `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
+        id:
+          migration.name === pending.repositoryMigrationChecksumDivergence.migrationName
+            ? pending.repositoryMigrationChecksumDivergence.recordId
+            : `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
         migration_name: migration.name,
-        checksum: migration.checksum,
+        checksum:
+          migration.name === pending.repositoryMigrationChecksumDivergence.migrationName
+            ? pending.repositoryMigrationChecksumDivergence.observedProductionChecksum
+            : migration.checksum,
         started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
         finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
       })
@@ -132,6 +138,7 @@ test('pending attestation can capture exact secret-free Production evidence dete
   assert.deepEqual(first.ledger.pendingMigrations, [
     '20260724180000_password_reset_foundation'
   ]);
+  assert.equal(first.ledger.repositoryChecksumDivergenceResult, 'verified');
   const failed = first.ledger.records.find(
     (record) => record.rolledBackAt === pending.relatedMigration.failedRecord.rolledBackAt
   )!;

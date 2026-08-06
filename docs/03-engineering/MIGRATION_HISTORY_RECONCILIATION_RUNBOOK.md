@@ -6,7 +6,7 @@
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-05 |
+| Last reviewed | 2026-08-06 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -82,6 +82,31 @@ repository-only: Production was not accessed or modified, the attestation
 remains pending with zero captures and zero approvals, and another complete
 capture requires fresh separate authority.
 
+### Exact Repository-Migration Checksum Divergence
+
+The closed R10 operation established that the exact Production record
+`112c6124-f0c2-4b6b-8d02-f6ce835746e3` for
+`20260710120000_identity_organisation_foundation` carries checksum
+`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`,
+while the immutable repository manifest requires
+`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`.
+R10 stopped and did not establish the cause.
+
+The later repository-only classification A investigation reproduced the
+observed checksum by converting only the committed UTF-8/no-BOM file's LF line
+endings to CRLF, retaining the final newline. The exact 6,296-byte candidate
+normalises back to the 6,162-byte Git blob byte-for-byte. Follow the retained
+[investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md) and
+evidence digest; do not recreate candidates during an operation.
+
+Before any later capture, verify attestation v3 still pins the canonical and
+observed checksums as distinct fields, the exact record ID, successful
+lifecycle, Production fingerprint, manifest hash, approved lineage baseline,
+evidence reference/digest and retirement scope. The alternate checksum is
+invalid in Preview, test, development, fresh databases and every other
+migration. It is not an LF/CRLF allow list. Any difference is exit `25` and an
+immediate stop.
+
 ## Roles
 
 | Role | Responsibility |
@@ -110,6 +135,8 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
+- [ ] Attestation v3 checksum-divergence evidence digest and exact Production
+      tuple verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator
       and independent reviewer; pilot-stage mode names Patrick McKenna and

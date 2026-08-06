@@ -1,5 +1,5 @@
 {
-  "version": "clada-adr-0024-lineage-attestation/v2",
+  "version": "clada-adr-0024-lineage-attestation/v3",
   "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
   "status": "pending",
   "incidentReference": "ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT",
@@ -22,6 +22,7 @@
     "docs/03-engineering/INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md",
     "docs/05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md",
     "docs/03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md",
+    "docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json",
     "Draft PR #43 implementation evidence"
   ],
   "environment": "production",
@@ -30,6 +31,30 @@
   "verifierImplementationVersion": "adr-0024-lineage-verifier/v1",
   "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
   "manifestVersion": "clada-migration-manifest/v1",
+  "repositoryMigrationChecksumDivergence": {
+    "migrationName": "20260710120000_identity_organisation_foundation",
+    "recordId": "112c6124-f0c2-4b6b-8d02-f6ce835746e3",
+    "repositoryChecksum": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3",
+    "observedProductionChecksum": "c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714",
+    "checksumDivergenceClassification": "A-exact-alternate-byte-representation-proven",
+    "byteRepresentation": "utf8-no-bom-crlf-with-final-newline",
+    "checksumEvidenceReference": "docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json",
+    "checksumEvidenceSha256": "1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65",
+    "environment": "production",
+    "productionDatabaseFingerprint": "db_4e1d3bd23cff6801",
+    "approvedRepositoryLineageBaseline": "1949ebe495801b26f6f59d2785a6b86b2864b153",
+    "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
+    "expectedLifecycle": {
+      "startedAt": "present-valid-canonical-utc-timestamp",
+      "finishedAt": "present-valid-canonical-utc-timestamp",
+      "appliedStepsCount": 1,
+      "rolledBackAt": null,
+      "logsState": "none",
+      "logsDigest": null
+    },
+    "scope": "Exact ADR-0024 Production historical record only",
+    "retirementCondition": "Retires with ADR-0024 attestation"
+  },
   "missingMigration": {
     "id": "2305f52e-af2f-4717-bc37-a6a88bc1ec33",
     "migrationName": "20260423093000_application_pack_admin_fields",

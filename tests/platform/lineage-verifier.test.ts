@@ -44,9 +44,15 @@ function productionFixture() {
     )
     .map((migration, index) =>
       row({
-        id: `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
+        id:
+          migration.name === attestation.repositoryMigrationChecksumDivergence.migrationName
+            ? attestation.repositoryMigrationChecksumDivergence.recordId
+            : `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
         migration_name: migration.name,
-        checksum: migration.checksum,
+        checksum:
+          migration.name === attestation.repositoryMigrationChecksumDivergence.migrationName
+            ? attestation.repositoryMigrationChecksumDivergence.observedProductionChecksum
+            : migration.checksum,
         started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
         finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
       })
@@ -105,6 +111,7 @@ test('exact synthetic ADR-0024 lineage verifies but status remains pending-block
   assert.equal(evidence.finalDecision, 'verified-pending-blocked');
   assert.deepEqual(evidence.pendingMigrations, ['20260724180000_password_reset_foundation']);
   assert.equal(evidence.attestedDiscrepancy, 'verified');
+  assert.equal(evidence.attestedRepositoryChecksumDivergence, 'verified');
 });
 
 test('exact synthetic deliberate preflight passes and ledger mutations fail closed', () => {
@@ -156,6 +163,20 @@ test('exact synthetic deliberate preflight passes and ledger mutations fail clos
 
 test('wrong database, Preview use, inactive lifecycle, and schema drift fail closed', () => {
   const base = productionFixture();
+  assert.throws(
+    () =>
+      verifyLineage({
+        mode: 'production-status',
+        environment: 'production',
+        identity: productionIdentity(),
+        connectedDatabaseName: 'clada',
+        repositoryBaseline: 'successor',
+        manifest,
+        ledgerRows: base.ledgerRows,
+        catalog: base.catalog
+      }),
+    (error: unknown) => error instanceof LineageVerifierError && error.code === 'IDENTITY_MISMATCH'
+  );
   assert.throws(
     () =>
       verifyLineage({

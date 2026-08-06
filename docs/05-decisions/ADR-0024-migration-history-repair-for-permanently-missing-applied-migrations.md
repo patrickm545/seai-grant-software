@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-05 |
+| Last reviewed | 2026-08-06 |
 
 ## Context
 
@@ -135,6 +135,31 @@ governing metadata recorded `2026-04-29T06:01:38.543Z`; R8 established
 `2026-04-29T06:01:38.54346Z` for both `startedAt` and `finishedAt`. This
 repository-only correction does not accept lineage or activate the
 attestation, which remains pending with zero captures and zero approvals.
+
+#### Exact Production repository-checksum divergence
+
+The closed R10 operation established a checksum-only exact-success mismatch
+for Production record `112c6124-f0c2-4b6b-8d02-f6ce835746e3` on
+`20260710120000_identity_organisation_foundation`. The immutable repository
+checksum is
+`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`;
+the observed Production checksum is
+`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`.
+
+A later repository-only investigation proved classification A: the latter is
+the exact 6,162-byte committed UTF-8/no-BOM SQL mechanically materialised with
+CRLF rather than LF, producing 6,296 bytes while retaining the final newline.
+Reverse normalisation is byte-for-byte exact and changes no SQL token.
+
+The manifest and migration remain canonical and unchanged. Attestation v3 may
+record this singular historical Production tuple only when it also requires
+the exact Production fingerprint, record ID, successful lifecycle, approved
+manifest, approved repository-lineage baseline and retained evidence digest.
+The active verifier must prove both canonical repository integrity and the
+exact observed Production row. This is not a global alternate checksum:
+Preview, test, development, fresh databases, other migrations, other records
+and other fingerprints remain strict. The treatment expires and retires with
+ADR-0024. The attestation remains pending with zero captures and approvals.
 
 ### Pilot-stage governance exception
 

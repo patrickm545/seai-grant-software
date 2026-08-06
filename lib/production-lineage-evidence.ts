@@ -235,7 +235,8 @@ export function captureProductionLineageEvidence(input: {
       records,
       pendingMigrations: ledgerResult.pending,
       appliedRepositoryCount: ledgerResult.appliedRepositoryCount,
-      adr0024PinnedEvidenceResult: 'matched' as const
+      adr0024PinnedEvidenceResult: 'matched' as const,
+      repositoryChecksumDivergenceResult: ledgerResult.repositoryChecksumDivergence
     },
     schema: {
       fingerprintVersion: schema.version,

@@ -4,3 +4,6 @@
 # ADR-0024 inventory hashes the checked-out raw migration bytes. Pin executable
 # migration artifacts to LF so Windows and Linux calculate identical checksums.
 prisma/migrations/**/migration.sql text eol=lf
+
+# Attestation evidence digests hash raw repository bytes across platforms.
+docs/03-engineering/evidence/*.json text eol=lf

@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import { canonicalJson } from './canonical-json';
-import type { LineageAttestation, AttestedMigrationRecord } from './lineage-attestation';
+import {
+  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE,
+  type LineageAttestation,
+  type AttestedMigrationRecord
+} from './lineage-attestation';
 import type { MigrationManifest } from './migration-manifest';
 import { canonicaliseMigrationTimestamp } from './migration-timestamp';
 
@@ -332,6 +336,33 @@ export function assertExactSuccessfulRepositoryMigration(
   if (report) throw new RepositoryMigrationExactSuccessError(report);
 }
 
+function isExactAttestedProductionChecksumDivergence(input: {
+  records: NormalisedMigrationRecord[];
+  migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>;
+  attestation: LineageAttestation;
+}) {
+  const [record] = input.records;
+  const expected = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE;
+  return (
+    (input.attestation.status === 'pending' || input.attestation.status === 'active') &&
+    canonicalJson(input.attestation.repositoryMigrationChecksumDivergence) ===
+      canonicalJson(expected) &&
+    input.attestation.approvedDatabaseFingerprint === expected.productionDatabaseFingerprint &&
+    input.attestation.approvedManifestHash === expected.approvedManifestHash &&
+    input.migration.name === expected.migrationName &&
+    input.migration.checksum === expected.repositoryChecksum &&
+    input.records.length === 1 &&
+    record.id === expected.recordId &&
+    record.migrationName === expected.migrationName &&
+    record.checksum === expected.observedProductionChecksum &&
+    record.finishedAt !== null &&
+    record.rolledBackAt === null &&
+    record.appliedStepsCount === expected.expectedLifecycle.appliedStepsCount &&
+    record.logsState === expected.expectedLifecycle.logsState &&
+    record.logsDigest === expected.expectedLifecycle.logsDigest
+  );
+}
+
 function safeMigrationIdentity(
   actual: NormalisedMigrationRecord,
   expected: AttestedMigrationRecord
@@ -482,6 +513,7 @@ export function verifyAttestedLedger(input: {
   );
 
   const pending: string[] = [];
+  let repositoryChecksumDivergence: 'not-applicable' | 'verified' = 'not-applicable';
   for (const migration of input.manifest.migrations) {
     if (migration.name === input.attestation.relatedMigration.name) continue;
     const records = grouped.get(migration.name) ?? [];
@@ -493,6 +525,23 @@ export function verifyAttestedLedger(input: {
       pending.push(migration.name);
       continue;
     }
+    if (migration.name === PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE.migrationName) {
+      if (
+        !isExactAttestedProductionChecksumDivergence({
+          records,
+          migration,
+          attestation: input.attestation
+        })
+      ) {
+        const report = repositoryMigrationExactSuccessReport(records, migration);
+        if (report) throw new RepositoryMigrationExactSuccessError(report);
+        throw new Error(
+          'Production repository checksum divergence record differs from the exact ADR-0024 attestation.'
+        );
+      }
+      repositoryChecksumDivergence = 'verified';
+      continue;
+    }
     assertExactSuccessfulRepositoryMigration(records, migration);
   }
 
@@ -501,5 +550,13 @@ export function verifyAttestedLedger(input: {
   if (JSON.stringify(pending) !== JSON.stringify(expectedPending)) {
     throw new Error(`Pending migration set differs: ${pending.join(', ') || 'none'}`);
   }
-  return { rows, pending, appliedRepositoryCount: input.manifest.migrations.length - pending.length };
+  if (repositoryChecksumDivergence !== 'verified') {
+    throw new Error('Production repository checksum divergence record was not verified.');
+  }
+  return {
+    rows,
+    pending,
+    appliedRepositoryCount: input.manifest.migrations.length - pending.length,
+    repositoryChecksumDivergence
+  };
 }

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
@@ -76,6 +77,17 @@ function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
         `Repository evidence reference does not exist: ${reference}`
       );
     }
+  }
+  const checksumEvidence = attestation.repositoryMigrationChecksumDivergence;
+  const checksumEvidencePath = resolve(repositoryRoot, checksumEvidence.checksumEvidenceReference);
+  const checksumEvidenceSha256 = createHash('sha256')
+    .update(readFileSync(checksumEvidencePath))
+    .digest('hex');
+  if (checksumEvidenceSha256 !== checksumEvidence.checksumEvidenceSha256) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Production repository checksum divergence evidence digest differs.'
+    );
   }
 }
 

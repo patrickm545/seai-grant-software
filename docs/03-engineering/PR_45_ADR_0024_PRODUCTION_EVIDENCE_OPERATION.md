@@ -6,9 +6,9 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-05 |
-| Operational state | R8 stopped on exact completed zero-step timestamp precision; timestamp audit found no further supported correction; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R8 closed 2026-08-05; any future attempt requires a new approval |
+| Last reviewed | 2026-08-06 |
+| Operational state | R10 closed on exact repository-migration checksum mismatch; classification A repository treatment implemented; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; any future attempt requires a new approval |
 | Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
@@ -21,6 +21,9 @@
 | R4 operation | [Safe field-level timestamp mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R4.md) |
 | R7 operation | [Failed-record timestamp precision mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R7.md) |
 | R8 operation | [Completed zero-step timestamp precision mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R8.md) |
+| R9 diagnostic | [Repository exact-success diagnostic amendment](PR_45_ADR_0024_R9_EXACT_SUCCESS_DIAGNOSTIC.md) |
+| R10 operation | [Exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R10.md) |
+| R10 investigation | [Classification A checksum divergence](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -162,6 +165,39 @@ amendment replaced the earlier millisecond-truncated governing values without
 connecting to Production. R8 remains closed; no complete evidence, digest,
 attestation activation or Production status resulted. See the
 [R8 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R8.md).
+
+## Ninth Authorised Operation
+
+`CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R9` invoked the fixed launcher once and
+stopped during `first-evidence-generation` with `LEDGER_MISMATCH`, exit `25`.
+The diagnostic named `20260710120000_identity_organisation_foundation` but did
+not yet identify its differing field. The repository-only R9 amendment added
+safe versioned exact-success diagnostics without weakening the predicate. R9
+remains permanently closed and produced no complete evidence, digest,
+activation or Production status.
+
+## Tenth Authorised Operation
+
+`CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R10` invoked the fixed launcher once at
+approved head `1949ebe495801b26f6f59d2785a6b86b2864b153`. The first guarded
+read-only transaction and fixed identity, ledger and catalog queries completed.
+Evidence generation then stopped with `LEDGER_MISMATCH`, exit `25`, because
+record `112c6124-f0c2-4b6b-8d02-f6ce835746e3` for
+`20260710120000_identity_organisation_foundation` had checksum
+`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`
+instead of canonical manifest checksum
+`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`.
+No other exact-success failure was emitted. R10 itself did not prove the cause,
+did not start the second capture and produced no complete evidence or digest.
+It remains permanently closed.
+
+The subsequent repository-only investigation proved classification A: the
+observed checksum is the exact committed UTF-8/no-BOM SQL with LF mechanically
+materialised as CRLF and the final newline retained. Attestation v3 records a
+singular Production tuple while the migration and manifest remain unchanged.
+No Production command or connection was used for that amendment. The
+attestation remains pending with zero captures and approvals; another complete
+capture requires new, separate authorisation.
 
 The only permitted successful status remains:
 
@@ -420,9 +456,10 @@ Neither the application build nor Prisma migration execution was started.
 - The unrelated July 23 incident edit in the primary worktree remains untouched
   and excluded.
 
-The next task is to complete the
+This repository-only amendment ends before any further capture. A later
+complete read-only capture may begin only under a new, separately authorised
+change ID after the
 [PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
-with genuine operational inputs, then resume this Draft PR from the Phase 2
-boundary under the documented pilot-stage mode. Migration execution remains a
-different, separately approved change after attestation activation and exit
-`20` status verification.
+is freshly completed. No R11 operation is authorised by this record. Migration
+execution remains a different, separately approved change after attestation
+activation and exit `20` status verification.

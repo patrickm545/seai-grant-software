@@ -6,7 +6,7 @@
 | Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-04 |
+| Last reviewed | 2026-08-06 |
 
 ## Purpose And Boundary
 
@@ -200,12 +200,13 @@ any verifier failure as permission to continue.
 
 ## Preview Drift Record
 
-Automatic Preview deployment `dpl_3UQs1dFpJrXnHiTugjjs1N7fvSho` reached the
-strict verifier and stopped with exit `25` because the existing Preview ledger
-record for `20260710120000_identity_organisation_foundation` does not match the
-approved raw-byte checksum. The verifier stopped before Prisma deploy, so no
-migration was applied. PR #43 does not repair, attest or bypass this Preview
-state; a separate investigation must determine its provenance and remediation.
+Automatic Preview deployment `dpl_3UQs1dFpJrXnHiTugjjs1N7fvSho` originally
+reached the strict verifier and stopped with exit `25` because the Preview
+ledger checksum for `20260710120000_identity_organisation_foundation` was the
+same 6,296-byte CRLF checksum later observed by R10. The separately governed
+Preview repair rebuilt that disposable database from the canonical committed
+LF migrations. Preview is now strict and clean and receives no Production
+attestation treatment.
 
 ## Evidence And Redaction
 
@@ -219,6 +220,36 @@ It contains no URL, credentials, password, token, cookie, customer data, raw
 application rows, raw migration log or arbitrary SQL. A recursive secret-key
 and URL guard checks the evidence before output. Unexpected errors emit a
 stable safe category rather than raw driver text.
+
+## Exact Production Repository-Checksum Divergence
+
+The closed R10 operation established one checksum-only exact-success mismatch
+for `20260710120000_identity_organisation_foundation`: canonical repository
+checksum
+`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`
+versus observed Production checksum
+`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`
+on record `112c6124-f0c2-4b6b-8d02-f6ce835746e3`.
+
+A later repository-only investigation proved classification A by mechanically
+converting the exact 6,162-byte UTF-8, no-BOM, LF Git blob to 6,296 CRLF bytes
+with the final newline retained. Reversing that line-ending conversion returns
+the committed bytes exactly. The versioned evidence file and its digest are
+pinned by attestation v3.
+
+The implementation keeps two controls separate:
+
+1. Immutable repository integrity always verifies the canonical committed LF
+   checksum against the unchanged manifest.
+2. The ADR-0024 Production path separately verifies the exact historical
+   Production record against its singular attested checksum, record ID,
+   lifecycle, fingerprint, manifest and repository-lineage scope.
+
+No alternate-checksum list exists. Preview, test, development and fresh
+databases receive no exception and must use the canonical checksum. Another
+migration, checksum, record ID, lifecycle, database fingerprint, manifest,
+evidence digest or attestation lifecycle fails closed. The Production-specific
+treatment retires with ADR-0024.
 
 ## Activation And Retirement
 

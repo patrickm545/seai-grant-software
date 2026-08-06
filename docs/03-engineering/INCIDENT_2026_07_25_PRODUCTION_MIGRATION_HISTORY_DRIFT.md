@@ -169,6 +169,35 @@ but that hypothesis is not proven. Confidence is:
   local state; and
 - insufficient to identify the exact SQL or applying process.
 
+## R10 Repository-Migration Checksum Divergence
+
+The separately authorised and permanently closed R10 read-only operation
+stopped with typed exit `25` because the otherwise exact-success Production
+record `112c6124-f0c2-4b6b-8d02-f6ce835746e3` for
+`20260710120000_identity_organisation_foundation` had checksum
+`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`
+instead of the immutable repository checksum
+`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`.
+R10 did not prove the cause and made no change.
+
+The later repository-only
+[checksum-divergence investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+proved classification A with high confidence. The observed checksum is the
+exact committed 6,162-byte UTF-8/no-BOM SQL after its 134 LF bytes are
+mechanically materialised as CRLF, producing 6,296 bytes. Reverse
+normalisation is byte-for-byte exact, so the SQL semantic content is
+unchanged. The same checksum and transformation were independently retained
+in the Preview repair record, but Preview was rebuilt and receives no
+exception.
+
+The migration file and manifest remain canonical and unchanged. Attestation
+v3 now pins only this exact Production fingerprint, migration, record ID,
+observed checksum, lifecycle, manifest, repository baseline and retained
+evidence digest. Every other environment, migration or mismatch remains
+strict. The attestation is still pending with zero captures and zero approvals;
+the incident is not closed and another separately authorised complete capture
+is required.
+
 ## Impact And Risk
 
 | Area | Assessment |
@@ -281,5 +310,6 @@ later, separately approved stages.
 - [Technical Debt Register](TECHNICAL_DEBT_REGISTER.md)
 - [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
 - [PR #45 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md)
+- [R10 Checksum Divergence Investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

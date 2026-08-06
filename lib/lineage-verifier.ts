@@ -116,6 +116,10 @@ export type VerifierEvidence = {
   pendingMigrations: string[];
   attestedDiscrepancy: 'not-applicable' | 'verified';
   attestedRepositoryChecksumDivergence: 'not-applicable' | 'verified';
+  attestedRepositoryChecksumDivergences: Array<{
+    migrationName: string;
+    result: 'verified';
+  }>;
   relatedDuplicateState: 'not-applicable' | 'verified';
   schemaFingerprintVersion: string;
   schemaFingerprint: string;
@@ -151,6 +155,8 @@ export function verifyLineage(input: {
   let attestedDiscrepancy: VerifierEvidence['attestedDiscrepancy'] = 'not-applicable';
   let attestedRepositoryChecksumDivergence: VerifierEvidence['attestedRepositoryChecksumDivergence'] =
     'not-applicable';
+  let attestedRepositoryChecksumDivergences: VerifierEvidence['attestedRepositoryChecksumDivergences'] =
+    [];
   let relatedDuplicateState: VerifierEvidence['relatedDuplicateState'] = 'not-applicable';
   let lifecycleResult: VerifierEvidence['lifecycleResult'] = 'not-applicable';
   let profile: SchemaProfile = 'fresh-head';
@@ -189,6 +195,7 @@ export function verifyLineage(input: {
       pending = result.pending;
       appliedRepositoryCount = result.appliedRepositoryCount;
       attestedRepositoryChecksumDivergence = result.repositoryChecksumDivergence;
+      attestedRepositoryChecksumDivergences = result.repositoryChecksumDivergences;
     } catch (error) {
       fail('LEDGER_MISMATCH', error instanceof Error ? error.message : 'Ledger verification failed.');
     }
@@ -238,6 +245,7 @@ export function verifyLineage(input: {
     pendingMigrations: pending,
     attestedDiscrepancy,
     attestedRepositoryChecksumDivergence,
+    attestedRepositoryChecksumDivergences,
     relatedDuplicateState,
     schemaFingerprintVersion: SCHEMA_FINGERPRINT_VERSION,
     schemaFingerprint,

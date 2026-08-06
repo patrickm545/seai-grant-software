@@ -221,35 +221,35 @@ application rows, raw migration log or arbitrary SQL. A recursive secret-key
 and URL guard checks the evidence before output. Unexpected errors emit a
 stable safe category rather than raw driver text.
 
-## Exact Production Repository-Checksum Divergence
+## Exact Production Repository-Checksum Divergences
 
-The closed R10 operation established one checksum-only exact-success mismatch
-for `20260710120000_identity_organisation_foundation`: canonical repository
-checksum
-`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`
-versus observed Production checksum
-`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`
-on record `112c6124-f0c2-4b6b-8d02-f6ce835746e3`.
+The closed R10 and R11 operations each established one checksum-only
+exact-success mismatch:
 
-A later repository-only investigation proved classification A by mechanically
-converting the exact 6,162-byte UTF-8, no-BOM, LF Git blob to 6,296 CRLF bytes
-with the final newline retained. Reversing that line-ending conversion returns
-the committed bytes exactly. The versioned evidence file and its digest are
-pinned by attestation v3.
+| Operation | Migration | Record ID | Canonical checksum | Observed Production checksum |
+| --- | --- | --- | --- | --- |
+| R10 | `20260710120000_identity_organisation_foundation` | `112c6124-f0c2-4b6b-8d02-f6ce835746e3` | `fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3` | `c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714` |
+| R11 | `20260710130000_users_roles_permissions_audit` | `93c04529-1d5b-4350-af01-ef225b69b008` | `cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf` | `4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb` |
+
+Separate repository-only investigations proved classification A for each
+tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
+retaining the final newline produces the exact observed checksum; reversing
+the conversion returns the committed bytes exactly. The versioned evidence
+files and their raw digests are pinned by attestation v4.
 
 The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies the exact historical
-   Production record against its singular attested checksum, record ID,
+2. The ADR-0024 Production path separately verifies both exact historical
+   Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-No alternate-checksum list exists. Preview, test, development and fresh
-databases receive no exception and must use the canonical checksum. Another
-migration, checksum, record ID, lifecycle, database fingerprint, manifest,
-evidence digest or attestation lifecycle fails closed. The Production-specific
-treatment retires with ADR-0024.
+The two-entry structure is an exact tuple set, not an alternate-checksum list.
+Every declared tuple must verify independently and one cannot satisfy the
+other. Preview, test, development and fresh databases receive no exception and
+must use canonical checksums. A missing, duplicated, cross-matched or changed
+tuple fails closed. The Production-specific treatment retires with ADR-0024.
 
 ## Activation And Retirement
 

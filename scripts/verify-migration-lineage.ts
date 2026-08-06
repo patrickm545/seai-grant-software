@@ -78,16 +78,17 @@ function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
       );
     }
   }
-  const checksumEvidence = attestation.repositoryMigrationChecksumDivergence;
-  const checksumEvidencePath = resolve(repositoryRoot, checksumEvidence.checksumEvidenceReference);
-  const checksumEvidenceSha256 = createHash('sha256')
-    .update(readFileSync(checksumEvidencePath))
-    .digest('hex');
-  if (checksumEvidenceSha256 !== checksumEvidence.checksumEvidenceSha256) {
-    throw new AttestationValidationError(
-      'ATTESTATION_INVALID',
-      'Production repository checksum divergence evidence digest differs.'
-    );
+  for (const checksumEvidence of attestation.repositoryMigrationChecksumDivergences) {
+    const checksumEvidencePath = resolve(repositoryRoot, checksumEvidence.checksumEvidenceReference);
+    const checksumEvidenceSha256 = createHash('sha256')
+      .update(readFileSync(checksumEvidencePath))
+      .digest('hex');
+    if (checksumEvidenceSha256 !== checksumEvidence.checksumEvidenceSha256) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Production repository checksum divergence evidence digest differs.'
+      );
+    }
   }
 }
 

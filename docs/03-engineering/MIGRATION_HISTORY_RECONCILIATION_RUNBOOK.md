@@ -82,30 +82,26 @@ repository-only: Production was not accessed or modified, the attestation
 remains pending with zero captures and zero approvals, and another complete
 capture requires fresh separate authority.
 
-### Exact Repository-Migration Checksum Divergence
+### Exact Repository-Migration Checksum Divergences
 
-The closed R10 operation established that the exact Production record
-`112c6124-f0c2-4b6b-8d02-f6ce835746e3` for
-`20260710120000_identity_organisation_foundation` carries checksum
-`c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714`,
-while the immutable repository manifest requires
-`fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3`.
-R10 stopped and did not establish the cause.
+The permanently closed R10 and R11 operations established two separate exact
+Production checksum mismatches. Later repository-only investigations proved
+classification A for each by converting only the exact committed UTF-8/no-BOM
+file's LF line endings to CRLF while retaining the final newline. Both
+candidates normalize byte-for-byte to their committed Git blobs.
 
-The later repository-only classification A investigation reproduced the
-observed checksum by converting only the committed UTF-8/no-BOM file's LF line
-endings to CRLF, retaining the final newline. The exact 6,296-byte candidate
-normalises back to the 6,162-byte Git blob byte-for-byte. Follow the retained
-[investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md) and
-evidence digest; do not recreate candidates during an operation.
+Use the retained [R10 investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
+[R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+and evidence digests; do not recreate candidates during an operation.
 
-Before any later capture, verify attestation v3 still pins the canonical and
-observed checksums as distinct fields, the exact record ID, successful
-lifecycle, Production fingerprint, manifest hash, approved lineage baseline,
-evidence reference/digest and retirement scope. The alternate checksum is
-invalid in Preview, test, development, fresh databases and every other
-migration. It is not an LF/CRLF allow list. Any difference is exit `25` and an
-immediate stop.
+Before any later capture, verify attestation v4 still contains exactly both
+tuples and pins each canonical and observed checksum as distinct fields, with
+its exact record ID, successful lifecycle, Production fingerprint, manifest
+hash, approved lineage baseline, evidence reference/digest and retirement
+scope. Both tuples are required and cannot cross-satisfy. Alternate checksums
+are invalid in Preview, test, development, fresh databases and every other
+migration. This is not an LF/CRLF allow list. Any difference is exit `25` and
+an immediate stop.
 
 ## Roles
 
@@ -135,8 +131,8 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
-- [ ] Attestation v3 checksum-divergence evidence digest and exact Production
-      tuple verify against the unchanged canonical manifest.
+- [ ] Attestation v4 checksum-divergence evidence digests and both exact
+      Production tuples verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator
       and independent reviewer; pilot-stage mode names Patrick McKenna and

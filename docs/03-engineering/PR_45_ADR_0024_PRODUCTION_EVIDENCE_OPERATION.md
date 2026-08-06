@@ -7,9 +7,9 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-06 |
-| Operational state | R10 closed on exact repository-migration checksum mismatch; classification A repository treatment implemented; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; any future attempt requires a new approval |
-| Repository baseline | `bd1fcc8eb8796c01bad2ab866e11abbb082f6389` |
+| Operational state | R11 closed on second exact repository-migration checksum mismatch; two exact classification A tuples implemented; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11 closed 2026-08-06; any future attempt requires a new approval |
+| Repository baseline | `3281da65c013e9ad63dbc6c5da507640db586452` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -24,6 +24,8 @@
 | R9 diagnostic | [Repository exact-success diagnostic amendment](PR_45_ADR_0024_R9_EXACT_SUCCESS_DIAGNOSTIC.md) |
 | R10 operation | [Exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R10.md) |
 | R10 investigation | [Classification A checksum divergence](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R11 operation | [Second exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R11.md) |
+| R11 investigation | [Second classification A checksum divergence](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -193,11 +195,32 @@ It remains permanently closed.
 
 The subsequent repository-only investigation proved classification A: the
 observed checksum is the exact committed UTF-8/no-BOM SQL with LF mechanically
-materialised as CRLF and the final newline retained. Attestation v3 records a
-singular Production tuple while the migration and manifest remain unchanged.
-No Production command or connection was used for that amendment. The
-attestation remains pending with zero captures and approvals; another complete
-capture requires new, separate authorisation.
+materialised as CRLF and the final newline retained. No Production command or
+connection was used for that amendment.
+
+## Eleventh Authorised Operation
+
+`CHG-2026-08-06-ADR0024-PROD-EVIDENCE-R11` invoked the fixed launcher once at
+approved head `3281da65c013e9ad63dbc6c5da507640db586452`. The first guarded
+read-only transaction and fixed identity, ledger and catalog queries completed.
+Evidence generation stopped with `LEDGER_MISMATCH`, exit `25`, because record
+`93c04529-1d5b-4350-af01-ef225b69b008` for
+`20260710130000_users_roles_permissions_audit` had checksum
+`4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb`
+instead of canonical manifest checksum
+`cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf`.
+No other exact-success failure was emitted. R11 itself did not prove the cause,
+did not start the second capture and produced no complete evidence or digest.
+It remains permanently closed.
+
+The subsequent repository-only investigation proved classification A for the
+second exact tuple using the same reversible LF-to-CRLF byte transformation.
+Attestation v4 records both exact Production tuples and requires them
+independently while the migrations and manifest remain unchanged. This is not
+a global line-ending or checksum exception. No Production command or
+connection was used for the investigation. The attestation remains pending
+with zero captures and approvals; another complete capture requires new,
+separate authorisation. No R12 authority exists.
 
 The only permitted successful status remains:
 
@@ -460,6 +483,6 @@ This repository-only amendment ends before any further capture. A later
 complete read-only capture may begin only under a new, separately authorised
 change ID after the
 [PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
-is freshly completed. No R11 operation is authorised by this record. Migration
+is freshly completed. No R12 operation is authorised by this record. Migration
 execution remains a different, separately approved change after attestation
 activation and exit `20` status verification.

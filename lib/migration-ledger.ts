@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { canonicalJson } from './canonical-json';
 import {
-  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE,
+  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES,
   type LineageAttestation,
-  type AttestedMigrationRecord
+  type AttestedMigrationRecord,
+  type AttestedRepositoryChecksumDivergence
 } from './lineage-attestation';
 import type { MigrationManifest } from './migration-manifest';
 import { canonicaliseMigrationTimestamp } from './migration-timestamp';
@@ -340,13 +341,14 @@ function isExactAttestedProductionChecksumDivergence(input: {
   records: NormalisedMigrationRecord[];
   migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>;
   attestation: LineageAttestation;
+  expected: AttestedRepositoryChecksumDivergence;
 }) {
   const [record] = input.records;
-  const expected = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE;
+  const expected = input.expected;
   return (
     (input.attestation.status === 'pending' || input.attestation.status === 'active') &&
-    canonicalJson(input.attestation.repositoryMigrationChecksumDivergence) ===
-      canonicalJson(expected) &&
+    canonicalJson(input.attestation.repositoryMigrationChecksumDivergences) ===
+      canonicalJson(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES) &&
     input.attestation.approvedDatabaseFingerprint === expected.productionDatabaseFingerprint &&
     input.attestation.approvedManifestHash === expected.approvedManifestHash &&
     input.migration.name === expected.migrationName &&
@@ -513,7 +515,7 @@ export function verifyAttestedLedger(input: {
   );
 
   const pending: string[] = [];
-  let repositoryChecksumDivergence: 'not-applicable' | 'verified' = 'not-applicable';
+  const verifiedRepositoryChecksumDivergences = new Set<string>();
   for (const migration of input.manifest.migrations) {
     if (migration.name === input.attestation.relatedMigration.name) continue;
     const records = grouped.get(migration.name) ?? [];
@@ -525,12 +527,16 @@ export function verifyAttestedLedger(input: {
       pending.push(migration.name);
       continue;
     }
-    if (migration.name === PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE.migrationName) {
+    const checksumDivergence = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
+      (candidate) => candidate.migrationName === migration.name
+    );
+    if (checksumDivergence) {
       if (
         !isExactAttestedProductionChecksumDivergence({
           records,
           migration,
-          attestation: input.attestation
+          attestation: input.attestation,
+          expected: checksumDivergence
         })
       ) {
         const report = repositoryMigrationExactSuccessReport(records, migration);
@@ -539,7 +545,7 @@ export function verifyAttestedLedger(input: {
           'Production repository checksum divergence record differs from the exact ADR-0024 attestation.'
         );
       }
-      repositoryChecksumDivergence = 'verified';
+      verifiedRepositoryChecksumDivergences.add(migration.name);
       continue;
     }
     assertExactSuccessfulRepositoryMigration(records, migration);
@@ -550,13 +556,22 @@ export function verifyAttestedLedger(input: {
   if (JSON.stringify(pending) !== JSON.stringify(expectedPending)) {
     throw new Error(`Pending migration set differs: ${pending.join(', ') || 'none'}`);
   }
-  if (repositoryChecksumDivergence !== 'verified') {
-    throw new Error('Production repository checksum divergence record was not verified.');
+  if (
+    verifiedRepositoryChecksumDivergences.size !==
+      PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.length ||
+    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
+      (divergence) => !verifiedRepositoryChecksumDivergences.has(divergence.migrationName)
+    )
+  ) {
+    throw new Error('Production repository checksum divergence records were not verified.');
   }
   return {
     rows,
     pending,
     appliedRepositoryCount: input.manifest.migrations.length - pending.length,
-    repositoryChecksumDivergence
+    repositoryChecksumDivergence: 'verified' as const,
+    repositoryChecksumDivergences: PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map(
+      (divergence) => ({ migrationName: divergence.migrationName, result: 'verified' as const })
+    )
   };
 }

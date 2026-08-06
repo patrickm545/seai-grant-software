@@ -9,7 +9,7 @@ const placeholderApprovalPattern =
   /^(?:unknown|tbd|todo|placeholder|reviewer(?:-\d+)?|codex|chatgpt|openai)$/i;
 const repositoryApprovalEvidencePattern = /^docs\/[A-Za-z0-9_./-]+\.md$/;
 
-export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v3' as const;
+export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v4' as const;
 export const ATTESTATION_ID = 'ADR-0024-PRODUCTION-2026-07-25' as const;
 export const PILOT_STAGE_ACCOUNTABLE_PERSON = 'Patrick McKenna' as const;
 export const PILOT_STAGE_SCOPE =
@@ -41,31 +41,60 @@ export const REQUIRED_APPROVAL_ACKNOWLEDGEMENTS = [
   'Production migration execution remains separately approved',
   'Preview lineage was repaired independently and receives no Production exception'
 ] as const;
-export const PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE = {
-  migrationName: '20260710120000_identity_organisation_foundation',
-  recordId: '112c6124-f0c2-4b6b-8d02-f6ce835746e3',
-  repositoryChecksum: 'fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3',
-  observedProductionChecksum: 'c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714',
-  checksumDivergenceClassification: 'A-exact-alternate-byte-representation-proven',
-  byteRepresentation: 'utf8-no-bom-crlf-with-final-newline',
-  checksumEvidenceReference:
-    'docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json',
-  checksumEvidenceSha256: '1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65',
-  environment: 'production',
-  productionDatabaseFingerprint: 'db_4e1d3bd23cff6801',
-  approvedRepositoryLineageBaseline: '1949ebe495801b26f6f59d2785a6b86b2864b153',
-  approvedManifestHash: '1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872',
-  expectedLifecycle: {
-    startedAt: 'present-valid-canonical-utc-timestamp',
-    finishedAt: 'present-valid-canonical-utc-timestamp',
-    appliedStepsCount: 1,
-    rolledBackAt: null,
-    logsState: 'none',
-    logsDigest: null
+export const PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES = [
+  {
+    migrationName: '20260710120000_identity_organisation_foundation',
+    recordId: '112c6124-f0c2-4b6b-8d02-f6ce835746e3',
+    repositoryChecksum: 'fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3',
+    observedProductionChecksum: 'c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714',
+    checksumDivergenceClassification: 'A-exact-alternate-byte-representation-proven',
+    byteRepresentation: 'utf8-no-bom-crlf-with-final-newline',
+    checksumEvidenceReference:
+      'docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json',
+    checksumEvidenceSha256:
+      '1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65',
+    environment: 'production',
+    productionDatabaseFingerprint: 'db_4e1d3bd23cff6801',
+    approvedRepositoryLineageBaseline: '1949ebe495801b26f6f59d2785a6b86b2864b153',
+    approvedManifestHash: '1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872',
+    expectedLifecycle: {
+      startedAt: 'present-valid-canonical-utc-timestamp',
+      finishedAt: 'present-valid-canonical-utc-timestamp',
+      appliedStepsCount: 1,
+      rolledBackAt: null,
+      logsState: 'none',
+      logsDigest: null
+    },
+    scope: 'Exact ADR-0024 Production historical record only',
+    retirementCondition: 'Retires with ADR-0024 attestation'
   },
-  scope: 'Exact ADR-0024 Production historical record only',
-  retirementCondition: 'Retires with ADR-0024 attestation'
-} as const;
+  {
+    migrationName: '20260710130000_users_roles_permissions_audit',
+    recordId: '93c04529-1d5b-4350-af01-ef225b69b008',
+    repositoryChecksum: 'cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf',
+    observedProductionChecksum: '4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb',
+    checksumDivergenceClassification: 'A-exact-alternate-byte-representation-proven',
+    byteRepresentation: 'utf8-no-bom-crlf-with-final-newline',
+    checksumEvidenceReference:
+      'docs/03-engineering/evidence/ADR_0024_R11_CHECKSUM_DIVERGENCE.json',
+    checksumEvidenceSha256:
+      '0eed74ab3945d45a0915631a99824fd7a2ecd7ec5cb7653ffbb3e80fd54b6eed',
+    environment: 'production',
+    productionDatabaseFingerprint: 'db_4e1d3bd23cff6801',
+    approvedRepositoryLineageBaseline: '3281da65c013e9ad63dbc6c5da507640db586452',
+    approvedManifestHash: '1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872',
+    expectedLifecycle: {
+      startedAt: 'present-valid-canonical-utc-timestamp',
+      finishedAt: 'present-valid-canonical-utc-timestamp',
+      appliedStepsCount: 1,
+      rolledBackAt: null,
+      logsState: 'none',
+      logsDigest: null
+    },
+    scope: 'Exact ADR-0024 Production historical record only',
+    retirementCondition: 'Retires with ADR-0024 attestation'
+  }
+] as const;
 const REQUIRED_RETIREMENT_CONDITIONS = [
   'Production database replacement',
   'Formal migration-history re-baseline',
@@ -135,7 +164,7 @@ export type AttestedMigrationRecord = {
 };
 
 export type AttestedRepositoryChecksumDivergence =
-  typeof PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE;
+  (typeof PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES)[number];
 
 export type LineageAttestation = {
   version: typeof ATTESTATION_VERSION;
@@ -157,7 +186,7 @@ export type LineageAttestation = {
   verifierImplementationVersion: string;
   approvedManifestHash: string;
   manifestVersion: 'clada-migration-manifest/v1';
-  repositoryMigrationChecksumDivergence: AttestedRepositoryChecksumDivergence;
+  repositoryMigrationChecksumDivergences: typeof PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
   missingMigration: AttestedMigrationRecord;
   relatedMigration: {
     name: '20260428120000_manual_submission_prep';
@@ -520,8 +549,8 @@ export function validateLineageAttestation(
     throw new AttestationValidationError('ATTESTATION_INVALID', 'Approved manifest hash must be SHA-256.');
   }
   if (
-    canonicalJson(value.repositoryMigrationChecksumDivergence) !==
-    canonicalJson(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE)
+    canonicalJson(value.repositoryMigrationChecksumDivergences) !==
+    canonicalJson(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES)
   ) {
     throw new AttestationValidationError(
       'ATTESTATION_INVALID',
@@ -529,14 +558,13 @@ export function validateLineageAttestation(
     );
   }
   if (
-    !value.evidenceReferences.includes(
-      value.repositoryMigrationChecksumDivergence.checksumEvidenceReference
-    ) ||
-    !sha256Pattern.test(value.repositoryMigrationChecksumDivergence.checksumEvidenceSha256) ||
-    value.repositoryMigrationChecksumDivergence.productionDatabaseFingerprint !==
-      value.approvedDatabaseFingerprint ||
-    value.repositoryMigrationChecksumDivergence.approvedManifestHash !==
-      value.approvedManifestHash
+    value.repositoryMigrationChecksumDivergences.some(
+      (divergence) =>
+        !value.evidenceReferences.includes(divergence.checksumEvidenceReference) ||
+        !sha256Pattern.test(divergence.checksumEvidenceSha256) ||
+        divergence.productionDatabaseFingerprint !== value.approvedDatabaseFingerprint ||
+        divergence.approvedManifestHash !== value.approvedManifestHash
+    )
   ) {
     throw new AttestationValidationError(
       'ATTESTATION_INVALID',

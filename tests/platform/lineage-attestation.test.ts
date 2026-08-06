@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   AttestationValidationError,
   PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
+  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES,
   REQUIRED_APPROVAL_ACKNOWLEDGEMENTS,
   REQUIRED_APPROVAL_ROLES,
   REQUIRED_APPROVAL_SCOPE,
@@ -96,7 +97,7 @@ function activePilotStageAttestation(): LineageAttestation {
 
 test('checked-in attestation is complete enough to review but inactive by design', () => {
   assert.equal(validateLineageAttestation(pending).status, 'pending');
-  assert.equal(pending.version, 'clada-adr-0024-lineage-attestation/v3');
+  assert.equal(pending.version, 'clada-adr-0024-lineage-attestation/v4');
   assert.equal(pending.reviewedAt, null);
   assert.equal(pending.expiresAt, null);
   assert.equal(pending.governanceMode, 'pilot-stage-compensating-control');
@@ -106,31 +107,10 @@ test('checked-in attestation is complete enough to review but inactive by design
   );
   assert.deepEqual(pending.approvals, []);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
-  assert.deepEqual(pending.repositoryMigrationChecksumDivergence, {
-    migrationName: '20260710120000_identity_organisation_foundation',
-    recordId: '112c6124-f0c2-4b6b-8d02-f6ce835746e3',
-    repositoryChecksum: 'fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3',
-    observedProductionChecksum: 'c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714',
-    checksumDivergenceClassification: 'A-exact-alternate-byte-representation-proven',
-    byteRepresentation: 'utf8-no-bom-crlf-with-final-newline',
-    checksumEvidenceReference:
-      'docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json',
-    checksumEvidenceSha256: '1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65',
-    environment: 'production',
-    productionDatabaseFingerprint: 'db_4e1d3bd23cff6801',
-    approvedRepositoryLineageBaseline: '1949ebe495801b26f6f59d2785a6b86b2864b153',
-    approvedManifestHash: '1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872',
-    expectedLifecycle: {
-      startedAt: 'present-valid-canonical-utc-timestamp',
-      finishedAt: 'present-valid-canonical-utc-timestamp',
-      appliedStepsCount: 1,
-      rolledBackAt: null,
-      logsState: 'none',
-      logsDigest: null
-    },
-    scope: 'Exact ADR-0024 Production historical record only',
-    retirementCondition: 'Retires with ADR-0024 attestation'
-  });
+  assert.deepEqual(
+    pending.repositoryMigrationChecksumDivergences,
+    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES
+  );
   assert.equal(pending.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
   assert.equal(pending.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
   assert.equal(

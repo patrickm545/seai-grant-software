@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   AttestationValidationError,
-  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE,
+  PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES,
   validateLineageAttestation,
   type LineageAttestation
 } from '../../lib/lineage-attestation';
@@ -24,7 +24,7 @@ const pending = JSON.parse(
 ) as LineageAttestation;
 const evidencePath =
   'docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json';
-const target = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCE;
+const target = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES[0];
 
 function sha256(value: Buffer | string) {
   return createHash('sha256').update(value).digest('hex');
@@ -48,13 +48,15 @@ function repositoryRow(
   migration: MigrationManifest['migrations'][number],
   index: number
 ): MigrationLedgerRow {
-  const divergence = migration.name === target.migrationName;
+  const divergence = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
+    (candidate) => candidate.migrationName === migration.name
+  );
   return row({
     id: divergence
-      ? target.recordId
+      ? divergence.recordId
       : `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
     migration_name: migration.name,
-    checksum: divergence ? target.observedProductionChecksum : migration.checksum,
+    checksum: divergence ? divergence.observedProductionChecksum : migration.checksum,
     started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
     finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
   });
@@ -192,6 +194,10 @@ test('canonical manifest integrity and fresh-database strict verification remain
 test('the exact Production tuple proceeds only through the scoped pending attestation path', () => {
   const result = verifyProductionFixture();
   assert.equal(result.repositoryChecksumDivergence, 'verified');
+  assert.deepEqual(
+    result.repositoryChecksumDivergences.map((divergence) => divergence.migrationName),
+    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map((divergence) => divergence.migrationName)
+  );
   assert.deepEqual(result.pending, ['20260724180000_password_reset_foundation']);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.throws(
@@ -251,6 +257,9 @@ test('another migration receives no CRLF exception and attestation tampering fai
   const other = manifest.migrations.find(
     (migration) =>
       migration.name !== target.migrationName &&
+      !PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
+        (divergence) => divergence.migrationName === migration.name
+      ) &&
       migration.name !== fixture.attestation.relatedMigration.name
   )!;
   const otherBytes = execFileSync('git', ['show', `:${other.path}`], { encoding: 'buffer' });
@@ -262,10 +271,13 @@ test('another migration receives no CRLF exception and attestation tampering fai
   assert.throws(() => verifyProductionFixture(fixture), /not an exact successful application/);
 
   const tampered = productionFixture();
-  tampered.attestation.repositoryMigrationChecksumDivergence = {
-    ...tampered.attestation.repositoryMigrationChecksumDivergence,
-    recordId: '33333333-3333-4333-8333-333333333333'
-  } as unknown as typeof tampered.attestation.repositoryMigrationChecksumDivergence;
+  tampered.attestation.repositoryMigrationChecksumDivergences = [
+    {
+      ...tampered.attestation.repositoryMigrationChecksumDivergences[0],
+      recordId: '33333333-3333-4333-8333-333333333333'
+    },
+    tampered.attestation.repositoryMigrationChecksumDivergences[1]
+  ] as unknown as typeof tampered.attestation.repositoryMigrationChecksumDivergences;
   assert.throws(() => verifyProductionFixture(tampered));
   assert.throws(() => validateLineageAttestation(tampered.attestation), /must be exact/);
 });

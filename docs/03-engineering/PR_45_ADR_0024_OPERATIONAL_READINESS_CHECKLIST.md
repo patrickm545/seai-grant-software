@@ -7,7 +7,7 @@
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-06 |
-| Operational state | R1-R10 closed; classification A repository treatment validated; no further Production authority |
+| Operational state | R1-R11 closed; two exact classification A tuples validated; no further Production authority |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -400,7 +400,7 @@ attestation, accept a caller-supplied path or weaken validation.
 
 Every item below must exist and be exact before changing `status` to `active`:
 
-- [ ] Version `clada-adr-0024-lineage-attestation/v3`.
+- [ ] Version `clada-adr-0024-lineage-attestation/v4`.
 - [ ] Attestation ID `ADR-0024-PRODUCTION-2026-07-25`.
 - [ ] Incident reference
       `ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT`.
@@ -421,13 +421,18 @@ Every item below must exist and be exact before changing `status` to `active`:
 - [ ] Verifier implementation version remains
       `adr-0024-lineage-verifier/v1`.
 - [ ] Manifest version and hash match the reviewed capture.
-- [ ] Repository migration checksum-divergence classification remains exactly
+- [ ] Exactly two repository migration checksum-divergence entries exist and
+      both classifications remain
       `A-exact-alternate-byte-representation-proven`.
-- [ ] Canonical repository checksum, observed Production checksum, migration
-      name, Production record ID, fingerprint, approved repository-lineage
-      baseline and successful lifecycle remain exact.
-- [ ] The fixed checksum-evidence reference exists and its raw-file SHA-256 is
+- [ ] Each entry's canonical repository checksum, observed Production
+      checksum, migration name, Production record ID, fingerprint, approved
+      repository-lineage baseline and successful lifecycle remain exact.
+- [ ] The R10 evidence reference exists and its raw-file SHA-256 is
       `1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65`.
+- [ ] The R11 evidence reference exists and its raw-file SHA-256 is
+      `0eed74ab3945d45a0915631a99824fd7a2ecd7ec5cb7653ffbb3e80fd54b6eed`.
+- [ ] Both exact tuples are required and cannot be missing, duplicated,
+      cross-matched or replaced by a wildcard or checksum pattern.
 - [ ] The Production-only scope and attestation-retirement condition remain
       exact; Preview and all other databases receive no exception.
 - [ ] Database-only migration contains its exact ID, name, checksum,

@@ -14,7 +14,7 @@
 | Blocked deployment | `dpl_HGdsWDXmfnNYFSyaomEmjDcAnXPZ` |
 | Previous Ready deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Related decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
-| Last reviewed | 2026-08-05 |
+| Last reviewed | 2026-08-06 |
 
 ## Summary
 
@@ -190,13 +190,34 @@ unchanged. The same checksum and transformation were independently retained
 in the Preview repair record, but Preview was rebuilt and receives no
 exception.
 
-The migration file and manifest remain canonical and unchanged. Attestation
-v3 now pins only this exact Production fingerprint, migration, record ID,
-observed checksum, lifecycle, manifest, repository baseline and retained
-evidence digest. Every other environment, migration or mismatch remains
-strict. The attestation is still pending with zero captures and zero approvals;
-the incident is not closed and another separately authorised complete capture
-is required.
+The migration file and manifest remain canonical and unchanged. The exact R10
+tuple is retained in the fixed attestation and every other environment,
+migration or mismatch remains strict.
+
+## R11 Repository-Migration Checksum Divergence
+
+The separately authorised and permanently closed R11 read-only operation
+stopped with typed exit `25` at the same fail-closed invariant. Record
+`93c04529-1d5b-4350-af01-ef225b69b008` for
+`20260710130000_users_roles_permissions_audit` carried checksum
+`4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb`
+instead of canonical checksum
+`cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf`.
+R11 did not establish the cause and made no change.
+
+The later repository-only
+[R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+proved classification A with high confidence. Converting the exact committed
+3,951-byte UTF-8/no-BOM SQL's 113 LF bytes to CRLF produces the exact
+4,064-byte observed checksum, and reverse normalization is byte-for-byte exact.
+No authoritative matching historical Git blob was recovered, so classification
+B and exact historical process provenance are not claimed.
+
+The two immutable migration files and manifest remain canonical and unchanged.
+Attestation v4 pins two independent exact Production tuples and requires both;
+it does not allow a checksum pattern or global line-ending exception. The
+attestation remains pending with zero captures and zero approvals. The incident
+is not closed and any complete capture requires separate authorisation.
 
 ## Impact And Risk
 
@@ -311,5 +332,7 @@ later, separately approved stages.
 - [PR #44 Evidence-Capture Tooling Preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
 - [PR #45 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md)
 - [R10 Checksum Divergence Investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R11 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R11.md)
+- [R11 Checksum Divergence Investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner: Patrick McKenna |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-07-29 |
+| Last reviewed | 2026-08-06 |
 
 ## Guarded Commands
 
@@ -59,6 +59,13 @@ approver. This mode is limited to two read-only captures, activation and exact
 blocked status verification. It authorises no migration, deployment or alias
 movement and must be reviewed before the first 10 pilot installers or when a
 qualified reviewer joins.
+
+R10 and R11 are permanently closed typed diagnostic stops. Later
+repository-only investigations proved two exact CRLF historical checksum
+representations and attestation v4 binds each one to its complete Production
+tuple. This is not a general normalization or alternate-checksum rule. The
+attestation remains pending with zero captures and approvals; no Production
+capture, status, migration or deployment is authorised by those investigations.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 

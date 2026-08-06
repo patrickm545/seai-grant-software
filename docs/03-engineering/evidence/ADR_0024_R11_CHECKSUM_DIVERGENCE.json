@@ -1,0 +1,154 @@
+{
+  "version": "adr-0024-checksum-divergence-evidence/v1",
+  "governingOperation": "CHG-2026-08-06-ADR0024-PROD-EVIDENCE-R11",
+  "repositoryBaseline": "3281da65c013e9ad63dbc6c5da507640db586452",
+  "migrationPath": "prisma/migrations/20260710130000_users_roles_permissions_audit/migration.sql",
+  "migrationName": "20260710130000_users_roles_permissions_audit",
+  "productionRecordId": "93c04529-1d5b-4350-af01-ef225b69b008",
+  "canonicalRepositoryChecksum": "cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf",
+  "observedProductionChecksum": "4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb",
+  "normalizationVersion": "adr-0024-migration-record-normalization/v1",
+  "source": {
+    "kind": "exact-committed-git-blob",
+    "commit": "3281da65c013e9ad63dbc6c5da507640db586452",
+    "byteLength": 3951,
+    "encoding": "UTF-8 without BOM",
+    "lineEndings": "LF",
+    "finalNewline": true
+  },
+  "candidates": [
+    {
+      "transformation": "exact-committed-git-blob",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "as-committed",
+      "finalNewline": true,
+      "byteLength": 3951,
+      "sha256": "cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 3951,
+      "sha256": "cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": false,
+      "byteLength": 3950,
+      "sha256": "8484a13cda5e9c32aad307a5da1789b2e80b00eadc5c398d447844730dddad20",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 4064,
+      "sha256": "4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": true
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": false,
+      "byteLength": 4062,
+      "sha256": "6c2ee9cf7eb3dfe12701523c3cce73807e12e09e81e16c1309aaa8bee4b80cb9",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 3954,
+      "sha256": "c1d171f17ed7f128f54c040f419785d5152389704d64ba127bde57b0034e3a62",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 4067,
+      "sha256": "3a3406e397704fd618754d25ff5288bc10682134300acd3d81b911f598355343",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-lf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "LF",
+      "finalNewline": false,
+      "byteLength": 3953,
+      "sha256": "d4b144f872e98e14b8eeb2256baf4f6c266400b4a22d0f8ddc9391a2afdfc8f7",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "CRLF",
+      "finalNewline": false,
+      "byteLength": 4065,
+      "sha256": "78f51ed767983043c3e528b3193f9bb2bc34b8d540081b4c04144e0a12307b33",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    }
+  ],
+  "exactMatch": {
+    "transformation": "UTF-8 without BOM; convert each LF to CRLF; retain final newline",
+    "byteLength": 4064,
+    "lineEndingInsertions": 113,
+    "normalizesByteForByteToCommittedBlob": true,
+    "sqlTokensChanged": false,
+    "statementOrderChanged": false,
+    "commentsChangedExceptLineEndings": false,
+    "encodingContentChanged": false
+  },
+  "adjacentMigrationEvidence": {
+    "r10Migration": "20260710120000_identity_organisation_foundation",
+    "r10Classification": "A-exact-alternate-byte-representation-proven",
+    "sameCurrentWorkingTreesContainBothExactCrlfRepresentations": true,
+    "sameDocumentedDeployBatch": true,
+    "documentedCommand": "prisma migrate deploy",
+    "historicalCheckoutConfigurationProven": false
+  },
+  "historySearch": {
+    "reachableCommitsBranchesTagsAndPullRequestRefsInspected": true,
+    "reflogsAndStashesInspected": true,
+    "unreachableGitObjectsInspected": true,
+    "registeredAndArchivedWorktreesInspected": true,
+    "gitObjectCount": 3395,
+    "matchingHistoricalGitBlobRecovered": false,
+    "matchingCurrentWorkingTreeMaterializationsObserved": true
+  },
+  "classification": "A-exact-alternate-byte-representation-proven",
+  "confidence": "high",
+  "limitations": [
+    "R11 reported only the safe checksum mismatch and did not establish the line-ending cause.",
+    "No checksum-identical historical Git blob was recovered.",
+    "Repository documentation records the deploy batch and command, but the exact historical wrapper invocation, operator and checkout configuration were not recovered."
+  ]
+}

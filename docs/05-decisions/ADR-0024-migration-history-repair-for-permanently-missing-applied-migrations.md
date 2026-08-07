@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-06 |
+| Last reviewed | 2026-08-07 |
 
 ## Context
 
@@ -138,22 +138,22 @@ attestation, which remains pending with zero captures and zero approvals.
 
 #### Exact Production repository-checksum divergences
 
-The closed R10 and R11 operations established checksum-only exact-success
-mismatches for two specific Production records. Later repository-only
+The closed R10, R11 and R12 operations established checksum-only exact-success
+mismatches for three specific Production records. Later repository-only
 investigations proved classification A for each: its observed checksum is the
 exact committed UTF-8/no-BOM SQL mechanically materialised with CRLF rather
 than LF while retaining the final newline. Reverse normalization is
 byte-for-byte exact and changes no SQL token.
 
-The manifest and both migrations remain canonical and unchanged. Attestation
-v4 may record only the exact two historical Production tuples, and each entry
+The manifest and all three migrations remain canonical and unchanged. Attestation
+v4 may record only the exact three historical Production tuples, and each entry
 must also require the exact Production fingerprint, record ID, successful
 lifecycle, approved manifest, approved repository-lineage baseline and
 retained evidence digest. The active verifier must prove canonical repository
-integrity and both exact observed Production rows independently.
+integrity and all three exact observed Production rows independently.
 
-This is not a global alternate checksum or line-ending rule. Neither tuple can
-satisfy the other; a missing, duplicated, cross-matched or changed entry fails
+This is not a global alternate checksum or line-ending rule. No tuple can
+satisfy another; a missing, duplicated, cross-matched or changed entry fails
 closed. Preview, test, development, fresh databases, other migrations, other
 records and other fingerprints remain strict. The treatment expires and
 retires with ADR-0024. The attestation remains pending with zero captures and

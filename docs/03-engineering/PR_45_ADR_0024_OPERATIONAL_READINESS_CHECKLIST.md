@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-06 |
-| Operational state | R1-R11 closed; two exact classification A tuples validated; no further Production authority |
+| Last reviewed | 2026-08-07 |
+| Operational state | R1-R12 closed; three exact classification A tuples validated; no further Production authority |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -421,8 +421,8 @@ Every item below must exist and be exact before changing `status` to `active`:
 - [ ] Verifier implementation version remains
       `adr-0024-lineage-verifier/v1`.
 - [ ] Manifest version and hash match the reviewed capture.
-- [ ] Exactly two repository migration checksum-divergence entries exist and
-      both classifications remain
+- [ ] Exactly three repository migration checksum-divergence entries exist and
+      all classifications remain
       `A-exact-alternate-byte-representation-proven`.
 - [ ] Each entry's canonical repository checksum, observed Production
       checksum, migration name, Production record ID, fingerprint, approved
@@ -431,7 +431,9 @@ Every item below must exist and be exact before changing `status` to `active`:
       `1a9e69ad0be6fd7127be11cee7f993da6418d5f7a4e0f8431a67cd83d0252a65`.
 - [ ] The R11 evidence reference exists and its raw-file SHA-256 is
       `0eed74ab3945d45a0915631a99824fd7a2ecd7ec5cb7653ffbb3e80fd54b6eed`.
-- [ ] Both exact tuples are required and cannot be missing, duplicated,
+- [ ] The R12 evidence reference exists and its raw-file SHA-256 is
+      `0b773879debbf8250f4a5f67c06d2ce9fbb31c2d2774b9d79089a7cefe60c915`.
+- [ ] All three exact tuples are required and cannot be missing, duplicated,
       cross-matched or replaced by a wildcard or checksum pattern.
 - [ ] The Production-only scope and attestation-retirement condition remain
       exact; Preview and all other databases receive no exception.

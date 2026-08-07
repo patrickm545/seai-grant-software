@@ -19,7 +19,7 @@ const manifest = JSON.parse(
 const pending = JSON.parse(
   readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
 ) as LineageAttestation;
-const [r10, r11] = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
+const [r10, r11, r12] = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
 
 function sha256(value: Buffer | string) {
   return createHash('sha256').update(value).digest('hex');
@@ -148,6 +148,42 @@ test('R11 exact LF-to-CRLF evidence is reversible and raw-byte deterministic', (
   assert.equal(sha256(evidenceBytes), r11.checksumEvidenceSha256);
 });
 
+test('R12 workflow foundation evidence exactly reproduces the observed CRLF checksum', () => {
+  const manifestMigration = manifest.migrations.find(
+    (migration) => migration.name === r12.migrationName
+  );
+  assert.ok(manifestMigration);
+  const committed = execFileSync('git', ['show', `:${manifestMigration.path}`], {
+    encoding: 'buffer'
+  });
+  const text = committed.toString('utf8');
+  const alternate = Buffer.from(text.replace(/\n/g, '\r\n'), 'utf8');
+  const reversed = Buffer.from(alternate.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+  assert.deepEqual(
+    {
+      canonicalBytes: committed.length,
+      alternateBytes: alternate.length,
+      lineEndingInsertions: (text.match(/\n/g) ?? []).length,
+      canonicalChecksum: sha256(committed),
+      alternateChecksum: sha256(alternate),
+      bom: committed.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])),
+      finalNewline: committed.at(-1)
+    },
+    {
+      canonicalBytes: 12927,
+      alternateBytes: 13190,
+      lineEndingInsertions: 263,
+      canonicalChecksum: r12.repositoryChecksum,
+      alternateChecksum: r12.observedProductionChecksum,
+      bom: false,
+      finalNewline: 10
+    }
+  );
+  assert.deepEqual(reversed, committed);
+  const evidenceBytes = readFileSync(r12.checksumEvidenceReference);
+  assert.equal(sha256(evidenceBytes), r12.checksumEvidenceSha256);
+});
+
 test('canonical manifest and fresh-database verification remain canonical-only', () => {
   for (const divergence of PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES) {
     const migration = manifest.migrations.find(
@@ -163,45 +199,40 @@ test('canonical manifest and fresh-database verification remain canonical-only',
     })
   );
   assert.deepEqual(verifyStrictLedger(freshRows, manifest).pending, []);
-  assert.equal(manifest.manifestHash, r11.approvedManifestHash);
+  assert.equal(manifest.manifestHash, r12.approvedManifestHash);
 });
 
-test('both exact Production tuples verify independently through the pending attested path', () => {
+test('all three exact Production tuples verify independently through the pending attested path', () => {
   const result = verifyProductionFixture();
   assert.deepEqual(result.repositoryChecksumDivergences, [
     { migrationName: r10.migrationName, result: 'verified' },
-    { migrationName: r11.migrationName, result: 'verified' }
+    { migrationName: r11.migrationName, result: 'verified' },
+    { migrationName: r12.migrationName, result: 'verified' }
   ]);
   assert.deepEqual(result.pending, ['20260724180000_password_reset_foundation']);
 });
 
-test('R10 and R11 tuples cannot satisfy each other', () => {
-  for (const mutate of [
-    (fixture: ReturnType<typeof productionFixture>) => {
-      const record = divergenceRow(fixture.rows, r10.migrationName);
-      record.id = r11.recordId;
-      record.checksum = r11.observedProductionChecksum;
-    },
-    (fixture: ReturnType<typeof productionFixture>) => {
-      const record = divergenceRow(fixture.rows, r11.migrationName);
-      record.id = r10.recordId;
-      record.checksum = r10.observedProductionChecksum;
+test('R10, R11 and R12 tuples cannot cross-satisfy', () => {
+  const tuples = [r10, r11, r12];
+  for (const target of tuples) {
+    for (const other of tuples.filter((candidate) => candidate !== target)) {
+      const fixture = productionFixture();
+      const record = divergenceRow(fixture.rows, target.migrationName);
+      record.id = other.recordId;
+      record.checksum = other.observedProductionChecksum;
+      assert.throws(() => verifyProductionFixture(fixture));
     }
-  ]) {
-    const fixture = productionFixture();
-    mutate(fixture);
-    assert.throws(() => verifyProductionFixture(fixture));
   }
 });
 
-test('the R11 alternate checksum fails strict Preview and any unlisted migration', () => {
+test('the R12 alternate checksum fails strict Preview and any unlisted migration', () => {
   const strictRows = manifest.migrations.map((migration, index) =>
     row({
       id: `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
       migration_name: migration.name,
       checksum:
-        migration.name === r11.migrationName
-          ? r11.observedProductionChecksum
+        migration.name === r12.migrationName
+          ? r12.observedProductionChecksum
           : migration.checksum
     })
   );
@@ -216,32 +247,32 @@ test('the R11 alternate checksum fails strict Preview and any unlisted migration
       )
   );
   assert.ok(unlisted);
-  unlisted.checksum = r11.observedProductionChecksum;
+  unlisted.checksum = r12.observedProductionChecksum;
   assert.throws(() => verifyProductionFixture(production));
 });
 
-test('R11 wrong record, checksum, lifecycle, manifest or Production fingerprint fails closed', () => {
+test('R12 wrong record, checksum, lifecycle, manifest or Production fingerprint fails closed', () => {
   const mutations: Array<(fixture: ReturnType<typeof productionFixture>) => void> = [
     (fixture) => {
-      divergenceRow(fixture.rows, r11.migrationName).id =
+      divergenceRow(fixture.rows, r12.migrationName).id =
         '33333333-3333-4333-8333-333333333333';
     },
     (fixture) => {
-      divergenceRow(fixture.rows, r11.migrationName).checksum = r11.repositoryChecksum;
+      divergenceRow(fixture.rows, r12.migrationName).checksum = r12.repositoryChecksum;
     },
     (fixture) => {
-      divergenceRow(fixture.rows, r11.migrationName).checksum =
-        `${r11.observedProductionChecksum.slice(0, -1)}c`;
+      divergenceRow(fixture.rows, r12.migrationName).checksum =
+        `${r12.observedProductionChecksum.slice(0, -1)}0`;
     },
     (fixture) => {
-      divergenceRow(fixture.rows, r11.migrationName).finished_at = null;
+      divergenceRow(fixture.rows, r12.migrationName).finished_at = null;
     },
     (fixture) => {
-      divergenceRow(fixture.rows, r11.migrationName).applied_steps_count = 0;
+      divergenceRow(fixture.rows, r12.migrationName).applied_steps_count = 0;
     },
     (fixture) => {
       const migration = fixture.manifest.migrations.find(
-        (candidate) => candidate.name === r11.migrationName
+        (candidate) => candidate.name === r12.migrationName
       );
       assert.ok(migration);
       migration.checksum = 'a'.repeat(64);
@@ -263,14 +294,15 @@ test('missing or changed tuple evidence and pattern-like attestation changes fai
   const missingDivergences = missing.repositoryMigrationChecksumDivergences as Array<
     Record<string, unknown>
   >;
-  delete missingDivergences[1].checksumEvidenceSha256;
+  delete missingDivergences[2].checksumEvidenceSha256;
   assert.throws(() => validateLineageAttestation(missing as unknown as LineageAttestation));
 
   const changed = structuredClone(pending);
   changed.repositoryMigrationChecksumDivergences = [
     changed.repositoryMigrationChecksumDivergences[0],
+    changed.repositoryMigrationChecksumDivergences[1],
     {
-      ...changed.repositoryMigrationChecksumDivergences[1],
+      ...changed.repositoryMigrationChecksumDivergences[2],
       checksumEvidenceSha256: 'f'.repeat(64)
     }
   ] as unknown as typeof changed.repositoryMigrationChecksumDivergences;
@@ -279,12 +311,59 @@ test('missing or changed tuple evidence and pattern-like attestation changes fai
   const wildcard = structuredClone(pending);
   wildcard.repositoryMigrationChecksumDivergences = [
     wildcard.repositoryMigrationChecksumDivergences[0],
+    wildcard.repositoryMigrationChecksumDivergences[1],
     {
-      ...wildcard.repositoryMigrationChecksumDivergences[1],
-      migrationName: '20260710*_users_roles_permissions_audit'
+      ...wildcard.repositoryMigrationChecksumDivergences[2],
+      migrationName: '20260710*_workflow_foundation'
     }
   ] as unknown as typeof wildcard.repositoryMigrationChecksumDivergences;
   assert.throws(() => validateLineageAttestation(wildcard));
+});
+
+test('every independently pinned R12 tuple field is immutable', () => {
+  const mutations: Array<(tuple: Record<string, unknown>) => void> = [
+    (tuple) => {
+      tuple.recordId = '44444444-4444-4444-8444-444444444444';
+    },
+    (tuple) => {
+      tuple.repositoryChecksum = 'a'.repeat(64);
+    },
+    (tuple) => {
+      tuple.observedProductionChecksum = 'b'.repeat(64);
+    },
+    (tuple) => {
+      tuple.productionDatabaseFingerprint = 'db_aaaaaaaaaaaaaaaa';
+    },
+    (tuple) => {
+      tuple.environment = 'preview';
+    },
+    (tuple) => {
+      tuple.approvedRepositoryLineageBaseline = 'c'.repeat(40);
+    },
+    (tuple) => {
+      tuple.approvedManifestHash = 'd'.repeat(64);
+    },
+    (tuple) => {
+      tuple.expectedLifecycle = {
+        startedAt: 'present-valid-canonical-utc-timestamp',
+        finishedAt: 'present-valid-canonical-utc-timestamp',
+        appliedStepsCount: 0,
+        rolledBackAt: null,
+        logsState: 'none',
+        logsDigest: null
+      };
+    }
+  ];
+  for (const mutate of mutations) {
+    const changed = structuredClone(pending);
+    const tuple = changed.repositoryMigrationChecksumDivergences[2] as unknown as Record<
+      string,
+      unknown
+    >;
+    mutate(tuple);
+    assert.throws(() => validateLineageAttestation(changed));
+    assert.throws(() => verifyProductionFixture({ ...productionFixture(), attestation: changed }));
+  }
 });
 
 test('attestation remains pending with no captures, approvals or active acceptance', () => {

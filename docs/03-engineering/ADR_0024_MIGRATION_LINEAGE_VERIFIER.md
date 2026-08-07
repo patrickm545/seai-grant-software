@@ -6,7 +6,7 @@
 | Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-06 |
+| Last reviewed | 2026-08-07 |
 
 ## Purpose And Boundary
 
@@ -223,13 +223,14 @@ stable safe category rather than raw driver text.
 
 ## Exact Production Repository-Checksum Divergences
 
-The closed R10 and R11 operations each established one checksum-only
+The closed R10, R11 and R12 operations each established one checksum-only
 exact-success mismatch:
 
 | Operation | Migration | Record ID | Canonical checksum | Observed Production checksum |
 | --- | --- | --- | --- | --- |
 | R10 | `20260710120000_identity_organisation_foundation` | `112c6124-f0c2-4b6b-8d02-f6ce835746e3` | `fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3` | `c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714` |
 | R11 | `20260710130000_users_roles_permissions_audit` | `93c04529-1d5b-4350-af01-ef225b69b008` | `cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf` | `4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb` |
+| R12 | `20260710140000_workflow_foundation` | `ce4489c9-fa9b-41e0-90fc-23a584e162da` | `7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d` | `fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8` |
 
 Separate repository-only investigations proved classification A for each
 tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
@@ -241,13 +242,13 @@ The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies both exact historical
+2. The ADR-0024 Production path separately verifies all three exact historical
    Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-The two-entry structure is an exact tuple set, not an alternate-checksum list.
-Every declared tuple must verify independently and one cannot satisfy the
-other. Preview, test, development and fresh databases receive no exception and
+The three-entry structure is an exact tuple set, not an alternate-checksum
+list. Every declared tuple must verify independently and one cannot satisfy
+another. Preview, test, development and fresh databases receive no exception and
 must use canonical checksums. A missing, duplicated, cross-matched or changed
 tuple fails closed. The Production-specific treatment retires with ADR-0024.
 

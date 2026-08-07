@@ -6,7 +6,7 @@
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-06 |
+| Last reviewed | 2026-08-07 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -84,21 +84,22 @@ capture requires fresh separate authority.
 
 ### Exact Repository-Migration Checksum Divergences
 
-The permanently closed R10 and R11 operations established two separate exact
+The permanently closed R10, R11 and R12 operations established three separate exact
 Production checksum mismatches. Later repository-only investigations proved
 classification A for each by converting only the exact committed UTF-8/no-BOM
-file's LF line endings to CRLF while retaining the final newline. Both
+file's LF line endings to CRLF while retaining the final newline. All three
 candidates normalize byte-for-byte to their committed Git blobs.
 
 Use the retained [R10 investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
-[R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+[R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
+[R12 investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 and evidence digests; do not recreate candidates during an operation.
 
-Before any later capture, verify attestation v4 still contains exactly both
+Before any later capture, verify attestation v4 still contains exactly all three
 tuples and pins each canonical and observed checksum as distinct fields, with
 its exact record ID, successful lifecycle, Production fingerprint, manifest
 hash, approved lineage baseline, evidence reference/digest and retirement
-scope. Both tuples are required and cannot cross-satisfy. Alternate checksums
+scope. All three tuples are required and cannot cross-satisfy. Alternate checksums
 are invalid in Preview, test, development, fresh databases and every other
 migration. This is not an LF/CRLF allow list. Any difference is exit `25` and
 an immediate stop.
@@ -131,7 +132,7 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
-- [ ] Attestation v4 checksum-divergence evidence digests and both exact
+- [ ] Attestation v4 checksum-divergence evidence digests and all three exact
       Production tuples verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator

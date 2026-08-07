@@ -1,0 +1,161 @@
+{
+  "version": "adr-0024-checksum-divergence-evidence/v1",
+  "governingOperation": "CHG-2026-08-06-ADR0024-PROD-EVIDENCE-R12",
+  "repositoryBaseline": "a60da87c62bb22d406f3e36f8484a13d14086a32",
+  "migrationPath": "prisma/migrations/20260710140000_workflow_foundation/migration.sql",
+  "migrationName": "20260710140000_workflow_foundation",
+  "productionRecordId": "ce4489c9-fa9b-41e0-90fc-23a584e162da",
+  "canonicalRepositoryChecksum": "7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d",
+  "observedProductionChecksum": "fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8",
+  "normalizationVersion": "adr-0024-migration-record-normalization/v1",
+  "source": {
+    "kind": "exact-committed-git-blob",
+    "commit": "a60da87c62bb22d406f3e36f8484a13d14086a32",
+    "byteLength": 12927,
+    "encoding": "UTF-8 without BOM",
+    "lineEndings": "LF",
+    "finalNewline": true
+  },
+  "candidates": [
+    {
+      "transformation": "exact-committed-git-blob",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "as-committed",
+      "finalNewline": true,
+      "byteLength": 12927,
+      "sha256": "7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 12927,
+      "sha256": "7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": false,
+      "byteLength": 12926,
+      "sha256": "e7606ae3e506d2ae026c362f429f262516e8ebcb1586039e561fe90e2fba257f",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 13190,
+      "sha256": "fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": true
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": false,
+      "byteLength": 13188,
+      "sha256": "7ddddd222886df878d753edb676712159dc7d115e91acfbcdc1e395a1fa3b5fe",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 12930,
+      "sha256": "d0a8e829c51c13e1efb62f6fd0206b6c8e01d1b75625652ffc9ef5b77e36b3f1",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 13193,
+      "sha256": "9abb6f066ec45a7628671c3f219ce4d8fd89d28f1598b6029d1df911ea7250ab",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-lf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "LF",
+      "finalNewline": false,
+      "byteLength": 12929,
+      "sha256": "f18d140a6f52944fe51b13ae6b30f85334b231efb11d253c4fd597cc789d7551",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "CRLF",
+      "finalNewline": false,
+      "byteLength": 13191,
+      "sha256": "c29a568e155fc4863613083f799265c64bc054fe94c17375d70fabfbb228acee",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    }
+  ],
+  "exactMatch": {
+    "transformation": "UTF-8 without BOM; convert each LF to CRLF; retain final newline",
+    "byteLength": 13190,
+    "lineEndingInsertions": 263,
+    "normalizesByteForByteToCommittedBlob": true,
+    "sqlTokensChanged": false,
+    "statementOrderChanged": false,
+    "commentsChangedExceptLineEndings": false,
+    "encodingContentChanged": false
+  },
+  "adjacentMigrationEvidence": {
+    "r10Migration": "20260710120000_identity_organisation_foundation",
+    "r11Migration": "20260710130000_users_roles_permissions_audit",
+    "r10Classification": "A-exact-alternate-byte-representation-proven",
+    "r11Classification": "A-exact-alternate-byte-representation-proven",
+    "sameCurrentWorkingTreeContainsAllThreeExactCrlfRepresentations": true,
+    "sameDocumentedDeployBatch": true,
+    "documentedCommand": "prisma migrate deploy",
+    "historicalCheckoutConfigurationProven": false
+  },
+  "historySearch": {
+    "reachableCommitsBranchesTagsAndPullRequestRefsInspected": true,
+    "reflogsAndStashesInspected": true,
+    "unreachableGitObjectsInspected": true,
+    "registeredAndArchivedWorktreesInspected": true,
+    "gitObjectCount": 3428,
+    "gitBlobCount": 1544,
+    "unreachableEntryCount": 578,
+    "refCount": 89,
+    "reflogEntryCount": 676,
+    "matchingSizeGitBlobCount": 0,
+    "matchingHistoricalGitBlobRecovered": false,
+    "matchingCurrentWorkingTreeMaterializationsObserved": true
+  },
+  "classification": "A-exact-alternate-byte-representation-proven",
+  "confidence": "high",
+  "limitations": [
+    "R12 reported only the safe checksum mismatch and did not establish the line-ending cause.",
+    "No checksum-identical historical Git blob was recovered.",
+    "Repository documentation records the deploy batch and command, but the exact historical wrapper invocation, operator and checkout configuration were not recovered."
+  ]
+}

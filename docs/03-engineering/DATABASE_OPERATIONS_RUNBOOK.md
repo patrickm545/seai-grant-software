@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner: Patrick McKenna |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-08-06 |
+| Last reviewed | 2026-08-07 |
 
 ## Guarded Commands
 
@@ -60,8 +60,8 @@ blocked status verification. It authorises no migration, deployment or alias
 movement and must be reviewed before the first 10 pilot installers or when a
 qualified reviewer joins.
 
-R10 and R11 are permanently closed typed diagnostic stops. Later
-repository-only investigations proved two exact CRLF historical checksum
+R10, R11 and R12 are permanently closed typed diagnostic stops. Later
+repository-only investigations proved three exact CRLF historical checksum
 representations and attestation v4 binds each one to its complete Production
 tuple. This is not a general normalization or alternate-checksum rule. The
 attestation remains pending with zero captures and approvals; no Production

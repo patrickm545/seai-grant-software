@@ -6,6 +6,7 @@
 | Status | Contained; remediation approval and execution pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
+| Last reviewed | 2026-08-07 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -214,10 +215,37 @@ No authoritative matching historical Git blob was recovered, so classification
 B and exact historical process provenance are not claimed.
 
 The two immutable migration files and manifest remain canonical and unchanged.
-Attestation v4 pins two independent exact Production tuples and requires both;
-it does not allow a checksum pattern or global line-ending exception. The
+Attestation v4 pins the two independent exact Production tuples then known and
+requires both; it does not allow a checksum pattern or global line-ending exception. The
 attestation remains pending with zero captures and zero approvals. The incident
 is not closed and any complete capture requires separate authorisation.
+
+## R12 Repository-Migration Checksum Divergence
+
+The separately authorised and permanently closed R12 read-only operation
+reached and accepted the exact R10 and R11 tuples, then stopped with typed exit
+`25` at the same fail-closed invariant. Record
+`ce4489c9-fa9b-41e0-90fc-23a584e162da` for
+`20260710140000_workflow_foundation` carried checksum
+`fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8`
+instead of canonical checksum
+`7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d`.
+R12 did not establish the cause and made no change.
+
+The later repository-only
+[R12 investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+proved classification A with high confidence. Converting the exact committed
+12,927-byte UTF-8/no-BOM SQL's 263 LF bytes to CRLF produces the exact
+13,190-byte observed checksum, and reverse normalization is byte-for-byte
+exact. No authoritative matching historical Git blob was recovered, so
+classification B and exact historical process provenance are not claimed.
+
+All three immutable migration files and the manifest remain canonical and
+unchanged. Attestation v4 pins three independent exact Production tuples and
+requires all three; it does not allow a checksum pattern or global line-ending
+exception. The attestation remains pending with zero captures and zero
+approvals. The incident is not closed and any complete capture requires
+separate authorisation.
 
 ## Impact And Risk
 
@@ -334,5 +362,7 @@ later, separately approved stages.
 - [R10 Checksum Divergence Investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [R11 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R11.md)
 - [R11 Checksum Divergence Investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R12 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R12.md)
+- [R12 Checksum Divergence Investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

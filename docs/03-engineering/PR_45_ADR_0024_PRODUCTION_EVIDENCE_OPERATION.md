@@ -6,10 +6,10 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-06 |
-| Operational state | R11 closed on second exact repository-migration checksum mismatch; two exact classification A tuples implemented; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11 closed 2026-08-06; any future attempt requires a new approval |
-| Repository baseline | `3281da65c013e9ad63dbc6c5da507640db586452` |
+| Last reviewed | 2026-08-07 |
+| Operational state | R12 closed on third exact repository-migration checksum mismatch; three exact classification A tuples implemented; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; any future attempt requires a new approval |
+| Repository baseline | `a60da87c62bb22d406f3e36f8484a13d14086a32` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -26,6 +26,8 @@
 | R10 investigation | [Classification A checksum divergence](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R11 operation | [Second exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R11.md) |
 | R11 investigation | [Second classification A checksum divergence](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R12 operation | [Third exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R12.md) |
+| R12 investigation | [Third classification A checksum divergence](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -215,12 +217,37 @@ It remains permanently closed.
 
 The subsequent repository-only investigation proved classification A for the
 second exact tuple using the same reversible LF-to-CRLF byte transformation.
-Attestation v4 records both exact Production tuples and requires them
+Attestation v4 then recorded both exact Production tuples and required them
 independently while the migrations and manifest remain unchanged. This is not
 a global line-ending or checksum exception. No Production command or
 connection was used for the investigation. The attestation remains pending
 with zero captures and approvals; another complete capture requires new,
-separate authorisation. No R12 authority exists.
+separate authorisation. The investigation itself created no R12 authority.
+
+## Twelfth Authorised Operation
+
+`CHG-2026-08-06-ADR0024-PROD-EVIDENCE-R12` invoked the fixed launcher once at
+approved head `a60da87c62bb22d406f3e36f8484a13d14086a32`. The exact R10 and
+R11 tuples passed in order. The first guarded read-only transaction and fixed
+identity, ledger and catalog queries completed. Evidence generation stopped
+with `LEDGER_MISMATCH`, exit `25`, because record
+`ce4489c9-fa9b-41e0-90fc-23a584e162da` for
+`20260710140000_workflow_foundation` had checksum
+`fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8`
+instead of canonical manifest checksum
+`7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d`.
+No other exact-success failure was emitted for that migration. R12 itself did
+not prove the cause, did not start the second capture and produced no complete
+evidence or digest. It remains permanently closed.
+
+The subsequent repository-only investigation proved classification A for the
+third exact tuple using the same reversible LF-to-CRLF byte transformation.
+Attestation v4 records all three exact Production tuples and requires them
+independently while the migrations and manifest remain unchanged. This is not
+a global line-ending or checksum exception. No Production command or
+connection was used for the investigation. The attestation remains pending
+with zero captures and approvals; another complete capture requires new,
+separate authorisation. No R13 authority exists.
 
 The only permitted successful status remains:
 

@@ -1,5 +1,5 @@
 {
-  "version": "clada-adr-0024-lineage-attestation/v4",
+  "version": "clada-adr-0024-lineage-attestation/v5",
   "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
   "status": "pending",
   "incidentReference": "ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT",
@@ -25,12 +25,15 @@
     "docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R11_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R12_CHECKSUM_DIVERGENCE.json",
+    "docs/03-engineering/evidence/ADR_0024_R13_CHECKSUM_DIVERGENCE.json",
+    "docs/03-engineering/evidence/ADR_0024_R13_ZERO_STEP_LIFECYCLE_INVESTIGATION.json",
+    "docs/03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json",
     "Draft PR #43 implementation evidence"
   ],
   "environment": "production",
   "approvedDatabaseFingerprint": "db_4e1d3bd23cff6801",
   "historicalEvidenceBaseline": "0ee3c67e8295ca8f988e5b60ec75b66c0f18741b",
-  "verifierImplementationVersion": "adr-0024-lineage-verifier/v1",
+  "verifierImplementationVersion": "adr-0024-lineage-verifier/v2",
   "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
   "manifestVersion": "clada-migration-manifest/v1",
   "repositoryMigrationChecksumDivergences": [
@@ -105,6 +108,56 @@
       },
       "scope": "Exact ADR-0024 Production historical record only",
       "retirementCondition": "Retires with ADR-0024 attestation"
+    }
+  ],
+  "historicalResolvedMigrations": [
+    {
+      "stateName": "attestedHistoricalResolvedMigration",
+      "stateVersion": "adr-0024-attested-historical-resolved-migration/v1",
+      "environment": "production",
+      "productionDatabaseFingerprint": "db_4e1d3bd23cff6801",
+      "migrationName": "20260716183000_pilot_installer_auth",
+      "recordId": "69505647-7711-408c-853e-32579345d1b0",
+      "repositoryChecksum": "d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb",
+      "observedProductionChecksum": "fee0749e78b3ecc7aea1f6823b338a16c0ed5fb8e4613e079042bb52192913a9",
+      "checksumClassification": "A-exact-alternate-byte-representation-proven",
+      "checksumEvidenceReference": "docs/03-engineering/evidence/ADR_0024_R13_CHECKSUM_DIVERGENCE.json",
+      "checksumEvidenceSha256": "9134ad417c1fba9ff440af03c1e0853b83eca69aa0b0696f67b538d728532ed8",
+      "lifecycleClassification": "L1-zero-step-completed-state-authoritatively-explained-and-safe-historical-operation",
+      "resolveEvidenceReference": "local-codex-session/2026-07-17/rollout-2026-07-17T12-49-52-019f6fe9-4a16-7812-b729-cad26dcbaddd.jsonl",
+      "resolveEvidenceSha256": "779cdd18bfca9a6a60c0dd764551c2f56b693913b5275b544a5d15e3a13422de",
+      "lifecycleEvidenceReference": "docs/03-engineering/evidence/ADR_0024_R13_ZERO_STEP_LIFECYCLE_INVESTIGATION.json",
+      "lifecycleEvidenceSha256": "5f1f11c00fca0df3a0d97cbc1b93b0e333dd65cf2e1ba217c04d334a1352ee4a",
+      "expectedSchemaInventoryReference": "docs/03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json",
+      "expectedSchemaInventorySha256": "59776802420939275534b139cf9c05c911e9177690e6689964f1ca07962317e5",
+      "expectedSchemaInventoryVersion": "adr-0024-pilot-auth-evolved-schema-inventory/v1",
+      "expectedAppliedStepsCount": 0,
+      "expectedRolledBackAt": null,
+      "expectedLogsState": "none",
+      "expectedLogsDigest": null,
+      "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
+      "approvedRepositoryLineageBaseline": "a238c6c6c9569761a14257a5deafa034d3ea1029",
+      "scope": "Exact ADR-0024 Production pilot authentication historical resolve record only",
+      "retirementCondition": "Retires with ADR-0024 attestation",
+      "exactLedgerTimestamps": {
+        "startedAt": null,
+        "finishedAt": null
+      },
+      "observedCurrentSchema": {
+        "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
+        "fingerprint": null,
+        "catalogAssertionsVersion": "adr-0024-historical-resolved-catalog-assertions/v1",
+        "catalogAssertionsDigest": null,
+        "evidenceReference": null,
+        "evidenceSha256": null
+      },
+      "r14Evidence": {
+        "changeId": null,
+        "repositoryRevision": null,
+        "captureArtifactReferences": [],
+        "captureArtifactSha256s": [],
+        "recoveryEvidenceReference": null
+      }
     }
   ],
   "missingMigration": {

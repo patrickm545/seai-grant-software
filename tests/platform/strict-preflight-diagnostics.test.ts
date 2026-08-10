@@ -82,7 +82,7 @@ test('R10, R11, and R12 Production checksum tuples cannot cross into Preview', (
   }
 });
 
-test('attestation v4 presence does not alter Preview acceptance', () => {
+test('attestation v5 historical state does not alter Preview acceptance', () => {
   const withoutAttestation = verifyLineage(strictInput());
   const withAttestation = verifyLineage(strictInput({ attestation: activeAttestation() }));
   assert.deepEqual(withAttestation, withoutAttestation);

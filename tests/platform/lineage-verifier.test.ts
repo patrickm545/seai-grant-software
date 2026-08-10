@@ -15,11 +15,11 @@ import type { LineageAttestation } from '../../lib/lineage-attestation';
 import type { MigrationLedgerRow } from '../../lib/migration-ledger';
 import { normaliseMigrationRecord } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
-import { fingerprintCatalog } from '../../lib/schema-fingerprint';
 import { activeAttestation } from './lineage-attestation.test';
-import { preMigrationCatalog } from './schema-fingerprint.test';
+import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
 
 const manifest = JSON.parse(readFileSync('prisma/migration-manifest.json', 'utf8')) as MigrationManifest;
+const ACTIVE_REPOSITORY_BASELINE = '1'.repeat(40);
 
 function row(input: Partial<MigrationLedgerRow> & Pick<MigrationLedgerRow, 'id' | 'migration_name' | 'checksum'>) {
   return {
@@ -34,8 +34,8 @@ function row(input: Partial<MigrationLedgerRow> & Pick<MigrationLedgerRow, 'id' 
 
 function productionFixture() {
   const attestation = activeAttestation();
-  const catalog = preMigrationCatalog();
-  attestation.schema.preMigrationFingerprint = fingerprintCatalog(catalog).fingerprint;
+  const historical = attestation.historicalResolvedMigrations[0];
+  const catalog = preMigrationCatalogWithPilotAuth();
   const ledgerRows: MigrationLedgerRow[] = manifest.migrations
     .filter(
       (migration) =>
@@ -44,17 +44,24 @@ function productionFixture() {
     )
     .map((migration, index) =>
       row({
-        id:
-          attestation.repositoryMigrationChecksumDivergences.find(
+        id: migration.name === historical.migrationName
+          ? historical.recordId
+          : attestation.repositoryMigrationChecksumDivergences.find(
             (divergence) => divergence.migrationName === migration.name
           )?.recordId ?? `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
         migration_name: migration.name,
-        checksum:
-          attestation.repositoryMigrationChecksumDivergences.find(
+        checksum: migration.name === historical.migrationName
+          ? historical.observedProductionChecksum
+          : attestation.repositoryMigrationChecksumDivergences.find(
             (divergence) => divergence.migrationName === migration.name
           )?.observedProductionChecksum ?? migration.checksum,
-        started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
-        finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
+        started_at: migration.name === historical.migrationName
+          ? historical.exactLedgerTimestamps.startedAt!
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+        finished_at: migration.name === historical.migrationName
+          ? historical.exactLedgerTimestamps.finishedAt!
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`,
+        applied_steps_count: migration.name === historical.migrationName ? 0 : 1
       })
     );
   ledgerRows.push(
@@ -103,7 +110,7 @@ test('exact synthetic ADR-0024 lineage verifies but status remains pending-block
     environment: 'production',
     identity: productionIdentity(),
     connectedDatabaseName: 'clada',
-    repositoryBaseline: '0ee3c67e8295ca8f988e5b60ec75b66c0f18741b',
+    repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
     manifest,
     ...fixture,
     now: new Date('2026-08-01T00:00:00.000Z')
@@ -112,6 +119,7 @@ test('exact synthetic ADR-0024 lineage verifies but status remains pending-block
   assert.deepEqual(evidence.pendingMigrations, ['20260724180000_password_reset_foundation']);
   assert.equal(evidence.attestedDiscrepancy, 'verified');
   assert.equal(evidence.attestedRepositoryChecksumDivergence, 'verified');
+  assert.equal(evidence.attestedHistoricalResolvedMigration, 'verified');
 });
 
 test('exact synthetic deliberate preflight passes and ledger mutations fail closed', () => {
@@ -121,7 +129,7 @@ test('exact synthetic deliberate preflight passes and ledger mutations fail clos
     environment: 'production',
     identity: productionIdentity(),
     connectedDatabaseName: 'clada',
-    repositoryBaseline: 'successor',
+    repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
     manifest,
     ...fixture,
     now: new Date('2026-08-01T00:00:00.000Z'),
@@ -151,7 +159,7 @@ test('exact synthetic deliberate preflight passes and ledger mutations fail clos
           environment: 'production',
           identity: productionIdentity(),
           connectedDatabaseName: 'clada',
-          repositoryBaseline: 'successor',
+          repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
           manifest,
           ...changed,
           now: new Date('2026-08-01T00:00:00.000Z')
@@ -170,7 +178,7 @@ test('wrong database, Preview use, inactive lifecycle, and schema drift fail clo
         environment: 'production',
         identity: productionIdentity(),
         connectedDatabaseName: 'clada',
-        repositoryBaseline: 'successor',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
         manifest,
         ledgerRows: base.ledgerRows,
         catalog: base.catalog
@@ -184,7 +192,7 @@ test('wrong database, Preview use, inactive lifecycle, and schema drift fail clo
         environment: 'production',
         identity: { ...productionIdentity(), fingerprint: 'db_31449de1074844bb' },
         connectedDatabaseName: 'clada',
-        repositoryBaseline: 'successor',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
         manifest,
         ...base
       }),
@@ -197,7 +205,7 @@ test('wrong database, Preview use, inactive lifecycle, and schema drift fail clo
         environment: 'preview',
         identity: productionIdentity(),
         connectedDatabaseName: 'clada',
-        repositoryBaseline: 'successor',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
         manifest,
         ...base
       }),
@@ -212,13 +220,13 @@ test('wrong database, Preview use, inactive lifecycle, and schema drift fail clo
         environment: 'production',
         identity: productionIdentity(),
         connectedDatabaseName: 'clada',
-        repositoryBaseline: 'successor',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
         manifest,
         attestation: inactive,
         ledgerRows: base.ledgerRows,
         catalog: base.catalog
       }),
-    (error: unknown) => error instanceof LineageVerifierError && error.code === 'ATTESTATION_INACTIVE'
+    (error: unknown) => error instanceof LineageVerifierError && error.code === 'UNSAFE_CONFIGURATION'
   );
   const drift = productionFixture();
   drift.catalog.columns[0].nullable = false;
@@ -229,7 +237,7 @@ test('wrong database, Preview use, inactive lifecycle, and schema drift fail clo
         environment: 'production',
         identity: productionIdentity(),
         connectedDatabaseName: 'clada',
-        repositoryBaseline: 'successor',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
         manifest,
         ...drift,
         now: new Date('2026-08-01T00:00:00.000Z')

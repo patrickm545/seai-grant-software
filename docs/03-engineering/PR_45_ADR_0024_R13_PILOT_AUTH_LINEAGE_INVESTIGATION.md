@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-PR-45-ADR-0024-R13-PILOT-AUTH-LINEAGE |
-| Status | Complete; lifecycle L1; governance decision pending |
+| Status | Complete; lifecycle L1; historical-state amendment accepted; current evidence pending |
 | Owner | Patrick McKenna |
 | Review cycle | Before any fourth historical-state decision |
 | Last reviewed | 2026-08-10 |
@@ -96,21 +96,26 @@ exact timestamps.
 
 ## Governance Decision
 
-The history supports A + L1, but current evidence is **not sufficient for a
-fourth verifier tuple**. ADR-0024 currently models ordinary one-step success
-and three exact one-step checksum divergences. A zero-step state needs a new,
-separately reviewed ADR decision and a distinct structure such as
-`attestedHistoricalMigrationState`. It must never broaden ordinary success,
-and Preview, Development, test and fresh databases must remain canonical-only.
+ADR-0024 now defines the separate exact state
+`attestedHistoricalResolvedMigration`. It does not add a fourth R10-R12 tuple
+and does not change the ordinary one-step success rule. The implementation is
+restricted to the exact Production fingerprint, pilot-auth name, record ID,
+both checksums, zero-step lifecycle, retained checksum/lifecycle/resolve
+evidence, manifest, repository baseline and deterministic evolved-schema
+inventory established by this investigation.
 
-Any later proposal must pin the Production fingerprint, migration and record
-ID, both checksums, zero applied steps, exact timestamps, rollback and log
-state, manifest and lineage baseline, both evidence digests, current exact
-catalog proof and attestation lifecycle. Until that decision is approved and
-the missing evidence is captured, the current verifier correctly fails closed.
+The entry remains pending. Exact current ledger timestamps, current schema
+fingerprint, named catalog assertion digest, two R14 capture references and
+hashes, R14 repository revision, change ID and current recovery evidence are
+null or empty. Only a separately authorised read-only R14 operation may
+capture those values. Until two captures match and the active attestation
+passes, Production remains fail closed and Preview, Development, test and
+fresh databases remain canonical-only.
 
 The lifecycle evidence file is
 `docs/03-engineering/evidence/ADR_0024_R13_ZERO_STEP_LIFECYCLE_INVESTIGATION.json`,
 SHA-256
 `5f1f11c00fca0df3a0d97cbc1b93b0e333dd65cf2e1ba217c04d334a1352ee4a`.
-No migration, manifest, verifier or attestation-schema file changed.
+R13 remains permanently closed. The later repository-only amendment changed
+the verifier and attestation schema without changing migration SQL, the
+manifest or Production.

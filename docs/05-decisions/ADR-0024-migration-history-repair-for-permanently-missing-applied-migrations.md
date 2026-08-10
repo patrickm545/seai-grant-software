@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-10 |
 
 ## Context
 
@@ -499,33 +499,70 @@ Before execution:
 6. Resume password-reset planning only after Production migration and
    deployment verification are complete.
 
-## Proposed R13 Historical Zero-Step Addendum - Decision Pending
+## Accepted Historical-Resolved-Migration Amendment
 
-R13 found that `20260716183000_pilot_installer_auth` is not an ordinary exact
-successful migration record: its exact Production record has the reversible
-CRLF checksum and `applied_steps_count = 0`. A retained original operation
-artifact proves that a separately authorised reviewed repair transaction
-established and verified the intended schema before Prisma
-`migrate resolve --applied` recorded the migration from the Windows checkout.
-This supports checksum classification A and lifecycle classification L1.
+ADR-0024 defines `attestedHistoricalResolvedMigration` as a distinct,
+fail-closed historical state. It is not ordinary migration success and is not
+a general acceptance of `migrate resolve`. Exactly one pending entry exists
+for `20260716183000_pilot_installer_auth`.
 
-That historical explanation does not activate verifier acceptance. A future
-ADR decision may introduce one separately named exact structure such as
-`attestedHistoricalMigrationState`, but it must not redefine ordinary
-successful migration semantics. Any such decision must pin the Production
-fingerprint, migration name, record ID, canonical and observed checksums,
-exact zero-step lifecycle and timestamps, rollback and log state, manifest,
-repository lineage, checksum and lifecycle evidence, current exact catalog
-proof and attestation lifecycle.
+The ordinary invariant is unchanged:
 
-Before that decision can be accepted, a new separately authorised read-only
-capture must establish the exact ledger timestamps and current catalog state
-for every table, column, constraint, index, default and foreign key owned by
-the migration, including compatible later `AuthSession` evolution and absence
-of unsupported objects. R13 did not emit that complete evidence.
+> ordinary repository migration = canonical checksum, one unambiguous
+> finished and not-rolled-back record, `applied_steps_count = 1`, and no logs.
 
-Until review and approval of this proposed addendum, the existing normal
-one-step invariant and three exact R10-R12 tuples remain unchanged. The
-verifier must fail closed for the R13 record. Preview, Development, test and
-fresh databases remain canonical-only. This proposal authorises no Production
-access, migration, resolution, deployment, status command or R14 operation.
+The separate historical invariant requires every field below to be exact:
+
+- Production environment and fingerprint `db_4e1d3bd23cff6801`;
+- migration `20260716183000_pilot_installer_auth` and record
+  `69505647-7711-408c-853e-32579345d1b0`;
+- canonical checksum `d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb`
+  and observed CRLF checksum
+  `fee0749e78b3ecc7aea1f6823b338a16c0ed5fb8e4613e079042bb52192913a9`;
+- classification A checksum evidence and classification L1 lifecycle and
+  resolve-operation evidence, each bound to its exact SHA-256;
+- one finished, not-rolled-back record with `applied_steps_count = 0`, no logs,
+  and exact current ledger timestamps;
+- manifest hash, repository baseline, deterministic evolved-schema inventory,
+  full current schema fingerprint and exact named catalog assertions;
+- two matching captures from one newly authorised operation, current recovery
+  evidence, active attestation lifecycle, and the required governance and
+  accountability approvals.
+
+Missing, additional or different evidence fails closed. The state cannot be
+used by Preview, Development, test or fresh-database verification; cannot be
+reused by another migration, database fingerprint or record; and cannot be
+satisfied through the R10-R12 checksum-divergence structure. The three
+ordinary one-step R10-R12 tuples are unchanged.
+
+The deterministic expected schema inventory is
+[`ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json`](../03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json).
+It distinguishes objects introduced by the pilot-auth repair from the later,
+committed `AuthSession.sessionType` evolution. Current Production must match
+that evolved end-state and the complete catalog fingerprint; the July 16 state
+is not treated as permanently frozen.
+
+## R14 Activation Gate
+
+This amendment does not authorise R14 or activate the attestation. A future,
+separately authorised read-only R14 operation must prove all of the following
+before activation can be considered:
+
+1. all exact R10-R12 records still pass independently;
+2. the pilot-auth name, record ID, observed checksum, zero-step count, exact
+   canonical `started_at` and `finished_at`, null rollback, and no-log state;
+3. the full current Production schema fingerprint and every named pilot-auth
+   catalog assertion, including the declared `sessionType` evolution and no
+   conflicting protected object;
+4. the pending migration set is exactly
+   `20260724180000_password_reset_foundation`;
+5. two read-only repeatable-read captures match in every deterministic field;
+6. current recovery evidence and the exact R14 repository revision are bound
+   to both retained artifact references and SHA-256 digests; and
+7. active attestation validation, governance approval and accountability
+   requirements all pass.
+
+Until those values are captured and reviewed, the entry retains null ledger
+timestamps, null current-schema evidence, empty R14 capture references, and a
+pending attestation. This amendment authorises no Production access, status
+command, migration, resolution, deployment, alias movement or R14 operation.

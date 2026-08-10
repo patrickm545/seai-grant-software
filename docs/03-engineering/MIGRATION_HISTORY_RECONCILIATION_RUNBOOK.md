@@ -6,7 +6,7 @@
 | Status | Active governance; repository preparation complete, operational evidence and activation pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-10 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -487,28 +487,29 @@ Attestation** operational PR. Production migration execution then requires a
 different PR and explicit approval. Resume password-reset request-flow work
 only after that execution is verified.
 
-## R13 Zero-Step Historical-State Gate
+## Historical-Resolved-Migration Gate After R13
 
 The closed R13 operation established that
 `20260716183000_pilot_installer_auth` has an exact CRLF checksum and a finished,
 not-rolled-back, zero-step record. A retained original operation artifact
 explains this as reviewed transactional repair followed by
-`migrate resolve --applied`. Do not interpret that explanation as ordinary
-migration success or as authority to add a verifier exception.
+`migrate resolve --applied`. ADR-0024 records that explanation in the separate
+`attestedHistoricalResolvedMigration` structure. It is not ordinary migration
+success: the normal path still requires `applied_steps_count = 1`.
 
-Before any explicit historical-state treatment can be reviewed, require:
+The pending entry pins the exact fingerprint, migration, record ID, both
+checksums, zero-step lifecycle, checksum/lifecycle/resolve evidence, manifest,
+repository baseline and deterministic evolved-schema inventory. Do not copy
+the entry, pattern-match it, move it into `repositoryMigrationChecksumDivergences`,
+or use it for Preview, Development, test or another Production fingerprint.
 
-1. a separately approved ADR decision defining a named zero-step historical
-   state without weakening the normal one-step invariant;
-2. a new read-only operation authorisation;
-3. exact record timestamps, rollback state and log state;
-4. exact read-only catalog proof for all pilot-auth tables, columns,
-   constraints, indexes, defaults and foreign keys, including compatible later
-   schema evolution;
-5. the pinned checksum and lifecycle evidence digests; and
-6. negative tests proving every other zero-step state fails closed.
+Before activation, a separately authorised R14 read-only capture must add and
+prove exact canonical ledger timestamps, full current schema fingerprint,
+every named pilot-auth catalog assertion, two matching deterministic captures,
+the exact pending migration set, current recovery evidence and the R14
+repository revision. Missing or different evidence is a stop. R14 must not be
+inferred from the retained July 17 artifact.
 
-Until all six gates are satisfied and reviewed, stop on this record. Do not
-run `migrate resolve`, edit `_prisma_migrations`, replay the historical repair,
-or infer current Production schema equivalence from the retained July 17
-artifact.
+Do not run `migrate resolve`, edit `_prisma_migrations`, replay the historical
+repair, activate the attestation manually or treat this repository amendment
+as Production authority.

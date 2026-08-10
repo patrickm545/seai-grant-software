@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-08-10 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -163,7 +163,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 - [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
 - [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Accepted; implementation prerequisites outstanding
-- [05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) - Accepted; Production remediation implementation and execution pending
+- [05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) - Accepted; historical-resolved amendment implemented, current Production evidence and activation pending
 
 ## Sprints
 

@@ -11,10 +11,48 @@ import {
   validateLineageAttestation,
   type LineageAttestation
 } from '../../lib/lineage-attestation';
+import { assertPilotAuthHistoricalResolvedCatalog } from '../../lib/historical-resolved-migration';
+import { fingerprintCatalog } from '../../lib/schema-fingerprint';
+import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
 
 const pending = JSON.parse(
   readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
 ) as LineageAttestation;
+
+function populateActiveHistoricalResolvedMigration(
+  value: LineageAttestation,
+  input: {
+    artifactReferences?: [string, string];
+    artifactSha256s?: [string, string];
+    changeId?: string;
+    repositoryRevision?: string;
+    recoveryEvidenceReference?: string;
+  } = {}
+) {
+  const catalog = preMigrationCatalogWithPilotAuth();
+  const fingerprint = fingerprintCatalog(catalog).fingerprint;
+  const assertions = assertPilotAuthHistoricalResolvedCatalog(catalog);
+  const historical = value.historicalResolvedMigrations[0];
+  const artifactReferences = input.artifactReferences ?? [
+    'CHANGE-001/CAPTURE-1',
+    'CHANGE-001/CAPTURE-2'
+  ];
+  const artifactSha256s = input.artifactSha256s ?? ['d'.repeat(64), 'f'.repeat(64)];
+  historical.exactLedgerTimestamps.startedAt = '2026-07-17T13:00:00.123456Z';
+  historical.exactLedgerTimestamps.finishedAt = '2026-07-17T13:00:00.123456Z';
+  historical.observedCurrentSchema.fingerprint = fingerprint;
+  historical.observedCurrentSchema.catalogAssertionsDigest = assertions.assertionsDigest;
+  historical.observedCurrentSchema.evidenceReference = artifactReferences[0];
+  historical.observedCurrentSchema.evidenceSha256 = artifactSha256s[0];
+  historical.r14Evidence.changeId = input.changeId ?? 'CLADA-CHG-ADR0024-PILOT-001';
+  historical.r14Evidence.repositoryRevision = input.repositoryRevision ?? '1'.repeat(40);
+  historical.r14Evidence.captureArtifactReferences = [...artifactReferences];
+  historical.r14Evidence.captureArtifactSha256s = [...artifactSha256s];
+  historical.r14Evidence.recoveryEvidenceReference =
+    input.recoveryEvidenceReference ?? 'NEON-PITR-2026-07-28T00:30:00.000Z';
+  value.schema.preMigrationFingerprint = fingerprint;
+  return { catalog, fingerprint, assertions };
+}
 
 export function activeAttestation(): LineageAttestation {
   const value = structuredClone(pending);
@@ -26,7 +64,7 @@ export function activeAttestation(): LineageAttestation {
   value.relatedMigration.failedRecord.id = '11111111-1111-4111-8111-111111111111';
   value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
   value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
-  value.schema.preMigrationFingerprint = 'b'.repeat(64);
+  populateActiveHistoricalResolvedMigration(value);
   value.schema.postMigrationFingerprint = 'c'.repeat(64);
   value.schema.freshHeadFingerprint = 'c'.repeat(64);
   const reviewers = [
@@ -59,7 +97,7 @@ function activePilotStageAttestation(): LineageAttestation {
   value.relatedMigration.failedRecord.id = '11111111-1111-4111-8111-111111111111';
   value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
   value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
-  value.schema.preMigrationFingerprint = 'b'.repeat(64);
+  const historical = populateActiveHistoricalResolvedMigration(value);
   value.schema.postMigrationFingerprint = 'c'.repeat(64);
   value.schema.freshHeadFingerprint = 'c'.repeat(64);
   const evidenceReference = 'docs/approvals/ADR0024-pilot-production-owner.md';
@@ -83,7 +121,7 @@ function activePilotStageAttestation(): LineageAttestation {
     connectedDatabaseName: 'clada-production',
     operator: 'Patrick McKenna' as const,
     restorePointReference: 'NEON-PITR-2026-07-28T00:30:00.000Z',
-    schemaFingerprint: 'b'.repeat(64),
+    schemaFingerprint: historical.fingerprint,
     namedAssertionsVersion: 'adr-0024-catalog-assertions/v2' as const
   };
   value.pilotStageCompensatingControl!.activatedAt = value.reviewedAt;
@@ -97,7 +135,7 @@ function activePilotStageAttestation(): LineageAttestation {
 
 test('checked-in attestation is complete enough to review but inactive by design', () => {
   assert.equal(validateLineageAttestation(pending).status, 'pending');
-  assert.equal(pending.version, 'clada-adr-0024-lineage-attestation/v4');
+  assert.equal(pending.version, 'clada-adr-0024-lineage-attestation/v5');
   assert.equal(pending.reviewedAt, null);
   assert.equal(pending.expiresAt, null);
   assert.equal(pending.governanceMode, 'pilot-stage-compensating-control');
@@ -111,6 +149,14 @@ test('checked-in attestation is complete enough to review but inactive by design
     pending.repositoryMigrationChecksumDivergences,
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES
   );
+  assert.equal(pending.historicalResolvedMigrations.length, 1);
+  assert.equal(
+    pending.historicalResolvedMigrations[0].stateName,
+    'attestedHistoricalResolvedMigration'
+  );
+  assert.equal(pending.historicalResolvedMigrations[0].exactLedgerTimestamps.startedAt, null);
+  assert.equal(pending.historicalResolvedMigrations[0].exactLedgerTimestamps.finishedAt, null);
+  assert.equal(pending.historicalResolvedMigrations[0].observedCurrentSchema.fingerprint, null);
   assert.equal(pending.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
   assert.equal(pending.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
   assert.equal(
@@ -153,7 +199,7 @@ test('pilot-stage mode activates only with exact compensating controls and Patri
 
   const mismatched = activePilotStageAttestation();
   mismatched.pilotStageCompensatingControl!.captures[1].changeId = 'DIFFERENT-CHANGE';
-  assert.throws(() => validateLineageAttestation(mismatched), /must match exactly/);
+  assert.throws(() => validateLineageAttestation(mismatched), /must match (?:both|exactly)/);
 
   const weakenedStatusRequirement = activePilotStageAttestation();
   weakenedStatusRequirement.pilotStageCompensatingControl!.requiredProductionStatusExitCode =
@@ -210,7 +256,7 @@ test('changing pending status alone cannot activate without exact evidence, appr
   statusOnly.status = 'active';
   assert.throws(
     () => validateLineageAttestation(statusOnly, { requireActive: true }),
-    /must be an exact UUID/
+    /historicalResolvedMigration\.exactLedgerTimestamps\.startedAt/
   );
 });
 

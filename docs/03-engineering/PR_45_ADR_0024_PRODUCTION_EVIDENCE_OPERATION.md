@@ -6,10 +6,10 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-07 |
-| Operational state | R12 closed on third exact repository-migration checksum mismatch; three exact classification A tuples implemented; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; any future attempt requires a new approval |
-| Repository baseline | `a60da87c62bb22d406f3e36f8484a13d14086a32` |
+| Last reviewed | 2026-08-10 |
+| Operational state | R13 permanently closed; separate historical-resolved model pending current R14 evidence; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13 closed 2026-08-10; R14 is not authorised |
+| Repository baseline | `a238c6c6c9569761a14257a5deafa034d3ea1029` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -28,6 +28,8 @@
 | R11 investigation | [Second classification A checksum divergence](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R12 operation | [Third exact repository checksum mismatch](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R12.md) |
 | R12 investigation | [Third classification A checksum divergence](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R13 operation | [Pilot-auth checksum and zero-step stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md) |
+| R13 investigation | [Classification A and lifecycle L1](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -526,10 +528,27 @@ manifest and the exact record had zero applied steps.
 Later repository-only work classified the checksum A and the historical
 lifecycle L1, based on reversible bytes and the retained original reviewed
 repair plus `migrate resolve --applied` artifact. No fourth tuple was added.
-The attestation remains pending with zero captures and zero approvals because
-exact ledger timestamps, current catalog proof and a separate ADR decision are
-still required. See the [R13 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
+ADR-0024 now defines the separate exact
+`attestedHistoricalResolvedMigration` state while preserving ordinary
+one-step success. The attestation remains pending with zero captures and zero
+approvals because exact current ledger timestamps, evolved catalog proof, two
+matching R14 artifacts and current recovery evidence are still required. See
+the [R13 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
 and [lineage investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md).
 
 This follow-up did not access Production, run capture or status, execute or
 resolve a migration, deploy, move an alias or create R14 authority.
+
+## Repository-Only Historical-State Amendment
+
+Attestation v5 contains exactly one pending historical-resolved entry. Known
+R13 fields and retained evidence hashes are pinned; current Production ledger
+timestamps, schema fingerprint, catalog assertion digest, R14 change and
+repository revision, capture references and recovery evidence remain null or
+empty. The fixed capture path can collect those values only during a newly
+authorised read-only R14 operation and cannot activate the attestation merely
+because the historical explanation is known.
+
+This amendment changed no migration SQL or manifest, queried no database, and
+ran no Production status, migration, deployment or alias operation. R13 stays
+closed and R14 remains unauthorised.

@@ -14,8 +14,9 @@ import {
   fingerprintCatalog,
   SCHEMA_FINGERPRINT_VERSION
 } from './schema-fingerprint';
+import { assertPilotAuthHistoricalResolvedCatalog } from './historical-resolved-migration';
 
-export const VERIFIER_VERSION = 'adr-0024-lineage-verifier/v1' as const;
+export const VERIFIER_VERSION = 'adr-0024-lineage-verifier/v2' as const;
 export const VERIFIER_EXIT_CODES = {
   VERIFIED_CLEAN: 0,
   VERIFIED_PENDING_BLOCKED: 20,
@@ -132,11 +133,19 @@ export type VerifierEvidence = {
     migrationName: string;
     result: 'verified';
   }>;
+  attestedHistoricalResolvedMigration: 'not-applicable' | 'verified';
+  attestedHistoricalResolvedMigrations: Array<{
+    migrationName: string;
+    result: 'verified';
+  }>;
   relatedDuplicateState: 'not-applicable' | 'verified';
   schemaFingerprintVersion: string;
   schemaFingerprint: string;
   schemaFingerprintResult: 'verified';
   namedCatalogAssertions: ReturnType<typeof assertNamedCatalog>;
+  historicalResolvedCatalogAssertions:
+    | ReturnType<typeof assertPilotAuthHistoricalResolvedCatalog>
+    | null;
   lifecycleResult: 'not-applicable' | 'active';
   finalDecision: 'verified-clean' | 'verified-pending-blocked';
   timestamp: string;
@@ -168,6 +177,10 @@ export function verifyLineage(input: {
   let attestedRepositoryChecksumDivergence: VerifierEvidence['attestedRepositoryChecksumDivergence'] =
     'not-applicable';
   let attestedRepositoryChecksumDivergences: VerifierEvidence['attestedRepositoryChecksumDivergences'] =
+    [];
+  let attestedHistoricalResolvedMigration: VerifierEvidence['attestedHistoricalResolvedMigration'] =
+    'not-applicable';
+  let attestedHistoricalResolvedMigrations: VerifierEvidence['attestedHistoricalResolvedMigrations'] =
     [];
   let relatedDuplicateState: VerifierEvidence['relatedDuplicateState'] = 'not-applicable';
   let lifecycleResult: VerifierEvidence['lifecycleResult'] = 'not-applicable';
@@ -202,12 +215,17 @@ export function verifyLineage(input: {
         manifest: input.manifest,
         attestation: input.attestation,
         mode: input.mode as 'production-status' | 'production-preflight' | 'production-postflight',
-        approvedPendingMigrations: approvedPending
+        approvedPendingMigrations: approvedPending,
+        historicalResolvedMigrationMode: 'active-attestation'
       });
       pending = result.pending;
       appliedRepositoryCount = result.appliedRepositoryCount;
       attestedRepositoryChecksumDivergence = result.repositoryChecksumDivergence;
       attestedRepositoryChecksumDivergences = result.repositoryChecksumDivergences;
+      attestedHistoricalResolvedMigration = 'verified';
+      attestedHistoricalResolvedMigrations = result.historicalResolvedMigrations.map(
+        ({ migrationName }) => ({ migrationName, result: 'verified' as const })
+      );
     } catch (error) {
       fail('LEDGER_MISMATCH', error instanceof Error ? error.message : 'Ledger verification failed.');
     }
@@ -233,14 +251,35 @@ export function verifyLineage(input: {
 
   let namedCatalogAssertions: ReturnType<typeof assertNamedCatalog>;
   let schemaFingerprint: string;
+  let historicalResolvedCatalogAssertions: ReturnType<
+    typeof assertPilotAuthHistoricalResolvedCatalog
+  > | null = null;
   try {
     namedCatalogAssertions = assertNamedCatalog(input.catalog, profile);
     schemaFingerprint = fingerprintCatalog(input.catalog).fingerprint;
+    if (productionMode) {
+      historicalResolvedCatalogAssertions = assertPilotAuthHistoricalResolvedCatalog(
+        input.catalog
+      );
+    }
   } catch (error) {
     fail('SCHEMA_MISMATCH', error instanceof Error ? error.message : 'Schema verification failed.');
   }
   if (expectedSchemaFingerprint && schemaFingerprint !== expectedSchemaFingerprint) {
     fail('SCHEMA_MISMATCH', 'Schema fingerprint differs from the approved attestation.');
+  }
+  if (productionMode && input.mode !== 'production-postflight') {
+    const historical = input.attestation!.historicalResolvedMigrations[0];
+    if (
+      historical.observedCurrentSchema.fingerprint !== schemaFingerprint ||
+      historical.observedCurrentSchema.catalogAssertionsDigest !==
+        historicalResolvedCatalogAssertions?.assertionsDigest
+    ) {
+      fail(
+        'SCHEMA_MISMATCH',
+        'Historical resolved migration current schema evidence differs from the attestation.'
+      );
+    }
   }
 
   const pendingBlocked = input.mode.endsWith('status') && pending.length > 0;
@@ -258,11 +297,14 @@ export function verifyLineage(input: {
     attestedDiscrepancy,
     attestedRepositoryChecksumDivergence,
     attestedRepositoryChecksumDivergences,
+    attestedHistoricalResolvedMigration,
+    attestedHistoricalResolvedMigrations,
     relatedDuplicateState,
     schemaFingerprintVersion: SCHEMA_FINGERPRINT_VERSION,
     schemaFingerprint,
     schemaFingerprintResult: 'verified',
     namedCatalogAssertions,
+    historicalResolvedCatalogAssertions,
     lifecycleResult,
     finalDecision: pendingBlocked ? 'verified-pending-blocked' : 'verified-clean',
     timestamp: (input.now ?? new Date()).toISOString(),

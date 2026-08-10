@@ -6,7 +6,7 @@
 | Status | Contained; remediation approval and execution pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-10 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -15,7 +15,6 @@
 | Blocked deployment | `dpl_HGdsWDXmfnNYFSyaomEmjDcAnXPZ` |
 | Previous Ready deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Related decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
-| Last reviewed | 2026-08-06 |
 
 ## Summary
 
@@ -362,10 +361,16 @@ verified before `prisma migrate resolve --applied` recorded the migration from
 the Windows checkout. That sequence authoritatively explains both the CRLF
 checksum and zero-step lifecycle without changing the normal one-step rule.
 
-The investigation does not accept Production lineage. Exact ledger timestamps
-and current catalog equivalence remain unproven by R13, and ADR-0024 has no
-approved zero-step historical-state model. The incident remains open; no
-fourth tuple or verifier acceptance is implemented.
+The investigation does not accept Production lineage. ADR-0024 now defines
+the distinct `attestedHistoricalResolvedMigration` state for the one exact
+pilot-auth record, while ordinary successful migrations still require one
+applied step and the R10-R12 tuple structure remains unchanged. This is a
+repository governance model, not current Production evidence.
+
+Exact current ledger timestamps and catalog equivalence remain unproven. The
+attestation entry therefore retains null schema and timestamp fields, zero
+captures and zero approvals. The incident remains open and Production remains
+blocked pending a separately authorised R14 evidence operation and review.
 
 ## Related Documents
 

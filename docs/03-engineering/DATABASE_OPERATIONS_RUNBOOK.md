@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner: Patrick McKenna |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-10 |
 
 ## Guarded Commands
 
@@ -62,10 +62,20 @@ qualified reviewer joins.
 
 R10, R11 and R12 are permanently closed typed diagnostic stops. Later
 repository-only investigations proved three exact CRLF historical checksum
-representations and attestation v4 binds each one to its complete Production
+representations and attestation v5 binds each one to its complete Production
 tuple. This is not a general normalization or alternate-checksum rule. The
 attestation remains pending with zero captures and approvals; no Production
 capture, status, migration or deployment is authorised by those investigations.
+
+The closed R13 investigation is represented separately as one pending
+`attestedHistoricalResolvedMigration`. The state is restricted to the exact
+pilot-auth record and does not change the ordinary one-step rule. A future R14
+capture command may collect the exact record timestamps and current evolved
+catalog proof only under a new read-only authorisation. The state remains
+non-activatable until two deterministic captures, current recovery evidence
+and every attestation field are complete and exact. Do not use `db:status`,
+`migrate resolve`, manual SQL or any migration command as a substitute for that
+evidence gate.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 

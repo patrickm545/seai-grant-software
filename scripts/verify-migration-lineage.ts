@@ -95,6 +95,33 @@ function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
       );
     }
   }
+  for (const historical of attestation.historicalResolvedMigrations) {
+    for (const evidence of [
+      {
+        reference: historical.checksumEvidenceReference,
+        sha256: historical.checksumEvidenceSha256
+      },
+      {
+        reference: historical.lifecycleEvidenceReference,
+        sha256: historical.lifecycleEvidenceSha256
+      },
+      {
+        reference: historical.expectedSchemaInventoryReference,
+        sha256: historical.expectedSchemaInventorySha256
+      }
+    ]) {
+      const evidencePath = resolve(repositoryRoot, evidence.reference);
+      const evidenceSha256 = createHash('sha256')
+        .update(readFileSync(evidencePath))
+        .digest('hex');
+      if (evidenceSha256 !== evidence.sha256) {
+        throw new AttestationValidationError(
+          'ATTESTATION_INVALID',
+          'Historical resolved migration repository evidence digest differs.'
+        );
+      }
+    }
+  }
 }
 
 function safeMessage(error: unknown) {

@@ -4,8 +4,10 @@ import {
   PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES,
   type LineageAttestation,
   type AttestedMigrationRecord,
-  type AttestedRepositoryChecksumDivergence
+  type AttestedRepositoryChecksumDivergence,
+  type AttestedHistoricalResolvedMigration
 } from './lineage-attestation';
+import { PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS } from './historical-resolved-migration';
 import type { MigrationManifest } from './migration-manifest';
 import { canonicaliseMigrationTimestamp } from './migration-timestamp';
 
@@ -383,6 +385,75 @@ function isExactAttestedProductionChecksumDivergence(input: {
   );
 }
 
+export type HistoricalResolvedMigrationMode =
+  | 'ordinary-only'
+  | 'pending-evidence-capture'
+  | 'active-attestation';
+
+function assertExactHistoricalResolvedMigration(input: {
+  records: NormalisedMigrationRecord[];
+  migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>;
+  attestation: LineageAttestation;
+  historical: AttestedHistoricalResolvedMigration;
+  mode: Exclude<HistoricalResolvedMigrationMode, 'ordinary-only'>;
+}) {
+  const { exactLedgerTimestamps, observedCurrentSchema, r14Evidence, ...knownFields } =
+    input.historical;
+  if (
+    canonicalJson(knownFields) !== canonicalJson(PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS) ||
+    input.historical.environment !== 'production' ||
+    input.historical.productionDatabaseFingerprint !==
+      input.attestation.approvedDatabaseFingerprint ||
+    input.historical.approvedManifestHash !== input.attestation.approvedManifestHash ||
+    input.migration.name !== input.historical.migrationName ||
+    input.migration.checksum !== input.historical.repositoryChecksum
+  ) {
+    throw new Error('Historical resolved migration scope differs from the exact ADR-0024 state.');
+  }
+  if (
+    (input.mode === 'pending-evidence-capture' &&
+      (input.attestation.status !== 'pending' ||
+        exactLedgerTimestamps.startedAt !== null ||
+        exactLedgerTimestamps.finishedAt !== null ||
+        observedCurrentSchema.fingerprint !== null ||
+        r14Evidence.changeId !== null)) ||
+    (input.mode === 'active-attestation' &&
+      (input.attestation.status !== 'active' ||
+        exactLedgerTimestamps.startedAt === null ||
+        exactLedgerTimestamps.finishedAt === null ||
+        observedCurrentSchema.fingerprint === null ||
+        r14Evidence.changeId === null))
+  ) {
+    throw new Error('Historical resolved migration attestation lifecycle is incomplete.');
+  }
+  if (input.records.length !== 1) {
+    throw new Error('Historical resolved migration record is missing or ambiguous.');
+  }
+  const record = input.records[0];
+  const expected: AttestedMigrationRecord = {
+    id: input.historical.recordId,
+    migrationName: input.historical.migrationName,
+    checksum: input.historical.observedProductionChecksum,
+    startedAt:
+      input.mode === 'active-attestation'
+        ? exactLedgerTimestamps.startedAt!
+        : record.startedAt,
+    finishedAt:
+      input.mode === 'active-attestation'
+        ? exactLedgerTimestamps.finishedAt!
+        : record.finishedAt,
+    appliedStepsCount: input.historical.expectedAppliedStepsCount,
+    rolledBackAt: input.historical.expectedRolledBackAt,
+    logsState: input.historical.expectedLogsState,
+    logsDigest: input.historical.expectedLogsDigest
+  };
+  if (record.finishedAt === null) {
+    throw new Error('Historical resolved migration must have a finished timestamp.');
+  }
+  assertExactAttestedMigrationRecord(record, expected, 'Historical resolved migration');
+  return record;
+}
+
 function safeMigrationIdentity(
   actual: NormalisedMigrationRecord,
   expected: AttestedMigrationRecord
@@ -494,6 +565,7 @@ export function verifyAttestedLedger(input: {
   attestation: LineageAttestation;
   mode: LedgerMode;
   approvedPendingMigrations: string[];
+  historicalResolvedMigrationMode?: HistoricalResolvedMigrationMode;
 }) {
   const rows = input.rows.map(normaliseMigrationRecord).sort((a, b) => {
     const left = `${a.startedAt}\0${a.id}`;
@@ -542,6 +614,11 @@ export function verifyAttestedLedger(input: {
 
   const pending: string[] = [];
   const verifiedRepositoryChecksumDivergences = new Set<string>();
+  const verifiedHistoricalResolvedMigrations: Array<{
+    migrationName: string;
+    result: 'captured-for-pending-attestation' | 'verified';
+    record: NormalisedMigrationRecord;
+  }> = [];
   for (const migration of input.manifest.migrations) {
     if (migration.name === input.attestation.relatedMigration.name) continue;
     const records = grouped.get(migration.name) ?? [];
@@ -574,6 +651,28 @@ export function verifyAttestedLedger(input: {
       verifiedRepositoryChecksumDivergences.add(migration.name);
       continue;
     }
+    const historicalResolved = input.attestation.historicalResolvedMigrations.find(
+      (candidate) => candidate.migrationName === migration.name
+    );
+    const historicalMode = input.historicalResolvedMigrationMode ?? 'ordinary-only';
+    if (historicalResolved && historicalMode !== 'ordinary-only') {
+      const record = assertExactHistoricalResolvedMigration({
+        records,
+        migration,
+        attestation: input.attestation,
+        historical: historicalResolved,
+        mode: historicalMode
+      });
+      verifiedHistoricalResolvedMigrations.push({
+        migrationName: migration.name,
+        result:
+          historicalMode === 'pending-evidence-capture'
+            ? 'captured-for-pending-attestation'
+            : 'verified',
+        record
+      });
+      continue;
+    }
     assertExactSuccessfulRepositoryMigration(records, migration);
   }
 
@@ -591,6 +690,13 @@ export function verifyAttestedLedger(input: {
   ) {
     throw new Error('Production repository checksum divergence records were not verified.');
   }
+  const expectedHistoricalCount =
+    (input.historicalResolvedMigrationMode ?? 'ordinary-only') === 'ordinary-only'
+      ? 0
+      : input.attestation.historicalResolvedMigrations.length;
+  if (verifiedHistoricalResolvedMigrations.length !== expectedHistoricalCount) {
+    throw new Error('Historical resolved migration records were not verified exactly.');
+  }
   return {
     rows,
     pending,
@@ -598,6 +704,7 @@ export function verifyAttestedLedger(input: {
     repositoryChecksumDivergence: 'verified' as const,
     repositoryChecksumDivergences: PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map(
       (divergence) => ({ migrationName: divergence.migrationName, result: 'verified' as const })
-    )
+    ),
+    historicalResolvedMigrations: verifiedHistoricalResolvedMigrations
   };
 }

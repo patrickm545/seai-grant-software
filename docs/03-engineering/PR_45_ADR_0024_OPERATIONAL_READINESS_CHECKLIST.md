@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-07 |
-| Operational state | R1-R12 closed; three exact classification A tuples validated; no further Production authority |
+| Last reviewed | 2026-08-10 |
+| Operational state | R1-R13 closed; historical-resolved model pending current evidence; R14 not authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -400,7 +400,7 @@ attestation, accept a caller-supplied path or weaken validation.
 
 Every item below must exist and be exact before changing `status` to `active`:
 
-- [ ] Version `clada-adr-0024-lineage-attestation/v4`.
+- [ ] Version `clada-adr-0024-lineage-attestation/v5`.
 - [ ] Attestation ID `ADR-0024-PRODUCTION-2026-07-25`.
 - [ ] Incident reference
       `ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT`.
@@ -419,7 +419,7 @@ Every item below must exist and be exact before changing `status` to `active`:
 - [ ] Historical evidence baseline remains the fixed approved
       `0ee3c67e8295ca8f988e5b60ec75b66c0f18741b`.
 - [ ] Verifier implementation version remains
-      `adr-0024-lineage-verifier/v1`.
+      `adr-0024-lineage-verifier/v2`.
 - [ ] Manifest version and hash match the reviewed capture.
 - [ ] Exactly three repository migration checksum-divergence entries exist and
       all classifications remain
@@ -435,6 +435,22 @@ Every item below must exist and be exact before changing `status` to `active`:
       `0b773879debbf8250f4a5f67c06d2ce9fbb31c2d2774b9d79089a7cefe60c915`.
 - [ ] All three exact tuples are required and cannot be missing, duplicated,
       cross-matched or replaced by a wildcard or checksum pattern.
+- [ ] Exactly one separate `attestedHistoricalResolvedMigration` entry exists
+      for `20260716183000_pilot_installer_auth`; it is not present in the
+      R10-R12 tuple structure.
+- [ ] The historical entry retains exact record ID, canonical and observed
+      checksums, zero-step/no-rollback/no-log lifecycle, checksum evidence,
+      lifecycle evidence, resolve evidence, manifest, repository baseline and
+      evolved-schema inventory hashes.
+- [ ] R14 supplies exact canonical ledger timestamps, current full schema
+      fingerprint, historical catalog assertion digest, two distinct matching
+      artifact references and hashes, exact repository revision, change ID and
+      current recovery evidence.
+- [ ] The current evolved schema matches every direct pilot-auth object and the
+      declared later `AuthSession.sessionType` column, enum and index, with no
+      conflicting protected object.
+- [ ] Another migration, record ID, checksum, step count, fingerprint,
+      environment, evidence digest or schema result cannot reuse the entry.
 - [ ] The Production-only scope and attestation-retirement condition remain
       exact; Preview and all other databases receive no exception.
 - [ ] Database-only migration contains its exact ID, name, checksum,

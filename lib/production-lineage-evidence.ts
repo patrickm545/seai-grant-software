@@ -20,6 +20,7 @@ import {
   fingerprintCatalog,
   type CatalogSnapshot
 } from './schema-fingerprint';
+import { assertPilotAuthHistoricalResolvedCatalog } from './historical-resolved-migration';
 
 export const PRODUCTION_EVIDENCE_VERSION =
   'adr-0024-production-evidence-capture/v1' as const;
@@ -193,7 +194,8 @@ export function captureProductionLineageEvidence(input: {
       manifest: input.manifest,
       attestation: observedAttestation,
       mode: 'production-status',
-      approvedPendingMigrations: ['20260724180000_password_reset_foundation']
+      approvedPendingMigrations: ['20260724180000_password_reset_foundation'],
+      historicalResolvedMigrationMode: 'pending-evidence-capture'
     });
   } catch (error) {
     throw new LineageVerifierError(
@@ -205,8 +207,10 @@ export function captureProductionLineageEvidence(input: {
 
   let namedAssertions: ReturnType<typeof assertNamedCatalog>;
   let schema: ReturnType<typeof fingerprintCatalog>;
+  let historicalResolvedCatalog: ReturnType<typeof assertPilotAuthHistoricalResolvedCatalog>;
   try {
     namedAssertions = assertNamedCatalog(input.catalog, 'pre-password-reset');
+    historicalResolvedCatalog = assertPilotAuthHistoricalResolvedCatalog(input.catalog);
     schema = fingerprintCatalog(input.catalog);
   } catch (error) {
     throw new LineageVerifierError(
@@ -237,12 +241,14 @@ export function captureProductionLineageEvidence(input: {
       appliedRepositoryCount: ledgerResult.appliedRepositoryCount,
       adr0024PinnedEvidenceResult: 'matched' as const,
       repositoryChecksumDivergenceResult: ledgerResult.repositoryChecksumDivergence,
-      repositoryChecksumDivergenceResults: ledgerResult.repositoryChecksumDivergences
+      repositoryChecksumDivergenceResults: ledgerResult.repositoryChecksumDivergences,
+      historicalResolvedMigrationResults: ledgerResult.historicalResolvedMigrations
     },
     schema: {
       fingerprintVersion: schema.version,
       fingerprint: schema.fingerprint,
       namedAssertions,
+      historicalResolvedMigrationCatalog: historicalResolvedCatalog,
       catalogCounts: {
         namespaces: input.catalog.namespaces.length,
         tables: input.catalog.tables.length,

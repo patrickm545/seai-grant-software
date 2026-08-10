@@ -235,7 +235,7 @@ test('checksum classification never bypasses the zero-step lifecycle failure', (
   );
 });
 
-test('R10 through R12 remain exact and no fourth tuple or attestation acceptance exists', () => {
+test('R10 through R12 remain exact while pilot auth uses a separate pending structure', () => {
   assert.equal(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.length, 3);
   assert.deepEqual(
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map((entry) => entry.migrationName),
@@ -251,7 +251,17 @@ test('R10 through R12 remain exact and no fourth tuple or attestation acceptance
     ),
     false
   );
-  assert.equal('attestedHistoricalMigrationState' in pending, false);
+  assert.equal(pending.historicalResolvedMigrations.length, 1);
+  assert.equal(
+    pending.historicalResolvedMigrations[0].stateName,
+    'attestedHistoricalResolvedMigration'
+  );
+  assert.equal(pending.historicalResolvedMigrations[0].migrationName, migrationName);
+  assert.equal(pending.historicalResolvedMigrations[0].recordId, recordId);
+  assert.equal(pending.historicalResolvedMigrations[0].repositoryChecksum, canonicalChecksum);
+  assert.equal(pending.historicalResolvedMigrations[0].observedProductionChecksum, observedChecksum);
+  assert.equal(pending.historicalResolvedMigrations[0].expectedAppliedStepsCount, 0);
+  assert.equal(pending.historicalResolvedMigrations[0].observedCurrentSchema.fingerprint, null);
   assert.equal(pending.status, 'pending');
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.equal(pending.approvals.length, 0);

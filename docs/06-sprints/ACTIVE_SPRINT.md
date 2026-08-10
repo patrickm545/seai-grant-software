@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-29 |
+| Last reviewed | 2026-08-10 |
 
 ## Sprint
 
@@ -42,6 +42,13 @@ artifacts and activation evidence remain pending. No Production capture or
 status command ran and the release blocker remains unchanged. Preview lineage
 is repaired and strict. This does not authorise migration execution,
 application deployment or alias movement.
+
+R13 is permanently closed. Its repository-only follow-up defines one pending
+`attestedHistoricalResolvedMigration` for the exact pilot-auth repair/resolve
+history without changing ordinary one-step migration acceptance. Current
+ledger timestamps, evolved catalog evidence, two matching R14 captures and
+approvals remain absent, so the attestation has zero captures and approvals and
+the release blocker is unchanged. R14 requires separate authority.
 
 ## Objective
 

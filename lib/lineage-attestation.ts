@@ -1,5 +1,9 @@
 import { isCanonicalMigrationTimestamp } from './migration-timestamp';
 import { canonicalJson } from './canonical-json';
+import {
+  HISTORICAL_RESOLVED_CATALOG_ASSERTIONS_VERSION,
+  PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS
+} from './historical-resolved-migration';
 
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const fingerprintPattern = /^db_[a-f0-9]{16}$/;
@@ -9,7 +13,7 @@ const placeholderApprovalPattern =
   /^(?:unknown|tbd|todo|placeholder|reviewer(?:-\d+)?|codex|chatgpt|openai)$/i;
 const repositoryApprovalEvidencePattern = /^docs\/[A-Za-z0-9_./-]+\.md$/;
 
-export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v4' as const;
+export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v5' as const;
 export const ATTESTATION_ID = 'ADR-0024-PRODUCTION-2026-07-25' as const;
 export const PILOT_STAGE_ACCOUNTABLE_PERSON = 'Patrick McKenna' as const;
 export const PILOT_STAGE_SCOPE =
@@ -192,6 +196,29 @@ export type AttestedMigrationRecord = {
 export type AttestedRepositoryChecksumDivergence =
   (typeof PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES)[number];
 
+export type AttestedHistoricalResolvedMigration =
+  typeof PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS & {
+    exactLedgerTimestamps: {
+      startedAt: string | null;
+      finishedAt: string | null;
+    };
+    observedCurrentSchema: {
+      fingerprintVersion: 'clada-postgres-schema-fingerprint/v2';
+      fingerprint: string | null;
+      catalogAssertionsVersion: typeof HISTORICAL_RESOLVED_CATALOG_ASSERTIONS_VERSION;
+      catalogAssertionsDigest: string | null;
+      evidenceReference: string | null;
+      evidenceSha256: string | null;
+    };
+    r14Evidence: {
+      changeId: string | null;
+      repositoryRevision: string | null;
+      captureArtifactReferences: string[];
+      captureArtifactSha256s: string[];
+      recoveryEvidenceReference: string | null;
+    };
+  };
+
 export type LineageAttestation = {
   version: typeof ATTESTATION_VERSION;
   attestationId: typeof ATTESTATION_ID;
@@ -213,6 +240,7 @@ export type LineageAttestation = {
   approvedManifestHash: string;
   manifestVersion: 'clada-migration-manifest/v1';
   repositoryMigrationChecksumDivergences: typeof PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
+  historicalResolvedMigrations: [AttestedHistoricalResolvedMigration];
   missingMigration: AttestedMigrationRecord;
   relatedMigration: {
     name: '20260428120000_manual_submission_prep';
@@ -520,6 +548,170 @@ function validateRecord(record: AttestedMigrationRecord, label: string, active: 
   }
 }
 
+function validateHistoricalResolvedMigration(
+  historical: AttestedHistoricalResolvedMigration,
+  value: LineageAttestation,
+  active: boolean
+) {
+  const {
+    exactLedgerTimestamps,
+    observedCurrentSchema,
+    r14Evidence,
+    ...knownFields
+  } = historical;
+  if (
+    canonicalJson(knownFields) !== canonicalJson(PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration known fields must be exact.'
+    );
+  }
+  if (
+    historical.environment !== value.environment ||
+    historical.productionDatabaseFingerprint !== value.approvedDatabaseFingerprint ||
+    historical.approvedManifestHash !== value.approvedManifestHash
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration repository and Production scope is invalid.'
+    );
+  }
+  if (
+    !value.evidenceReferences.includes(historical.checksumEvidenceReference) ||
+    !value.evidenceReferences.includes(historical.lifecycleEvidenceReference) ||
+    !value.evidenceReferences.includes(historical.expectedSchemaInventoryReference)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration repository evidence is not indexed.'
+    );
+  }
+  if (
+    observedCurrentSchema.fingerprintVersion !== 'clada-postgres-schema-fingerprint/v2' ||
+    observedCurrentSchema.catalogAssertionsVersion !==
+      HISTORICAL_RESOLVED_CATALOG_ASSERTIONS_VERSION
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration schema evidence version is invalid.'
+    );
+  }
+
+  if (!active) {
+    if (
+      exactLedgerTimestamps.startedAt !== null ||
+      exactLedgerTimestamps.finishedAt !== null ||
+      observedCurrentSchema.fingerprint !== null ||
+      observedCurrentSchema.catalogAssertionsDigest !== null ||
+      observedCurrentSchema.evidenceReference !== null ||
+      observedCurrentSchema.evidenceSha256 !== null ||
+      r14Evidence.changeId !== null ||
+      r14Evidence.repositoryRevision !== null ||
+      r14Evidence.captureArtifactReferences.length !== 0 ||
+      r14Evidence.captureArtifactSha256s.length !== 0 ||
+      r14Evidence.recoveryEvidenceReference !== null
+    ) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Pending historical resolved migration cannot contain uncaptured R14 values.'
+      );
+    }
+    return;
+  }
+
+  const startedAt = requireCanonicalMigrationTimestamp(
+    exactLedgerTimestamps.startedAt,
+    'historicalResolvedMigration.exactLedgerTimestamps.startedAt'
+  );
+  const finishedAt = requireCanonicalMigrationTimestamp(
+    exactLedgerTimestamps.finishedAt,
+    'historicalResolvedMigration.exactLedgerTimestamps.finishedAt'
+  );
+  if (Date.parse(finishedAt) < Date.parse(startedAt)) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration finish timestamp precedes its start.'
+    );
+  }
+  if (
+    !observedCurrentSchema.fingerprint ||
+    !sha256Pattern.test(observedCurrentSchema.fingerprint) ||
+    !observedCurrentSchema.catalogAssertionsDigest ||
+    !sha256Pattern.test(observedCurrentSchema.catalogAssertionsDigest) ||
+    !observedCurrentSchema.evidenceReference ||
+    !observedCurrentSchema.evidenceSha256 ||
+    !sha256Pattern.test(observedCurrentSchema.evidenceSha256)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Active historical resolved migration requires exact current schema evidence.'
+    );
+  }
+  requireExactString(
+    observedCurrentSchema.evidenceReference,
+    'historicalResolvedMigration.observedCurrentSchema.evidenceReference'
+  );
+  if (
+    !r14Evidence.changeId ||
+    !r14Evidence.repositoryRevision ||
+    !/^[a-f0-9]{40}$/.test(r14Evidence.repositoryRevision) ||
+    !r14Evidence.recoveryEvidenceReference ||
+    r14Evidence.captureArtifactReferences.length !== 2 ||
+    r14Evidence.captureArtifactSha256s.length !== 2 ||
+    r14Evidence.captureArtifactSha256s.some((digest) => !sha256Pattern.test(digest))
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Active historical resolved migration requires complete R14 capture and recovery evidence.'
+    );
+  }
+  requireExactString(r14Evidence.changeId, 'historicalResolvedMigration.r14Evidence.changeId');
+  requireExactString(
+    r14Evidence.recoveryEvidenceReference,
+    'historicalResolvedMigration.r14Evidence.recoveryEvidenceReference'
+  );
+  r14Evidence.captureArtifactReferences.forEach((reference, index) =>
+    requireExactString(reference, `historicalResolvedMigration.r14Evidence.captureArtifactReferences[${index}]`)
+  );
+  if (
+    new Set(r14Evidence.captureArtifactReferences).size !== 2 ||
+    !r14Evidence.captureArtifactReferences.includes(observedCurrentSchema.evidenceReference) ||
+    r14Evidence.captureArtifactSha256s[
+      r14Evidence.captureArtifactReferences.indexOf(observedCurrentSchema.evidenceReference)
+    ] !== observedCurrentSchema.evidenceSha256 ||
+    value.schema.preMigrationFingerprint !== observedCurrentSchema.fingerprint
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Historical resolved migration current schema evidence is not bound to R14.'
+    );
+  }
+
+  if (value.governanceMode === 'pilot-stage-compensating-control') {
+    const captures = value.pilotStageCompensatingControl?.captures ?? [];
+    if (
+      captures.length !== 2 ||
+      canonicalJson(r14Evidence.captureArtifactReferences) !==
+        canonicalJson(captures.map((capture) => capture.artifactReference)) ||
+      canonicalJson(r14Evidence.captureArtifactSha256s) !==
+        canonicalJson(captures.map((capture) => capture.artifactSha256)) ||
+      captures.some(
+        (capture) =>
+          capture.changeId !== r14Evidence.changeId ||
+          capture.repositoryRevision !== r14Evidence.repositoryRevision ||
+          capture.restorePointReference !== r14Evidence.recoveryEvidenceReference ||
+          capture.schemaFingerprint !== observedCurrentSchema.fingerprint
+      )
+    ) {
+      throw new AttestationValidationError(
+        'ATTESTATION_INVALID',
+        'Historical resolved migration evidence must match both pilot-stage R14 captures.'
+      );
+    }
+  }
+}
+
 export function validateLineageAttestation(
   value: LineageAttestation,
   options: { now?: Date; requireActive?: boolean } = {}
@@ -543,6 +735,7 @@ export function validateLineageAttestation(
     value.owner !== 'Clada Systems Engineering' ||
     value.historicalSqlKnown !== false ||
     value.historicalEvidenceBaseline !== '0ee3c67e8295ca8f988e5b60ec75b66c0f18741b' ||
+    value.verifierImplementationVersion !== 'adr-0024-lineage-verifier/v2' ||
     value.manifestVersion !== 'clada-migration-manifest/v1' ||
     value.schema.fingerprintVersion !== 'clada-postgres-schema-fingerprint/v2' ||
     value.schema.namedAssertionsVersion !== 'adr-0024-catalog-assertions/v2'
@@ -599,6 +792,13 @@ export function validateLineageAttestation(
   }
 
   const active = value.status === 'active';
+  if (value.historicalResolvedMigrations.length !== 1) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Exactly one historical resolved migration entry is required.'
+    );
+  }
+  validateHistoricalResolvedMigration(value.historicalResolvedMigrations[0], value, active);
   validateRecord(value.missingMigration, 'missingMigration', active);
   validateRecord(value.relatedMigration.failedRecord, 'relatedMigration.failedRecord', active);
   validateRecord(value.relatedMigration.completedZeroStepRecord, 'relatedMigration.completedZeroStepRecord', active);

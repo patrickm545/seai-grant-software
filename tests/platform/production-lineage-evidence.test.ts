@@ -18,7 +18,7 @@ import {
   assertProductionEvidenceControls,
   captureProductionLineageEvidence
 } from '../../lib/production-lineage-evidence';
-import { preMigrationCatalog } from './schema-fingerprint.test';
+import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
@@ -52,6 +52,7 @@ function row(
 }
 
 function ledgerFixture() {
+  const historical = pending.historicalResolvedMigrations[0];
   const rows = manifest.migrations
     .filter(
       (migration) =>
@@ -60,17 +61,24 @@ function ledgerFixture() {
     )
     .map((migration, index) =>
       row({
-        id:
-          pending.repositoryMigrationChecksumDivergences.find(
+        id: migration.name === historical.migrationName
+          ? historical.recordId
+          : pending.repositoryMigrationChecksumDivergences.find(
             (divergence) => divergence.migrationName === migration.name
           )?.recordId ?? `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
         migration_name: migration.name,
-        checksum:
-          pending.repositoryMigrationChecksumDivergences.find(
+        checksum: migration.name === historical.migrationName
+          ? historical.observedProductionChecksum
+          : pending.repositoryMigrationChecksumDivergences.find(
             (divergence) => divergence.migrationName === migration.name
           )?.observedProductionChecksum ?? migration.checksum,
-        started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
-        finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
+        started_at: migration.name === historical.migrationName
+          ? '2026-07-17T13:00:00.123456Z'
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+        finished_at: migration.name === historical.migrationName
+          ? '2026-07-17T13:00:00.123456Z'
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`,
+        applied_steps_count: migration.name === historical.migrationName ? 0 : 1
       })
     );
   rows.push(
@@ -121,7 +129,7 @@ test('pending attestation can capture exact secret-free Production evidence dete
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   const first = captureProductionLineageEvidence({
@@ -139,6 +147,15 @@ test('pending attestation can capture exact secret-free Production evidence dete
     '20260724180000_password_reset_foundation'
   ]);
   assert.equal(first.ledger.repositoryChecksumDivergenceResult, 'verified');
+  assert.equal(first.ledger.historicalResolvedMigrationResults.length, 1);
+  assert.equal(
+    first.ledger.historicalResolvedMigrationResults[0].migrationName,
+    pending.historicalResolvedMigrations[0].migrationName
+  );
+  assert.equal(
+    first.ledger.historicalResolvedMigrationResults[0].result,
+    'captured-for-pending-attestation'
+  );
   const failed = first.ledger.records.find(
     (record) => record.rolledBackAt === pending.relatedMigration.failedRecord.rolledBackAt
   )!;
@@ -160,7 +177,7 @@ test('repeated capture terminates when any deterministic evidence differs', () =
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   const first = captureProductionLineageEvidence(input);
@@ -183,7 +200,7 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   assert.throws(
@@ -230,7 +247,7 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
 });
 
 test('catalog mismatch is classified instead of collapsing to exit 70', () => {
-  const catalog = structuredClone(preMigrationCatalog());
+  const catalog = structuredClone(preMigrationCatalogWithPilotAuth());
   catalog.columns[0].nullable = !catalog.columns[0].nullable;
 
   assert.throws(
@@ -274,7 +291,7 @@ test('database-only metadata mismatch remains exit 25 and emits no complete evid
         manifest,
         attestation: pending,
         ledgerRows: rows,
-        catalog: preMigrationCatalog(),
+        catalog: preMigrationCatalogWithPilotAuth(),
         controls: controls()
       });
     },

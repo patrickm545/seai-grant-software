@@ -6,7 +6,7 @@
 | Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-10 |
 
 ## Purpose And Boundary
 
@@ -236,7 +236,7 @@ Separate repository-only investigations proved classification A for each
 tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
 retaining the final newline produces the exact observed checksum; reversing
 the conversion returns the committed bytes exactly. The versioned evidence
-files and their raw digests are pinned by attestation v4.
+files and their raw digests are pinned by attestation v5.
 
 The implementation keeps two controls separate:
 
@@ -325,7 +325,7 @@ evidence and attestation activation belong to PR #45; migration execution
 requires a different approved change; and application deployment follows only
 after successful execution and postflight.
 
-## R13 Historical Zero-Step Boundary
+## Historical-Resolved-Migration Boundary After R13
 
 The closed R13 operation reached the first evidence transaction and rejected
 `20260716183000_pilot_installer_auth` for both checksum and applied-step-count
@@ -334,14 +334,29 @@ representation and recovered the original authorised repair, verification and
 `migrate resolve --applied` operation artifact. The checksum is classification
 A and the zero-step lifecycle is classification L1.
 
-This evidence does not alter the implementation. Ordinary repository
-migrations still require exactly one applied step. The three R10-R12
-Production tuples remain the complete accepted tuple set. No fourth tuple,
-zero-step branch, attestation field or pattern acceptance has been added.
+Attestation v5 and verifier v2 implement the separate exact
+`attestedHistoricalResolvedMigration` path. Ordinary repository migrations
+still require exactly one applied step, and the three R10-R12 checksum tuples
+remain unchanged. The historical path cannot be reached through ordinary or
+checksum-divergence verification and is never available to strict Preview,
+Development, test or fresh-database verification.
 
-A separate ADR decision plus a newly authorised read-only capture of exact
-ledger timestamps and current catalog state is required before a distinct
-historical-lifecycle structure may be considered. The
+The exact pilot-auth known fields are pinned to the R13 checksum, lifecycle
+and resolve evidence. A deterministic inventory separately lists objects
+introduced by pilot authentication and the one declared compatible later
+`AuthSession.sessionType` evolution. Named assertions verify every protected
+table, column, constraint, index and enum exactly; the full current catalog
+fingerprint remains an independent activation input.
+
+While the attestation is pending, the fixed capture path may only emit the
+exact zero-step ledger record and current catalog evidence for review. It does
+not convert that evidence into acceptance. Active verification additionally
+requires pinned canonical timestamps, schema fingerprint and assertion digest,
+two R14 artifact references and hashes, the R14 repository revision, current
+recovery evidence and all attestation governance controls.
+
+The checked-in entry deliberately leaves those current values null or empty,
+so `attestation-verify` with active enforcement remains exit `21`. The
 [R13 lifecycle investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
-defines the required proof. Until then, Production fails closed and every
-non-Production environment remains canonical-only.
+defines the historical proof; the accepted ADR amendment defines the future
+R14 evidence gate. Neither document authorises Production access or R14.

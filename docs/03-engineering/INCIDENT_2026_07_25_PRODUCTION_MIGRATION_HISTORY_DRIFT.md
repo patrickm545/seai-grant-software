@@ -348,6 +348,25 @@ Repository preparation is complete. Operational evidence and activation remain
 pending. Production migration execution and application deployment remain
 later, separately approved stages.
 
+## R13 Pilot Authentication Historical State
+
+The permanently closed R13 read-only operation returned typed exit `25` after
+the three approved checksum-divergence tuples passed. The next migration,
+`20260716183000_pilot_installer_auth`, had a reversible CRLF checksum and a
+finished, not-rolled-back record with zero applied steps. This is not ordinary
+successful migration evidence and the verifier correctly stopped.
+
+Repository-only investigation recovered the original July 17 operation
+artifact. A reviewed repair was rehearsed, applied transactionally and
+verified before `prisma migrate resolve --applied` recorded the migration from
+the Windows checkout. That sequence authoritatively explains both the CRLF
+checksum and zero-step lifecycle without changing the normal one-step rule.
+
+The investigation does not accept Production lineage. Exact ledger timestamps
+and current catalog equivalence remain unproven by R13, and ADR-0024 has no
+approved zero-step historical-state model. The incident remains open; no
+fourth tuple or verifier acceptance is implemented.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -364,5 +383,8 @@ later, separately approved stages.
 - [R11 Checksum Divergence Investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [R12 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R12.md)
 - [R12 Checksum Divergence Investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R13 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
+- [R13 Checksum Divergence Investigation](PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R13 Pilot Authentication Lineage Investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

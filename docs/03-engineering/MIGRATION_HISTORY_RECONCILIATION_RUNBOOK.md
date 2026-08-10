@@ -486,3 +486,29 @@ After PR #44, use a separate **Capture ADR-0024 Production Evidence and Activate
 Attestation** operational PR. Production migration execution then requires a
 different PR and explicit approval. Resume password-reset request-flow work
 only after that execution is verified.
+
+## R13 Zero-Step Historical-State Gate
+
+The closed R13 operation established that
+`20260716183000_pilot_installer_auth` has an exact CRLF checksum and a finished,
+not-rolled-back, zero-step record. A retained original operation artifact
+explains this as reviewed transactional repair followed by
+`migrate resolve --applied`. Do not interpret that explanation as ordinary
+migration success or as authority to add a verifier exception.
+
+Before any explicit historical-state treatment can be reviewed, require:
+
+1. a separately approved ADR decision defining a named zero-step historical
+   state without weakening the normal one-step invariant;
+2. a new read-only operation authorisation;
+3. exact record timestamps, rollback state and log state;
+4. exact read-only catalog proof for all pilot-auth tables, columns,
+   constraints, indexes, defaults and foreign keys, including compatible later
+   schema evolution;
+5. the pinned checksum and lifecycle evidence digests; and
+6. negative tests proving every other zero-step state fails closed.
+
+Until all six gates are satisfied and reviewed, stop on this record. Do not
+run `migrate resolve`, edit `_prisma_migrations`, replay the historical repair,
+or infer current Production schema equivalence from the retained July 17
+artifact.

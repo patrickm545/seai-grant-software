@@ -513,3 +513,23 @@ change ID after the
 is freshly completed. No R12 operation is authorised by this record. Migration
 execution remains a different, separately approved change after attestation
 activation and exit `20` status verification.
+
+## Closed R13 Operation And Repository-Only Follow-Up
+
+R13 later received the separate change ID
+`CHG-2026-08-10-ADR0024-PROD-EVIDENCE-R13` for one read-only invocation at
+`cd6cd164ad99f8f7c3f76a00c9fc5d7eb6b4743e`. It is now permanently closed.
+The repository returned typed exit `25` at `first-evidence-generation` for
+`20260716183000_pilot_installer_auth`: the checksum differed from the canonical
+manifest and the exact record had zero applied steps.
+
+Later repository-only work classified the checksum A and the historical
+lifecycle L1, based on reversible bytes and the retained original reviewed
+repair plus `migrate resolve --applied` artifact. No fourth tuple was added.
+The attestation remains pending with zero captures and zero approvals because
+exact ledger timestamps, current catalog proof and a separate ADR decision are
+still required. See the [R13 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
+and [lineage investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md).
+
+This follow-up did not access Production, run capture or status, execute or
+resolve a migration, deploy, move an alias or create R14 authority.

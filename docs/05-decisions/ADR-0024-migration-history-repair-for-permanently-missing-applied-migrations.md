@@ -498,3 +498,34 @@ Before execution:
 5. Add the migration-governance controls tracked in TD-019.
 6. Resume password-reset planning only after Production migration and
    deployment verification are complete.
+
+## Proposed R13 Historical Zero-Step Addendum - Decision Pending
+
+R13 found that `20260716183000_pilot_installer_auth` is not an ordinary exact
+successful migration record: its exact Production record has the reversible
+CRLF checksum and `applied_steps_count = 0`. A retained original operation
+artifact proves that a separately authorised reviewed repair transaction
+established and verified the intended schema before Prisma
+`migrate resolve --applied` recorded the migration from the Windows checkout.
+This supports checksum classification A and lifecycle classification L1.
+
+That historical explanation does not activate verifier acceptance. A future
+ADR decision may introduce one separately named exact structure such as
+`attestedHistoricalMigrationState`, but it must not redefine ordinary
+successful migration semantics. Any such decision must pin the Production
+fingerprint, migration name, record ID, canonical and observed checksums,
+exact zero-step lifecycle and timestamps, rollback and log state, manifest,
+repository lineage, checksum and lifecycle evidence, current exact catalog
+proof and attestation lifecycle.
+
+Before that decision can be accepted, a new separately authorised read-only
+capture must establish the exact ledger timestamps and current catalog state
+for every table, column, constraint, index, default and foreign key owned by
+the migration, including compatible later `AuthSession` evolution and absence
+of unsupported objects. R13 did not emit that complete evidence.
+
+Until review and approval of this proposed addendum, the existing normal
+one-step invariant and three exact R10-R12 tuples remain unchanged. The
+verifier must fail closed for the R13 record. Preview, Development, test and
+fresh databases remain canonical-only. This proposal authorises no Production
+access, migration, resolution, deployment, status command or R14 operation.

@@ -1,0 +1,130 @@
+{
+  "version": "adr-0024-checksum-divergence-evidence/v1",
+  "governingOperation": "CHG-2026-08-10-ADR0024-PROD-EVIDENCE-R13",
+  "repositoryBaseline": "cd6cd164ad99f8f7c3f76a00c9fc5d7eb6b4743e",
+  "migrationPath": "prisma/migrations/20260716183000_pilot_installer_auth/migration.sql",
+  "migrationName": "20260716183000_pilot_installer_auth",
+  "productionRecordId": "69505647-7711-408c-853e-32579345d1b0",
+  "canonicalRepositoryChecksum": "d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb",
+  "observedProductionChecksum": "fee0749e78b3ecc7aea1f6823b338a16c0ed5fb8e4613e079042bb52192913a9",
+  "normalizationVersion": "adr-0024-migration-record-normalization/v1",
+  "source": {
+    "kind": "exact-committed-git-blob",
+    "commit": "cd6cd164ad99f8f7c3f76a00c9fc5d7eb6b4743e",
+    "byteLength": 2572,
+    "encoding": "UTF-8 without BOM",
+    "lineEndings": "LF",
+    "finalNewline": true,
+    "lineFeedCount": 81,
+    "topLevelStatementCount": 18,
+    "nonEmpty": true
+  },
+  "candidates": [
+    {
+      "transformation": "exact-committed-git-blob",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "as-committed",
+      "finalNewline": true,
+      "byteLength": 2572,
+      "sha256": "d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 2572,
+      "sha256": "d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "LF",
+      "finalNewline": false,
+      "byteLength": 2571,
+      "sha256": "1f53651931bfeca58872ef57d45ad3885c5200d339d537f844e45a9e098f48a7",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 2653,
+      "sha256": "fee0749e78b3ecc7aea1f6823b338a16c0ed5fb8e4613e079042bb52192913a9",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": true
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-without-final-newline",
+      "encoding": "UTF-8",
+      "bom": "none",
+      "lineEndings": "CRLF",
+      "finalNewline": false,
+      "byteLength": 2651,
+      "sha256": "a0821aaa7116cd8a7aae28298bf4186a99f50c785b41635daa80f4de2df5171b",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-lf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "LF",
+      "finalNewline": true,
+      "byteLength": 2575,
+      "sha256": "691ddcbce4af83f2bac5771dd67c5ca0e5572db96c82296e45efca919de132e0",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-with-final-newline",
+      "encoding": "UTF-8",
+      "bom": "present",
+      "lineEndings": "CRLF",
+      "finalNewline": true,
+      "byteLength": 2656,
+      "sha256": "61689326db270a2ff3930ece73a90ee03f292564940c2cc364e4c31cb88ca604",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    }
+  ],
+  "exactMatch": {
+    "transformation": "UTF-8 without BOM; convert each LF to CRLF; retain final newline",
+    "byteLength": 2653,
+    "lineEndingInsertions": 81,
+    "normalizesByteForByteToCommittedBlob": true,
+    "sqlTokensChanged": false,
+    "statementOrderChanged": false,
+    "commentsChangedExceptLineEndings": false,
+    "encodingContentChanged": false
+  },
+  "historicalWorkspaceEvidence": {
+    "matchingCrlfMaterializationsRecovered": true,
+    "matchingMaterializations": [
+      "primary-worktree-at-investigation-time",
+      "pr41-worktree",
+      "drift-investigation-worktree"
+    ],
+    "samePrimaryWorktreeReproducesR10ThroughR13ObservedChecksums": true,
+    "authoritativeMatchingGitBlobRecovered": false,
+    "migrationIntroducedByCommit": "7b014d1cedeffc8f38e04d309769c281a47ab26a",
+    "migrationIntroducedOnce": true
+  },
+  "classification": "A-exact-alternate-byte-representation-proven",
+  "confidence": "high",
+  "limitations": [
+    "R13 itself reported the safe checksum and applied-step mismatches; it did not identify the byte transformation.",
+    "No checksum-identical committed Git blob was recovered.",
+    "Checksum equivalence does not establish that the migration SQL executed or make a zero-step lifecycle acceptable."
+  ]
+}

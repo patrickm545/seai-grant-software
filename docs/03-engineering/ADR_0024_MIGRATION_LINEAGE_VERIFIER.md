@@ -324,3 +324,24 @@ The stage boundaries are fixed: repository preparation is complete; Production
 evidence and attestation activation belong to PR #45; migration execution
 requires a different approved change; and application deployment follows only
 after successful execution and postflight.
+
+## R13 Historical Zero-Step Boundary
+
+The closed R13 operation reached the first evidence transaction and rejected
+`20260716183000_pilot_installer_auth` for both checksum and applied-step-count
+mismatches. Repository-only investigation proved an exact reversible CRLF
+representation and recovered the original authorised repair, verification and
+`migrate resolve --applied` operation artifact. The checksum is classification
+A and the zero-step lifecycle is classification L1.
+
+This evidence does not alter the implementation. Ordinary repository
+migrations still require exactly one applied step. The three R10-R12
+Production tuples remain the complete accepted tuple set. No fourth tuple,
+zero-step branch, attestation field or pattern acceptance has been added.
+
+A separate ADR decision plus a newly authorised read-only capture of exact
+ledger timestamps and current catalog state is required before a distinct
+historical-lifecycle structure may be considered. The
+[R13 lifecycle investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
+defines the required proof. Until then, Production fails closed and every
+non-Production environment remains canonical-only.

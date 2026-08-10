@@ -2,7 +2,11 @@ import type { SafeDatabaseIdentity } from './database-safety';
 import type { LineageAttestation } from './lineage-attestation';
 import { AttestationValidationError, validateLineageAttestation } from './lineage-attestation';
 import type { MigrationLedgerRow } from './migration-ledger';
-import { normaliseMigrationRecord, verifyAttestedLedger } from './migration-ledger';
+import {
+  MigrationRecordNormalizationError,
+  normaliseMigrationRecord,
+  verifyAttestedLedger
+} from './migration-ledger';
 import type { MigrationManifest } from './migration-manifest';
 import type { CatalogSnapshot, SchemaProfile } from './schema-fingerprint';
 import {
@@ -53,7 +57,15 @@ export function verifyStrictLedger(rows: MigrationLedgerRow[], manifest: Migrati
   const expected = new Map(manifest.migrations.map((migration) => [migration.name, migration]));
   const grouped = new Map<string, ReturnType<typeof normaliseMigrationRecord>[]>();
   for (const source of rows) {
-    const row = normaliseMigrationRecord(source);
+    let row: ReturnType<typeof normaliseMigrationRecord>;
+    try {
+      row = normaliseMigrationRecord(source);
+    } catch (error) {
+      if (error instanceof MigrationRecordNormalizationError) {
+        fail('LEDGER_MISMATCH', error.message);
+      }
+      throw error;
+    }
     if (!expected.has(row.migrationName)) fail('LEDGER_MISMATCH', `Unexpected migration: ${row.migrationName}`);
     const records = grouped.get(row.migrationName) ?? [];
     records.push(row);

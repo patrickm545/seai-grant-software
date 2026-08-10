@@ -39,6 +39,24 @@ export const MIGRATION_RECORD_MISMATCH_REPORT_VERSION =
 export const REPOSITORY_MIGRATION_EXACT_SUCCESS_REPORT_VERSION =
   'adr-0024-repository-migration-exact-success/v1' as const;
 
+export type MigrationRecordNormalizationFailure =
+  | 'non-canonical-timestamp'
+  | 'invalid-timestamp'
+  | 'invalid-applied-step-count';
+
+export class MigrationRecordNormalizationError extends Error {
+  constructor(
+    public readonly field: 'startedAt' | 'finishedAt' | 'rolledBackAt' | 'appliedStepsCount',
+    public readonly reason: MigrationRecordNormalizationFailure
+  ) {
+    super(
+      `Migration ledger normalization failed: field=${field}; reason=${reason}; ` +
+        `normalizationVersion=${MIGRATION_RECORD_NORMALIZATION_VERSION}`
+    );
+    this.name = 'MigrationRecordNormalizationError';
+  }
+}
+
 const comparedRecordFields = [
   'id',
   'migrationName',
@@ -416,17 +434,22 @@ function mismatchReport(
   };
 }
 
-function timestamp(value: Date | string | null) {
+function timestamp(
+  value: Date | string | null,
+  field: 'startedAt' | 'finishedAt' | 'rolledBackAt'
+) {
   if (value === null) return null;
   if (typeof value === 'string') {
     try {
       return canonicaliseMigrationTimestamp(value);
     } catch {
-      throw new Error('Ledger contains a non-canonical timestamp.');
+      throw new MigrationRecordNormalizationError(field, 'non-canonical-timestamp');
     }
   }
   const date = value;
-  if (!Number.isFinite(date.getTime())) throw new Error('Ledger contains an invalid timestamp.');
+  if (!Number.isFinite(date.getTime())) {
+    throw new MigrationRecordNormalizationError(field, 'invalid-timestamp');
+  }
   return date.toISOString();
 }
 
@@ -434,16 +457,19 @@ export function normaliseMigrationRecord(row: MigrationLedgerRow): NormalisedMig
   const logs = row.logs ?? '';
   const appliedStepsCount = Number(row.applied_steps_count);
   if (!Number.isSafeInteger(appliedStepsCount) || appliedStepsCount < 0) {
-    throw new Error('Ledger contains an invalid applied-step count.');
+    throw new MigrationRecordNormalizationError(
+      'appliedStepsCount',
+      'invalid-applied-step-count'
+    );
   }
   return {
     id: row.id,
     migrationName: row.migration_name,
     checksum: row.checksum,
-    startedAt: timestamp(row.started_at)!,
-    finishedAt: timestamp(row.finished_at),
+    startedAt: timestamp(row.started_at, 'startedAt')!,
+    finishedAt: timestamp(row.finished_at, 'finishedAt'),
     appliedStepsCount,
-    rolledBackAt: timestamp(row.rolled_back_at),
+    rolledBackAt: timestamp(row.rolled_back_at, 'rolledBackAt'),
     logsState: logs ? 'sha256' : 'none',
     logsDigest: logs ? createHash('sha256').update(logs, 'utf8').digest('hex') : null
   };

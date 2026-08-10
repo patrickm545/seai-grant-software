@@ -41,9 +41,14 @@ import {
 import {
   ProductionEvidenceStageError,
   runProductionEvidenceStage,
-  safeProductionEvidenceStageDiagnostic,
-  type ProductionEvidenceStage
+  safeProductionEvidenceStageDiagnostic
 } from '../lib/production-evidence-diagnostics';
+import {
+  runStrictVerifierStage,
+  safeStrictVerifierStageDiagnostic,
+  StrictVerifierStageError,
+  type StrictVerifierStage
+} from '../lib/strict-verifier-diagnostics';
 import { assertNamedCatalog, fingerprintCatalog, type SchemaProfile } from '../lib/schema-fingerprint';
 
 const repositoryRoot = resolve(__dirname, '..');
@@ -124,25 +129,30 @@ function verifyApprovedManifest(manifest: MigrationManifest) {
   }
 }
 
-type DatabaseReadStages = {
-  transaction: ProductionEvidenceStage;
-  readOnlySetup: ProductionEvidenceStage;
-  connectedIdentity: ProductionEvidenceStage;
-  migrationLedger: ProductionEvidenceStage;
-  catalog: ProductionEvidenceStage;
+type DatabaseReadStages<TStage extends string> = {
+  runStage: <T>(
+    stage: TStage,
+    invariant: string,
+    operation: () => T | Promise<T>
+  ) => Promise<T>;
+  transaction: TStage;
+  readOnlySetup: TStage;
+  connectedIdentity: TStage;
+  migrationLedger: TStage;
+  catalog: TStage;
 };
 
-async function readDatabaseState(stages?: DatabaseReadStages) {
+async function readDatabaseState<TStage extends string>(stages?: DatabaseReadStages<TStage>) {
   const prisma = new PrismaClient();
   try {
     const transaction = () => prisma.$transaction(
       async (transaction) => {
         const identity = stages
-          ? await runProductionEvidenceStage(
+          ? await stages.runStage(
               stages.connectedIdentity,
               'connected database identity query returns exactly one guarded database',
               async () => {
-                await runProductionEvidenceStage(
+                await stages.runStage(
                   stages.readOnlySetup,
                   'repeatable-read transaction is set read only before evidence queries',
                   () => transaction.$executeRawUnsafe('SET TRANSACTION READ ONLY')
@@ -155,14 +165,14 @@ async function readDatabaseState(stages?: DatabaseReadStages) {
               return readConnectedDatabaseIdentity(transaction);
             })();
         const ledgerRows = stages
-          ? await runProductionEvidenceStage(
+          ? await stages.runStage(
               stages.migrationLedger,
               'fixed migration-ledger query returns canonical rows',
               () => readMigrationLedger(transaction)
             )
           : await readMigrationLedger(transaction);
         const catalog = stages
-          ? await runProductionEvidenceStage(
+          ? await stages.runStage(
               stages.catalog,
               'fixed public catalog query set returns canonical metadata',
               () => readCatalogSnapshot(transaction)
@@ -173,7 +183,7 @@ async function readDatabaseState(stages?: DatabaseReadStages) {
       { isolationLevel: 'RepeatableRead', timeout: 30_000 }
     );
     return stages
-      ? await runProductionEvidenceStage(
+      ? await stages.runStage(
           stages.transaction,
           'repeatable-read transaction completes without mutation',
           transaction
@@ -264,6 +274,7 @@ async function main() {
         })
     );
     const firstState = await readDatabaseState({
+      runStage: runProductionEvidenceStage,
       transaction: 'first-transaction',
       readOnlySetup: 'first-read-only-setup',
       connectedIdentity: 'first-connected-identity',
@@ -287,6 +298,7 @@ async function main() {
         })
     );
     const secondState = await readDatabaseState({
+      runStage: runProductionEvidenceStage,
       transaction: 'second-transaction',
       readOnlySetup: 'second-read-only-setup',
       connectedIdentity: 'second-connected-identity',
@@ -395,8 +407,18 @@ async function main() {
       });
     }
   }
-  const state = await readDatabaseState();
-  const evidence = verifyLineage({
+  const strictReadStages = {
+    runStage: runStrictVerifierStage,
+    transaction: 'strict-transaction',
+    readOnlySetup: 'strict-read-only-setup',
+    connectedIdentity: 'strict-connected-identity',
+    migrationLedger: 'strict-migration-ledger',
+    catalog: 'strict-catalog'
+  } satisfies DatabaseReadStages<StrictVerifierStage>;
+  const state = productionMode
+    ? await readDatabaseState()
+    : await readDatabaseState(strictReadStages);
+  const verify = () => verifyLineage({
     mode,
     environment: guarded.appEnvironment,
     identity: guarded.identity,
@@ -408,8 +430,30 @@ async function main() {
     catalog: state.catalog,
     changeId: process.env.PRODUCTION_MIGRATION_CHANGE_ID
   });
-  assertVerifierEvidenceSecretFree(evidence);
-  process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
+  const evidence = productionMode
+    ? verify()
+    : await runStrictVerifierStage(
+        'strict-lineage-verification',
+        'connected identity, canonical migration ledger, schema fingerprint and catalog assertions verify exactly',
+        verify
+      );
+  if (productionMode) {
+    assertVerifierEvidenceSecretFree(evidence);
+  } else {
+    await runStrictVerifierStage(
+      'strict-secret-free-validation',
+      'verifier evidence contains no credential, URL, token or secret-like field',
+      () => assertVerifierEvidenceSecretFree(evidence)
+    );
+  }
+  const serialized = productionMode
+    ? JSON.stringify(evidence, null, 2)
+    : await runStrictVerifierStage(
+        'strict-evidence-serialization',
+        'complete verifier evidence serializes as JSON',
+        () => JSON.stringify(evidence, null, 2)
+      );
+  process.stdout.write(`${serialized}\n`);
   console.log(
     evidence.finalDecision === 'verified-clean'
       ? 'Migration lineage verifier: verified clean.'
@@ -425,6 +469,26 @@ main()
     process.exitCode = code;
   })
   .catch((error) => {
+    if (error instanceof StrictVerifierStageError) {
+      const cause = error.cause;
+      const stage = safeStrictVerifierStageDiagnostic(error);
+      if (cause instanceof LineageVerifierError) {
+        console.error(`${cause.code}: ${stage}; ${safeMessage(cause)}`);
+        process.exitCode = exitCodeFor(cause);
+        return;
+      }
+      const formatted = formatDatabaseSafetyError(cause);
+      if (!formatted.startsWith('DB_OPERATION_NOT_ALLOWED: Database operation failed safely.')) {
+        console.error(
+          `${formatted.split(':', 1)[0]}: ${stage}; database safety guard rejected the operation.`
+        );
+        process.exitCode = VERIFIER_EXIT_CODES.UNSAFE_CONFIGURATION;
+        return;
+      }
+      console.error(`INTERNAL_ERROR: ${stage}; ${safeMessage(cause)}`);
+      process.exitCode = VERIFIER_EXIT_CODES.INTERNAL_ERROR;
+      return;
+    }
     if (error instanceof ProductionEvidenceStageError) {
       const cause = error.cause;
       const stage = safeProductionEvidenceStageDiagnostic(error);

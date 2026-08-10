@@ -46,9 +46,10 @@ application deployment or alias movement.
 R13 is permanently closed. Its repository-only follow-up defines one pending
 `attestedHistoricalResolvedMigration` for the exact pilot-auth repair/resolve
 history without changing ordinary one-step migration acceptance. Current
-ledger timestamps, evolved catalog evidence, two matching R14 captures and
+ledger timestamps, evolved catalog evidence, two matching captures and
 approvals remain absent, so the attestation has zero captures and approvals and
-the release blocker is unchanged. R14 requires separate authority.
+the release blocker is unchanged. R14 stopped before complete evidence and is
+closed; any later operation requires separate authority.
 
 ## Objective
 

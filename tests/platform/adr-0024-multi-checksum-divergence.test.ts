@@ -19,7 +19,7 @@ const manifest = JSON.parse(
 const pending = JSON.parse(
   readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
 ) as LineageAttestation;
-const [r10, r11, r12] = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
+const [r10, r11, r12, r14] = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
 
 function sha256(value: Buffer | string) {
   return createHash('sha256').update(value).digest('hex');
@@ -202,18 +202,19 @@ test('canonical manifest and fresh-database verification remain canonical-only',
   assert.equal(manifest.manifestHash, r12.approvedManifestHash);
 });
 
-test('all three exact Production tuples verify independently through the pending attested path', () => {
+test('all four exact Production tuples verify independently through the pending attested path', () => {
   const result = verifyProductionFixture();
   assert.deepEqual(result.repositoryChecksumDivergences, [
     { migrationName: r10.migrationName, result: 'verified' },
     { migrationName: r11.migrationName, result: 'verified' },
-    { migrationName: r12.migrationName, result: 'verified' }
+    { migrationName: r12.migrationName, result: 'verified' },
+    { migrationName: r14.migrationName, result: 'verified' }
   ]);
   assert.deepEqual(result.pending, ['20260724180000_password_reset_foundation']);
 });
 
-test('R10, R11 and R12 tuples cannot cross-satisfy', () => {
-  const tuples = [r10, r11, r12];
+test('R10, R11, R12 and R14 tuples cannot cross-satisfy', () => {
+  const tuples = [r10, r11, r12, r14];
   for (const target of tuples) {
     for (const other of tuples.filter((candidate) => candidate !== target)) {
       const fixture = productionFixture();

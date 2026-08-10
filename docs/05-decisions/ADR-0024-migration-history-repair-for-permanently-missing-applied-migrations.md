@@ -138,19 +138,19 @@ attestation, which remains pending with zero captures and zero approvals.
 
 #### Exact Production repository-checksum divergences
 
-The closed R10, R11 and R12 operations established checksum-only exact-success
-mismatches for three specific Production records. Later repository-only
-investigations proved classification A for each: its observed checksum is the
+The closed R10, R11, R12 and R14 operations established checksum-only
+exact-success mismatches for four specific ordinary Production records. Later
+repository-only investigations proved classification A for each: its observed checksum is the
 exact committed UTF-8/no-BOM SQL mechanically materialised with CRLF rather
 than LF while retaining the final newline. Reverse normalization is
 byte-for-byte exact and changes no SQL token.
 
-The manifest and all three migrations remain canonical and unchanged. Attestation
-v4 may record only the exact three historical Production tuples, and each entry
+The manifest and all four migrations remain canonical and unchanged. Attestation
+v5 may record only the exact four historical Production tuples, and each entry
 must also require the exact Production fingerprint, record ID, successful
 lifecycle, approved manifest, approved repository-lineage baseline and
 retained evidence digest. The active verifier must prove canonical repository
-integrity and all three exact observed Production rows independently.
+integrity and all four exact observed Production rows independently.
 
 This is not a global alternate checksum or line-ending rule. No tuple can
 satisfy another; a missing, duplicated, cross-matched or changed entry fails
@@ -532,8 +532,9 @@ The separate historical invariant requires every field below to be exact:
 Missing, additional or different evidence fails closed. The state cannot be
 used by Preview, Development, test or fresh-database verification; cannot be
 reused by another migration, database fingerprint or record; and cannot be
-satisfied through the R10-R12 checksum-divergence structure. The three
-ordinary one-step R10-R12 tuples are unchanged.
+satisfied through the ordinary checksum-divergence structure. The three R10-R12
+ordinary one-step tuples are unchanged; R14 adds a fourth ordinary tuple for
+tenant provisioning without changing the pilot-auth structure.
 
 The deterministic expected schema inventory is
 [`ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json`](../03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json).
@@ -542,13 +543,14 @@ committed `AuthSession.sessionType` evolution. Current Production must match
 that evolved end-state and the complete catalog fingerprint; the July 16 state
 is not treated as permanently frozen.
 
-## R14 Activation Gate
+## Post-R14 Activation Gate
 
-This amendment does not authorise R14 or activate the attestation. A future,
-separately authorised read-only R14 operation must prove all of the following
-before activation can be considered:
+The separately authorised R14 operation stopped before producing a complete
+capture and is permanently closed. It did not activate the attestation. A
+future, separately authorised read-only operation must prove all of the
+following before activation can be considered:
 
-1. all exact R10-R12 records still pass independently;
+1. all exact R10-R12 and R14 ordinary records still pass independently;
 2. the pilot-auth name, record ID, observed checksum, zero-step count, exact
    canonical `started_at` and `finished_at`, null rollback, and no-log state;
 3. the full current Production schema fingerprint and every named pilot-auth
@@ -557,12 +559,13 @@ before activation can be considered:
 4. the pending migration set is exactly
    `20260724180000_password_reset_foundation`;
 5. two read-only repeatable-read captures match in every deterministic field;
-6. current recovery evidence and the exact R14 repository revision are bound
+6. current recovery evidence and the exact authorised repository revision are bound
    to both retained artifact references and SHA-256 digests; and
 7. active attestation validation, governance approval and accountability
    requirements all pass.
 
 Until those values are captured and reviewed, the entry retains null ledger
-timestamps, null current-schema evidence, empty R14 capture references, and a
-pending attestation. This amendment authorises no Production access, status
-command, migration, resolution, deployment, alias movement or R14 operation.
+timestamps, null current-schema evidence, empty schema-named R14 capture
+references, and a pending attestation. This amendment authorises no Production
+access, status command, migration, resolution, deployment, alias movement or
+new operation.

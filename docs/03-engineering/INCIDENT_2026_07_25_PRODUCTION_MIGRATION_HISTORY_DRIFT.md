@@ -364,13 +364,41 @@ checksum and zero-step lifecycle without changing the normal one-step rule.
 The investigation does not accept Production lineage. ADR-0024 now defines
 the distinct `attestedHistoricalResolvedMigration` state for the one exact
 pilot-auth record, while ordinary successful migrations still require one
-applied step and the R10-R12 tuple structure remains unchanged. This is a
+applied step and the then-current R10-R12 tuple structure remained unchanged.
+This is a
 repository governance model, not current Production evidence.
 
 Exact current ledger timestamps and catalog equivalence remain unproven. The
 attestation entry therefore retains null schema and timestamp fields, zero
-captures and zero approvals. The incident remains open and Production remains
-blocked pending a separately authorised R14 evidence operation and review.
+captures and zero approvals. The now-closed R14 operation stopped before those
+values were emitted. The incident remains open and Production remains blocked
+pending a new separately authorised evidence operation and review.
+
+## R14 Tenant-Provisioning Checksum Divergence
+
+The permanently closed R14 read-only operation returned typed exit `25` at
+`first-evidence-generation` for
+`20260718130000_tenant_provisioning_data_model`. Exact record
+`5eeca647-5429-4beb-873b-cff91ec58ddf` carried observed checksum
+`2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805`
+instead of canonical checksum
+`a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7`.
+R10-R12 and the separate pilot-auth historical ledger state passed before the
+stop. No lifecycle failure was reported for tenant provisioning.
+
+The later repository-only
+[R14 investigation](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+proved classification A with high confidence. Converting the exact committed
+3,795-byte UTF-8/no-BOM SQL's 110 LF bytes to CRLF produces the exact
+3,905-byte observed checksum, and reverse normalization is byte-for-byte
+exact. No authoritative historical matching Git blob was recovered.
+
+The immutable migration and manifest remain unchanged. Attestation v5 now
+pins four independent ordinary one-step tuples and requires all four; no
+checksum pattern or global line-ending exception exists. The pilot-auth
+historical zero-step state remains separate and unchanged. The attestation is
+pending with zero captures and zero approvals, the incident is open, and any
+complete capture requires new separate authorisation.
 
 ## Related Documents
 

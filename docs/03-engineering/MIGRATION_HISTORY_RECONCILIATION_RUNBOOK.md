@@ -84,22 +84,23 @@ capture requires fresh separate authority.
 
 ### Exact Repository-Migration Checksum Divergences
 
-The permanently closed R10, R11 and R12 operations established three separate exact
+The permanently closed R10, R11, R12 and R14 operations established four separate exact
 Production checksum mismatches. Later repository-only investigations proved
 classification A for each by converting only the exact committed UTF-8/no-BOM
-file's LF line endings to CRLF while retaining the final newline. All three
+file's LF line endings to CRLF while retaining the final newline. All four
 candidates normalize byte-for-byte to their committed Git blobs.
 
 Use the retained [R10 investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
 [R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
-[R12 investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+[R12 investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
+[R14 investigation](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 and evidence digests; do not recreate candidates during an operation.
 
-Before any later capture, verify attestation v4 still contains exactly all three
+Before any later capture, verify attestation v5 still contains exactly all four
 tuples and pins each canonical and observed checksum as distinct fields, with
 its exact record ID, successful lifecycle, Production fingerprint, manifest
 hash, approved lineage baseline, evidence reference/digest and retirement
-scope. All three tuples are required and cannot cross-satisfy. Alternate checksums
+scope. All four tuples are required and cannot cross-satisfy. Alternate checksums
 are invalid in Preview, test, development, fresh databases and every other
 migration. This is not an LF/CRLF allow list. Any difference is exit `25` and
 an immediate stop.
@@ -132,7 +133,7 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
-- [ ] Attestation v4 checksum-divergence evidence digests and all three exact
+- [ ] Attestation v5 checksum-divergence evidence digests and all four exact
       Production tuples verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator
@@ -503,12 +504,15 @@ repository baseline and deterministic evolved-schema inventory. Do not copy
 the entry, pattern-match it, move it into `repositoryMigrationChecksumDivergences`,
 or use it for Preview, Development, test or another Production fingerprint.
 
-Before activation, a separately authorised R14 read-only capture must add and
-prove exact canonical ledger timestamps, full current schema fingerprint,
-every named pilot-auth catalog assertion, two matching deterministic captures,
-the exact pending migration set, current recovery evidence and the R14
-repository revision. Missing or different evidence is a stop. R14 must not be
-inferred from the retained July 17 artifact.
+The closed R14 operation stopped before completing capture 1 and did not
+populate the historical entry's schema-named R14 evidence fields. Before
+activation, a new separately authorised read-only capture must add and prove
+exact canonical ledger timestamps, full current schema fingerprint, every
+named pilot-auth catalog assertion, two matching deterministic captures, the
+exact pending migration set, current recovery evidence and the exact authorised
+repository revision. Missing or different evidence is a stop. Current evidence
+must not be inferred from the retained July 17 artifact or the incomplete R14
+operation.
 
 Do not run `migrate resolve`, edit `_prisma_migrations`, replay the historical
 repair, activate the attestation manually or treat this repository amendment

@@ -235,14 +235,15 @@ test('checksum classification never bypasses the zero-step lifecycle failure', (
   );
 });
 
-test('R10 through R12 remain exact while pilot auth uses a separate pending structure', () => {
-  assert.equal(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.length, 3);
+test('ordinary one-step tuples remain exact while pilot auth uses a separate pending structure', () => {
+  assert.equal(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.length, 4);
   assert.deepEqual(
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map((entry) => entry.migrationName),
     [
       '20260710120000_identity_organisation_foundation',
       '20260710130000_users_roles_permissions_audit',
-      '20260710140000_workflow_foundation'
+      '20260710140000_workflow_foundation',
+      '20260718130000_tenant_provisioning_data_model'
     ]
   );
   assert.equal(

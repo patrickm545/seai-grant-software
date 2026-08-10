@@ -27,6 +27,7 @@
     "docs/03-engineering/evidence/ADR_0024_R12_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R13_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R13_ZERO_STEP_LIFECYCLE_INVESTIGATION.json",
+    "docs/03-engineering/evidence/ADR_0024_R14_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json",
     "Draft PR #43 implementation evidence"
   ],
@@ -97,6 +98,30 @@
       "environment": "production",
       "productionDatabaseFingerprint": "db_4e1d3bd23cff6801",
       "approvedRepositoryLineageBaseline": "a60da87c62bb22d406f3e36f8484a13d14086a32",
+      "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
+      "expectedLifecycle": {
+        "startedAt": "present-valid-canonical-utc-timestamp",
+        "finishedAt": "present-valid-canonical-utc-timestamp",
+        "appliedStepsCount": 1,
+        "rolledBackAt": null,
+        "logsState": "none",
+        "logsDigest": null
+      },
+      "scope": "Exact ADR-0024 Production historical record only",
+      "retirementCondition": "Retires with ADR-0024 attestation"
+    },
+    {
+      "migrationName": "20260718130000_tenant_provisioning_data_model",
+      "recordId": "5eeca647-5429-4beb-873b-cff91ec58ddf",
+      "repositoryChecksum": "a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7",
+      "observedProductionChecksum": "2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805",
+      "checksumDivergenceClassification": "A-exact-alternate-byte-representation-proven",
+      "byteRepresentation": "utf8-no-bom-crlf-with-final-newline",
+      "checksumEvidenceReference": "docs/03-engineering/evidence/ADR_0024_R14_CHECKSUM_DIVERGENCE.json",
+      "checksumEvidenceSha256": "ca79db4c782a76b76e1dcbb84e46496d16b36cb463e68be904bc1962fe603da8",
+      "environment": "production",
+      "productionDatabaseFingerprint": "db_4e1d3bd23cff6801",
+      "approvedRepositoryLineageBaseline": "90c2f1f95a7dbc6eeaac48df3d2ef0b3a336ac7c",
       "approvedManifestHash": "1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872",
       "expectedLifecycle": {
         "startedAt": "present-valid-canonical-utc-timestamp",

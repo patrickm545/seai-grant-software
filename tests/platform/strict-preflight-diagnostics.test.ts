@@ -67,7 +67,7 @@ test('Preview strict-preflight remains canonical-only', () => {
   assert.deepEqual(evidence.attestedRepositoryChecksumDivergences, []);
 });
 
-test('R10, R11, and R12 Production checksum tuples cannot cross into Preview', () => {
+test('exact Production checksum tuples cannot cross into Preview', () => {
   for (const divergence of PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES) {
     const ledgerRows = canonicalPreviewRows();
     ledgerRows.find((row) => row.migration_name === divergence.migrationName)!.checksum =

@@ -351,13 +351,14 @@ test('canonical inventory accepts only the declared evolved AuthSession end-stat
   }
 });
 
-test('R10, R11, and R12 remain exact one-step checksum divergences with no cross-structure match', () => {
+test('ordinary one-step checksum divergences remain separate from historical resolved state', () => {
   assert.deepEqual(
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.map((entry) => entry.migrationName),
     [
       '20260710120000_identity_organisation_foundation',
       '20260710130000_users_roles_permissions_audit',
-      '20260710140000_workflow_foundation'
+      '20260710140000_workflow_foundation',
+      '20260718130000_tenant_provisioning_data_model'
     ]
   );
   assert.equal(

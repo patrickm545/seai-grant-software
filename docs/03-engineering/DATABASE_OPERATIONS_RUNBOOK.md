@@ -60,8 +60,8 @@ blocked status verification. It authorises no migration, deployment or alias
 movement and must be reviewed before the first 10 pilot installers or when a
 qualified reviewer joins.
 
-R10, R11 and R12 are permanently closed typed diagnostic stops. Later
-repository-only investigations proved three exact CRLF historical checksum
+R10, R11, R12 and R14 are permanently closed typed diagnostic stops. Later
+repository-only investigations proved four exact CRLF historical checksum
 representations and attestation v5 binds each one to its complete Production
 tuple. This is not a general normalization or alternate-checksum rule. The
 attestation remains pending with zero captures and approvals; no Production
@@ -69,9 +69,10 @@ capture, status, migration or deployment is authorised by those investigations.
 
 The closed R13 investigation is represented separately as one pending
 `attestedHistoricalResolvedMigration`. The state is restricted to the exact
-pilot-auth record and does not change the ordinary one-step rule. A future R14
-capture command may collect the exact record timestamps and current evolved
-catalog proof only under a new read-only authorisation. The state remains
+pilot-auth record and does not change the ordinary one-step rule. The closed
+R14 command stopped later in manifest order and did not emit the exact record
+timestamps or current evolved catalog proof. A future capture may collect that
+evidence only under a new read-only authorisation. The state remains
 non-activatable until two deterministic captures, current recovery evidence
 and every attestation field are complete and exact. Do not use `db:status`,
 `migrate resolve`, manual SQL or any migration command as a substitute for that

@@ -7,7 +7,7 @@
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-10 |
-| Operational state | R1-R13 closed; historical-resolved model pending current evidence; R14 not authorised |
+| Operational state | R1-R14 closed; fourth exact tuple proven; historical-resolved current evidence still pending; no new operation authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -433,16 +433,18 @@ Every item below must exist and be exact before changing `status` to `active`:
       `0eed74ab3945d45a0915631a99824fd7a2ecd7ec5cb7653ffbb3e80fd54b6eed`.
 - [ ] The R12 evidence reference exists and its raw-file SHA-256 is
       `0b773879debbf8250f4a5f67c06d2ce9fbb31c2d2774b9d79089a7cefe60c915`.
-- [ ] All three exact tuples are required and cannot be missing, duplicated,
+- [ ] The R14 checksum evidence reference exists and its raw-file SHA-256 is
+      `ca79db4c782a76b76e1dcbb84e46496d16b36cb463e68be904bc1962fe603da8`.
+- [ ] All four exact tuples are required and cannot be missing, duplicated,
       cross-matched or replaced by a wildcard or checksum pattern.
 - [ ] Exactly one separate `attestedHistoricalResolvedMigration` entry exists
       for `20260716183000_pilot_installer_auth`; it is not present in the
-      R10-R12 tuple structure.
+      ordinary checksum-divergence tuple structure.
 - [ ] The historical entry retains exact record ID, canonical and observed
       checksums, zero-step/no-rollback/no-log lifecycle, checksum evidence,
       lifecycle evidence, resolve evidence, manifest, repository baseline and
       evolved-schema inventory hashes.
-- [ ] R14 supplies exact canonical ledger timestamps, current full schema
+- [ ] A new separately authorised capture supplies exact canonical ledger timestamps, current full schema
       fingerprint, historical catalog assertion digest, two distinct matching
       artifact references and hashes, exact repository revision, change ID and
       current recovery evidence.

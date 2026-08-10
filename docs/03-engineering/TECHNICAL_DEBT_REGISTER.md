@@ -74,8 +74,9 @@ The closed R13 investigation now has a narrow repository model:
 classification A/L1 history separately from ordinary migration success. The
 ordinary path remains one step, R10-R12 remain unchanged, and the new entry is
 pending with no current ledger timestamps, schema evidence, captures or
-approvals. TD-019 remains critical until a separately authorised R14 operation
-produces two matching current captures, the attestation is reviewed and
+approvals. The closed R14 operation stopped before complete evidence. TD-019
+remains critical until a new separately authorised operation produces two
+matching current captures, the attestation is reviewed and
 activated, and the later Production execution and verification complete.
 
 ## Review Rules

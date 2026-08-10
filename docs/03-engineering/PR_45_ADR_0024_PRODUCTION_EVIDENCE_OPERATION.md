@@ -7,9 +7,9 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-10 |
-| Operational state | R13 permanently closed; separate historical-resolved model pending current R14 evidence; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13 closed 2026-08-10; R14 is not authorised |
-| Repository baseline | `a238c6c6c9569761a14257a5deafa034d3ea1029` |
+| Operational state | R14 permanently closed after exact tenant-provisioning checksum stop; fourth exact tuple proven repository-only; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10 |
+| Repository baseline | `90c2f1f95a7dbc6eeaac48df3d2ef0b3a336ac7c` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -30,6 +30,8 @@
 | R12 investigation | [Third classification A checksum divergence](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R13 operation | [Pilot-auth checksum and zero-step stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md) |
 | R13 investigation | [Classification A and lifecycle L1](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md) |
+| R14 operation | [Tenant-provisioning checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md) |
+| R14 investigation | [Fourth exact classification A checksum divergence](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -551,4 +553,36 @@ because the historical explanation is known.
 
 This amendment changed no migration SQL or manifest, queried no database, and
 ran no Production status, migration, deployment or alias operation. R13 stays
-closed and R14 remains unauthorised.
+closed and, at that amendment point, no R14 authority had been created.
+
+## Closed R14 Operation And Repository-Only Follow-Up
+
+R14 later received the separate change ID
+`CHG-2026-08-10-ADR0024-PROD-EVIDENCE-R14` for one read-only invocation at
+`90c2f1f95a7dbc6eeaac48df3d2ef0b3a336ac7c`. It is permanently closed. The
+repository returned typed exit `25` at `first-evidence-generation` for the
+exact `20260718130000_tenant_provisioning_data_model` record ID
+`5eeca647-5429-4beb-873b-cff91ec58ddf`: the observed checksum
+`2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805`
+differed from canonical checksum
+`a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7`.
+No lifecycle failure was reported.
+
+R10, R11 and R12 passed before the R14 stop. The separate pilot-auth
+historical ledger state also passed with zero applied steps, null rollback and
+no logs. The stop occurred before complete evidence serialization, so R14
+emitted no complete capture, second capture, digest, schema fingerprint,
+catalog assertions, normalized ledger or live pending set. The attestation
+remains pending with zero captures and zero approvals; its historical R14
+capture-binding fields remain null or empty.
+
+The repository-only follow-up proved classification A: converting the exact
+3,795-byte UTF-8/no-BOM committed blob's 110 LF endings to CRLF, retaining the
+final newline, creates the exact 3,905-byte observed checksum. Reverse
+normalization is byte-for-byte exact. Attestation v5 therefore adds one fourth
+independently pinned ordinary one-step tuple. The immutable SQL and manifest
+remain unchanged, and the pilot-auth zero-step state remains separate.
+
+This investigation did not connect to Production, run capture or status,
+execute SQL, migrate, resolve, deploy or move an alias. It does not reopen R14
+or authorise another Production operation.

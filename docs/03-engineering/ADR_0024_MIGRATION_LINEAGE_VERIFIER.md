@@ -223,7 +223,7 @@ stable safe category rather than raw driver text.
 
 ## Exact Production Repository-Checksum Divergences
 
-The closed R10, R11 and R12 operations each established one checksum-only
+The closed R10, R11, R12 and R14 operations each established one checksum-only
 exact-success mismatch:
 
 | Operation | Migration | Record ID | Canonical checksum | Observed Production checksum |
@@ -231,6 +231,7 @@ exact-success mismatch:
 | R10 | `20260710120000_identity_organisation_foundation` | `112c6124-f0c2-4b6b-8d02-f6ce835746e3` | `fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3` | `c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714` |
 | R11 | `20260710130000_users_roles_permissions_audit` | `93c04529-1d5b-4350-af01-ef225b69b008` | `cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf` | `4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb` |
 | R12 | `20260710140000_workflow_foundation` | `ce4489c9-fa9b-41e0-90fc-23a584e162da` | `7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d` | `fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8` |
+| R14 | `20260718130000_tenant_provisioning_data_model` | `5eeca647-5429-4beb-873b-cff91ec58ddf` | `a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7` | `2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805` |
 
 Separate repository-only investigations proved classification A for each
 tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
@@ -242,11 +243,11 @@ The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies all three exact historical
+2. The ADR-0024 Production path separately verifies all four exact historical
    Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-The three-entry structure is an exact tuple set, not an alternate-checksum
+The four-entry structure is an exact tuple set, not an alternate-checksum
 list. Every declared tuple must verify independently and one cannot satisfy
 another. Preview, test, development and fresh databases receive no exception and
 must use canonical checksums. A missing, duplicated, cross-matched or changed
@@ -352,11 +353,16 @@ While the attestation is pending, the fixed capture path may only emit the
 exact zero-step ledger record and current catalog evidence for review. It does
 not convert that evidence into acceptance. Active verification additionally
 requires pinned canonical timestamps, schema fingerprint and assertion digest,
-two R14 artifact references and hashes, the R14 repository revision, current
-recovery evidence and all attestation governance controls.
+two distinct complete artifact references and hashes, the authorised
+repository revision, current recovery evidence and all attestation governance
+controls.
 
 The checked-in entry deliberately leaves those current values null or empty,
 so `attestation-verify` with active enforcement remains exit `21`. The
 [R13 lifecycle investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
-defines the historical proof; the accepted ADR amendment defines the future
-R14 evidence gate. Neither document authorises Production access or R14.
+defines the historical proof. The closed R14 operation did not populate the
+schema-named R14 capture fields. The
+[R14 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md) and
+[checksum investigation](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+define the later stop and fourth exact tuple; neither authorises new Production
+access.

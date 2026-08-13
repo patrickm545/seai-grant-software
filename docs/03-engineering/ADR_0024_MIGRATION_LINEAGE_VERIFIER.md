@@ -6,7 +6,7 @@
 | Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-13 |
 
 ## Purpose And Boundary
 
@@ -243,11 +243,11 @@ The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies all four exact historical
+2. The ADR-0024 Production path separately verifies all five exact historical
    Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-The four-entry structure is an exact tuple set, not an alternate-checksum
+The five-entry structure is an exact tuple set, not an alternate-checksum
 list. Every declared tuple must verify independently and one cannot satisfy
 another. Preview, test, development and fresh databases receive no exception and
 must use canonical checksums. A missing, duplicated, cross-matched or changed
@@ -366,3 +366,18 @@ schema-named R14 capture fields. The
 [checksum investigation](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 define the later stop and fourth exact tuple; neither authorises new Production
 access.
+
+## R15 Fifth-Tuple And Candidate-Matrix Boundary
+
+R15 stopped at first evidence generation with only a checksum failure for the
+tenant first-login record. Repository-only proof reproduces the observed hash
+by changing the exact Git blob's 16 LF bytes to CRLF and reverses byte-for-byte
+without changing SQL. The verifier therefore has one new exact ordinary tuple
+bound to that migration, record, fingerprint, lifecycle, baseline and evidence
+digest. The four earlier tuples and pilot-auth historical state are unchanged
+and cannot cross-satisfy it.
+
+The post-R15 candidate matrix is never read by the verifier. Later migrations
+remain canonical-only, including password reset, which remains pending. A
+mechanically valid candidate is not a Production observation and grants no
+runtime acceptance or operational authority.

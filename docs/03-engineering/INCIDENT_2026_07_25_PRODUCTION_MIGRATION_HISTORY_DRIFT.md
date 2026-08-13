@@ -6,7 +6,7 @@
 | Status | Contained; remediation approval and execution pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-13 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -393,12 +393,31 @@ proved classification A with high confidence. Converting the exact committed
 3,905-byte observed checksum, and reverse normalization is byte-for-byte
 exact. No authoritative historical matching Git blob was recovered.
 
-The immutable migration and manifest remain unchanged. Attestation v5 now
-pins four independent ordinary one-step tuples and requires all four; no
+The immutable migration and manifest remain unchanged. Before R15, attestation
+v5 pinned four independent ordinary one-step tuples and required all four; no
 checksum pattern or global line-ending exception exists. The pilot-auth
 historical zero-step state remains separate and unchanged. The attestation is
 pending with zero captures and zero approvals, the incident is open, and any
 complete capture requires new separate authorisation.
+
+### R15 First-Login Checksum Stop And Repository Classification
+
+R15 is permanently closed after typed exit `25` for
+`20260718150000_tenant_first_login_activation`, record
+`e0d71f73-e278-4a79-9906-650a8c43881f`. Its only exact-success failure was the
+canonical checksum
+`f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f`
+versus observed checksum
+`8446029a82124d42544db7799c2116fce1811f1a802e6f2ee722562d798225ab`.
+No complete capture or second transaction followed.
+
+The repository-only investigation proved classification A. Sixteen LF-to-CRLF
+insertions reproduce the observed checksum and reverse exactly to the Git
+blob, with no SQL change. R15 reported no lifecycle anomaly. Attestation v5
+now pins five independent ordinary one-step tuples; the pilot-auth historical
+state remains separate. A later-migration candidate matrix is informational
+only and creates no Production acceptance. The attestation remains pending
+with zero captures and approvals, and the incident remains open.
 
 ## Related Documents
 
@@ -419,5 +438,7 @@ complete capture requires new separate authorisation.
 - [R13 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
 - [R13 Checksum Divergence Investigation](PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [R13 Pilot Authentication Lineage Investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
+- [R15 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R15.md)
+- [R15 Checksum Divergence Investigation](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

@@ -358,7 +358,8 @@ test('ordinary one-step checksum divergences remain separate from historical res
       '20260710120000_identity_organisation_foundation',
       '20260710130000_users_roles_permissions_audit',
       '20260710140000_workflow_foundation',
-      '20260718130000_tenant_provisioning_data_model'
+      '20260718130000_tenant_provisioning_data_model',
+      '20260718150000_tenant_first_login_activation'
     ]
   );
   assert.equal(

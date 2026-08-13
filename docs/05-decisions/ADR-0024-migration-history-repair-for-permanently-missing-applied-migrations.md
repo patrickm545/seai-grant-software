@@ -6,7 +6,7 @@
 | Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-13 |
 
 ## Context
 
@@ -138,19 +138,19 @@ attestation, which remains pending with zero captures and zero approvals.
 
 #### Exact Production repository-checksum divergences
 
-The closed R10, R11, R12 and R14 operations established checksum-only
-exact-success mismatches for four specific ordinary Production records. Later
+The closed R10, R11, R12, R14 and R15 operations established checksum-only
+exact-success mismatches for five specific ordinary Production records. Later
 repository-only investigations proved classification A for each: its observed checksum is the
 exact committed UTF-8/no-BOM SQL mechanically materialised with CRLF rather
 than LF while retaining the final newline. Reverse normalization is
 byte-for-byte exact and changes no SQL token.
 
-The manifest and all four migrations remain canonical and unchanged. Attestation
-v5 may record only the exact four historical Production tuples, and each entry
+The manifest and all five migrations remain canonical and unchanged. Attestation
+v5 may record only the exact five historical Production tuples, and each entry
 must also require the exact Production fingerprint, record ID, successful
 lifecycle, approved manifest, approved repository-lineage baseline and
 retained evidence digest. The active verifier must prove canonical repository
-integrity and all four exact observed Production rows independently.
+integrity and all five exact observed Production rows independently.
 
 This is not a global alternate checksum or line-ending rule. No tuple can
 satisfy another; a missing, duplicated, cross-matched or changed entry fails
@@ -533,8 +533,10 @@ Missing, additional or different evidence fails closed. The state cannot be
 used by Preview, Development, test or fresh-database verification; cannot be
 reused by another migration, database fingerprint or record; and cannot be
 satisfied through the ordinary checksum-divergence structure. The three R10-R12
-ordinary one-step tuples are unchanged; R14 adds a fourth ordinary tuple for
-tenant provisioning without changing the pilot-auth structure.
+ordinary one-step tuples are unchanged; R14 and the repository-only R15
+investigation add independently pinned fourth and fifth ordinary tuples for
+tenant provisioning and tenant first-login activation without changing the
+pilot-auth structure.
 
 The deterministic expected schema inventory is
 [`ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json`](../03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json).
@@ -543,14 +545,14 @@ committed `AuthSession.sessionType` evolution. Current Production must match
 that evolved end-state and the complete catalog fingerprint; the July 16 state
 is not treated as permanently frozen.
 
-## Post-R14 Activation Gate
+## Post-R15 Activation Gate
 
-The separately authorised R14 operation stopped before producing a complete
+The separately authorised R15 operation stopped before producing a complete
 capture and is permanently closed. It did not activate the attestation. A
 future, separately authorised read-only operation must prove all of the
 following before activation can be considered:
 
-1. all exact R10-R12 and R14 ordinary records still pass independently;
+1. all exact R10-R12, R14 and R15 ordinary records still pass independently;
 2. the pilot-auth name, record ID, observed checksum, zero-step count, exact
    canonical `started_at` and `finished_at`, null rollback, and no-log state;
 3. the full current Production schema fingerprint and every named pilot-auth
@@ -569,3 +571,21 @@ timestamps, null current-schema evidence, empty schema-named R14 capture
 references, and a pending attestation. This amendment authorises no Production
 access, status command, migration, resolution, deployment, alias movement or
 new operation.
+
+## Post-R15 Exact Tuple And Candidate Boundary
+
+The permanently closed R15 operation stopped with typed exit `25` on the exact
+tenant first-login checksum and no lifecycle failure. Repository-only evidence
+proved classification A: converting the canonical 575-byte LF Git blob to a
+591-byte CRLF representation produces the exact observed checksum, and the
+reverse transformation is byte-for-byte exact. The fifth ordinary tuple is
+therefore restricted to the exact Production fingerprint, migration, record,
+checksums, one-step lifecycle, manifest, repository baseline and retained R15
+evidence digest.
+
+The three later committed migrations have a deterministic repository-only
+CRLF candidate matrix. Those candidate checksums are not Production evidence,
+are not verifier inputs and are not attestation entries. In particular,
+`20260724180000_password_reset_foundation` remains expected pending. A later
+Production mismatch requires its own observation, authority and exact tuple
+decision; pattern or family acceptance is prohibited.

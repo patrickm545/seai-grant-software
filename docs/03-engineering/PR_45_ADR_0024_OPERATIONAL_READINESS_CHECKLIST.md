@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-10 |
-| Operational state | R1-R14 closed; fourth exact tuple proven; historical-resolved current evidence still pending; no new operation authorised |
+| Last reviewed | 2026-08-13 |
+| Operational state | R1-R15 closed; fifth exact tuple proven; historical-resolved current evidence still pending; no new operation authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -16,6 +16,12 @@
 | Final launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
 ## Purpose And Authority
+
+R15 is permanently closed after its sole read-only invocation stopped on the
+tenant first-login checksum. The later repository-only investigation proved an
+exact fifth tuple and audited three later CRLF candidates. Those candidates are
+not accepted Production values. The attestation remains pending with zero
+captures and approvals, and no R16 operation is authorised by this checklist.
 
 Use this single checklist to resume PR #45 only after genuine operational
 inputs become available. Blank cells are intentional and must be completed by
@@ -435,7 +441,9 @@ Every item below must exist and be exact before changing `status` to `active`:
       `0b773879debbf8250f4a5f67c06d2ce9fbb31c2d2774b9d79089a7cefe60c915`.
 - [ ] The R14 checksum evidence reference exists and its raw-file SHA-256 is
       `ca79db4c782a76b76e1dcbb84e46496d16b36cb463e68be904bc1962fe603da8`.
-- [ ] All four exact tuples are required and cannot be missing, duplicated,
+- [ ] The R15 checksum evidence reference exists and its raw-file SHA-256 is
+      `b2eac4e30c8871d31668b4b78c2bde40f477ad37ac080e6f4d6c5462d94e0e7d`.
+- [ ] All five exact tuples are required and cannot be missing, duplicated,
       cross-matched or replaced by a wildcard or checksum pattern.
 - [ ] Exactly one separate `attestedHistoricalResolvedMigration` entry exists
       for `20260716183000_pilot_installer_auth`; it is not present in the

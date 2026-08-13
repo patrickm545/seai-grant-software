@@ -149,6 +149,32 @@ export const PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES = [
     },
     scope: 'Exact ADR-0024 Production historical record only',
     retirementCondition: 'Retires with ADR-0024 attestation'
+  },
+  {
+    migrationName: '20260718150000_tenant_first_login_activation',
+    recordId: 'e0d71f73-e278-4a79-9906-650a8c43881f',
+    repositoryChecksum: 'f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f',
+    observedProductionChecksum: '8446029a82124d42544db7799c2116fce1811f1a802e6f2ee722562d798225ab',
+    checksumDivergenceClassification: 'A-exact-alternate-byte-representation-proven',
+    byteRepresentation: 'utf8-no-bom-crlf-with-final-newline',
+    checksumEvidenceReference:
+      'docs/03-engineering/evidence/ADR_0024_R15_CHECKSUM_DIVERGENCE.json',
+    checksumEvidenceSha256:
+      'b2eac4e30c8871d31668b4b78c2bde40f477ad37ac080e6f4d6c5462d94e0e7d',
+    environment: 'production',
+    productionDatabaseFingerprint: 'db_4e1d3bd23cff6801',
+    approvedRepositoryLineageBaseline: 'da3db4dd71050c902ee2f6266d42fd456e2654cb',
+    approvedManifestHash: '1bf1d8049b946f1db7193b7493376822a460458bcbe30ea29b02ca9e0e3b7872',
+    expectedLifecycle: {
+      startedAt: 'present-valid-canonical-utc-timestamp',
+      finishedAt: 'present-valid-canonical-utc-timestamp',
+      appliedStepsCount: 1,
+      rolledBackAt: null,
+      logsState: 'none',
+      logsDigest: null
+    },
+    scope: 'Exact ADR-0024 Production historical record only',
+    retirementCondition: 'Retires with ADR-0024 attestation'
   }
 ] as const;
 const REQUIRED_RETIREMENT_CONDITIONS = [

@@ -6,10 +6,10 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-10 |
-| Operational state | R14 permanently closed after exact tenant-provisioning checksum stop; fourth exact tuple proven repository-only; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10 |
-| Repository baseline | `90c2f1f95a7dbc6eeaac48df3d2ef0b3a336ac7c` |
+| Last reviewed | 2026-08-13 |
+| Operational state | R15 permanently closed after exact tenant first-login checksum stop; fifth exact tuple proven repository-only; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15 closed 2026-08-13 |
+| Repository baseline | `da3db4dd71050c902ee2f6266d42fd456e2654cb` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -586,3 +586,29 @@ remain unchanged, and the pilot-auth zero-step state remains separate.
 This investigation did not connect to Production, run capture or status,
 execute SQL, migrate, resolve, deploy or move an alias. It does not reopen R14
 or authorise another Production operation.
+
+## Closed R15 Operation And Repository-Only Follow-Up
+
+R15 received separate change ID
+`CHG-2026-08-13-ADR0024-PROD-EVIDENCE-R15` for one read-only invocation at
+`da3db4dd71050c902ee2f6266d42fd456e2654cb`. It is permanently closed. The
+repository returned typed exit `25` at `first-evidence-generation` for
+`20260718150000_tenant_first_login_activation`, record
+`e0d71f73-e278-4a79-9906-650a8c43881f`. Expected checksum
+`f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f`
+differed from observed checksum
+`8446029a82124d42544db7799c2116fce1811f1a802e6f2ee722562d798225ab`.
+The exhaustive safe report contained no lifecycle failure.
+
+The first read-only transaction and fixed reads completed. The verifier emitted
+no complete evidence, started no second capture, produced no digest and did
+not run Production status. The attestation stayed pending with zero captures
+and approvals. No Production write, migration, deployment or alias movement
+occurred.
+
+The separate repository-only investigation proves classification A with 16
+reversible LF-to-CRLF insertions and adds one exact fifth ordinary tuple. It
+also records non-runtime candidate hashes for the three later migrations.
+Those candidates are not Production values; password reset remains expected
+pending. The investigation made no Production connection and does not
+authorise R16.

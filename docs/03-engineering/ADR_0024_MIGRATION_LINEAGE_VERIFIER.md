@@ -223,8 +223,8 @@ stable safe category rather than raw driver text.
 
 ## Exact Production Repository-Checksum Divergences
 
-The closed R10, R11, R12, R14, R15 and R17 operations each established one checksum-only
-exact-success mismatch:
+The closed R10, R11, R12, R14, R15, R17 and R18 operations each established
+one checksum-only exact-success mismatch:
 
 | Operation | Migration | Record ID | Canonical checksum | Observed Production checksum |
 | --- | --- | --- | --- | --- |
@@ -234,6 +234,7 @@ exact-success mismatch:
 | R14 | `20260718130000_tenant_provisioning_data_model` | `5eeca647-5429-4beb-873b-cff91ec58ddf` | `a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7` | `2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805` |
 | R15 | `20260718150000_tenant_first_login_activation` | `e0d71f73-e278-4a79-9906-650a8c43881f` | `f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f` | `8446029a82124d42544db7799c2116fce1811f1a802e6f2ee722562d798225ab` |
 | R17 | `20260720100000_tenant_operator_recovery` | `4c2d5692-de53-4156-84da-eff6184f9c1d` | `e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215` | `11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96` |
+| R18 | `20260722190000_manual_lead_creation` | `5920b218-8952-4f39-9862-3a26465e5cbf` | `443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160` | `8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e` |
 
 Separate repository-only investigations proved classification A for each
 tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
@@ -245,11 +246,11 @@ The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies all six exact historical
+2. The ADR-0024 Production path separately verifies all seven exact historical
    Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-The six-entry structure is an exact tuple set, not an alternate-checksum
+The seven-entry structure is an exact tuple set, not an alternate-checksum
 list. Every declared tuple must verify independently and one cannot satisfy
 another. Preview, test, development and fresh databases receive no exception and
 must use canonical checksums. A missing, duplicated, cross-matched or changed
@@ -415,3 +416,22 @@ The candidate matrix is not imported or read by verifier code. The manual-lead
 and password-reset candidates remain canonical-only and fail strict and
 Production verification. Password reset remains expected pending. No generic
 CRLF, pattern, date, prefix or automatic promotion rule exists.
+
+## R18 Seventh-Tuple Boundary
+
+R18 retained typed exit `25` and the exact manual-lead checksum-only mismatch.
+Repository-only analysis independently reproduced the observed hash by
+converting the canonical 4,491-byte LF Git blob to a 4,603-byte CRLF
+representation. Removing the 112 inserted carriage returns restores the
+canonical blob byte-for-byte without changing SQL.
+
+The verifier's seventh ordinary tuple is independently pinned to R18's exact
+Production fingerprint, migration, record ID, canonical and observed hashes,
+completed one-step/no-log lifecycle, manifest, baseline and dedicated evidence
+digest. All seven entries must be present exactly and cannot cross-satisfy.
+
+R18's separately observed manual-lead value is no longer accepted merely as a
+candidate: only the complete exact tuple is accepted. The remaining
+password-reset matrix entry is still repository-only, remains unaccepted and
+the migration remains expected pending. The matrix is not verifier input and
+no generic CRLF or automatic-promotion rule exists.

@@ -13,19 +13,18 @@ import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { verifyAttestedLedger, type MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 
-const baseline = '0762b5eb93c1ac1ac9909507bff4638ac0aa8b04';
-const migrationName = '20260720100000_tenant_operator_recovery';
-const recordId = '4c2d5692-de53-4156-84da-eff6184f9c1d';
-const canonicalChecksum = 'e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215';
-const observedChecksum = '11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96';
+const baseline = '1fae81c39e4ad70f5083f8562323f7b0c42b754c';
+const migrationName = '20260722190000_manual_lead_creation';
+const recordId = '5920b218-8952-4f39-9862-3a26465e5cbf';
+const canonicalChecksum = '443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160';
+const observedChecksum = '8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e';
 const evidenceReference =
-  'docs/03-engineering/evidence/ADR_0024_R17_CHECKSUM_DIVERGENCE.json';
-const evidenceSha256 = 'c45a5290b897a408981a0a124ab7f08ac26ac05a874e12d7a58307fc5d72b2b6';
+  'docs/03-engineering/evidence/ADR_0024_R18_CHECKSUM_DIVERGENCE.json';
+const evidenceSha256 = 'd195e7781bfd170721390986e5e143a1d3e0d36525863ce16318cbccc6c85a8f';
 const candidateMatrixReference =
   'docs/03-engineering/evidence/ADR_0024_REMAINING_MIGRATION_BYTE_CANDIDATES_AFTER_R15.json';
 const candidateMatrixSha256 =
   'af41af8aa3ff53d85afbff1b421a6a599cd7dcab4f7644fde1205b878ae7515f';
-const manualLeadMigration = '20260722190000_manual_lead_creation';
 const passwordResetMigration = '20260724180000_password_reset_foundation';
 
 const manifest = JSON.parse(
@@ -53,7 +52,7 @@ const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
     semanticContentChanged: boolean;
   };
   lifecycleReview: {
-    r17ReportedFailureReasons: string[];
+    r18ReportedFailureReasons: string[];
     structuredReportEvaluatesAllOrdinaryLifecycleFields: boolean;
     separateLifecycleFailureReported: boolean;
     expectedLifecycle: {
@@ -64,7 +63,7 @@ const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
       state: string;
     };
   };
-  r17Diagnostic: {
+  r18Diagnostic: {
     repositoryExit: number;
     wrapperExit: number;
     reportingStatus: string;
@@ -73,10 +72,24 @@ const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
   candidateMatrix: {
     reference: string;
     sha256: string;
-    tenantOperatorCandidateMatchesR17Observation: boolean;
+    manualLeadCandidateMatchesR18Observation: boolean;
     runtimeAllowlist: boolean;
     automaticPromotion: boolean;
     remainingUnacceptedCandidates: string[];
+  };
+  historicalArtifactSearch: {
+    allGitObjectDatabaseMatchingBlobCount: number;
+    authoritativeApplyingHistoricalBlobRecovered: boolean;
+    authoritativeApplyingCheckoutRecovered: boolean;
+    authoritativeApplyingCommandRecovered: boolean;
+    matchingRetainedWindowsMaterializations: string[];
+  };
+  repositoryOnlyInvestigation: {
+    productionAccessed: boolean;
+    productionCommandRun: boolean;
+    productionSqlExecuted: boolean;
+    productionModified: boolean;
+    productionDeploymentOrAliasMovement: boolean;
   };
 };
 const candidateMatrix = JSON.parse(readFileSync(candidateMatrixReference, 'utf8')) as {
@@ -85,6 +98,8 @@ const candidateMatrix = JSON.parse(readFileSync(candidateMatrixReference, 'utf8'
     migrationName: string;
     canonical: { sha256: string };
     candidate: {
+      byteLength: number;
+      insertedCarriageReturnCount: number;
       sha256: string;
       reverseNormalizationEqualsCanonical: boolean;
       acceptedProductionLineageValue: boolean;
@@ -97,13 +112,11 @@ const candidateMatrix = JSON.parse(readFileSync(candidateMatrixReference, 'utf8'
     candidateChecksumsAddedToAttestation: boolean;
   };
 };
-const r17 = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
+const r18 = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
   (entry) => entry.migrationName === migrationName
 )!;
 const priorTuples = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.filter(
-  (entry) =>
-    entry.migrationName !== migrationName &&
-    entry.migrationName !== '20260722190000_manual_lead_creation'
+  (entry) => entry.migrationName !== migrationName
 );
 const migration = manifest.migrations.find((entry) => entry.name === migrationName)!;
 
@@ -215,7 +228,7 @@ function canonicalRows() {
   );
 }
 
-test('canonical tenant operator recovery migration and manifest remain authoritative', () => {
+test('canonical manual-lead migration and immutable manifest remain authoritative', () => {
   execFileSync('git', [
     'diff',
     '--exit-code',
@@ -237,38 +250,37 @@ test('canonical tenant operator recovery migration and manifest remain authorita
       manifestHash: manifest.manifestHash
     },
     {
-      bytes: 804,
+      bytes: 4491,
       bom: false,
-      lineFeeds: 24,
+      lineFeeds: 112,
       carriageReturns: 0,
       finalByte: 10,
       checksum: canonicalChecksum,
       manifestChecksum: canonicalChecksum,
-      manifestHash: r17.approvedManifestHash
+      manifestHash: r18.approvedManifestHash
     }
   );
 });
 
-test('fresh databases use canonical checksums without Production exceptions', () => {
+test('fresh databases retain canonical checksum verification', () => {
   assert.deepEqual(verifyStrictLedger(canonicalRows(), manifest).pending, []);
 });
 
-test('exact R17 tuple passes only through its exact Production entry', () => {
+test('exact R18 tuple passes only through its complete pinned Production identity', () => {
   const result = verifyProductionFixture();
   assert.deepEqual(
     result.repositoryChecksumDivergences.find((entry) => entry.migrationName === migrationName),
-    {
-      migrationName,
-      result: 'verified'
-    }
+    { migrationName, result: 'verified' }
   );
   assert.deepEqual(result.pending, [passwordResetMigration]);
-  assert.equal(r17.environment, 'production');
-  assert.equal(r17.productionDatabaseFingerprint, 'db_4e1d3bd23cff6801');
+  assert.equal(r18.environment, 'production');
+  assert.equal(r18.productionDatabaseFingerprint, 'db_4e1d3bd23cff6801');
+  assert.equal(r18.recordId, recordId);
+  assert.equal(r18.approvedRepositoryLineageBaseline, baseline);
 });
 
-test('R17 observed checksum fails strict Preview, Development and test verification', () => {
-  for (const environment of ['preview', 'development', 'test']) {
+test('R18 checksum remains rejected by Preview, Development, test and fresh verification', () => {
+  for (const environment of ['preview', 'development', 'test', 'fresh']) {
     const rows = canonicalRows();
     migrationRow(rows, migrationName).checksum = observedChecksum;
     assert.throws(
@@ -278,40 +290,47 @@ test('R17 observed checksum fails strict Preview, Development and test verificat
   }
 });
 
-test('R17 tuple fails another Production fingerprint and wrong record identity', () => {
+test('R18 tuple rejects wrong fingerprint, migration and record ID', () => {
   const wrongFingerprint = productionFixture();
   wrongFingerprint.attestation.approvedDatabaseFingerprint =
     'db_aaaaaaaaaaaaaaaa' as LineageAttestation['approvedDatabaseFingerprint'];
   assert.throws(() => verifyProductionFixture(wrongFingerprint));
+
+  const wrongMigration = productionFixture();
+  migrationRow(wrongMigration.rows, migrationName).migration_name = '20260722190001_wrong';
+  assert.throws(() => verifyProductionFixture(wrongMigration));
 
   const wrongRecord = productionFixture();
   migrationRow(wrongRecord.rows, migrationName).id = '33333333-3333-4333-8333-333333333333';
   assert.throws(() => verifyProductionFixture(wrongRecord));
 });
 
-test('R17 tuple fails wrong canonical, observed and one-bit checksums', () => {
+test('R18 tuple rejects wrong canonical, observed and one-bit checksums', () => {
   const wrongCanonical = productionFixture();
-  const entry = wrongCanonical.manifest.migrations.find((item) => item.name === migrationName)!;
-  entry.checksum = 'f'.repeat(64);
+  wrongCanonical.manifest.migrations.find((item) => item.name === migrationName)!.checksum =
+    'f'.repeat(64);
   assert.throws(() => verifyProductionFixture(wrongCanonical));
 
-  for (const checksum of ['b'.repeat(64), `${observedChecksum.slice(0, -1)}7`]) {
+  for (const checksum of ['b'.repeat(64), `${observedChecksum.slice(0, -1)}f`]) {
     const fixture = productionFixture();
     migrationRow(fixture.rows, migrationName).checksum = checksum;
     assert.throws(() => verifyProductionFixture(fixture));
   }
 });
 
-test('R17 tuple fails zero-step, rollback, unfinished and logged lifecycle states', () => {
+test('R18 tuple rejects zero or multiple steps, unfinished, rollback and logs', () => {
   const mutations: Array<(target: MigrationLedgerRow) => void> = [
     (target) => {
       target.applied_steps_count = 0;
     },
     (target) => {
-      target.rolled_back_at = '2026-01-01T00:00:00.000003Z';
+      target.applied_steps_count = 2;
     },
     (target) => {
       target.finished_at = null;
+    },
+    (target) => {
+      target.rolled_back_at = '2026-01-01T00:00:00.000003Z';
     },
     (target) => {
       target.logs = 'unexpected migration log';
@@ -324,28 +343,38 @@ test('R17 tuple fails zero-step, rollback, unfinished and logged lifecycle state
   }
 });
 
-test('R10, R11, R12, R14 and R15 cannot satisfy R17', () => {
-  assert.equal(priorTuples.length, 5);
+test('R18 evidence digest and repository baseline are independently pinned', () => {
+  const alteredDigest = structuredClone(pending);
+  (
+    alteredDigest.repositoryMigrationChecksumDivergences[6] as unknown as Record<string, unknown>
+  ).checksumEvidenceSha256 = 'a'.repeat(64);
+  assert.throws(() => validateLineageAttestation(alteredDigest));
+
+  const alteredBaseline = structuredClone(pending);
+  (
+    alteredBaseline.repositoryMigrationChecksumDivergences[6] as unknown as Record<string, unknown>
+  ).approvedRepositoryLineageBaseline = 'a'.repeat(40);
+  assert.throws(() => validateLineageAttestation(alteredBaseline));
+});
+
+test('tuples 1 through 6 cannot satisfy R18 and R18 cannot satisfy them', () => {
+  assert.equal(priorTuples.length, 6);
   for (const other of priorTuples) {
-    const fixture = productionFixture();
-    const target = migrationRow(fixture.rows, migrationName);
-    target.id = other.recordId;
-    target.checksum = other.observedProductionChecksum;
-    assert.throws(() => verifyProductionFixture(fixture));
+    const asR18 = productionFixture();
+    const r18Row = migrationRow(asR18.rows, migrationName);
+    r18Row.id = other.recordId;
+    r18Row.checksum = other.observedProductionChecksum;
+    assert.throws(() => verifyProductionFixture(asR18));
+
+    const asPrior = productionFixture();
+    const priorRow = migrationRow(asPrior.rows, other.migrationName);
+    priorRow.id = recordId;
+    priorRow.checksum = observedChecksum;
+    assert.throws(() => verifyProductionFixture(asPrior));
   }
 });
 
-test('R17 cannot satisfy R10, R11, R12, R14 or R15', () => {
-  for (const targetTuple of priorTuples) {
-    const fixture = productionFixture();
-    const target = migrationRow(fixture.rows, targetTuple.migrationName);
-    target.id = recordId;
-    target.checksum = observedChecksum;
-    assert.throws(() => verifyProductionFixture(fixture));
-  }
-});
-
-test('pilot-auth historical state cannot satisfy ordinary R17', () => {
+test('pilot-auth historical resolved state cannot satisfy ordinary R18', () => {
   const fixture = productionFixture();
   const historical = fixture.attestation.historicalResolvedMigrations[0];
   const target = migrationRow(fixture.rows, migrationName);
@@ -354,65 +383,40 @@ test('pilot-auth historical state cannot satisfy ordinary R17', () => {
   target.applied_steps_count = historical.expectedAppliedStepsCount;
   assert.throws(() => verifyProductionFixture(fixture));
   assert.equal(historical.expectedAppliedStepsCount, 0);
-  assert.equal(r17.expectedLifecycle.appliedStepsCount, 1);
+  assert.equal(r18.expectedLifecycle.appliedStepsCount, 1);
 });
 
-test('manual-lead and password-reset candidates remain strict-only while only R18 pins manual lead', () => {
-  for (const name of [manualLeadMigration, passwordResetMigration]) {
-    const candidate = candidateMatrix.migrations.find((item) => item.migrationName === name)!;
-    assert.equal(candidate.candidate.acceptedProductionLineageValue, false);
-    const rows = canonicalRows();
-    migrationRow(rows, name).checksum = candidate.candidate.sha256;
-    assert.throws(() => verifyStrictLedger(rows, manifest));
-  }
-  const manualLead = candidateMatrix.migrations.find(
-    (item) => item.migrationName === manualLeadMigration
-  )!;
-  assert.equal(
-    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
-      (entry) =>
-        entry.migrationName === manualLeadMigration &&
-        entry.observedProductionChecksum === manualLead.candidate.sha256
-    ),
-    true
-  );
-  const passwordReset = candidateMatrix.migrations.find(
-    (item) => item.migrationName === passwordResetMigration
-  )!;
-  assert.equal(
-    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
-      (entry) => entry.observedProductionChecksum === passwordReset.candidate.sha256
-    ),
-    false
-  );
-});
-
-test('password reset remains pending and has no attested tuple', () => {
+test('password-reset candidate remains unaccepted and pending', () => {
   const passwordReset = candidateMatrix.migrations.find(
     (item) => item.migrationName === passwordResetMigration
   )!;
   assert.equal(passwordReset.productionExpectation, 'pending');
   assert.equal(passwordReset.runtimeTupleAdded, false);
+  assert.equal(passwordReset.candidate.acceptedProductionLineageValue, false);
   assert.equal(
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
       (entry) => String(entry.migrationName) === passwordResetMigration
     ),
     false
   );
+  const strictRows = canonicalRows();
+  migrationRow(strictRows, passwordResetMigration).checksum = passwordReset.candidate.sha256;
+  assert.throws(() => verifyStrictLedger(strictRows, manifest));
   assert.deepEqual(verifyProductionFixture().pending, [passwordResetMigration]);
 });
 
-test('candidate matrix is not a runtime allowlist and cannot promote automatically', () => {
+test('candidate matrix creates no verifier acceptance or automatic promotion', () => {
+  const manualLead = candidateMatrix.migrations.find((item) => item.migrationName === migrationName)!;
   assert.match(candidateMatrix.notice, /not accepted Production lineage values/);
   assert.equal(candidateMatrix.conclusions.candidateChecksumsAddedToRuntimeVerifier, false);
   assert.equal(candidateMatrix.conclusions.candidateChecksumsAddedToAttestation, false);
+  assert.equal(manualLead.candidate.acceptedProductionLineageValue, false);
+  assert.equal(manualLead.candidate.sha256, observedChecksum);
   assert.equal(sha256(readFileSync(candidateMatrixReference)), candidateMatrixSha256);
   assert.equal(evidence.candidateMatrix.runtimeAllowlist, false);
   assert.equal(evidence.candidateMatrix.automaticPromotion, false);
-  assert.deepEqual(evidence.candidateMatrix.remainingUnacceptedCandidates, [
-    manualLeadMigration,
-    passwordResetMigration
-  ]);
+  assert.deepEqual(evidence.candidateMatrix.remainingUnacceptedCandidates, [passwordResetMigration]);
+  assert.equal(r18.checksumEvidenceReference, evidenceReference);
 
   const ledgerSource = readFileSync('lib/migration-ledger.ts', 'utf8');
   assert.doesNotMatch(ledgerSource, /REMAINING_MIGRATION_BYTE_CANDIDATES_AFTER_R15/);
@@ -421,8 +425,8 @@ test('candidate matrix is not a runtime allowlist and cannot promote automatical
 test('no wildcard, checksum family or generic CRLF acceptance exists', () => {
   const wildcard = structuredClone(pending);
   (
-    wildcard.repositoryMigrationChecksumDivergences[5] as unknown as Record<string, unknown>
-  ).migrationName = '20260720*_tenant_operator_recovery';
+    wildcard.repositoryMigrationChecksumDivergences[6] as unknown as Record<string, unknown>
+  ).migrationName = '20260722*_manual_lead_creation';
   assert.throws(() => validateLineageAttestation(wildcard));
 
   const source = `${readFileSync('lib/lineage-attestation.ts', 'utf8')}\n${readFileSync(
@@ -441,22 +445,22 @@ test('no wildcard, checksum family or generic CRLF acceptance exists', () => {
   }
 });
 
-test('R17 byte proof is exact, reversible and semantically unchanged', () => {
+test('R18 byte proof is exact, reversible and semantically unchanged', () => {
   const committed = execFileSync('git', ['cat-file', 'blob', `HEAD:${migration.path}`]);
   const alternate = Buffer.from(committed.toString('utf8').replace(/\n/g, '\r\n'), 'utf8');
   const reversed = Buffer.from(alternate.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
-  assert.equal(alternate.length, 828);
+  assert.equal(alternate.length, 4603);
   assert.equal(sha256(alternate), observedChecksum);
-  assert.equal((alternate.toString('utf8').match(/\r\n/g) ?? []).length, 24);
+  assert.equal((alternate.toString('utf8').match(/\r\n/g) ?? []).length, 112);
   assert.deepEqual(reversed, committed);
   assert.equal(evidence.classification, 'A-exact-alternate-byte-representation-proven');
-  assert.equal(evidence.governingOperation, 'CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R17');
+  assert.equal(evidence.governingOperation, 'CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R18');
   assert.equal(evidence.repositoryBaseline, baseline);
-  assert.equal(evidence.canonical.byteLength, 804);
-  assert.equal(evidence.canonical.lineFeedCount, 24);
+  assert.equal(evidence.canonical.byteLength, 4491);
+  assert.equal(evidence.canonical.lineFeedCount, 112);
   assert.equal(evidence.canonical.sha256, canonicalChecksum);
-  assert.equal(evidence.alternate.byteLength, 828);
-  assert.equal(evidence.alternate.insertedCarriageReturnCount, 24);
+  assert.equal(evidence.alternate.byteLength, 4603);
+  assert.equal(evidence.alternate.insertedCarriageReturnCount, 112);
   assert.equal(evidence.alternate.sha256, observedChecksum);
   assert.equal(evidence.alternate.matchesObservedProductionChecksum, true);
   assert.equal(evidence.reversibleEquivalence.reverseNormalizationEqualsCanonicalBytes, true);
@@ -466,8 +470,8 @@ test('R17 byte proof is exact, reversible and semantically unchanged', () => {
   assert.equal(evidence.reversibleEquivalence.semanticContentChanged, false);
 });
 
-test('R17 lifecycle and retained diagnostic evidence are exact', () => {
-  assert.deepEqual(evidence.lifecycleReview.r17ReportedFailureReasons, ['checksum-mismatch']);
+test('R18 lifecycle, diagnostic, historical search and repository-only boundary are exact', () => {
+  assert.deepEqual(evidence.lifecycleReview.r18ReportedFailureReasons, ['checksum-mismatch']);
   assert.equal(evidence.lifecycleReview.structuredReportEvaluatesAllOrdinaryLifecycleFields, true);
   assert.equal(evidence.lifecycleReview.separateLifecycleFailureReported, false);
   assert.deepEqual(evidence.lifecycleReview.expectedLifecycle, {
@@ -479,14 +483,26 @@ test('R17 lifecycle and retained diagnostic evidence are exact', () => {
     logsDigest: null,
     state: 'finished-not-rolled-back'
   });
-  assert.equal(evidence.r17Diagnostic.repositoryExit, 25);
-  assert.equal(evidence.r17Diagnostic.wrapperExit, 25);
-  assert.equal(evidence.r17Diagnostic.reportingStatus, 'complete');
-  assert.equal(evidence.r17Diagnostic.artifacts.length, 7);
+  assert.equal(evidence.r18Diagnostic.repositoryExit, 25);
+  assert.equal(evidence.r18Diagnostic.wrapperExit, 25);
+  assert.equal(evidence.r18Diagnostic.reportingStatus, 'complete');
+  assert.equal(evidence.r18Diagnostic.artifacts.length, 7);
+  assert.equal(evidence.historicalArtifactSearch.allGitObjectDatabaseMatchingBlobCount, 0);
+  assert.equal(evidence.historicalArtifactSearch.authoritativeApplyingHistoricalBlobRecovered, false);
+  assert.equal(evidence.historicalArtifactSearch.authoritativeApplyingCheckoutRecovered, false);
+  assert.equal(evidence.historicalArtifactSearch.authoritativeApplyingCommandRecovered, false);
+  assert.equal(evidence.historicalArtifactSearch.matchingRetainedWindowsMaterializations.length, 3);
+  assert.deepEqual(evidence.repositoryOnlyInvestigation, {
+    productionAccessed: false,
+    productionCommandRun: false,
+    productionSqlExecuted: false,
+    productionModified: false,
+    productionDeploymentOrAliasMovement: false
+  });
   assert.equal(sha256(readFileSync(evidenceReference)), evidenceSha256);
   assert.equal(evidence.candidateMatrix.reference, candidateMatrixReference);
   assert.equal(evidence.candidateMatrix.sha256, candidateMatrixSha256);
-  assert.equal(evidence.candidateMatrix.tenantOperatorCandidateMatchesR17Observation, true);
+  assert.equal(evidence.candidateMatrix.manualLeadCandidateMatchesR18Observation, true);
 });
 
 test('pending attestation remains exit 21 with seven tuples, zero captures and approvals', () => {

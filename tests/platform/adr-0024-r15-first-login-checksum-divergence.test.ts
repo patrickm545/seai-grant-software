@@ -65,7 +65,8 @@ const r15 = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
 const earlier = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.filter(
   (entry) =>
     entry.migrationName !== migrationName &&
-    entry.migrationName !== '20260720100000_tenant_operator_recovery'
+    entry.migrationName !== '20260720100000_tenant_operator_recovery' &&
+    entry.migrationName !== '20260722190000_manual_lead_creation'
 );
 const migration = manifest.migrations.find((entry) => entry.name === migrationName)!;
 
@@ -336,21 +337,14 @@ test('candidate matrix remains historical evidence and unobserved candidates rem
     migrationRow(rows, candidate.migrationName).checksum = candidate.candidate.sha256;
     assert.throws(() => verifyStrictLedger(rows, manifest));
   }
-  const tenantOperator = candidateMatrix.migrations[0];
-  assert.equal(
-    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
-      (entry) =>
-        entry.migrationName === tenantOperator.migrationName &&
-        entry.observedProductionChecksum === tenantOperator.candidate.sha256
-    ),
-    true
-  );
-  for (const candidate of candidateMatrix.migrations.slice(1)) {
+  for (const candidate of candidateMatrix.migrations.slice(0, 2)) {
     assert.equal(
       PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
-        (entry) => entry.observedProductionChecksum === candidate.candidate.sha256
+        (entry) =>
+          entry.migrationName === candidate.migrationName &&
+          entry.observedProductionChecksum === candidate.candidate.sha256
       ),
-      false
+      true
     );
   }
   const passwordReset = candidateMatrix.migrations.at(-1)!;
@@ -414,7 +408,7 @@ test('pending attestation remains typed exit 21 with zero captures and approvals
   assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /status=pending/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
-  assert.equal(pending.repositoryMigrationChecksumDivergences.length, 6);
+  assert.equal(pending.repositoryMigrationChecksumDivergences.length, 7);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.equal(pending.approvals.length, 0);
   assert.throws(

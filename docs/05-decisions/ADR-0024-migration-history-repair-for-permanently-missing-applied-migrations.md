@@ -138,19 +138,21 @@ attestation, which remains pending with zero captures and zero approvals.
 
 #### Exact Production repository-checksum divergences
 
-The closed R10, R11, R12, R14, R15 and R17 operations established checksum-only
-exact-success mismatches for six specific ordinary Production records. Later
+The closed R10, R11, R12, R14, R15, R17 and R18 operations established
+checksum-only exact-success mismatches for seven specific ordinary Production
+records. Later
 repository-only investigations proved classification A for each: its observed checksum is the
 exact committed UTF-8/no-BOM SQL mechanically materialised with CRLF rather
 than LF while retaining the final newline. Reverse normalization is
 byte-for-byte exact and changes no SQL token.
 
-The manifest and all six migrations remain canonical and unchanged. Attestation
-v5 may record only the exact six historical Production tuples, and each entry
+The manifest and all seven migrations remain canonical and unchanged.
+Attestation v5 may record only the exact seven historical Production tuples,
+and each entry
 must also require the exact Production fingerprint, record ID, successful
 lifecycle, approved manifest, approved repository-lineage baseline and
 retained evidence digest. The active verifier must prove canonical repository
-integrity and all six exact observed Production rows independently.
+integrity and all seven exact observed Production rows independently.
 
 This is not a global alternate checksum or line-ending rule. No tuple can
 satisfy another; a missing, duplicated, cross-matched or changed entry fails
@@ -533,10 +535,10 @@ Missing, additional or different evidence fails closed. The state cannot be
 used by Preview, Development, test or fresh-database verification; cannot be
 reused by another migration, database fingerprint or record; and cannot be
 satisfied through the ordinary checksum-divergence structure. The three R10-R12
-ordinary one-step tuples are unchanged; R14, R15 and the repository-only R17
-investigations add independently pinned fourth, fifth and sixth ordinary tuples
-for tenant provisioning, tenant first-login activation and tenant operator
-recovery without changing the pilot-auth structure.
+ordinary one-step tuples are unchanged; R14, R15, R17 and R18 repository-only
+investigations add independently pinned fourth through seventh ordinary tuples
+for tenant provisioning, tenant first-login activation, tenant operator
+recovery and manual lead creation without changing the pilot-auth structure.
 
 The deterministic expected schema inventory is
 [`ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json`](../03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json).
@@ -545,14 +547,14 @@ committed `AuthSession.sessionType` evolution. Current Production must match
 that evolved end-state and the complete catalog fingerprint; the July 16 state
 is not treated as permanently frozen.
 
-## Post-R17 Activation Gate
+## Post-R18 Activation Gate
 
-The separately authorised R17 operation stopped before producing a complete
+The separately authorised R18 operation stopped before producing a complete
 capture and is permanently closed. It did not activate the attestation. A
 future, separately authorised read-only operation must prove all of the
 following before activation can be considered:
 
-1. all exact R10-R12, R14, R15 and R17 ordinary records still pass independently;
+1. all exact R10-R12, R14, R15, R17 and R18 ordinary records still pass independently;
 2. the pilot-auth name, record ID, observed checksum, zero-step count, exact
    canonical `started_at` and `finished_at`, null rollback, and no-log state;
 3. the full current Production schema fingerprint and every named pilot-auth
@@ -615,3 +617,30 @@ The manual-lead and password-reset matrix entries remain unaccepted repository
 candidates. Password reset remains expected pending. The matrix is not a
 runtime allowlist, and no generic CRLF, prefix, date or Windows-checkout rule
 exists. This amendment authorises no Production access or R18 operation.
+
+## Post-R18 Exact Manual-Lead Tuple
+
+The permanently closed R18 operation retained repository and wrapper exit
+`25`, classification `LEDGER_MISMATCH`, stage `first-evidence-generation`, the
+exact record identity and the sole `checksum-mismatch` failure. It emitted no
+complete capture, second transaction, deterministic digest, schema result or
+live pending set.
+
+The observed manual-lead checksum exactly matches the precomputed CRLF
+candidate. Independent repository-only proof converts the canonical
+4,491-byte UTF-8/no-BOM LF blob's 112 line feeds to a 4,603-byte CRLF
+representation and reproduces the exact observed checksum. Removing only
+those carriage returns restores the canonical blob byte-for-byte; tokens,
+statement order, comments apart from line endings and semantic content remain
+unchanged.
+
+The seventh ordinary tuple is restricted to the exact Production fingerprint,
+migration, record ID, canonical and observed checksums, completed one-step
+lifecycle, manifest, R18 repository baseline, classification, dedicated
+evidence reference and evidence digest. The six prior tuples and separate
+pilot-auth historical state are unchanged and cannot cross-satisfy it.
+
+Only the password-reset matrix entry remains an unaccepted repository
+candidate. Password reset remains expected pending. The matrix is not a
+runtime allowlist, and no generic CRLF, prefix, date or Windows-checkout rule
+exists. This amendment authorises no Production access or R19 operation.

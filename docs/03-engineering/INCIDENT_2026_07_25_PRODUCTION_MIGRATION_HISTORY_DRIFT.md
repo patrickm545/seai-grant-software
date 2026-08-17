@@ -442,6 +442,30 @@ reset remains expected pending, the attestation remains pending with zero
 captures and approvals, and the incident remains open. The follow-up made no
 Production connection and grants no R18 authority.
 
+### R18 Manual-Lead Checksum Stop And Repository Classification
+
+R18 is permanently closed after the hardened retention path preserved typed
+exit `25` for `20260722190000_manual_lead_creation`, record
+`5920b218-8952-4f39-9862-3a26465e5cbf`. The sole retained exact-success failure
+was canonical checksum
+`443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160`
+versus observed checksum
+`8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e`.
+The report contained no lifecycle failure. No complete first capture, second
+transaction or deterministic evidence followed.
+
+Repository-only proof establishes classification A. One hundred twelve
+LF-to-CRLF insertions convert the exact 4,491-byte Git blob into the exact
+4,603-byte observed representation, and reverse normalization restores the
+canonical bytes without changing SQL. Attestation v5 now pins seven
+independent ordinary one-step tuples; the pilot-auth historical state remains
+separate and the six prior tuples are unchanged.
+
+The password-reset candidate remains unaccepted and that migration remains
+expected pending. The attestation remains pending with zero captures and
+approvals, and the incident remains open. The follow-up made no Production
+connection and grants no R19 authority.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -465,5 +489,7 @@ Production connection and grants no R18 authority.
 - [R15 Checksum Divergence Investigation](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [R17 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md)
 - [R17 Checksum Divergence Investigation](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R18 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md)
+- [R18 Checksum Divergence Investigation](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

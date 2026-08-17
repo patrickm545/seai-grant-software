@@ -41,6 +41,7 @@
 | R18 operation | [Fully retained manual-lead checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md) |
 | R18 investigation | [Seventh exact classification A checksum divergence](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R19 operation | [Complete deterministic evidence and activation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md) |
+| Guarded database launcher repair | [Windows fixed-argv repair and disposable rehearsal](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -733,3 +734,20 @@ status returned `verified-pending-blocked`, exit `20`, with
 migration, deployment or alias movement occurred. The full evidence boundary,
 artifact hashes, lifecycle values and approval record are in the
 [R19 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md).
+
+## Closed Password-Reset Reconciliation And Launcher Repair
+
+The separately authorised change
+`CHG-2026-08-17-ADR0024-PASSWORD-RESET-RECONCILIATION` stopped during its
+disposable rehearsal before Production access. The Windows guarded runner
+sent `C:\Program Files\nodejs\node.exe` through `shell:true`; shell parsing
+attempted `C:\Program`, so strict preflight never started. The operation is
+permanently closed and was not retried.
+
+The repository-only follow-up replaces that guarded process boundary with the
+resolved Node executable, exact fixed argv and `shell:false`. A new disposable
+PostgreSQL database proved the normal `migrate-test` path from the exact sole
+pending password-reset migration through canonical application and clean
+postflight. This local result is not a Production migration result. R19,
+attestation evidence and all lineage acceptance remain unchanged. See the
+[Windows guarded database launcher repair](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md).

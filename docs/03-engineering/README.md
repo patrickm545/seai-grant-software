@@ -35,6 +35,7 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md): exact reversible tenant-operator checksum classification A and sixth independently pinned tuple.
 - [PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md): permanently closed R18 read-only operation, retained typed manual-lead checksum stop and exact execution boundary.
 - [PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md): exact reversible manual-lead checksum classification A and seventh independently pinned tuple.
+- [PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md): repository-only repair of the Windows guarded database launcher, fixed-argv regression coverage, and disposable password-reset rehearsal.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md): proposed CTO-gated, dry-run-first recovery procedure for an eligible active legacy Production pilot owner.
 - [SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md): pre-pilot password-reset assets, threats, mitigations, residual risk, and required evidence.

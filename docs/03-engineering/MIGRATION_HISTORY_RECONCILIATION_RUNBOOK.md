@@ -569,3 +569,23 @@ or infer that a candidate exists in Production.
 Password reset remains pending. Its candidate hash is not evidence that the
 migration ran and must never be used to mark it applied, relax the pending set
 or authorise migration execution.
+
+## Windows Guarded Launcher Requirement
+
+The closed change
+`CHG-2026-08-17-ADR0024-PASSWORD-RESET-RECONCILIATION` exposed a repository
+launcher defect during disposable rehearsal: the guarded runner used
+`shell:true` on Windows and a Node path under `C:\Program Files` was parsed as
+`C:\Program`. Strict preflight never started, no Production credential was
+loaded, and no Production access or migration occurred. The change must not be
+reused.
+
+The guarded database runner now resolves Node and fixed repository entry
+points, validates exact enumerated argv, and uses `shell:false`. Before any
+future separately authorised Production reconciliation, require the guarded
+launcher smoke, exact Windows path-with-spaces tests, and a disposable
+preflight-deploy-postflight rehearsal to pass at the exact proposed revision.
+Do not work around launcher failure with quoting, `cmd.exe`, PowerShell
+interpolation, direct Prisma invocation or manual SQL. The repair and proof are
+recorded in the
+[Windows guarded database launcher repair](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md).

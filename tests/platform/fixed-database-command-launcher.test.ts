@@ -1,0 +1,219 @@
+import assert from 'node:assert/strict';
+import type { SpawnSyncOptions, SpawnSyncReturns } from 'node:child_process';
+import test from 'node:test';
+import {
+  FIXED_DATABASE_LAUNCHER_SMOKE_ARGUMENT,
+  launchFixedDatabaseLauncherSmoke,
+  launchFixedLineageVerifier,
+  launchFixedPrismaCommand,
+  launchFixedSeed,
+  resolveFixedPrismaEntrypoint,
+  type FixedDatabaseLauncherDependencies
+} from '../../lib/fixed-database-command-launcher';
+
+type ObservedSpawn = {
+  program: string;
+  arguments: readonly string[];
+  options: SpawnSyncOptions;
+};
+
+function spawnResult(input: {
+  status?: number | null;
+  stdout?: Buffer;
+  stderr?: Buffer;
+  error?: Error;
+} = {}): SpawnSyncReturns<Buffer> {
+  const stdout = input.stdout ?? Buffer.alloc(0);
+  const stderr = input.stderr ?? Buffer.alloc(0);
+  return {
+    pid: 1,
+    output: [null, stdout, stderr],
+    stdout,
+    stderr,
+    status: input.status === undefined ? 0 : input.status,
+    signal: null,
+    error: input.error
+  };
+}
+
+function windowsDependencies(
+  observe?: (spawn: ObservedSpawn) => SpawnSyncReturns<Buffer>
+): FixedDatabaseLauncherDependencies {
+  const repositoryRoot = 'C:\\Repository With Spaces\\seai';
+  const files = new Set([
+    'C:\\Program Files\\nodejs\\node.exe',
+    `${repositoryRoot}\\scripts\\verify-migration-lineage.ts`,
+    `${repositoryRoot}\\scripts\\fixed-database-launcher-smoke-target.ts`,
+    `${repositoryRoot}\\prisma\\seed.ts`,
+    `${repositoryRoot}\\node_modules\\prisma\\build\\index.js`,
+    `${repositoryRoot}\\node_modules\\prisma\\package.json`
+  ]);
+  return {
+    platform: 'win32',
+    execPath: 'C:\\Program Files\\nodejs\\node.exe',
+    repositoryRoot,
+    exists: (path) => files.has(path),
+    realpath: (path) => path,
+    readFile: (path) => {
+      assert.equal(path, `${repositoryRoot}\\node_modules\\prisma\\package.json`);
+      return '{"name":"prisma"}';
+    },
+    spawn: (program, arguments_, options) =>
+      observe?.({ program, arguments: arguments_, options }) ?? spawnResult()
+  };
+}
+
+test('Windows strict preflight uses the resolved Node executable, exact argv, and no shell', () => {
+  let observed: ObservedSpawn | undefined;
+  const result = launchFixedLineageVerifier('strict-preflight', {
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult({ status: 25 });
+    }),
+    env: { NODE_ENV: 'test', DATABASE_URL: 'value&whoami|echo must-not-execute' }
+  });
+  assert.equal(result.status, 25);
+  assert.equal(observed?.program, 'C:\\Program Files\\nodejs\\node.exe');
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\verify-migration-lineage.ts',
+    'strict-preflight'
+  ]);
+  assert.equal(observed?.options.shell, false);
+  assert.equal(observed?.options.windowsHide, true);
+  assert.equal(observed?.options.env?.DATABASE_URL, 'value&whoami|echo must-not-execute');
+});
+
+test('strict postflight preserves its exact mode as one argument', () => {
+  let observed: ObservedSpawn | undefined;
+  launchFixedLineageVerifier('strict-postflight', {
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult();
+    })
+  });
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\verify-migration-lineage.ts',
+    'strict-postflight'
+  ]);
+  assert.equal(observed?.options.shell, false);
+});
+
+test('Prisma deploy resolves the fixed package entrypoint and exact argv without PATH lookup', () => {
+  let observed: ObservedSpawn | undefined;
+  launchFixedPrismaCommand('migrate-deploy', {
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult();
+    })
+  });
+  assert.equal(observed?.program, 'C:\\Program Files\\nodejs\\node.exe');
+  assert.deepEqual(observed?.arguments, [
+    'C:\\Repository With Spaces\\seai\\node_modules\\prisma\\build\\index.js',
+    'migrate',
+    'deploy'
+  ]);
+  assert.equal(observed?.options.shell, false);
+});
+
+test('seed resolves the fixed repository file and cannot accept caller argv', () => {
+  let observed: ObservedSpawn | undefined;
+  launchFixedSeed({
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult();
+    })
+  });
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\prisma\\seed.ts'
+  ]);
+  assert.equal(observed?.options.shell, false);
+});
+
+test('harmless smoke uses the same exact Windows launcher architecture', () => {
+  let observed: ObservedSpawn | undefined;
+  const result = launchFixedDatabaseLauncherSmoke({
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult({ stdout: Buffer.from('fixed-database-launcher-smoke-ok/v1\n') });
+    })
+  });
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\fixed-database-launcher-smoke-target.ts',
+    FIXED_DATABASE_LAUNCHER_SMOKE_ARGUMENT
+  ]);
+  assert.equal(observed?.options.shell, false);
+  assert.equal(result.stdout.toString('utf8').trim(), 'fixed-database-launcher-smoke-ok/v1');
+});
+
+test('PowerShell, cmd, Windows Terminal, and VS Code markers cannot alter argv', () => {
+  for (const env of [
+    { SHELL: 'powershell.exe', PSModulePath: 'C:\\PowerShell' },
+    { ComSpec: 'C:\\Windows\\System32\\cmd.exe' },
+    { WT_SESSION: 'windows-terminal' },
+    { TERM_PROGRAM: 'vscode' }
+  ]) {
+    let observed: ObservedSpawn | undefined;
+    launchFixedLineageVerifier('strict-preflight', {
+      ...windowsDependencies((spawn) => {
+        observed = spawn;
+        return spawnResult();
+      }),
+      env: { NODE_ENV: 'test', ...env }
+    });
+    assert.deepEqual(observed?.arguments.slice(-1), ['strict-preflight']);
+    assert.equal(observed?.options.shell, false);
+  }
+});
+
+test('unexpected verifier and Prisma modes fail before spawning', () => {
+  let spawnCount = 0;
+  const dependencies = windowsDependencies(() => {
+    spawnCount += 1;
+    return spawnResult();
+  });
+  assert.throws(
+    () => launchFixedLineageVerifier('unexpected' as never, dependencies),
+    /unexpected verifier mode/
+  );
+  assert.throws(
+    () => launchFixedPrismaCommand('unexpected' as never, dependencies),
+    /unexpected Prisma command/
+  );
+  assert.equal(spawnCount, 0);
+});
+
+test('Prisma package identity must be exact', () => {
+  assert.throws(
+    () =>
+      resolveFixedPrismaEntrypoint({
+        ...windowsDependencies(),
+        readFile: () => '{"name":"not-prisma"}'
+      }),
+    /Prisma CLI package identity is unexpected/
+  );
+});
+
+test('launcher errors expose only the safe OS error code', () => {
+  const sentinel = 'postgresql://operator:credential@secret.example/database';
+  const error = Object.assign(new Error(`failed with ${sentinel}`), { code: 'EACCES' });
+  assert.throws(
+    () =>
+      launchFixedLineageVerifier('strict-preflight', {
+        ...windowsDependencies(() => spawnResult({ error })),
+        env: { NODE_ENV: 'test', DATABASE_URL: sentinel }
+      }),
+    (thrown: unknown) =>
+      thrown instanceof Error &&
+      thrown.message ===
+        'FIXED_DATABASE_LAUNCHER_FAILED: process launch failed with code EACCES.' &&
+      !thrown.message.includes(sentinel)
+  );
+});

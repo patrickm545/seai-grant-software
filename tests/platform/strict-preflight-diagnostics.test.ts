@@ -238,7 +238,7 @@ test('strict-preflight remains fail-closed and deploy stays unreachable after ve
     });
   }
   const preflight = databaseCommandSource.indexOf("runVerifier('preflight')");
-  const deploy = databaseCommandSource.indexOf("if (definition.prismaArgs) run('prisma'");
+  const deploy = databaseCommandSource.indexOf('run(launchFixedPrismaCommand');
   assert.ok(preflight > 0 && deploy > preflight);
   const verifierFunction = databaseCommandSource.slice(
     databaseCommandSource.indexOf('function runVerifier'),

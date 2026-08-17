@@ -63,6 +63,32 @@ function exactSafeArgument(value: string, label: string) {
   return value;
 }
 
+export function resolveFixedNodeExecutable(
+  dependencies: Pick<
+    PackageManagerLauncherDependencies,
+    'platform' | 'execPath' | 'exists' | 'realpath'
+  > = {}
+) {
+  const platform = dependencies.platform ?? process.platform;
+  const execPath = dependencies.execPath ?? process.execPath;
+  const exists = dependencies.exists ?? existsSync;
+  const realpath = dependencies.realpath ?? realpathSync;
+  const pathApi = platform === 'win32' ? win32 : posix;
+  if (!exists(execPath)) {
+    throw new Error('FIXED_LAUNCHER_UNSAFE: Node executable is unavailable.');
+  }
+  const resolvedNode = exactSafeArgument(realpath(execPath), 'Resolved Node executable');
+  const expectedBasename = platform === 'win32' ? 'node.exe' : 'node';
+  const actualBasename = pathApi.basename(resolvedNode);
+  if (
+    (platform === 'win32' ? actualBasename.toLocaleLowerCase() : actualBasename) !==
+    expectedBasename
+  ) {
+    throw new Error('FIXED_LAUNCHER_UNSAFE: Node executable resolution is unexpected.');
+  }
+  return resolvedNode;
+}
+
 export function assertFixedLauncherArgumentVector(arguments_: readonly string[]) {
   if (!arguments_.length) {
     throw new Error('FIXED_LAUNCHER_UNSAFE: fixed argument vector is empty.');
@@ -137,13 +163,12 @@ export function resolvePinnedPackageManagerLauncher(
     ) {
       throw new Error('FIXED_LAUNCHER_UNSAFE: Windows Corepack resolution is unexpected.');
     }
-    if (!exists(execPath)) {
-      throw new Error('FIXED_LAUNCHER_UNSAFE: Node executable is unavailable.');
-    }
-    const resolvedNode = exactSafeArgument(realpath(execPath), 'Resolved Node executable');
-    if (pathApi.basename(resolvedNode).toLocaleLowerCase() !== 'node.exe') {
-      throw new Error('FIXED_LAUNCHER_UNSAFE: Node executable resolution is unexpected.');
-    }
+    const resolvedNode = resolveFixedNodeExecutable({
+      platform,
+      execPath,
+      exists,
+      realpath
+    });
     return {
       program: resolvedNode,
       prefixArguments: [resolvedEntrypoint, PINNED_PACKAGE_MANAGER],

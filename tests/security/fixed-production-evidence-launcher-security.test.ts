@@ -20,6 +20,11 @@ const launcherLibrarySource = readFileSync(
   'lib/fixed-package-script-launcher.ts',
   'utf8'
 );
+const databaseLauncherSource = readFileSync(
+  'lib/fixed-database-command-launcher.ts',
+  'utf8'
+);
+const databaseCommandSource = readFileSync('scripts/run-database-command.ts', 'utf8');
 const retentionSource = readFileSync(
   'lib/production-evidence-operation-retention.ts',
   'utf8'
@@ -60,6 +65,8 @@ test('launcher boundary has no ProcessStartInfo, ArgumentList, or shell fallback
   for (const source of [
     launcherSource,
     launcherLibrarySource,
+    databaseLauncherSource,
+    databaseCommandSource,
     retentionSource,
     smokeSource,
     retentionSmokeSource
@@ -71,6 +78,8 @@ test('launcher boundary has no ProcessStartInfo, ArgumentList, or shell fallback
   }
   assert.match(launcherLibrarySource, /spawnSync/);
   assert.match(launcherLibrarySource, /shell:\s*false/);
+  assert.match(databaseLauncherSource, /shell:\s*false/);
+  assert.doesNotMatch(databaseCommandSource, /spawnSync|shell\s*:/);
 });
 
 test('retention is write-first and uses Node raw-byte hashing after child completion', () => {

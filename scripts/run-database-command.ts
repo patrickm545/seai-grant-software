@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import {
   assertDatabaseOperationAllowed,
   formatDatabaseSafetyError,
@@ -8,6 +7,12 @@ import {
   type DatabaseOperation
 } from '../lib/database-safety';
 import {
+  launchFixedLineageVerifier,
+  launchFixedPrismaCommand,
+  launchFixedSeed,
+  type FixedPrismaCommand
+} from '../lib/fixed-database-command-launcher';
+import {
   classifyVerifierExit,
   productionPendingBlockEvidence
 } from '../lib/verifier-command-policy';
@@ -15,9 +20,8 @@ import type { VerifierMode } from '../lib/lineage-verifier';
 
 type CommandDefinition = {
   operation: DatabaseOperation;
-  prismaArgs?: string[];
-  command?: string;
-  commandArgs?: string[];
+  prismaCommand?: FixedPrismaCommand;
+  seed?: true;
   productionMigrationPath?: boolean;
   resetAcknowledgement?: boolean;
   requiredEnvironment?: ApplicationEnvironment;
@@ -28,38 +32,36 @@ const commands: Record<string, CommandDefinition> = {
   status: { operation: 'migration-status' },
   'migrate-preview': {
     operation: 'migration-deploy',
-    prismaArgs: ['migrate', 'deploy'],
+    prismaCommand: 'migrate-deploy',
     requiredEnvironment: 'preview'
   },
   'migrate-test': {
     operation: 'migration-deploy',
-    prismaArgs: ['migrate', 'deploy'],
+    prismaCommand: 'migrate-deploy',
     requiredEnvironment: 'test'
   },
   'migrate-development': {
     operation: 'migration-dev',
-    prismaArgs: ['migrate', 'dev'],
+    prismaCommand: 'migrate-dev',
     requiredEnvironment: 'development'
   },
   'migrate-production': {
     operation: 'migration-deploy',
-    prismaArgs: ['migrate', 'deploy'],
+    prismaCommand: 'migrate-deploy',
     productionMigrationPath: true,
     requiredEnvironment: 'production'
   },
   'seed-development': {
     operation: 'seed',
-    command: 'tsx',
-    commandArgs: ['prisma/seed.ts'],
+    seed: true,
     requiredEnvironment: 'development'
   },
   'seed-test': {
     operation: 'seed',
-    command: 'tsx',
-    commandArgs: ['prisma/seed.ts'],
+    seed: true,
     requiredEnvironment: 'test'
   },
-  reset: { operation: 'reset', prismaArgs: ['migrate', 'reset'], resetAcknowledgement: true }
+  reset: { operation: 'reset', prismaCommand: 'migrate-reset', resetAcknowledgement: true }
 };
 
 function exitWithError(error: unknown): never {
@@ -113,17 +115,8 @@ console.log(
   `Database safety guard passed: operation=${definition.operation} app=${guarded.appEnvironment} database=${guarded.databaseEnvironment} ${formatSafeDatabaseIdentity(guarded.identity)}`
 );
 
-function spawn(program: string, args: string[]) {
-  const result = spawnSync(program, args, {
-    env: process.env,
-    shell: process.platform === 'win32',
-    stdio: 'inherit'
-  });
-  return result.status ?? 1;
-}
-
-function run(program: string, args: string[]) {
-  const status = spawn(program, args);
+function run(result: { status: number | null }) {
+  const status = result.status ?? 1;
   if (status !== 0) process.exit(status);
 }
 
@@ -135,12 +128,7 @@ function verifierMode(stage: 'status' | 'preflight' | 'postflight'): VerifierMod
 
 function runVerifier(stage: 'status' | 'preflight' | 'postflight') {
   const mode = verifierMode(stage);
-  const status = spawn(process.execPath, [
-    '--import',
-    'tsx',
-    'scripts/verify-migration-lineage.ts',
-    mode
-  ]);
+  const status = launchFixedLineageVerifier(mode, { env: process.env }).status ?? 1;
   const decision = classifyVerifierExit(mode, status);
   if (decision.kind === 'unsafe-failure') {
     console.error(
@@ -168,8 +156,11 @@ if (definition.operation === 'migration-deploy') {
   runVerifier('preflight');
 }
 
-if (definition.prismaArgs) run('prisma', definition.prismaArgs);
-else run(definition.command!, definition.commandArgs!);
+if (definition.prismaCommand) {
+  run(launchFixedPrismaCommand(definition.prismaCommand, { env: process.env }));
+} else if (definition.seed) {
+  run(launchFixedSeed({ env: process.env }));
+}
 
 if (definition.operation === 'migration-deploy') {
   console.log('Running independent migration lineage verifier after deployment.');

@@ -63,7 +63,7 @@ test('Production evidence command cannot invoke deploy, resolve, DDL, DML, or ca
 
 test('guarded deploy cannot reach Prisma before verifier preflight or omit postflight', () => {
   const preflight = databaseCommand.indexOf("runVerifier('preflight')");
-  const deploy = databaseCommand.indexOf("if (definition.prismaArgs) run('prisma'");
+  const deploy = databaseCommand.indexOf('run(launchFixedPrismaCommand');
   const postflight = databaseCommand.indexOf("runVerifier('postflight')");
   assert.ok(preflight > 0 && deploy > preflight && postflight > deploy);
   assert.match(databaseCommand, /productionMigrationAcknowledgement/);
@@ -74,7 +74,7 @@ test('guarded deploy cannot reach Prisma before verifier preflight or omit postf
 test('Production pending status exits before Prisma or Vercel build can continue', () => {
   const decision = databaseCommand.indexOf("decision.kind === 'verified-pending-blocked'");
   const blockedExit = databaseCommand.indexOf('process.exit(decision.exitCode)', decision);
-  const prisma = databaseCommand.indexOf("if (definition.prismaArgs) run('prisma'");
+  const prisma = databaseCommand.indexOf('run(launchFixedPrismaCommand');
   assert.ok(decision > 0 && blockedExit > decision && prisma > blockedExit);
   assert.match(commandPolicy, /'production-status':\s*\[\s*VERIFIER_EXIT_CODES\.VERIFIED_CLEAN,\s*VERIFIER_EXIT_CODES\.VERIFIED_PENDING_BLOCKED/s);
   assert.match(commandPolicy, /'production-preflight': \[VERIFIER_EXIT_CODES\.VERIFIED_CLEAN\]/);

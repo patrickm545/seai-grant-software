@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-17 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -95,6 +95,8 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
 - [03-engineering/PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [03-engineering/PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
+- [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md)
+- [03-engineering/PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)

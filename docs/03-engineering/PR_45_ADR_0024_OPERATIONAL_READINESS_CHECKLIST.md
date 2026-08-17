@@ -7,7 +7,7 @@
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-17 |
-| Operational state | R1-R16 closed; R16 detailed diagnostic lost externally; write-first retention repaired; no new operation authorised |
+| Operational state | R1-R17 closed; R17 typed tenant-operator checksum stop retained completely; exact sixth tuple added repository-only; no new operation authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -16,15 +16,16 @@
 | Final launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 | R16 operation | [Typed exit 25 and external diagnostic loss](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md) |
 | Diagnostic retention | [Write-first Node retention repair](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md) |
+| R17 operation | [Fully retained tenant-operator checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md) |
+| R17 investigation | [Sixth exact checksum tuple](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 
 ## Purpose And Authority
 
-R16 is permanently closed after its sole read-only invocation returned typed
-exit `25`. An external reporting failure lost the detailed safe diagnostic, so
-its migration, stage, invariant and mismatch fields must not be inferred from
-earlier operations or candidate matrices. The write-first Node retention path
-has been repaired repository-only. The attestation remains pending with zero
-captures and approvals, and no R17 operation is authorised by this checklist.
+R17 is permanently closed after its sole read-only invocation returned and
+retained typed exit `25` for the exact tenant-operator checksum. The later
+repository-only amendment proves reversible byte equivalence and adds one
+sixth exact ordinary tuple. The attestation remains pending with zero captures
+and approvals, and no R18 operation is authorised by this checklist.
 
 Use this single checklist to resume PR #45 only after genuine operational
 inputs become available. Blank cells are intentional and must be completed by
@@ -430,7 +431,7 @@ Every item below must exist and be exact before changing `status` to `active`:
 - [ ] Verifier implementation version remains
       `adr-0024-lineage-verifier/v2`.
 - [ ] Manifest version and hash match the reviewed capture.
-- [ ] Exactly three repository migration checksum-divergence entries exist and
+- [ ] Exactly six repository migration checksum-divergence entries exist and
       all classifications remain
       `A-exact-alternate-byte-representation-proven`.
 - [ ] Each entry's canonical repository checksum, observed Production
@@ -446,7 +447,9 @@ Every item below must exist and be exact before changing `status` to `active`:
       `ca79db4c782a76b76e1dcbb84e46496d16b36cb463e68be904bc1962fe603da8`.
 - [ ] The R15 checksum evidence reference exists and its raw-file SHA-256 is
       `b2eac4e30c8871d31668b4b78c2bde40f477ad37ac080e6f4d6c5462d94e0e7d`.
-- [ ] All five exact tuples are required and cannot be missing, duplicated,
+- [ ] The R17 checksum evidence reference exists and its raw-file SHA-256 is
+      `c45a5290b897a408981a0a124ab7f08ac26ac05a874e12d7a58307fc5d72b2b6`.
+- [ ] All six exact tuples are required and cannot be missing, duplicated,
       cross-matched or replaced by a wildcard or checksum pattern.
 - [ ] Exactly one separate `attestedHistoricalResolvedMigration` entry exists
       for `20260716183000_pilot_installer_auth`; it is not present in the

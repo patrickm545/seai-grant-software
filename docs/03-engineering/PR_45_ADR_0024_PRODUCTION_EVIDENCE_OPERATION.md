@@ -7,9 +7,9 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-17 |
-| Operational state | R16 permanently closed after typed exit 25; detailed diagnostic lost by external reporting; retention repaired repository-only; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13 |
-| Repository baseline | `55c25a0da620d767c7f27a22afadeb922670c9c9` |
+| Operational state | R17 permanently closed after fully retained typed exit 25; exact tenant-operator mismatch classified repository-only; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17 closed 2026-08-17 |
+| Repository baseline | `0762b5eb93c1ac1ac9909507bff4638ac0aa8b04` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -32,8 +32,12 @@
 | R13 investigation | [Classification A and lifecycle L1](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md) |
 | R14 operation | [Tenant-provisioning checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md) |
 | R14 investigation | [Fourth exact classification A checksum divergence](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R15 operation | [Tenant first-login checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R15.md) |
+| R15 investigation | [Fifth exact classification A checksum divergence](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R16 operation | [Typed exit 25 with external diagnostic loss](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md) |
 | Diagnostic retention | [Write-first Node retention repair](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md) |
+| R17 operation | [Fully retained tenant-operator checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md) |
+| R17 investigation | [Sixth exact classification A checksum divergence](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -644,3 +648,32 @@ This repair did not access Production, invoke capture or status, execute SQL,
 migrate, deploy or move an alias. The attestation remains pending with zero
 captures and zero approvals. R16 is not reopened, and this record does not
 authorise R17.
+
+## Closed R17 Operation And Repository-Only Follow-Up
+
+R17 received separate change ID
+`CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R17` for one read-only invocation at
+`0762b5eb93c1ac1ac9909507bff4638ac0aa8b04`. It is permanently closed. The
+hardened Node path retained exact start/completion timestamps, child streams,
+typed repository exit `25`, wrapper exit `25`, classification
+`LEDGER_MISMATCH`, stage `first-evidence-generation` and the complete safe
+diagnostic.
+
+The exact `20260720100000_tenant_operator_recovery` record
+`4c2d5692-de53-4156-84da-eff6184f9c1d` carried observed checksum
+`11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96`
+instead of canonical checksum
+`e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215`.
+Checksum was the only reported failure. The first read-only transaction and
+fixed reads completed, but no complete capture, second transaction, digest,
+schema result, normalized ledger or live pending set was emitted.
+
+The separate repository-only follow-up proves classification A with 24 exact
+LF-to-CRLF insertions and adds one sixth independently pinned ordinary
+one-step tuple. The five prior tuples and pilot-auth historical state are
+unchanged. Manual-lead and password-reset candidates remain unaccepted, and
+password reset remains expected pending.
+
+This follow-up did not connect to Production, run capture or status, execute
+SQL, migrate, deploy or move an alias. R17 remains closed and this record does
+not authorise R18.

@@ -84,24 +84,26 @@ capture requires fresh separate authority.
 
 ### Exact Repository-Migration Checksum Divergences
 
-The permanently closed R10, R11, R12 and R14 operations established four separate exact
+The permanently closed R10, R11, R12, R14, R15 and R17 operations established six separate exact
 Production checksum mismatches. Later repository-only investigations proved
 classification A for each by converting only the exact committed UTF-8/no-BOM
-file's LF line endings to CRLF while retaining the final newline. All five
+file's LF line endings to CRLF while retaining the final newline. All six
 candidates normalize byte-for-byte to their committed Git blobs.
 
 Use the retained [R10 investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
 [R11 investigation](PR_45_ADR_0024_R11_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
 [R12 investigation](PR_45_ADR_0024_R12_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
 [R14 investigation](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
-[R15 investigation](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+[R15 investigation](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md),
+[R17 operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md) and
+[R17 investigation](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 and evidence digests; do not recreate candidates during an operation.
 
-Before any later capture, verify attestation v5 still contains exactly all five
+Before any later capture, verify attestation v5 still contains exactly all six
 tuples and pins each canonical and observed checksum as distinct fields, with
 its exact record ID, successful lifecycle, Production fingerprint, manifest
 hash, approved lineage baseline, evidence reference/digest and retirement
-scope. All five tuples are required and cannot cross-satisfy. Alternate checksums
+scope. All six tuples are required and cannot cross-satisfy. Alternate checksums
 are invalid in Preview, test, development, fresh databases and every other
 migration. This is not an LF/CRLF allow list. Any difference is exit `25` and
 an immediate stop.
@@ -134,7 +136,7 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
-- [ ] Attestation v5 checksum-divergence evidence digests and all five exact
+- [ ] Attestation v5 checksum-divergence evidence digests and all six exact
       Production tuples verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator
@@ -536,20 +538,23 @@ Do not run `migrate resolve`, edit `_prisma_migrations`, replay the historical
 repair, activate the attestation manually or treat this repository amendment
 as Production authority.
 
-## Exact Ordinary Tuples And Candidate Checksums After R15
+## Exact Ordinary Tuples And Candidate Checksums After R17
 
-The ordinary Production path now contains five independently pinned tuples:
-R10, R11, R12, R14 and R15. Each must match its own migration name, record ID,
+The ordinary Production path now contains six independently pinned tuples:
+R10, R11, R12, R14, R15 and R17. Each must match its own migration name, record ID,
 canonical checksum, observed checksum, fingerprint, one-step lifecycle,
 manifest, repository baseline and evidence digest. Never transfer values
 between tuples or infer acceptance from a common CRLF representation.
 
 The post-R15 candidate matrix precomputes reversible CRLF hashes for the three
-later migrations. It is an investigation aid only. Before any future tuple can
-exist, a separately authorised Production read must report that exact checksum
-and record identity, followed by repository-only classification and lifecycle
-review. Do not add candidates to runtime code, use a wildcard, or infer that a
-candidate exists in Production.
+later migrations. R17 subsequently observed the exact tenant-operator checksum
+and a repository-only amendment bound that one observation to its own sixth
+tuple. The matrix itself remains an investigation aid and is not verifier
+input. The manual-lead and password-reset candidates remain unaccepted. Before
+either can have a tuple, a separately authorised Production read must report
+its exact checksum and record identity, followed by repository-only
+classification and lifecycle review. Do not add candidates to runtime code,
+use a wildcard, or infer that a candidate exists in Production.
 
 Password reset remains pending. Its candidate hash is not evidence that the
 migration ran and must never be used to mark it applied, relax the pending set

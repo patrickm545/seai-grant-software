@@ -223,7 +223,7 @@ stable safe category rather than raw driver text.
 
 ## Exact Production Repository-Checksum Divergences
 
-The closed R10, R11, R12 and R14 operations each established one checksum-only
+The closed R10, R11, R12, R14, R15 and R17 operations each established one checksum-only
 exact-success mismatch:
 
 | Operation | Migration | Record ID | Canonical checksum | Observed Production checksum |
@@ -232,6 +232,8 @@ exact-success mismatch:
 | R11 | `20260710130000_users_roles_permissions_audit` | `93c04529-1d5b-4350-af01-ef225b69b008` | `cfebbcb43d7922fc8443b5562a57286e326971db2d6c664f5a06de82030537bf` | `4d6442c505228abcfde3c1a1be960c27ec25bf96c5955077dfe003423bb34cfb` |
 | R12 | `20260710140000_workflow_foundation` | `ce4489c9-fa9b-41e0-90fc-23a584e162da` | `7874c3e8fe00b0b0058e4147508e03b2c617b2910b34f707179fc9f3e994110d` | `fbcc4133e665566e6aadd542c094dcc527d565a64ca0339f054025f4e8b709f8` |
 | R14 | `20260718130000_tenant_provisioning_data_model` | `5eeca647-5429-4beb-873b-cff91ec58ddf` | `a741bc49cf4e8d92c36344f68706161ecdcc04625903eeb2a777b87b0f0151d7` | `2f45f84bce236107538226d722a64daf1fba564725d6c79a89f5c161a2d80805` |
+| R15 | `20260718150000_tenant_first_login_activation` | `e0d71f73-e278-4a79-9906-650a8c43881f` | `f704351558f4d253746482b87a65f19e03cc210732d5d6c6f0059e52c8198f6f` | `8446029a82124d42544db7799c2116fce1811f1a802e6f2ee722562d798225ab` |
+| R17 | `20260720100000_tenant_operator_recovery` | `4c2d5692-de53-4156-84da-eff6184f9c1d` | `e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215` | `11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96` |
 
 Separate repository-only investigations proved classification A for each
 tuple. Converting the exact committed UTF-8, no-BOM, LF Git blob to CRLF while
@@ -243,11 +245,11 @@ The implementation keeps two controls separate:
 
 1. Immutable repository integrity always verifies the canonical committed LF
    checksum against the unchanged manifest.
-2. The ADR-0024 Production path separately verifies all five exact historical
+2. The ADR-0024 Production path separately verifies all six exact historical
    Production records against their respective attested checksum, record ID,
    lifecycle, fingerprint, manifest and repository-lineage scope.
 
-The five-entry structure is an exact tuple set, not an alternate-checksum
+The six-entry structure is an exact tuple set, not an alternate-checksum
 list. Every declared tuple must verify independently and one cannot satisfy
 another. Preview, test, development and fresh databases receive no exception and
 must use canonical checksums. A missing, duplicated, cross-matched or changed
@@ -395,3 +397,21 @@ repository exit and child completion before optional hashing, parsing and
 report generation. A later reporting failure remains separate from the child
 result and cannot trigger a retry. This reliability repair does not change any
 identity, ledger, historical-state, schema, attestation or status predicate.
+
+## R17 Sixth-Tuple Boundary
+
+R17 proved that write-first retention preserves a typed ledger stop and every
+safe mismatch field. The exact tenant-operator record differed only in
+checksum. Repository-only analysis independently reproduced the observed hash
+by converting the canonical 804-byte LF Git blob to an 828-byte CRLF
+representation, then reversed it byte-for-byte without changing SQL.
+
+The verifier's sixth ordinary tuple is independently pinned to R17's exact
+Production fingerprint, migration, record ID, canonical and observed hashes,
+completed one-step/no-log lifecycle, manifest, baseline and evidence digest.
+All six entries must be present exactly; no entry can satisfy another.
+
+The candidate matrix is not imported or read by verifier code. The manual-lead
+and password-reset candidates remain canonical-only and fail strict and
+Production verification. Password reset remains expected pending. No generic
+CRLF, pattern, date, prefix or automatic promotion rule exists.

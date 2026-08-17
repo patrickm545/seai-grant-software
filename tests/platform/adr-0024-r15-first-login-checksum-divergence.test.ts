@@ -63,7 +63,9 @@ const r15 = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
   (entry) => entry.migrationName === migrationName
 )!;
 const earlier = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.filter(
-  (entry) => entry.migrationName !== migrationName
+  (entry) =>
+    entry.migrationName !== migrationName &&
+    entry.migrationName !== '20260720100000_tenant_operator_recovery'
 );
 const migration = manifest.migrations.find((entry) => entry.name === migrationName)!;
 
@@ -218,10 +220,13 @@ test('fresh canonical ledger remains strict and passes without Production except
 
 test('exact R15 Production tuple proceeds only through its explicit entry', () => {
   const result = verifyProductionFixture();
-  assert.deepEqual(result.repositoryChecksumDivergences.at(-1), {
+  assert.deepEqual(
+    result.repositoryChecksumDivergences.find((entry) => entry.migrationName === migrationName),
+    {
     migrationName,
     result: 'verified'
-  });
+    }
+  );
   assert.deepEqual(result.pending, ['20260724180000_password_reset_foundation']);
 });
 
@@ -318,7 +323,7 @@ test('missing or altered R15 evidence digest fails attestation validation', () =
   assert.throws(() => validateLineageAttestation(altered));
 });
 
-test('candidate matrix remains informational and later migrations remain canonical-only', () => {
+test('candidate matrix remains historical evidence and unobserved candidates remain canonical-only', () => {
   assert.equal(candidateMatrix.scope.migrationCount, 3);
   assert.match(candidateMatrix.notice, /not accepted Production lineage values/);
   assert.equal(candidateMatrix.conclusions.candidateChecksumsAddedToRuntimeVerifier, false);
@@ -327,15 +332,26 @@ test('candidate matrix remains informational and later migrations remain canonic
   for (const candidate of candidateMatrix.migrations) {
     assert.equal(candidate.candidate.reverseNormalizationEqualsCanonical, true);
     assert.equal(candidate.candidate.acceptedProductionLineageValue, false);
+    const rows = canonicalRows();
+    migrationRow(rows, candidate.migrationName).checksum = candidate.candidate.sha256;
+    assert.throws(() => verifyStrictLedger(rows, manifest));
+  }
+  const tenantOperator = candidateMatrix.migrations[0];
+  assert.equal(
+    PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
+      (entry) =>
+        entry.migrationName === tenantOperator.migrationName &&
+        entry.observedProductionChecksum === tenantOperator.candidate.sha256
+    ),
+    true
+  );
+  for (const candidate of candidateMatrix.migrations.slice(1)) {
     assert.equal(
       PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.some(
         (entry) => entry.observedProductionChecksum === candidate.candidate.sha256
       ),
       false
     );
-    const rows = canonicalRows();
-    migrationRow(rows, candidate.migrationName).checksum = candidate.candidate.sha256;
-    assert.throws(() => verifyStrictLedger(rows, manifest));
   }
   const passwordReset = candidateMatrix.migrations.at(-1)!;
   assert.equal(passwordReset.migrationName, '20260724180000_password_reset_foundation');
@@ -398,7 +414,7 @@ test('pending attestation remains typed exit 21 with zero captures and approvals
   assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /status=pending/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
-  assert.equal(pending.repositoryMigrationChecksumDivergences.length, 5);
+  assert.equal(pending.repositoryMigrationChecksumDivergences.length, 6);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.equal(pending.approvals.length, 0);
   assert.throws(

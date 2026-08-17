@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-17 |
 
 This section defines engineering standards, architecture context, and AI-assisted development rules for Clada OS.
 
@@ -31,6 +31,8 @@ Platform capability ownership and dependency rules are defined in [../01-platfor
 - [PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md): authoritative zero-step lifecycle explanation, required future catalog proof and pending governance decision.
 - [PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md): permanently closed R14 read-only operation and typed tenant-provisioning checksum stop.
 - [PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md): exact reversible tenant-provisioning checksum classification A and fourth independently pinned tuple.
+- [PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md): permanently closed R17 read-only operation, retained typed tenant-operator checksum stop and exact execution boundary.
+- [PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md): exact reversible tenant-operator checksum classification A and sixth independently pinned tuple.
 - [PILOT_AUTHENTICATION.md](PILOT_AUTHENTICATION.md): pilot login, tenant context, provisioning, revocation, and deployment operations.
 - [PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md](PRODUCTION_LEGACY_CREDENTIAL_REISSUE_RUNBOOK.md): proposed CTO-gated, dry-run-first recovery procedure for an eligible active legacy Production pilot owner.
 - [SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md](SELF_SERVICE_PASSWORD_RESET_THREAT_MODEL.md): pre-pilot password-reset assets, threats, mitigations, residual risk, and required evidence.

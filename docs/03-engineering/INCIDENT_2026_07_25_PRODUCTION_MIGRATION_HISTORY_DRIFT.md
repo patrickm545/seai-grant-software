@@ -419,6 +419,29 @@ state remains separate. A later-migration candidate matrix is informational
 only and creates no Production acceptance. The attestation remains pending
 with zero captures and approvals, and the incident remains open.
 
+### R17 Tenant-Operator Checksum Stop And Repository Classification
+
+R17 is permanently closed after the hardened retention path preserved typed
+exit `25` for `20260720100000_tenant_operator_recovery`, record
+`4c2d5692-de53-4156-84da-eff6184f9c1d`. The sole retained exact-success failure
+was canonical checksum
+`e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215`
+versus observed checksum
+`11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96`.
+The report contained no lifecycle failure. No complete first capture, second
+transaction or deterministic evidence followed.
+
+Repository-only proof establishes classification A. Twenty-four LF-to-CRLF
+insertions convert the exact 804-byte Git blob into the exact 828-byte observed
+representation, and reverse normalization restores the canonical bytes without
+changing SQL. Attestation v5 now pins six independent ordinary one-step tuples;
+the pilot-auth historical state remains separate.
+
+The manual-lead and password-reset candidates remain unaccepted. Password
+reset remains expected pending, the attestation remains pending with zero
+captures and approvals, and the incident remains open. The follow-up made no
+Production connection and grants no R18 authority.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -440,5 +463,7 @@ with zero captures and approvals, and the incident remains open.
 - [R13 Pilot Authentication Lineage Investigation](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
 - [R15 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R15.md)
 - [R15 Checksum Divergence Investigation](PR_45_ADR_0024_R15_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R17 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md)
+- [R17 Checksum Divergence Investigation](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

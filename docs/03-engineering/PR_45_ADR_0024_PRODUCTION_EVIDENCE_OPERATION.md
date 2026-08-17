@@ -6,10 +6,10 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-13 |
-| Operational state | R15 permanently closed after exact tenant first-login checksum stop; fifth exact tuple proven repository-only; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15 closed 2026-08-13 |
-| Repository baseline | `da3db4dd71050c902ee2f6266d42fd456e2654cb` |
+| Last reviewed | 2026-08-17 |
+| Operational state | R16 permanently closed after typed exit 25; detailed diagnostic lost by external reporting; retention repaired repository-only; Production activation pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13 |
+| Repository baseline | `55c25a0da620d767c7f27a22afadeb922670c9c9` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -32,6 +32,8 @@
 | R13 investigation | [Classification A and lifecycle L1](PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md) |
 | R14 operation | [Tenant-provisioning checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R14.md) |
 | R14 investigation | [Fourth exact classification A checksum divergence](PR_45_ADR_0024_R14_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R16 operation | [Typed exit 25 with external diagnostic loss](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md) |
+| Diagnostic retention | [Write-first Node retention repair](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -612,3 +614,33 @@ also records non-runtime candidate hashes for the three later migrations.
 Those candidates are not Production values; password reset remains expected
 pending. The investigation made no Production connection and does not
 authorise R16.
+
+## Closed R16 Operation And Repository-Only Retention Repair
+
+R16 received separate change ID
+`CHG-2026-08-13-ADR0024-PROD-EVIDENCE-R16` for one read-only invocation at
+`55c25a0da620d767c7f27a22afadeb922670c9c9`. It is permanently closed. The
+repository opened the guarded Production connection, completed its first
+read-only transaction and fixed identity, migration-ledger and catalog reads,
+then returned `LEDGER_MISMATCH`, typed exit `25`.
+
+The external PowerShell reporting layer failed after the child returned. It
+used an unavailable CLR `SHA256.HashData` API, attempted unsupported
+dot-property mutation on an ordered dictionary and had not written the child
+diagnostic durably. The exact migration, stage, invariant, mismatch fields,
+tuple results and operation timestamps were therefore lost and must not be
+reconstructed. See the [R16 record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md).
+
+The repository-only repair moves critical retention into the fixed Node
+launcher. It durably writes start, child-start, raw safe streams, authoritative
+child exit and child-completion timestamps before hashing, parsing or report
+decoration. Optional reporting failure cannot delete those primary artifacts
+or replace a non-zero repository exit. PowerShell remains only a possible
+parent shell and no longer owns retention. The verifier and attestation
+acceptance rules are unchanged. See the
+[diagnostic-retention record](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md).
+
+This repair did not access Production, invoke capture or status, execute SQL,
+migrate, deploy or move an alias. The attestation remains pending with zero
+captures and zero approvals. R16 is not reopened, and this record does not
+authorise R17.

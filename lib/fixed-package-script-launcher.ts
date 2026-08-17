@@ -2,6 +2,7 @@ import { existsSync, realpathSync } from 'node:fs';
 import { posix, win32 } from 'node:path';
 import {
   spawnSync,
+  type SpawnSyncOptions,
   type SpawnSyncOptionsWithStringEncoding,
   type SpawnSyncReturns
 } from 'node:child_process';
@@ -28,6 +29,12 @@ type Spawn = (
   options: SpawnSyncOptionsWithStringEncoding
 ) => SpawnSyncReturns<string>;
 
+type RawSpawn = (
+  program: string,
+  arguments_: readonly string[],
+  options: SpawnSyncOptions
+) => SpawnSyncReturns<Buffer>;
+
 export type PackageManagerLauncherDependencies = {
   platform?: NodeJS.Platform;
   pathValue?: string;
@@ -40,6 +47,13 @@ export type PackageManagerLauncherDependencies = {
 export type PackageManagerLaunchOptions = PackageManagerLauncherDependencies & {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
+};
+
+export type RawPackageManagerLaunchOptions = Omit<
+  PackageManagerLaunchOptions,
+  'spawn'
+> & {
+  spawn?: RawSpawn;
 };
 
 function exactSafeArgument(value: string, label: string) {
@@ -193,10 +207,57 @@ function launchFixedArguments(
   };
 }
 
+function launchFixedArgumentsRaw(
+  arguments_: readonly string[],
+  options: RawPackageManagerLaunchOptions = {}
+) {
+  const { spawn: rawSpawn, ...launcherOptions } = options;
+  const launcher = resolvePinnedPackageManagerLauncher(launcherOptions);
+  const spawn: RawSpawn =
+    rawSpawn ??
+    ((program, arguments__, spawnOptions) =>
+      spawnSync(program, arguments__, spawnOptions) as SpawnSyncReturns<Buffer>);
+  const safeProgram = exactSafeArgument(launcher.program, 'Fixed launcher program');
+  const fixedArguments = assertFixedLauncherArgumentVector(arguments_);
+  const safeArguments = [...launcher.prefixArguments, ...fixedArguments].map(
+    (argument, index) => exactSafeArgument(argument, `Resolved launcher argument ${index}`)
+  );
+  const result = spawn(safeProgram, safeArguments, {
+    cwd: options.cwd ?? process.cwd(),
+    env: options.env ?? process.env,
+    maxBuffer: 64 * 1024 * 1024,
+    shell: false,
+    windowsHide: true
+  });
+  if (result.error) {
+    const code =
+      typeof (result.error as NodeJS.ErrnoException).code === 'string'
+        ? (result.error as NodeJS.ErrnoException).code
+        : 'UNKNOWN';
+    throw new Error(`FIXED_LAUNCHER_FAILED: process launch failed with code ${code}.`);
+  }
+  return {
+    launcher,
+    status: result.status,
+    signal: result.signal,
+    stdout: result.stdout ?? Buffer.alloc(0),
+    stderr: result.stderr ?? Buffer.alloc(0)
+  };
+}
+
 export function launchFixedProductionEvidenceCapture(
   options: PackageManagerLaunchOptions = {}
 ) {
   return launchFixedArguments(
+    ['--silent', 'run', FIXED_PRODUCTION_EVIDENCE_SCRIPT],
+    options
+  );
+}
+
+export function launchFixedProductionEvidenceCaptureRaw(
+  options: RawPackageManagerLaunchOptions = {}
+) {
+  return launchFixedArgumentsRaw(
     ['--silent', 'run', FIXED_PRODUCTION_EVIDENCE_SCRIPT],
     options
   );

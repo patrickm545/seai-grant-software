@@ -7,6 +7,7 @@ import {
   FIXED_PRODUCTION_EVIDENCE_SCRIPT,
   launchFixedLauncherSmoke,
   launchFixedProductionEvidenceCapture,
+  launchFixedProductionEvidenceCaptureRaw,
   launchHarmlessPackageManagerVersionProbe,
   resolvePinnedPackageManagerLauncher,
   type PackageManagerLauncherDependencies
@@ -23,6 +24,25 @@ function spawnResult(input: {
     output: [null, input.stdout ?? '', input.stderr ?? ''],
     stdout: input.stdout ?? '',
     stderr: input.stderr ?? '',
+    status: input.status === undefined ? 0 : input.status,
+    signal: null,
+    error: input.error
+  };
+}
+
+function rawSpawnResult(input: {
+  status?: number | null;
+  stdout?: Buffer;
+  stderr?: Buffer;
+  error?: Error;
+} = {}): SpawnSyncReturns<Buffer> {
+  const stdout = input.stdout ?? Buffer.alloc(0);
+  const stderr = input.stderr ?? Buffer.alloc(0);
+  return {
+    pid: 1,
+    output: [null, stdout, stderr],
+    stdout,
+    stderr,
     status: input.status === undefined ? 0 : input.status,
     signal: null,
     error: input.error
@@ -83,6 +103,35 @@ test('Windows fixed capture launch preserves exact arguments without a shell', (
     ],
     shell: false
   });
+});
+
+test('raw fixed capture preserves exact argv, shell false, exit, and byte streams', () => {
+  const stdout = Buffer.from([0, 10, 13, 255]);
+  const stderr = Buffer.from('LEDGER_MISMATCH: safe diagnostic\n', 'utf8');
+  let observed:
+    | { program: string; arguments_: readonly string[]; shell: string | boolean | undefined }
+    | undefined;
+  const result = launchFixedProductionEvidenceCaptureRaw({
+    ...windowsDependencies(),
+    spawn: (program, arguments_, options) => {
+      observed = { program, arguments_, shell: options.shell };
+      return rawSpawnResult({ status: 25, stdout, stderr });
+    }
+  });
+  assert.deepEqual(observed, {
+    program: 'C:\\Runtime\\node.exe',
+    arguments_: [
+      'C:\\Node\\node_modules\\corepack\\dist\\corepack.js',
+      'pnpm@10.11.0',
+      '--silent',
+      'run',
+      FIXED_PRODUCTION_EVIDENCE_SCRIPT
+    ],
+    shell: false
+  });
+  assert.equal(result.status, 25);
+  assert.deepEqual(result.stdout, stdout);
+  assert.deepEqual(result.stderr, stderr);
 });
 
 test('fixed smoke uses the same Windows executable and exact argv boundary', () => {

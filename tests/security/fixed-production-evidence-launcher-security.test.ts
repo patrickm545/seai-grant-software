@@ -20,10 +20,22 @@ const launcherLibrarySource = readFileSync(
   'lib/fixed-package-script-launcher.ts',
   'utf8'
 );
+const retentionSource = readFileSync(
+  'lib/production-evidence-operation-retention.ts',
+  'utf8'
+);
 const smokeSource = readFileSync('scripts/smoke-package-manager-launcher.ts', 'utf8');
 const smokeTargetSource = readFileSync('scripts/fixed-launcher-smoke-target.ts', 'utf8');
+const retentionSmokeSource = readFileSync(
+  'scripts/smoke-production-evidence-retention.ts',
+  'utf8'
+);
 const operationRecord = readFileSync(
   'docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md',
+  'utf8'
+);
+const r16Record = readFileSync(
+  'docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md',
   'utf8'
 );
 
@@ -45,11 +57,56 @@ test('launcher pins the existing fixed capture command and package manager', () 
 });
 
 test('launcher boundary has no ProcessStartInfo, ArgumentList, or shell fallback', () => {
-  for (const source of [launcherSource, launcherLibrarySource, smokeSource]) {
-    assert.doesNotMatch(source, /ProcessStartInfo|ArgumentList|shell\s*:\s*true|cmd\.exe|powershell/i);
+  for (const source of [
+    launcherSource,
+    launcherLibrarySource,
+    retentionSource,
+    smokeSource,
+    retentionSmokeSource
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /ProcessStartInfo|ArgumentList|HashData|OrderedDictionary|shell\s*:\s*true|cmd\.exe|powershell/i
+    );
   }
   assert.match(launcherLibrarySource, /spawnSync/);
   assert.match(launcherLibrarySource, /shell:\s*false/);
+});
+
+test('retention is write-first and uses Node raw-byte hashing after child completion', () => {
+  const launchIndex = retentionSource.indexOf(
+    '(dependencies.launch ?? launchFixedProductionEvidenceCaptureRaw)'
+  );
+  const stderrWriteIndex = retentionSource.indexOf(
+    "writeDurableAtomic(join(operationDirectory, stderrReference)"
+  );
+  const childBoundaryIndex = retentionSource.indexOf(
+    "join(operationDirectory, 'operation-boundary-child-complete.json')"
+  );
+  const hashIndex = retentionSource.indexOf('const stdoutSha256 = hashBytes');
+  const parseIndex = retentionSource.indexOf('parseRetainedProductionDiagnostic');
+  assert.ok(launchIndex >= 0);
+  assert.ok(stderrWriteIndex > launchIndex);
+  assert.ok(childBoundaryIndex > stderrWriteIndex);
+  assert.ok(hashIndex > childBoundaryIndex);
+  assert.ok(parseIndex >= 0);
+  assert.match(retentionSource, /createHash\('sha256'\)\.update\(bytes\)/);
+  assert.match(retentionSource, /fsyncSync\(descriptor\)/);
+  assert.match(retentionSource, /renameSync\(temporary, path\)/);
+  assert.doesNotMatch(retentionSource, /rmSync\(operationDirectory/);
+});
+
+test('retention smoke is synthetic, fixed, and cannot invoke Production', () => {
+  assert.equal(
+    packageJson.scripts['launcher:retention:smoke'],
+    'node --import tsx scripts/smoke-production-evidence-retention.ts'
+  );
+  assert.match(retentionSmokeSource, /retention OK/);
+  assert.match(retentionSmokeSource, /launches \+= 1/);
+  assert.doesNotMatch(
+    retentionSmokeSource,
+    /PrismaClient|DATABASE_URL|production-evidence-capture|migration-status|migrate|deploy/
+  );
 });
 
 test('smoke target is fixed, harmless, and cannot reach Production tooling', () => {
@@ -84,4 +141,13 @@ test('closed operation remains recorded as stopped before command or connection'
   );
   assert.match(operationRecord, /Retry \| None/);
   assert.match(operationRecord, /Change ID disposition \| Closed; must not be reused/);
+});
+
+test('R16 remains closed without reconstructing the lost mismatch', () => {
+  assert.match(r16Record, /`LEDGER_MISMATCH`, typed exit `25`/);
+  assert.match(r16Record, /Permanently closed; must not be reused or retried/);
+  assert.match(r16Record, /exact migration or record/);
+  assert.match(r16Record, /must\s+not be inferred/);
+  assert.match(r16Record, /zero captures and\s+zero approvals/);
+  assert.doesNotMatch(r16Record, /R16.*(?:checksum|candidate).*matched/i);
 });

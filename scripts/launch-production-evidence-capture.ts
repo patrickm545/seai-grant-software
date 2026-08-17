@@ -1,4 +1,7 @@
-import { launchFixedProductionEvidenceCapture } from '../lib/fixed-package-script-launcher';
+import {
+  OPERATION_REPORTING_FAILURE_EXIT,
+  runFixedProductionEvidenceOperationWithRetention
+} from '../lib/production-evidence-operation-retention';
 
 if (process.argv.length !== 2) {
   console.error('FIXED_LAUNCHER_UNSAFE: this command accepts no arguments.');
@@ -6,19 +9,20 @@ if (process.argv.length !== 2) {
 }
 
 try {
-  const result = launchFixedProductionEvidenceCapture();
+  const result = runFixedProductionEvidenceOperationWithRetention();
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
-  if (result.status === null) {
+  if (result.reportingStatus === 'failed') {
     console.error(
-      `FIXED_LAUNCHER_FAILED: child terminated without an exit code; signal=${result.signal ?? 'unknown'}.`
+      'OPERATION_REPORTING_FAILED: child output and repository exit were retained before reporting failed.'
     );
-    process.exit(1);
   }
-  process.exit(result.status);
+  process.exitCode = result.wrapperExit;
 } catch (error) {
   console.error(
-    error instanceof Error ? error.message : 'FIXED_LAUNCHER_FAILED: unknown launcher failure.'
+    error instanceof Error
+      ? error.message
+      : 'OPERATION_RETENTION_FAILED: unknown failure before the child result was available.'
   );
-  process.exit(1);
+  process.exitCode = OPERATION_REPORTING_FAILURE_EXIT;
 }

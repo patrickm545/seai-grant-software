@@ -6,22 +6,25 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-13 |
-| Operational state | R1-R15 closed; fifth exact tuple proven; historical-resolved current evidence still pending; no new operation authorised |
+| Last reviewed | 2026-08-17 |
+| Operational state | R1-R16 closed; R16 detailed diagnostic lost externally; write-first retention repaired; no new operation authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
 | Capture preparation | [PR #44 evidence-capture preparation](PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md) |
 | Governance | [PR #45 pilot-stage Production governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md) |
 | Final launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
+| R16 operation | [Typed exit 25 and external diagnostic loss](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R16.md) |
+| Diagnostic retention | [Write-first Node retention repair](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md) |
 
 ## Purpose And Authority
 
-R15 is permanently closed after its sole read-only invocation stopped on the
-tenant first-login checksum. The later repository-only investigation proved an
-exact fifth tuple and audited three later CRLF candidates. Those candidates are
-not accepted Production values. The attestation remains pending with zero
-captures and approvals, and no R16 operation is authorised by this checklist.
+R16 is permanently closed after its sole read-only invocation returned typed
+exit `25`. An external reporting failure lost the detailed safe diagnostic, so
+its migration, stage, invariant and mismatch fields must not be inferred from
+earlier operations or candidate matrices. The write-first Node retention path
+has been repaired repository-only. The attestation remains pending with zero
+captures and approvals, and no R17 operation is authorised by this checklist.
 
 Use this single checklist to resume PR #45 only after genuine operational
 inputs become available. Blank cells are intentional and must be completed by

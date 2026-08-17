@@ -381,3 +381,17 @@ The post-R15 candidate matrix is never read by the verifier. Later migrations
 remain canonical-only, including password reset, which remains pending. A
 mechanically valid candidate is not a Production observation and grants no
 runtime acceptance or operational authority.
+
+## R16 Diagnostic-Retention Boundary
+
+R16 returned repository typed exit `25`, but its one-off external PowerShell
+reporter failed before writing the detailed diagnostic. The exact migration,
+stage, invariant and mismatch fields are unknown and must not be inferred.
+R16 remains closed and created no new lineage acceptance fact.
+
+The fixed Node operator launcher now owns write-first retention. It stores the
+operation start before launch, then stores permitted raw child streams,
+repository exit and child completion before optional hashing, parsing and
+report generation. A later reporting failure remains separate from the child
+result and cannot trigger a retry. This reliability repair does not change any
+identity, ledger, historical-state, schema, attestation or status predicate.

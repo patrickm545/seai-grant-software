@@ -285,6 +285,23 @@ to query Production manually or permission to retry. Preserve the failed
 artifact, close the authorized operation and require separate review and
 authorization before any future read-only capture.
 
+#### Retaining a failed operation diagnostic
+
+Invoke the fixed Windows entry point only through
+`node --import tsx scripts/launch-production-evidence-capture.ts`. Its Node
+retention layer writes operation start and child-start boundaries before
+launch, then writes the permitted raw stdout and stderr bytes plus the
+authoritative child exit and completion timestamp before hashing, parsing or
+summary construction. Artifacts are stored outside Git under the validated
+change ID.
+
+An optional reporting failure must be recorded separately. It must not delete
+the raw streams, replace a typed child exit, reconstruct timestamps or trigger
+a retry. A typed exit `25`, `26` or `70` remains authoritative even when the
+reporting status is failed. PowerShell is not part of hashing or artifact
+construction. See the
+[diagnostic-retention reliability record](PR_45_ADR_0024_DIAGNOSTIC_RETENTION_RELIABILITY_2026_08_17.md).
+
 ### Stage 2 - Verify the guarded pending state
 
 After PR #45 activation and repository validation, run the approved read-only

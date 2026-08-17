@@ -12,6 +12,7 @@ import {
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { verifyAttestedLedger, type MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const baseline = 'da3db4dd71050c902ee2f6266d42fd456e2654cb';
 const migrationName = '20260718150000_tenant_first_login_activation';
@@ -29,9 +30,7 @@ const candidateMatrixSha256 =
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
   classification: string;
   exactMatch: {
@@ -391,7 +390,7 @@ test('R15 byte reproduction is deterministic, reversible and semantically unchan
   assert.equal(sha256(readFileSync(evidenceReference)), evidenceSha256);
 });
 
-test('pending attestation remains typed exit 21 with zero captures and approvals', () => {
+test('checked-in attestation command is active while pending fixture remains fail closed', () => {
   const offlineEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key]) =>
@@ -405,8 +404,8 @@ test('pending attestation remains typed exit 21 with zero captures and approvals
     ['--import', 'tsx', 'scripts/verify-migration-lineage.ts', 'attestation-verify'],
     { encoding: 'utf8', env: { ...offlineEnvironment, NODE_ENV: 'test' } }
   );
-  assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
-  assert.match(result.stdout, /status=pending/);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /status=active/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.repositoryMigrationChecksumDivergences.length, 7);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);

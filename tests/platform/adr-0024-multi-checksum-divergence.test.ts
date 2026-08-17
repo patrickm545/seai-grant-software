@@ -12,13 +12,12 @@ import {
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { verifyAttestedLedger, type MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const [r10, r11, r12, r14, r15, r17, r18] = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES;
 
 function sha256(value: Buffer | string) {

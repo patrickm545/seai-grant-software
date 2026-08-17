@@ -12,6 +12,7 @@ import {
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { verifyAttestedLedger, type MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const baseline = '1fae81c39e4ad70f5083f8562323f7b0c42b754c';
 const migrationName = '20260722190000_manual_lead_creation';
@@ -30,9 +31,7 @@ const passwordResetMigration = '20260724180000_password_reset_foundation';
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
   classification: string;
   governingOperation: string;
@@ -505,7 +504,7 @@ test('R18 lifecycle, diagnostic, historical search and repository-only boundary 
   assert.equal(evidence.candidateMatrix.manualLeadCandidateMatchesR18Observation, true);
 });
 
-test('pending attestation remains exit 21 with seven tuples, zero captures and approvals', () => {
+test('checked-in attestation is active while pending seven-tuple fixture remains fail closed', () => {
   const offlineEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key]) =>
@@ -519,8 +518,8 @@ test('pending attestation remains exit 21 with seven tuples, zero captures and a
     ['--import', 'tsx', 'scripts/verify-migration-lineage.ts', 'attestation-verify'],
     { encoding: 'utf8', env: { ...offlineEnvironment, NODE_ENV: 'test' } }
   );
-  assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
-  assert.match(result.stdout, /status=pending/);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /status=active/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.repositoryMigrationChecksumDivergences.length, 7);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);

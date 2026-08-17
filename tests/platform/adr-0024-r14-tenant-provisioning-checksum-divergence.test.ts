@@ -12,6 +12,7 @@ import {
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { verifyAttestedLedger, type MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const baseline = '90c2f1f95a7dbc6eeaac48df3d2ef0b3a336ac7c';
 const migrationName = '20260718130000_tenant_provisioning_data_model';
@@ -25,9 +26,7 @@ const evidenceSha256 = 'ca79db4c782a76b76e1dcbb84e46496d16b36cb463e68be904bc1962
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const evidence = JSON.parse(readFileSync(evidenceReference, 'utf8')) as {
   classification: string;
   exactMatch: {
@@ -343,7 +342,7 @@ test('R14 byte reproduction is deterministic and platform-independent', () => {
   assert.equal(sha256(readFileSync(evidenceReference)), evidenceSha256);
 });
 
-test('pending attestation command remains typed exit 21 with zero captures and approvals', () => {
+test('checked-in attestation command is active while pending fixture remains fail closed', () => {
   const offlineEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key]) =>
@@ -357,8 +356,8 @@ test('pending attestation command remains typed exit 21 with zero captures and a
     ['--import', 'tsx', 'scripts/verify-migration-lineage.ts', 'attestation-verify'],
     { encoding: 'utf8', env: { ...offlineEnvironment, NODE_ENV: 'test' } }
   );
-  assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
-  assert.match(result.stdout, /status=pending/);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /status=active/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.equal(pending.approvals.length, 0);

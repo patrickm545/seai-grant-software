@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
-| Status | Contained; remediation approval and execution pending |
+| Status | Contained under active ADR-0024 attestation; password-reset execution pending |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-17 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -466,6 +466,29 @@ expected pending. The attestation remains pending with zero captures and
 approvals, and the incident remains open. The follow-up made no Production
 connection and grants no R19 authority.
 
+### R19 Complete Evidence And Active Attestation
+
+R19 is permanently closed after one authorised fixed read-only invocation at
+repository revision `2b76a33a5f01c746436132c195bdd7582d54817b`. Both
+independent repeatable-read captures completed and matched deterministic
+evidence digest
+`19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98`.
+All seven ordinary tuples and the separate pilot-auth historical state
+verified. The live schema/catalog fingerprint was
+`1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81`,
+with no unsupported objects.
+
+Attestation v5 is active under the explicit pilot-stage compensating control.
+Guarded read-only Production status returned `verified-pending-blocked`, exit
+`20`, `deploymentAllowed=false`, and `migrationApplied=false`. The exact
+pending set contains only `20260724180000_password_reset_foundation`. No
+Production write, migration, deployment or alias movement occurred.
+
+The incident remains contained rather than closed: the original historical SQL
+is still unavailable, raw ledger history remains divergent, and the pending
+password-reset migration requires a separate authorised execution and
+postflight verification.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -491,5 +514,6 @@ connection and grants no R19 authority.
 - [R17 Checksum Divergence Investigation](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 - [R18 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md)
 - [R18 Checksum Divergence Investigation](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [R19 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)

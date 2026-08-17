@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Active governance; repository preparation complete, operational evidence and activation pending |
+| Status | Active governance; ADR-0024 attestation active, guarded execution remains separately approved |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-17 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -175,6 +175,12 @@ Before Production migration execution:
       `verified-pending-blocked`.
 - [ ] A different change explicitly authorises the password-reset migration.
 - [ ] A current restore point and deliberate execution controls are rechecked.
+
+R19 completed the capture-and-activation phase on 2026-08-17. The checked-in
+attestation is active, and read-only `production-status` returned the required
+`verified-pending-blocked` decision with exit `20`. The checklist remains a
+required fresh gate for any separately authorised password-reset execution;
+R19 supplies no execution authority.
 
 The detailed operational fields and sign-off spaces are maintained in the
 [PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md).

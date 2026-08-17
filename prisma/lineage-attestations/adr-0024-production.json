@@ -1,13 +1,13 @@
 {
   "version": "clada-adr-0024-lineage-attestation/v5",
   "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
-  "status": "pending",
+  "status": "active",
   "incidentReference": "ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT",
   "adrReference": "ADR-0024",
   "owner": "Clada Systems Engineering",
   "createdAt": "2026-07-28T00:00:00.000Z",
-  "reviewedAt": null,
-  "expiresAt": null,
+  "reviewedAt": "2026-08-17T17:26:47.280Z",
+  "expiresAt": "2026-10-25T17:26:47.280Z",
   "reason": "Single-incident operational lineage acceptance because the exact historical SQL artifact is unavailable.",
   "historicalSqlKnown": false,
   "retirementConditions": [
@@ -31,6 +31,7 @@
     "docs/03-engineering/evidence/ADR_0024_R15_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R17_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R18_CHECKSUM_DIVERGENCE.json",
+    "docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md",
     "docs/03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json",
     "Draft PR #43 implementation evidence"
   ],
@@ -240,23 +241,29 @@
       "scope": "Exact ADR-0024 Production pilot authentication historical resolve record only",
       "retirementCondition": "Retires with ADR-0024 attestation",
       "exactLedgerTimestamps": {
-        "startedAt": null,
-        "finishedAt": null
+        "startedAt": "2026-07-17T15:34:36.767818Z",
+        "finishedAt": "2026-07-17T15:34:36.767818Z"
       },
       "observedCurrentSchema": {
         "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
-        "fingerprint": null,
+        "fingerprint": "1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81",
         "catalogAssertionsVersion": "adr-0024-historical-resolved-catalog-assertions/v1",
-        "catalogAssertionsDigest": null,
-        "evidenceReference": null,
-        "evidenceSha256": null
+        "catalogAssertionsDigest": "25858c34fa4c2fcbb100d04d1484bb4792aadc2c2985be8a5a95342bb569f8fd",
+        "evidenceReference": "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19/capture-1.json",
+        "evidenceSha256": "2b5e87d52f0a6f765ea5928121bc96a9490012fc29b29b367bdd600617211491"
       },
       "r14Evidence": {
-        "changeId": null,
-        "repositoryRevision": null,
-        "captureArtifactReferences": [],
-        "captureArtifactSha256s": [],
-        "recoveryEvidenceReference": null
+        "changeId": "CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19",
+        "repositoryRevision": "2b76a33a5f01c746436132c195bdd7582d54817b",
+        "captureArtifactReferences": [
+          "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19/capture-1.json",
+          "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19/capture-2.json"
+        ],
+        "captureArtifactSha256s": [
+          "2b5e87d52f0a6f765ea5928121bc96a9490012fc29b29b367bdd600617211491",
+          "af608bde5900881d7747869ecec1ffd8c50140ded319f6eadccd4735361066b7"
+        ],
+        "recoveryEvidenceReference": "NEON-CONSOLE-RECOVERY-VERIFIED-2026-08-17T17:19:35.532Z-BRANCH-br-cool-wave-abysq3lu-HISTORY-6H"
       }
     }
   ],
@@ -275,7 +282,7 @@
     "name": "20260428120000_manual_submission_prep",
     "repositoryChecksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
     "failedRecord": {
-      "id": null,
+      "id": "187cd0e2-f2ca-46fc-937d-1922e319e800",
       "migrationName": "20260428120000_manual_submission_prep",
       "checksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
       "startedAt": "2026-04-29T06:01:05.497406Z",
@@ -283,10 +290,10 @@
       "appliedStepsCount": 0,
       "rolledBackAt": "2026-04-29T06:01:38.423504Z",
       "logsState": "sha256",
-      "logsDigest": null
+      "logsDigest": "7c78bca364df96d2eb43e336b1c4d2fdc7356ba5a2c473306492150ca58e16b0"
     },
     "completedZeroStepRecord": {
-      "id": null,
+      "id": "92d0d85d-47cc-4c14-a555-2711068b8268",
       "migrationName": "20260428120000_manual_submission_prep",
       "checksum": "42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3",
       "startedAt": "2026-04-29T06:01:38.54346Z",
@@ -299,9 +306,9 @@
   },
   "schema": {
     "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
-    "preMigrationFingerprint": null,
-    "postMigrationFingerprint": null,
-    "freshHeadFingerprint": null,
+    "preMigrationFingerprint": "1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81",
+    "postMigrationFingerprint": "685ee5bdb7ec8fd76592d8cd8ed14f1e958046fdb38afe29600fe40f37ee7343",
+    "freshHeadFingerprint": "685ee5bdb7ec8fd76592d8cd8ed14f1e958046fdb38afe29600fe40f37ee7343",
     "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
   },
   "governanceMode": "pilot-stage-compensating-control",
@@ -323,11 +330,56 @@
       "Application deployment",
       "Alias movement"
     ],
-    "activatedAt": null,
-    "captures": [],
-    "repeatedDeterministicFieldsMatch": null,
+    "activatedAt": "2026-08-17T17:26:47.280Z",
+    "captures": [
+      {
+        "artifactReference": "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19/capture-1.json",
+        "artifactSha256": "2b5e87d52f0a6f765ea5928121bc96a9490012fc29b29b367bdd600617211491",
+        "deterministicEvidenceDigest": "19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98",
+        "repositoryRevision": "2b76a33a5f01c746436132c195bdd7582d54817b",
+        "changeId": "CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19",
+        "databaseFingerprint": "db_4e1d3bd23cff6801",
+        "connectedDatabaseName": "neondb",
+        "operator": "Patrick McKenna",
+        "restorePointReference": "NEON-CONSOLE-RECOVERY-VERIFIED-2026-08-17T17:19:35.532Z-BRANCH-br-cool-wave-abysq3lu-HISTORY-6H",
+        "schemaFingerprint": "1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81",
+        "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
+      },
+      {
+        "artifactReference": "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19/capture-2.json",
+        "artifactSha256": "af608bde5900881d7747869ecec1ffd8c50140ded319f6eadccd4735361066b7",
+        "deterministicEvidenceDigest": "19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98",
+        "repositoryRevision": "2b76a33a5f01c746436132c195bdd7582d54817b",
+        "changeId": "CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19",
+        "databaseFingerprint": "db_4e1d3bd23cff6801",
+        "connectedDatabaseName": "neondb",
+        "operator": "Patrick McKenna",
+        "restorePointReference": "NEON-CONSOLE-RECOVERY-VERIFIED-2026-08-17T17:19:35.532Z-BRANCH-br-cool-wave-abysq3lu-HISTORY-6H",
+        "schemaFingerprint": "1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81",
+        "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
+      }
+    ],
+    "repeatedDeterministicFieldsMatch": true,
     "requiredProductionStatusDecision": "verified-pending-blocked",
     "requiredProductionStatusExitCode": 20
   },
-  "approvals": []
+  "approvals": [
+    {
+      "role": "PRODUCTION_OWNER",
+      "status": "approved",
+      "reviewer": "Patrick McKenna",
+      "approvedAt": "2026-08-17T17:26:47.280Z",
+      "evidenceReference": "docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md",
+      "scopeAccepted": "ADR-0024 single-incident Production lineage evidence and attestation activation",
+      "acknowledgements": [
+        "Historical SQL remains unknown",
+        "Existing Production migration records remain untouched",
+        "Schema equivalence is operational evidence only",
+        "No Production migration has been applied",
+        "Production migration execution remains separately approved",
+        "Preview lineage was repaired independently and receives no Production exception"
+      ],
+      "conditions": []
+    }
+  ]
 }

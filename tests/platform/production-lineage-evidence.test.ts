@@ -3,8 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT,
-  type LineageAttestation
+  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
 } from '../../lib/lineage-attestation';
 import {
   assertVerifierEvidenceSecretFree,
@@ -19,13 +18,12 @@ import {
   captureProductionLineageEvidence
 } from '../../lib/production-lineage-evidence';
 import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 
 function controls() {
   return assertProductionEvidenceControls({

@@ -36,17 +36,20 @@ test('all six pinned Production ledger timestamps remain exact and canonical', (
   }
 });
 
-test('pending lifecycle and unsupported future timestamps remain blank by design', () => {
+test('R19 activation lifecycle timestamps remain exact and bounded', () => {
   assert.equal(attestation.createdAt, '2026-07-28T00:00:00.000Z');
-  assert.equal(attestation.reviewedAt, null);
-  assert.equal(attestation.expiresAt, null);
+  assert.equal(attestation.reviewedAt, '2026-08-17T17:26:47.280Z');
+  assert.equal(attestation.expiresAt, '2026-10-25T17:26:47.280Z');
   assert.equal(attestation.missingMigration.rolledBackAt, null);
   assert.equal(attestation.relatedMigration.failedRecord.finishedAt, null);
   assert.equal(attestation.relatedMigration.completedZeroStepRecord.rolledBackAt, null);
-  assert.equal(attestation.pilotStageCompensatingControl?.activatedAt, null);
-  assert.deepEqual(attestation.pilotStageCompensatingControl?.captures, []);
-  assert.deepEqual(attestation.approvals, []);
-  assert.equal(validateLineageAttestation(attestation).status, 'pending');
+  assert.equal(
+    attestation.pilotStageCompensatingControl?.activatedAt,
+    '2026-08-17T17:26:47.280Z'
+  );
+  assert.equal(attestation.pilotStageCompensatingControl?.captures.length, 2);
+  assert.equal(attestation.approvals.length, 1);
+  assert.equal(validateLineageAttestation(attestation, { requireActive: true }).status, 'active');
 });
 
 test('closed operation records intentionally preserve earlier truncated beliefs', () => {

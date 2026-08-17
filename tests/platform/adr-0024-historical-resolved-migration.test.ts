@@ -26,13 +26,12 @@ import type { MigrationManifest } from '../../lib/migration-manifest';
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
 import { activeAttestation } from './lineage-attestation.test';
 import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const pilotMigration = manifest.migrations.find(
   (migration) => migration.name === PILOT_AUTH_HISTORICAL_RESOLVED_KNOWN_FIELDS.migrationName
 )!;

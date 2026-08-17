@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   AttestationValidationError,
@@ -14,10 +13,13 @@ import {
 import { assertPilotAuthHistoricalResolvedCatalog } from '../../lib/historical-resolved-migration';
 import { fingerprintCatalog } from '../../lib/schema-fingerprint';
 import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
+import {
+  checkedInLineageAttestation,
+  pendingLineageAttestationFixture
+} from './lineage-attestation-fixture';
 
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const checkedIn = checkedInLineageAttestation();
+const pending = pendingLineageAttestationFixture();
 
 function populateActiveHistoricalResolvedMigration(
   value: LineageAttestation,
@@ -133,48 +135,77 @@ function activePilotStageAttestation(): LineageAttestation {
   return value;
 }
 
-test('checked-in attestation is complete enough to review but inactive by design', () => {
-  assert.equal(validateLineageAttestation(pending).status, 'pending');
-  assert.equal(pending.version, 'clada-adr-0024-lineage-attestation/v5');
-  assert.equal(pending.reviewedAt, null);
-  assert.equal(pending.expiresAt, null);
-  assert.equal(pending.governanceMode, 'pilot-stage-compensating-control');
+test('checked-in R19 attestation is active with exact retained evidence', () => {
   assert.equal(
-    pending.pilotStageCompensatingControl?.accountabilityAcknowledgement,
+    validateLineageAttestation(checkedIn, { requireActive: true }).status,
+    'active'
+  );
+  assert.equal(checkedIn.version, 'clada-adr-0024-lineage-attestation/v5');
+  assert.equal(checkedIn.reviewedAt, '2026-08-17T17:26:47.280Z');
+  assert.equal(checkedIn.expiresAt, '2026-10-25T17:26:47.280Z');
+  assert.equal(checkedIn.governanceMode, 'pilot-stage-compensating-control');
+  assert.equal(
+    checkedIn.pilotStageCompensatingControl?.accountabilityAcknowledgement,
     PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
   );
-  assert.deepEqual(pending.approvals, []);
-  assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
+  assert.equal(checkedIn.approvals.length, 1);
+  assert.equal(checkedIn.approvals[0].reviewer, 'Patrick McKenna');
+  assert.equal(checkedIn.pilotStageCompensatingControl?.captures.length, 2);
+  assert.equal(
+    checkedIn.pilotStageCompensatingControl?.captures[0].deterministicEvidenceDigest,
+    '19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98'
+  );
+  assert.equal(
+    checkedIn.pilotStageCompensatingControl?.repeatedDeterministicFieldsMatch,
+    true
+  );
   assert.deepEqual(
-    pending.repositoryMigrationChecksumDivergences,
+    checkedIn.repositoryMigrationChecksumDivergences,
     PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES
   );
-  assert.equal(pending.historicalResolvedMigrations.length, 1);
+  assert.equal(checkedIn.historicalResolvedMigrations.length, 1);
   assert.equal(
-    pending.historicalResolvedMigrations[0].stateName,
+    checkedIn.historicalResolvedMigrations[0].stateName,
     'attestedHistoricalResolvedMigration'
   );
-  assert.equal(pending.historicalResolvedMigrations[0].exactLedgerTimestamps.startedAt, null);
-  assert.equal(pending.historicalResolvedMigrations[0].exactLedgerTimestamps.finishedAt, null);
-  assert.equal(pending.historicalResolvedMigrations[0].observedCurrentSchema.fingerprint, null);
-  assert.equal(pending.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
-  assert.equal(pending.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
   assert.equal(
-    pending.relatedMigration.failedRecord.startedAt,
+    checkedIn.historicalResolvedMigrations[0].exactLedgerTimestamps.startedAt,
+    '2026-07-17T15:34:36.767818Z'
+  );
+  assert.equal(
+    checkedIn.historicalResolvedMigrations[0].exactLedgerTimestamps.finishedAt,
+    '2026-07-17T15:34:36.767818Z'
+  );
+  assert.equal(
+    checkedIn.historicalResolvedMigrations[0].observedCurrentSchema.fingerprint,
+    '1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81'
+  );
+  assert.equal(checkedIn.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
+  assert.equal(checkedIn.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
+  assert.equal(
+    checkedIn.relatedMigration.failedRecord.startedAt,
     '2026-04-29T06:01:05.497406Z'
   );
   assert.equal(
-    pending.relatedMigration.failedRecord.rolledBackAt,
+    checkedIn.relatedMigration.failedRecord.rolledBackAt,
     '2026-04-29T06:01:38.423504Z'
   );
   assert.equal(
-    pending.relatedMigration.completedZeroStepRecord.startedAt,
+    checkedIn.relatedMigration.completedZeroStepRecord.startedAt,
     '2026-04-29T06:01:38.54346Z'
   );
   assert.equal(
-    pending.relatedMigration.completedZeroStepRecord.finishedAt,
+    checkedIn.relatedMigration.completedZeroStepRecord.finishedAt,
     '2026-04-29T06:01:38.54346Z'
   );
+});
+
+test('synthetic pending fixture preserves pre-activation fail-closed coverage', () => {
+  assert.equal(validateLineageAttestation(pending).status, 'pending');
+  assert.equal(pending.reviewedAt, null);
+  assert.equal(pending.expiresAt, null);
+  assert.deepEqual(pending.approvals, []);
+  assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);
   assert.throws(
     () => validateLineageAttestation(pending, { requireActive: true }),
     (error: unknown) =>

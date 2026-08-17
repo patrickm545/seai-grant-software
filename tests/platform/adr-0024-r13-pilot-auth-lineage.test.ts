@@ -16,13 +16,12 @@ import {
   type MigrationLedgerRow
 } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const checksumEvidence = JSON.parse(
   readFileSync(
     'docs/03-engineering/evidence/ADR_0024_R13_CHECKSUM_DIVERGENCE.json',

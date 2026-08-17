@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; verifier and capture tooling implemented; Production evidence, activation and execution remain separately approved |
+| Status | Accepted; Production attestation active; pending migration execution remains separately approved |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-17 |
 
 ## Context
 
@@ -134,7 +134,8 @@ read-only evidence record under the same normalization version. Earlier
 governing metadata recorded `2026-04-29T06:01:38.543Z`; R8 established
 `2026-04-29T06:01:38.54346Z` for both `startedAt` and `finishedAt`. This
 repository-only correction does not accept lineage or activate the
-attestation, which remains pending with zero captures and zero approvals.
+attestation. That pending state remained true through R18 and was superseded
+only by the complete R19 evidence and activation described below.
 
 #### Exact Production repository-checksum divergences
 
@@ -158,8 +159,8 @@ This is not a global alternate checksum or line-ending rule. No tuple can
 satisfy another; a missing, duplicated, cross-matched or changed entry fails
 closed. Preview, test, development, fresh databases, other migrations, other
 records and other fingerprints remain strict. The treatment expires and
-retires with ADR-0024. The attestation remains pending with zero captures and
-approvals.
+retires with ADR-0024. It became active only after R19 supplied both retained
+captures and the exact pilot-stage Production-owner approval.
 
 ### Pilot-stage governance exception
 
@@ -644,3 +645,28 @@ Only the password-reset matrix entry remains an unaccepted repository
 candidate. Password reset remains expected pending. The matrix is not a
 runtime allowlist, and no generic CRLF, prefix, date or Windows-checkout rule
 exists. This amendment authorises no Production access or R19 operation.
+
+## Post-R19 Evidence Activation
+
+The permanently closed R19 operation used the exact approved revision
+`2b76a33a5f01c746436132c195bdd7582d54817b` and one fixed read-only launcher
+invocation. It completed both repeatable-read captures, verified all seven
+ordinary checksum-divergence tuples and the separate pilot-auth historical
+state, and matched every deterministic field at digest
+`19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98`.
+
+The live Production schema/catalog fingerprint was
+`1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81`.
+The exact pending set contained only
+`20260724180000_password_reset_foundation`. Attestation v5 was populated from
+the retained evidence, activated under the pilot-stage compensating control,
+and validated. Guarded Production status then returned
+`verified-pending-blocked`, exit `20`, with deployment disallowed and no
+migration applied.
+
+This activation accepts the single incident only under ADR-0024. Historical
+SQL remains unknown, raw history remains divergent, and the existing ledger
+is untouched. R19 authorises no password-reset migration, application
+deployment or alias movement. The attestation expires on
+`2026-10-25T17:26:47.280Z` and still requires later qualified-human review at
+the fixed pilot-stage trigger.

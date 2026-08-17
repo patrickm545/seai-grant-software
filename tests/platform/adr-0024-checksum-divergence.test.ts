@@ -6,8 +6,7 @@ import test from 'node:test';
 import {
   AttestationValidationError,
   PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES,
-  validateLineageAttestation,
-  type LineageAttestation
+  validateLineageAttestation
 } from '../../lib/lineage-attestation';
 import {
   verifyAttestedLedger,
@@ -15,13 +14,12 @@ import {
 } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 const evidencePath =
   'docs/03-engineering/evidence/ADR_0024_R10_CHECKSUM_DIVERGENCE.json';
 const target = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES[0];

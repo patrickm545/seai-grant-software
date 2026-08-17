@@ -7,9 +7,9 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-17 |
-| Operational state | R18 permanently closed after fully retained typed exit 25; exact manual-lead mismatch classified repository-only; Production activation pending |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R18 closed 2026-08-17 |
-| Repository baseline | `1fae81c39e4ad70f5083f8562323f7b0c42b754c` |
+| Operational state | R19 completed both deterministic captures, activated attestation v5 and returned guarded Production status exit 20; password reset remains pending |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17 |
+| Repository baseline | `2b76a33a5f01c746436132c195bdd7582d54817b` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -40,6 +40,7 @@
 | R17 investigation | [Sixth exact classification A checksum divergence](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R18 operation | [Fully retained manual-lead checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md) |
 | R18 investigation | [Seventh exact classification A checksum divergence](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| R19 operation | [Complete deterministic evidence and activation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -708,3 +709,27 @@ remains expected pending.
 This follow-up did not connect to Production, run capture or status, execute
 SQL, migrate, deploy or move an alias. R18 remains closed and this record does
 not authorise R19.
+
+## Completed R19 Evidence And Activation
+
+R19 received the separate change ID
+`CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19` for one fixed read-only invocation
+at `2b76a33a5f01c746436132c195bdd7582d54817b`. It is permanently closed. Both
+repeatable-read captures completed, every deterministic field matched, and the
+evidence digest was
+`19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98`.
+
+All seven ordinary tuples verified independently. Pilot auth verified as the
+sole historical-resolved zero-step state with exact start and finish
+`2026-07-17T15:34:36.767818Z`. The Production catalog matched fingerprint
+`1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81`,
+and the exact pending set contained only
+`20260724180000_password_reset_foundation`.
+
+Attestation v5 was populated from the retained artifacts, activated under the
+pilot-stage compensating control, and validated. Guarded read-only Production
+status returned `verified-pending-blocked`, exit `20`, with
+`deploymentAllowed=false` and `migrationApplied=false`. No Production write,
+migration, deployment or alias movement occurred. The full evidence boundary,
+artifact hashes, lifecycle values and approval record are in the
+[R19 operation record](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md).

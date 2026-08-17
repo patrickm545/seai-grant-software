@@ -246,7 +246,7 @@ test('R8 completed zero-step microseconds are exact and millisecond truncation f
   assert.equal(completedExpected.rolledBackAt, null);
   assert.equal(completedExpected.logsState, 'none');
   assert.deepEqual(attestation.relatedMigration.failedRecord, {
-    id: null,
+    id: '187cd0e2-f2ca-46fc-937d-1922e319e800',
     migrationName: '20260428120000_manual_submission_prep',
     checksum: '42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3',
     startedAt: '2026-04-29T06:01:05.497406Z',
@@ -254,13 +254,13 @@ test('R8 completed zero-step microseconds are exact and millisecond truncation f
     appliedStepsCount: 0,
     rolledBackAt: '2026-04-29T06:01:38.423504Z',
     logsState: 'sha256',
-    logsDigest: null
+    logsDigest: '7c78bca364df96d2eb43e336b1c4d2fdc7356ba5a2c473306492150ca58e16b0'
   });
   assert.equal(attestation.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
   assert.equal(attestation.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
-  assert.equal(attestation.status, 'pending');
-  assert.equal(attestation.pilotStageCompensatingControl?.captures.length, 0);
-  assert.equal(attestation.approvals.length, 0);
+  assert.equal(attestation.status, 'active');
+  assert.equal(attestation.pilotStageCompensatingControl?.captures.length, 2);
+  assert.equal(attestation.approvals.length, 1);
 });
 
 test('null and absent rollback state are reported distinctly', () => {

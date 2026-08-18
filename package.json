@@ -15,6 +15,10 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-unit-tests.mjs",
     "test:integration:postgres": "node --import tsx scripts/run-postgres-integration-tests.ts",
+    "test:preproduction:database": "node --import tsx scripts/run-password-reset-preproduction-database-gate.ts",
+    "lint:markdown:baseline": "node --import tsx scripts/validate-markdown-baseline.ts",
+    "validate:repository:hygiene": "node --import tsx scripts/validate-repository-hygiene.ts",
+    "validate:preproduction": "node --import tsx scripts/run-password-reset-preproduction-validation.ts",
     "prisma:generate": "prisma generate",
     "db:fingerprint": "node --import tsx scripts/run-database-command.ts fingerprint",
     "db:status": "node --import tsx scripts/run-database-command.ts status",
@@ -61,6 +65,7 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^15.5.15",
+    "markdownlint-cli2": "0.20.0",
     "prisma": "^5.22.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"

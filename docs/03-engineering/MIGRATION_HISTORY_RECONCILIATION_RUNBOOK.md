@@ -589,3 +589,38 @@ Do not work around launcher failure with quoting, `cmd.exe`, PowerShell
 interpolation, direct Prisma invocation or manual SQL. The repair and proof are
 recorded in the
 [Windows guarded database launcher repair](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md).
+
+## Pre-Production Validation Gate After Password-Reset R2
+
+`CHG-2026-08-18-ADR0024-PASSWORD-RESET-PROD-RECONCILIATION-R2` is permanently
+closed. Its disposable validation stopped before Production access because a
+Windows `pg_ctl` descendant retained a PowerShell-captured stdout pipe after
+PostgreSQL was Ready. Do not reuse or retry R2.
+
+Before proposing any new password-reset reconciliation, run the exact
+repository gate from a clean environment with `DATABASE_URL` absent:
+
+```text
+npm run validate:preproduction
+```
+
+The gate must pass every fixed stage. Its disposable database must begin with
+15 canonical migrations and the password-reset migration as the sole pending
+entry, then apply the target once through guarded `migrate-test`, reach 16
+applied and zero pending, pass an independent strict postflight, pass all
+integration tests, stop PostgreSQL, prove the loopback port closed and remove
+the safe temporary directory. Production tuples and the historical-resolved
+pilot-auth state must be reported not applicable.
+
+Database startup, migration, verifier, integration and cleanup boundaries have
+separate timeouts. An exact stage timeout terminates the child process tree and
+fails the gate; it must not be bypassed by increasing an outer timeout. The
+Markdown stage requires changed files to be clean and rejects any violation
+not present in the exact approved baseline. It does not disable historical
+`MD060` or `MD036` findings.
+
+See the
+[pre-production validation gate repair](PR_45_ADR_0024_PREPRODUCTION_VALIDATION_GATE_REPAIR_2026_08_18.md)
+for the root cause, timing evidence and timeout policy. Passing this local gate
+is a prerequisite only. A Production operation still requires a new change ID,
+exact repository head, fresh operational gates and explicit authorisation.

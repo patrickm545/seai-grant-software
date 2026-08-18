@@ -6,7 +6,7 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-17 |
+| Last reviewed | 2026-08-18 |
 | Operational state | R19 completed both deterministic captures, activated attestation v5 and returned guarded Production status exit 20; password reset remains pending |
 | Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17 |
 | Repository baseline | `2b76a33a5f01c746436132c195bdd7582d54817b` |
@@ -42,6 +42,7 @@
 | R18 investigation | [Seventh exact classification A checksum divergence](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R19 operation | [Complete deterministic evidence and activation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md) |
 | Guarded database launcher repair | [Windows fixed-argv repair and disposable rehearsal](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md) |
+| Pre-production validation gate | [R2 startup-hang and Markdown-debt gate repair](PR_45_ADR_0024_PREPRODUCTION_VALIDATION_GATE_REPAIR_2026_08_18.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 
@@ -751,3 +752,32 @@ pending password-reset migration through canonical application and clean
 postflight. This local result is not a Production migration result. R19,
 attestation evidence and all lineage acceptance remain unchanged. See the
 [Windows guarded database launcher repair](PR_45_ADR_0024_WINDOWS_GUARDED_DATABASE_LAUNCHER_REPAIR_2026_08_17.md).
+
+## Closed R2 Password-Reset Reconciliation And Validation-Gate Repair
+
+The separate change
+`CHG-2026-08-18-ADR0024-PASSWORD-RESET-PROD-RECONCILIATION-R2` stopped before
+Production access. Two bounded disposable PostgreSQL attempts were
+inconclusive at approximately 244 and 654 seconds, and whole-repository
+Markdown lint mixed unchanged debt with the current validation scope. R2 is
+permanently closed and was not retried.
+
+The repository-only investigation proved that PostgreSQL was Ready but the R2
+PowerShell pipeline waited for end-of-file on a captured stdout handle retained
+by the Windows `pg_ctl` descendant process. Neither attempt reached database
+creation, Prisma, the lineage verifier or tests. Direct fixed-argv,
+`shell:false` execution with ignored startup/stop streams removes that handle
+inheritance failure. Per-stage timeouts, process-tree termination, `finally`
+cleanup, port-closure proof and deterministic stage timings make the gate
+bounded and fail-closed.
+
+The repaired gate also distinguishes 79 exact pre-existing Markdown violations
+from current changes. Every changed document must be clean and any new
+repo-wide violation fails. No Markdown rule is disabled. The full repaired
+disposable rehearsal completed all 16 canonical migrations, strict preflight,
+guarded target application, strict postflight and all 68 integration tests in
+46.5 seconds. The full record is in the
+[pre-production validation gate repair](PR_45_ADR_0024_PREPRODUCTION_VALIDATION_GATE_REPAIR_2026_08_18.md).
+
+This repair does not change R19, ADR-0024 acceptance, migration SQL, the
+manifest or Production. It does not authorise another Production operation.

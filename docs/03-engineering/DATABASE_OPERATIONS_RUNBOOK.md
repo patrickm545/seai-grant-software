@@ -6,7 +6,7 @@
 | Status | Active; environment isolation verified, recovery evidence pending |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner: Patrick McKenna |
 | Review cycle | Before every Production database release and quarterly recovery rehearsal |
-| Last reviewed | 2026-08-10 |
+| Last reviewed | 2026-08-19 |
 
 ## Guarded Commands
 
@@ -24,6 +24,23 @@
 | `pnpm test:integration:postgres` | disposable test | Uses `TEST_DATABASE_URL`, applies migrations, and runs database tests. |
 
 Raw `prisma migrate`, reset, and seed commands are operationally unsupported. Review one-off mutation scripts against `assertDatabaseOperationAllowed` using the `one-off-mutation` operation before execution.
+
+### Credential-file boundary
+
+Future separately authorised fixed-purpose operations may use the
+repository-owned `scripts/run-database-command-from-env-file.ts` entrypoint.
+The outer process must provide only a fixed allowed command and an ignored
+credential-file path through `DATABASE_CREDENTIAL_ENV_FILE`; `DATABASE_URL`
+must be absent at that outer boundary. The loader parses exactly one dotenv
+declaration and then invokes the unchanged guarded runner through the resolved
+Node executable, exact argv and `shell:false`.
+
+This boundary adds no authorization. Missing, empty, duplicate, malformed,
+non-UTF-8, non-regular or oversized credential files stop safely without
+printing paths or values. The decoded URL still must pass all existing
+environment, protocol, identity, fingerprint, lineage and operation controls.
+See the
+[R3 dotenv credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md).
 
 Environment-specific command names are enforced, not descriptive aliases: Preview, test, Development, and Production migration/seed wrappers refuse to run when `APP_ENV` identifies a different environment, even if that other environment's database metadata is internally consistent.
 
@@ -43,11 +60,10 @@ governs the attested path.
 
 PR #43 implements the independent verifier described in
 [ADR-0024 Migration Lineage Verifier](ADR_0024_MIGRATION_LINEAGE_VERIFIER.md).
-`db:status` and guarded deploy now use the independent manifest, ledger and
-schema verifier. The checked-in attestation remains pending and returns exit
-`21`; it cannot accept Production until exact remaining evidence and the
-approval required by its explicit governance mode are added in a separate
-reviewed activation change.
+`db:status` and guarded deploy use the independent manifest, ledger and schema
+verifier. R19 completed two deterministic read-only captures, activated
+attestation v5 and returned `verified-pending-blocked` with exit `20`. That
+evidence authorises no password-reset migration or deployment.
 
 PR #45 selects the temporary
 `pilot-stage-compensating-control` mode documented in
@@ -60,23 +76,13 @@ blocked status verification. It authorises no migration, deployment or alias
 movement and must be reviewed before the first 10 pilot installers or when a
 qualified reviewer joins.
 
-R10, R11, R12 and R14 are permanently closed typed diagnostic stops. Later
-repository-only investigations proved four exact CRLF historical checksum
-representations and attestation v5 binds each one to its complete Production
-tuple. This is not a general normalization or alternate-checksum rule. The
-attestation remains pending with zero captures and approvals; no Production
-capture, status, migration or deployment is authorised by those investigations.
-
-The closed R13 investigation is represented separately as one pending
-`attestedHistoricalResolvedMigration`. The state is restricted to the exact
-pilot-auth record and does not change the ordinary one-step rule. The closed
-R14 command stopped later in manifest order and did not emit the exact record
-timestamps or current evolved catalog proof. A future capture may collect that
-evidence only under a new read-only authorisation. The state remains
-non-activatable until two deterministic captures, current recovery evidence
-and every attestation field are complete and exact. Do not use `db:status`,
-`migrate resolve`, manual SQL or any migration command as a substitute for that
-evidence gate.
+R10 through R18 remain permanently closed diagnostic operations. Their
+repository-only investigations established seven independently pinned ordinary
+Production checksum tuples and the separate exact pilot-auth
+`attestedHistoricalResolvedMigration`. R19 verified those states and the
+current catalog. This is not a general normalization or alternate-checksum
+rule. Do not use `db:status`, `migrate resolve`, manual SQL or any migration
+command as a substitute for the separately authorised password-reset gate.
 
 For Preview/test, verify the safe identity, run the named migration command, and retain its exit status. The wrapper runs `prisma migrate status` before deployment, proceeds only if status is clean or reports pending repository migrations without a failed-migration signal, deploys, then requires a clean status.
 

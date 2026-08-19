@@ -119,6 +119,13 @@ schema fingerprint
 The existing versioned catalog assertions verify the password-reset table,
 enum, indexes and foreign key. The full integration suite also passed.
 
+The later repository-only
+[R3 credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md)
+strengthened this gate without changing its migration semantics. The gate now
+writes the disposable URL as a quoted CRLF dotenv credential, starts the fixed
+outer runner without `DATABASE_URL`, decodes through the repository-owned
+boundary, and proves the synthetic file is removed with the database root.
+
 The evidence explicitly records that ordinary Production checksum-divergence
 tuples and `attestedHistoricalResolvedMigration` were not applicable. The gate
 does not run `migrate resolve`, manual SQL or any Production operation.

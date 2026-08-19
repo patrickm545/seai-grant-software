@@ -17,6 +17,7 @@ type ValidationStage = {
 };
 
 const focusedTests = [
+  'tests/platform/database-credential-env.test.ts',
   'tests/platform/preproduction-validation-gate.test.ts',
   'tests/platform/fixed-database-command-launcher.test.ts',
   'tests/platform/fixed-package-script-launcher.test.ts',

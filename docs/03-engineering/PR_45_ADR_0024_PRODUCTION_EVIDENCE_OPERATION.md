@@ -781,3 +781,20 @@ guarded target application, strict postflight and all 68 integration tests in
 
 This repair does not change R19, ADR-0024 acceptance, migration SQL, the
 manifest or Production. It does not authorise another Production operation.
+
+## Closed R3 Password-Reset Reconciliation And Credential Repair
+
+`CHG-2026-08-19-ADR0024-PASSWORD-RESET-PROD-RECONCILIATION-R3` stopped at
+approved head `3ff4d4d74b1c0a56938926f64dd3d335d68b63eb` with `DB_URL_INVALID`.
+The external operation boundary retained dotenv quote bytes around the
+credential value. The repository database guard rejected that string before a
+Production connection, query, transaction, verifier or migration. R3 is
+permanently closed and was not retried.
+
+The repository-only repair uses Node's maintained dotenv parser within a
+strict, single-credential file contract and hands the unquoted result to the
+unchanged database guards. A quoted CRLF synthetic file passed the entire
+disposable password-reset rehearsal and complete pre-Production gate. R19,
+seven ordinary tuples, pilot-auth historical state, migration SQL, the
+manifest and attestation semantics remain unchanged. See the
+[R3 credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md).

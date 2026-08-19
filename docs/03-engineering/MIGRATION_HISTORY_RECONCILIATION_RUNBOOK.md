@@ -191,6 +191,15 @@ Any failed, blank, stale or ambiguous item is a stop.
 The repository exposes fixed, secret-safe verification mechanisms. Their
 existence does not authorise Production use.
 
+When a separately authorised operation supplies an ignored dotenv credential
+file, its external boundary must leave `DATABASE_URL` absent and invoke the
+repository-owned `run-database-command-from-env-file.ts` entry with a fixed
+command. The loader accepts exactly one safe dotenv `DATABASE_URL` declaration,
+then passes the decoded value to the unchanged identity and lineage guards.
+Parsing never authorises access; missing, duplicate, malformed or unsafe files
+stop before a connection. See the
+[R3 credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md).
+
 | Step | Mechanism | Expected result | Database effect | Stop condition |
 | --- | --- | --- | --- | --- |
 | 1 | `pnpm db:fingerprint` in the controlled Production shell | Exact approved Production fingerprint; no URL | None; parses configuration | Missing or different identity |

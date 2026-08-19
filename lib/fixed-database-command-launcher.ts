@@ -6,6 +6,7 @@ import {
   resolveFixedNodeExecutable
 } from './fixed-package-script-launcher';
 import type { VerifierMode } from './lineage-verifier';
+import { environmentWithDatabaseCredential } from './database-credential-env';
 
 export const FIXED_DATABASE_LAUNCHER_SMOKE_ARGUMENT =
   '--fixed-database-launcher-smoke-v1' as const;
@@ -39,6 +40,18 @@ export type FixedDatabaseLaunchOptions = FixedDatabaseLauncherDependencies & {
   captureOutput?: boolean;
 };
 
+export type FixedGuardedDatabaseCommand =
+  | 'status'
+  | 'migrate-test'
+  | 'migrate-production';
+
+export type FixedCredentialDatabaseLaunchOptions = FixedDatabaseLaunchOptions & {
+  loadCredentialEnvironment?: (
+    baseEnvironment: NodeJS.ProcessEnv,
+    filePath: string
+  ) => NodeJS.ProcessEnv;
+};
+
 const verifierModes = new Set<VerifierMode>([
   'strict-status',
   'strict-preflight',
@@ -53,6 +66,12 @@ const prismaArguments: Record<FixedPrismaCommand, readonly string[]> = {
   'migrate-dev': ['migrate', 'dev'],
   'migrate-reset': ['migrate', 'reset']
 };
+
+const guardedDatabaseCommands = new Set<FixedGuardedDatabaseCommand>([
+  'status',
+  'migrate-test',
+  'migrate-production'
+]);
 
 function safeLaunchError(error: Error) {
   const code = typeof (error as NodeJS.ErrnoException).code === 'string'
@@ -193,4 +212,28 @@ export function launchFixedDatabaseLauncherSmoke(
     ['--import', 'tsx', target, FIXED_DATABASE_LAUNCHER_SMOKE_ARGUMENT],
     { ...options, repositoryRoot, captureOutput: true }
   );
+}
+
+export function launchFixedGuardedDatabaseCommandFromEnvFile(
+  command: FixedGuardedDatabaseCommand,
+  credentialFile: string,
+  options: FixedCredentialDatabaseLaunchOptions = {}
+) {
+  if (!guardedDatabaseCommands.has(command)) {
+    throw new Error('FIXED_DATABASE_LAUNCHER_UNSAFE: unexpected guarded database command.');
+  }
+  const repositoryRoot = options.repositoryRoot ?? resolve(__dirname, '..');
+  const script = resolveRepositoryFile(
+    repositoryRoot,
+    'scripts/run-database-command.ts',
+    options
+  );
+  const loadEnvironment =
+    options.loadCredentialEnvironment ?? environmentWithDatabaseCredential;
+  const environment = loadEnvironment(options.env ?? process.env, credentialFile);
+  return launchFixedNodeArguments(['--import', 'tsx', script, command], {
+    ...options,
+    repositoryRoot,
+    env: environment
+  });
 }

@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   FIXED_DATABASE_LAUNCHER_SMOKE_ARGUMENT,
   launchFixedDatabaseLauncherSmoke,
+  launchFixedGuardedDatabaseCommandFromEnvFile,
   launchFixedLineageVerifier,
   launchFixedPrismaCommand,
   launchFixedSeed,
@@ -44,6 +45,7 @@ function windowsDependencies(
     'C:\\Program Files\\nodejs\\node.exe',
     `${repositoryRoot}\\scripts\\verify-migration-lineage.ts`,
     `${repositoryRoot}\\scripts\\fixed-database-launcher-smoke-target.ts`,
+    `${repositoryRoot}\\scripts\\run-database-command.ts`,
     `${repositoryRoot}\\prisma\\seed.ts`,
     `${repositoryRoot}\\node_modules\\prisma\\build\\index.js`,
     `${repositoryRoot}\\node_modules\\prisma\\package.json`
@@ -173,6 +175,69 @@ test('PowerShell, cmd, Windows Terminal, and VS Code markers cannot alter argv',
   }
 });
 
+test('quoted credential boundary hands exact unquoted value to fixed guarded argv without a shell', () => {
+  let observed: ObservedSpawn | undefined;
+  let observedFile = '';
+  const databaseUrl =
+    'postgresql://synthetic@127.0.0.1:5432/example?value=one=two';
+  const result = launchFixedGuardedDatabaseCommandFromEnvFile(
+    'migrate-test',
+    'C:\\Credential Path\\quoted.env',
+    {
+      ...windowsDependencies((spawn) => {
+        observed = spawn;
+        return spawnResult({ status: 25 });
+      }),
+      env: {
+        NODE_ENV: 'test',
+        APP_ENV: 'test',
+        SHELL: 'powershell.exe',
+        WT_SESSION: 'windows-terminal'
+      },
+      loadCredentialEnvironment: (baseEnvironment, filePath) => {
+        observedFile = filePath;
+        return { ...baseEnvironment, DATABASE_URL: databaseUrl };
+      }
+    }
+  );
+  assert.equal(result.status, 25);
+  assert.equal(observedFile, 'C:\\Credential Path\\quoted.env');
+  assert.equal(observed?.program, 'C:\\Program Files\\nodejs\\node.exe');
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\run-database-command.ts',
+    'migrate-test'
+  ]);
+  assert.equal(observed?.options.shell, false);
+  assert.equal(observed?.options.env?.DATABASE_URL, databaseUrl);
+});
+
+test('credential boundary rejects unexpected commands before loading or spawning', () => {
+  let loadCount = 0;
+  let spawnCount = 0;
+  assert.throws(
+    () =>
+      launchFixedGuardedDatabaseCommandFromEnvFile(
+        'migrate-preview' as never,
+        'C:\\Credential Path\\quoted.env',
+        {
+          ...windowsDependencies(() => {
+            spawnCount += 1;
+            return spawnResult();
+          }),
+          loadCredentialEnvironment: (baseEnvironment) => {
+            loadCount += 1;
+            return baseEnvironment;
+          }
+        }
+      ),
+    /unexpected guarded database command/
+  );
+  assert.equal(loadCount, 0);
+  assert.equal(spawnCount, 0);
+});
+
 test('unexpected verifier and Prisma modes fail before spawning', () => {
   let spawnCount = 0;
   const dependencies = windowsDependencies(() => {
@@ -202,7 +267,7 @@ test('Prisma package identity must be exact', () => {
 });
 
 test('launcher errors expose only the safe OS error code', () => {
-  const sentinel = 'postgresql://operator:credential@secret.example/database';
+  const sentinel = 'credential-value-that-must-not-appear';
   const error = Object.assign(new Error(`failed with ${sentinel}`), { code: 'EACCES' });
   assert.throws(
     () =>

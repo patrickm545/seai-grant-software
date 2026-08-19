@@ -16,6 +16,10 @@ import {
   assertDisposableTestDatabase,
   getDatabaseIdentity
 } from '../lib/database-safety';
+import {
+  DATABASE_CREDENTIAL_ENV_FILE_VARIABLE,
+  environmentWithDatabaseCredential
+} from '../lib/database-credential-env';
 import { runBoundedProcess } from '../lib/bounded-process';
 import {
   PREPRODUCTION_TIMEOUT_POLICY,
@@ -182,6 +186,12 @@ async function main() {
   const port = await reserveLoopbackPort();
   const databaseName = `clada_preproduction_${randomUUID().replaceAll('-', '').slice(0, 12)}`;
   const databaseUrl = `postgresql://postgres@127.0.0.1:${port}/${databaseName}`;
+  const credentialFile = join(temporaryRoot, 'database-credential.env');
+  writeFileSync(
+    credentialFile,
+    `# Synthetic disposable credential; never Production.\r\nDATABASE_URL="${databaseUrl}"\r\n`,
+    { encoding: 'utf8', mode: 0o600 }
+  );
   const identity = getDatabaseIdentity(databaseUrl, {
     branchId: 'local-preproduction-validation',
     operation: 'integration-test'
@@ -249,15 +259,19 @@ async function main() {
         mirrorOutput: true
       });
       const { schemaPath } = copyPretargetMigrations(repositoryRoot, temporaryRoot);
-      const databaseEnvironment = {
+      const databaseEnvironmentBase: NodeJS.ProcessEnv = {
         ...process.env,
         APP_ENV: 'test',
         DATABASE_ENVIRONMENT: 'test',
-        DATABASE_URL: databaseUrl,
         DATABASE_FINGERPRINT: identity.fingerprint,
         DATABASE_BRANCH_ID: 'local-preproduction-validation',
         PRODUCTION_DATABASE_FINGERPRINT: PERSISTENT_FINGERPRINTS.production
       };
+      delete databaseEnvironmentBase.DATABASE_URL;
+      const databaseEnvironment = environmentWithDatabaseCredential(
+        databaseEnvironmentBase,
+        credentialFile
+      );
       await runStage({
         stage: 'canonical-pretarget-migrations',
         program: node,
@@ -280,10 +294,18 @@ async function main() {
       const guarded = await runStage({
         stage: 'guarded-password-reset-rehearsal',
         program: node,
-        arguments: ['--import', 'tsx', join(repositoryRoot, 'scripts', 'run-database-command.ts'), 'migrate-test'],
+        arguments: [
+          '--import',
+          'tsx',
+          join(repositoryRoot, 'scripts', 'run-database-command-from-env-file.ts'),
+          'migrate-test'
+        ],
         timeoutMs: PREPRODUCTION_TIMEOUT_POLICY.guardedRehearsalMs,
         cwd: repositoryRoot,
-        env: databaseEnvironment,
+        env: {
+          ...databaseEnvironmentBase,
+          [DATABASE_CREDENTIAL_ENV_FILE_VARIABLE]: credentialFile
+        },
         mirrorOutput: true
       });
       if (
@@ -338,6 +360,13 @@ async function main() {
         postMigrationSchemaFingerprint: EXPECTED_POSTFLIGHT_FINGERPRINT,
         productionTuplesUsed: false,
         attestedHistoricalResolvedMigrationUsed: false,
+        credentialBoundary: {
+          parser: 'node:util.parseEnv',
+          credentialSource: 'quoted-synthetic-dotenv',
+          lineEndings: 'CRLF',
+          shell: false,
+          productionCredentialUsed: false
+        },
         timings
       };
       },
@@ -369,13 +398,22 @@ async function main() {
       targetMigration: TARGET_MIGRATION,
       targetChecksum: TARGET_CHECKSUM,
       failure: error instanceof Error ? error.message : 'unknown failure',
+      credentialFileRemoved: !existsSync(credentialFile),
       timings,
       productionAccess: false
     });
     throw error;
   }
 
-  const evidencePath = writeEvidence({ ...result, cleanup: 'verified' });
+  if (existsSync(temporaryRoot) || existsSync(credentialFile)) {
+    throw new Error('PREPRODUCTION_VALIDATION_FAILED: disposable credential cleanup is incomplete.');
+  }
+
+  const evidencePath = writeEvidence({
+    ...result,
+    cleanup: 'verified',
+    credentialFileRemoved: true
+  });
   console.log(`PREPRODUCTION_DATABASE_GATE_RESULT=${JSON.stringify({
     ...result,
     cleanup: 'verified',

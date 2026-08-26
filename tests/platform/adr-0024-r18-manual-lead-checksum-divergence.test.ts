@@ -504,7 +504,7 @@ test('R18 lifecycle, diagnostic, historical search and repository-only boundary 
   assert.equal(evidence.candidateMatrix.manualLeadCandidateMatchesR18Observation, true);
 });
 
-test('checked-in attestation is active while pending seven-tuple fixture remains fail closed', () => {
+test('checked-in attestation is retired while pending seven-tuple fixture remains fail closed', () => {
   const offlineEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key]) =>
@@ -518,8 +518,8 @@ test('checked-in attestation is active while pending seven-tuple fixture remains
     ['--import', 'tsx', 'scripts/verify-migration-lineage.ts', 'attestation-verify'],
     { encoding: 'utf8', env: { ...offlineEnvironment, NODE_ENV: 'test' } }
   );
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  assert.match(result.stdout, /status=active/);
+  assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /status=retired/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.repositoryMigrationChecksumDivergences.length, 7);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);

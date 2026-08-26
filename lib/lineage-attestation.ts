@@ -13,7 +13,7 @@ const placeholderApprovalPattern =
   /^(?:unknown|tbd|todo|placeholder|reviewer(?:-\d+)?|codex|chatgpt|openai)$/i;
 const repositoryApprovalEvidencePattern = /^docs\/[A-Za-z0-9_./-]+\.md$/;
 
-export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v5' as const;
+export const ATTESTATION_VERSION = 'clada-adr-0024-lineage-attestation/v6' as const;
 export const ATTESTATION_ID = 'ADR-0024-PRODUCTION-2026-07-25' as const;
 export const PILOT_STAGE_ACCOUNTABLE_PERSON = 'Patrick McKenna' as const;
 export const PILOT_STAGE_SCOPE =
@@ -265,6 +265,17 @@ export type PilotStageCaptureEvidence = {
   schemaFingerprint: string;
   namedAssertionsVersion: 'adr-0024-catalog-assertions/v2';
 };
+export type PostMigrationSchemaEvidence = {
+  provenance: 'production-read-only-capture';
+  environment: 'production';
+  databaseFingerprint: 'db_4e1d3bd23cff6801';
+  fingerprint: string;
+  artifactReference: string;
+  artifactSha256: string;
+  repositoryRevision: string;
+  changeId: string;
+  capturedAt: string;
+};
 export type PilotStageCompensatingControl = {
   scope: typeof PILOT_STAGE_SCOPE;
   chiefExecutiveOfficer: typeof PILOT_STAGE_ACCOUNTABLE_PERSON;
@@ -356,6 +367,7 @@ export type LineageAttestation = {
     fingerprintVersion: 'clada-postgres-schema-fingerprint/v2';
     preMigrationFingerprint: string | null;
     postMigrationFingerprint: string | null;
+    postMigrationEvidence: PostMigrationSchemaEvidence | null;
     freshHeadFingerprint: string | null;
     namedAssertionsVersion: 'adr-0024-catalog-assertions/v2';
   };
@@ -429,6 +441,41 @@ function requireCanonicalMigrationTimestamp(value: unknown, label: string) {
     );
   }
   return exact;
+}
+
+function validatePostMigrationSchemaEvidence(value: LineageAttestation) {
+  const fingerprint = value.schema.postMigrationFingerprint;
+  const evidence = value.schema.postMigrationEvidence;
+  if ((fingerprint === null) !== (evidence === null)) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Production post-migration fingerprint and evidence must be present together.'
+    );
+  }
+  if (!evidence) return;
+  if (
+    evidence.provenance !== 'production-read-only-capture' ||
+    evidence.environment !== 'production' ||
+    evidence.databaseFingerprint !== value.approvedDatabaseFingerprint ||
+    evidence.fingerprint !== fingerprint ||
+    !sha256Pattern.test(evidence.fingerprint) ||
+    !sha256Pattern.test(evidence.artifactSha256) ||
+    !/^[a-f0-9]{40}$/.test(evidence.repositoryRevision)
+  ) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Production post-migration fingerprint evidence identity is invalid.'
+    );
+  }
+  requireExactString(evidence.artifactReference, 'schema.postMigrationEvidence.artifactReference');
+  requireExactString(evidence.changeId, 'schema.postMigrationEvidence.changeId');
+  parseTimestamp(evidence.capturedAt, 'schema.postMigrationEvidence.capturedAt');
+  if (!value.evidenceReferences.includes(evidence.artifactReference)) {
+    throw new AttestationValidationError(
+      'ATTESTATION_INVALID',
+      'Production post-migration fingerprint evidence is not indexed.'
+    );
+  }
 }
 
 function validateApproval(
@@ -846,6 +893,7 @@ export function validateLineageAttestation(
   ) {
     throw new AttestationValidationError('ATTESTATION_INVALID', 'Attestation governance identity is invalid.');
   }
+  validatePostMigrationSchemaEvidence(value);
   requireExactString(value.reason, 'reason');
   requireExactString(value.verifierImplementationVersion, 'verifierImplementationVersion');
   if (!value.retirementConditions.length || !value.evidenceReferences.length) {
@@ -896,16 +944,29 @@ export function validateLineageAttestation(
   }
 
   const active = value.status === 'active';
+  const activationEvidenceRetained = value.status !== 'pending';
   if (value.historicalResolvedMigrations.length !== 1) {
     throw new AttestationValidationError(
       'ATTESTATION_INVALID',
       'Exactly one historical resolved migration entry is required.'
     );
   }
-  validateHistoricalResolvedMigration(value.historicalResolvedMigrations[0], value, active);
-  validateRecord(value.missingMigration, 'missingMigration', active);
-  validateRecord(value.relatedMigration.failedRecord, 'relatedMigration.failedRecord', active);
-  validateRecord(value.relatedMigration.completedZeroStepRecord, 'relatedMigration.completedZeroStepRecord', active);
+  validateHistoricalResolvedMigration(
+    value.historicalResolvedMigrations[0],
+    value,
+    activationEvidenceRetained
+  );
+  validateRecord(value.missingMigration, 'missingMigration', activationEvidenceRetained);
+  validateRecord(
+    value.relatedMigration.failedRecord,
+    'relatedMigration.failedRecord',
+    activationEvidenceRetained
+  );
+  validateRecord(
+    value.relatedMigration.completedZeroStepRecord,
+    'relatedMigration.completedZeroStepRecord',
+    activationEvidenceRetained
+  );
   requirePinnedRecord(
     value.missingMigration,
     {
@@ -1006,10 +1067,10 @@ export function validateLineageAttestation(
     for (const role of REQUIRED_APPROVAL_ROLES) {
       const approval = approvals.get(role);
       if (!approval) throw new AttestationValidationError('ATTESTATION_INVALID', `Missing ${role} approval.`);
-      if (active) validateApproval(approval, role, value, created, reviewed!);
+      if (activationEvidenceRetained) validateApproval(approval, role, value, created, reviewed!);
     }
     if (
-      active &&
+      activationEvidenceRetained &&
       approvals.get('DATABASE_RELIABILITY_REVIEWER')!.reviewer!.toLocaleLowerCase() ===
         approvals.get('PRODUCTION_OWNER')!.reviewer!.toLocaleLowerCase()
     ) {
@@ -1019,7 +1080,7 @@ export function validateLineageAttestation(
       );
     }
   } else {
-    validatePilotStageGovernance(value, active, created, reviewed, expiry);
+    validatePilotStageGovernance(value, activationEvidenceRetained, created, reviewed, expiry);
   }
 
   if (options.requireActive) {

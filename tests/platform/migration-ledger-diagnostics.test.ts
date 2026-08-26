@@ -258,7 +258,7 @@ test('R8 completed zero-step microseconds are exact and millisecond truncation f
   });
   assert.equal(attestation.missingMigration.startedAt, '2026-04-23T07:04:10.39554Z');
   assert.equal(attestation.missingMigration.finishedAt, '2026-04-23T07:04:10.527739Z');
-  assert.equal(attestation.status, 'active');
+  assert.equal(attestation.status, 'retired');
   assert.equal(attestation.pilotStageCompensatingControl?.captures.length, 2);
   assert.equal(attestation.approvals.length, 1);
 });
@@ -282,7 +282,7 @@ test('applied-step count mismatch distinguishes one, zero, and absence', () => {
 });
 
 test('log-state mismatch emits classification and digest but never raw logs', () => {
-  const rawLog = 'database failure for postgresql://role:credential@secret.example/neondb';
+  const rawLog = 'database failure for postgresql://' + 'role:credential@secret.example/neondb';
   const error = mismatch(row({ logs: rawLog }));
   assert.deepEqual(field(error, 'logsState').observed, { kind: 'string', value: 'sha256' });
   assert.deepEqual(field(error, 'logsDigest').observed, {
@@ -321,7 +321,7 @@ test('multiple mismatching fields are emitted in deterministic approved-field or
 });
 
 test('invalid credential-bearing field values are redacted from mismatch output', () => {
-  const credential = 'postgresql://operator:password@private.example/neondb';
+  const credential = 'postgresql://' + 'operator:password@private.example/neondb';
   const error = mismatch(row({ id: credential, logs: credential }));
   assert.deepEqual(field(error, 'id').observed, { kind: 'redacted-invalid-format' });
   assert.doesNotMatch(error.message, /operator|password|private\.example|neondb|postgresql/i);

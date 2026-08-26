@@ -1,7 +1,7 @@
 {
-  "version": "clada-adr-0024-lineage-attestation/v5",
+  "version": "clada-adr-0024-lineage-attestation/v6",
   "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
-  "status": "active",
+  "status": "retired",
   "incidentReference": "ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT",
   "adrReference": "ADR-0024",
   "owner": "Clada Systems Engineering",
@@ -32,6 +32,7 @@
     "docs/03-engineering/evidence/ADR_0024_R17_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/evidence/ADR_0024_R18_CHECKSUM_DIVERGENCE.json",
     "docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md",
+    "docs/03-engineering/PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md",
     "docs/03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json",
     "Draft PR #43 implementation evidence"
   ],
@@ -307,7 +308,8 @@
   "schema": {
     "fingerprintVersion": "clada-postgres-schema-fingerprint/v2",
     "preMigrationFingerprint": "1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81",
-    "postMigrationFingerprint": "685ee5bdb7ec8fd76592d8cd8ed14f1e958046fdb38afe29600fe40f37ee7343",
+    "postMigrationFingerprint": null,
+    "postMigrationEvidence": null,
     "freshHeadFingerprint": "685ee5bdb7ec8fd76592d8cd8ed14f1e958046fdb38afe29600fe40f37ee7343",
     "namedAssertionsVersion": "adr-0024-catalog-assertions/v2"
   },

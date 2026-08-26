@@ -22,6 +22,7 @@ export type BoundedProcessOptions = {
   platform?: NodeJS.Platform;
   spawnProcess?: typeof spawn;
   terminateProcessTree?: (process: ChildProcessWithoutNullStreams) => void;
+  expectedExitCodes?: readonly number[];
 };
 
 const stagePattern = /^[a-z][a-z0-9-]{1,79}$/;
@@ -84,6 +85,13 @@ export async function runBoundedProcess(
   if (!options.program.trim() || options.arguments.some((value) => typeof value !== 'string')) {
     throw new Error('PREPRODUCTION_VALIDATION_UNSAFE: invalid process boundary.');
   }
+  const expectedExitCodes = options.expectedExitCodes ?? [0];
+  if (
+    expectedExitCodes.length === 0 ||
+    expectedExitCodes.some((value) => !Number.isSafeInteger(value) || value < 0)
+  ) {
+    throw new Error('PREPRODUCTION_VALIDATION_UNSAFE: invalid expected exit codes.');
+  }
 
   const platform = options.platform ?? process.platform;
   const spawnProcess = options.spawnProcess ?? spawn;
@@ -139,6 +147,8 @@ export async function runBoundedProcess(
   if (result.timedOut) {
     throw new BoundedProcessTimeoutError(options.stage, options.timeoutMs, result);
   }
-  if (result.status !== 0) throw new BoundedProcessExitError(result);
+  if (result.status === null || !expectedExitCodes.includes(result.status)) {
+    throw new BoundedProcessExitError(result);
+  }
   return result;
 }

@@ -158,3 +158,14 @@ migration.
 The evidence operation performed reads only. It executed no DDL, DML, migration,
 seed, deployment, alias movement, or Production application release. The
 password-reset migration remains pending and requires separate authorisation.
+
+## Post-R4 historical addendum
+
+This document preserves the exact R19 result. A later separately authorised R4
+password-reset reconciliation reported migration success but failed strict
+postflight. Repository-only investigation then proved that R19's disposable
+`685ee5...` rehearsal value was not valid Production post-migration evidence.
+Attestation v6 is now retired with the Production post fingerprint unset. R19's
+captures, pre-migration facts and approval remain immutable historical evidence;
+they do not prove the post-R4 Production schema. See the
+[R4 fingerprint investigation](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md).

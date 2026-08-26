@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Active governance; ADR-0024 attestation active, guarded execution remains separately approved |
+| Status | Active governance; attestation retired, read-only post-migration verification required |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-17 |
+| Last reviewed | 2026-08-26 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -102,7 +102,7 @@ Use the retained [R10 investigation](PR_45_ADR_0024_R10_CHECKSUM_DIVERGENCE_INVE
 [R18 investigation](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
 and evidence digests; do not recreate candidates during an operation.
 
-Before any later capture, verify attestation v5 still contains exactly all seven
+Before any later capture, verify the versioned attestation still contains exactly all seven
 tuples and pins each canonical and observed checksum as distinct fields, with
 its exact record ID, successful lifecycle, Production fingerprint, manifest
 hash, approved lineage baseline, evidence reference/digest and retirement
@@ -139,7 +139,7 @@ history passes, and the capture command remains strictly read-only.
 Before operational evidence capture:
 
 - [ ] Exact PR #45 repository SHA and branch are approved.
-- [ ] Attestation v5 checksum-divergence evidence digests and all seven exact
+- [ ] Attestation checksum-divergence evidence digests and all seven exact
       Production tuples verify against the unchanged canonical manifest.
 - [ ] Approved read-only change ID and operation window are recorded.
 - [ ] Governance mode is exact. Standard mode has a different named operator
@@ -185,6 +185,20 @@ R19 supplies no execution authority.
 The detailed operational fields and sign-off spaces are maintained in the
 [PR #45 operational readiness checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md).
 Any failed, blank, stale or ambiguous item is a stop.
+
+### Post-password-reset verification boundary
+
+Closed reconciliation R4 already invoked the password-reset migration once and
+Prisma reported success. Never invoke it again. The resulting state is not yet
+verified because postflight stopped at an invalid disposable-derived expected
+fingerprint.
+
+The attestation is retired and has no approved Production post fingerprint.
+Only a separately authorised fixed read-only schema-fingerprint operation may
+collect the missing value. Retain its exact artifact and SHA-256. Do not use a
+disposable or Preview fingerprint, derive a hash from the pre-migration hash,
+or treat named assertions/counts as full equivalence. New human approval is
+required before the captured value can reactivate an attestation.
 
 ## Read-Only Verification
 

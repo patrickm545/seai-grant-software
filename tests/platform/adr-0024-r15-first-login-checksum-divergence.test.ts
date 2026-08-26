@@ -390,7 +390,7 @@ test('R15 byte reproduction is deterministic, reversible and semantically unchan
   assert.equal(sha256(readFileSync(evidenceReference)), evidenceSha256);
 });
 
-test('checked-in attestation command is active while pending fixture remains fail closed', () => {
+test('checked-in attestation command reports retired while pending fixture remains fail closed', () => {
   const offlineEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key]) =>
@@ -404,8 +404,8 @@ test('checked-in attestation command is active while pending fixture remains fai
     ['--import', 'tsx', 'scripts/verify-migration-lineage.ts', 'attestation-verify'],
     { encoding: 'utf8', env: { ...offlineEnvironment, NODE_ENV: 'test' } }
   );
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  assert.match(result.stdout, /status=active/);
+  assert.equal(result.status, 21, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /status=retired/);
   assert.equal(validateLineageAttestation(pending).status, 'pending');
   assert.equal(pending.repositoryMigrationChecksumDivergences.length, 7);
   assert.equal(pending.pilotStageCompensatingControl?.captures.length, 0);

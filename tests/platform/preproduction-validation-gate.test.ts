@@ -57,6 +57,29 @@ test('bounded process reports the exact timed-out stage and terminates its proce
   removeSafeDisposableRoot(root, tmpdir());
 });
 
+test('bounded process preserves an explicitly expected fail-closed exit', async () => {
+  const result = await runBoundedProcess({
+    stage: 'synthetic-retired-attestation',
+    program: process.execPath,
+    arguments: ['-e', 'process.exit(21)'],
+    timeoutMs: 5_000,
+    cwd: repositoryRoot,
+    expectedExitCodes: [21]
+  });
+  assert.equal(result.status, 21);
+  await assert.rejects(
+    runBoundedProcess({
+      stage: 'synthetic-unexpected-exit',
+      program: process.execPath,
+      arguments: ['-e', 'process.exit(20)'],
+      timeoutMs: 5_000,
+      cwd: repositoryRoot,
+      expectedExitCodes: [21]
+    }),
+    /exitCode=20/
+  );
+});
+
 test('guaranteed cleanup runs after success and after failure', async () => {
   for (const shouldFail of [false, true]) {
     const calls: string[] = [];
@@ -158,5 +181,7 @@ test('full gate runs ESLint through the pinned shell-free package manager bounda
   assert.match(source, /prohibitedOutput: \/\(\?:Failed to load plugin/);
   assert.match(source, /prohibited diagnostic emitted/);
   assert.match(source, /program: stage\.program \?\? node/);
+  assert.match(source, /retired-attestation-validation/);
+  assert.match(source, /expectedExitCodes: \[21\]/);
   assert.doesNotMatch(source, /shell:\s*true/);
 });

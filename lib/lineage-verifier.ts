@@ -195,6 +195,16 @@ export function verifyLineage(input: {
     ) {
       fail('IDENTITY_MISMATCH', 'ADR-0024 is restricted to the approved Production database.');
     }
+    if (
+      (input.mode === 'production-preflight' || input.mode === 'production-postflight') &&
+      (!input.attestation.schema.postMigrationFingerprint ||
+        !input.attestation.schema.postMigrationEvidence)
+    ) {
+      fail(
+        'SCHEMA_MISMATCH',
+        'Approved Production post-migration schema fingerprint evidence is unavailable.'
+      );
+    }
     try {
       validateLineageAttestation(input.attestation, { now: input.now, requireActive: true });
     } catch (error) {

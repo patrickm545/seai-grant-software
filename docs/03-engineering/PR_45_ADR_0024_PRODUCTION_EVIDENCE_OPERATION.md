@@ -6,8 +6,8 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-18 |
-| Operational state | R19 completed both deterministic captures, activated attestation v5 and returned guarded Production status exit 20; password reset remains pending |
+| Last reviewed | 2026-08-26 |
+| Operational state | Password-reset R4 reported migration success, then postflight stopped at an invalid disposable-derived Production expectation; attestation v6 is retired pending read-only verification |
 | Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17 |
 | Repository baseline | `2b76a33a5f01c746436132c195bdd7582d54817b` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
@@ -45,6 +45,7 @@
 | Pre-production validation gate | [R2 startup-hang and Markdown-debt gate repair](PR_45_ADR_0024_PREPRODUCTION_VALIDATION_GATE_REPAIR_2026_08_18.md) |
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
+| Password-reset R4 fingerprint investigation | [Classification A and fail-closed provenance repair](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md) |
 
 ## Decision
 
@@ -798,3 +799,30 @@ disposable password-reset rehearsal and complete pre-Production gate. R19,
 seven ordinary tuples, pilot-auth historical state, migration SQL, the
 manifest and attestation semantics remain unchanged. See the
 [R3 credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md).
+
+## Closed R4 Password-Reset Reconciliation And Fingerprint Repair
+
+`CHG-2026-08-26-ADR0024-PASSWORD-RESET-PROD-RECONCILIATION-R4` invoked the
+canonical password-reset migration exactly once. Prisma reported successful
+application and commit. Strict postflight then stopped with exit `26`,
+`SCHEMA_MISMATCH`, because the computed Production catalog fingerprint did not
+equal attestation field `postMigrationFingerprint`. The observed fingerprint,
+exact post ledger timestamps and post pending set were not emitted and are not
+reconstructed. R4 is permanently closed and was not retried.
+
+Repository history proves that the expected `685ee5...` value was a disposable
+16-migration/fresh-head result copied into the Production postflight field by
+the R19 activation commit. The retained R19 artifacts do not include the full
+catalog rows required to reconstruct the Production-specific post hash.
+
+Attestation v6 removes that unsupported expectation, records no guessed
+replacement and is retired under its existing lifecycle conditions. A future
+post fingerprint must be paired with exact indexed
+`production-read-only-capture` provenance. Preflight and postflight remain
+fail closed when that evidence is absent. The full analysis is in the
+[R4 post-migration fingerprint investigation](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md).
+
+This repository-only repair did not load Production credentials, connect,
+query, run status, migrate, execute SQL, deploy or move an alias. The next
+possible database action is a separately authorised read-only post-migration
+verification, never another migration invocation.

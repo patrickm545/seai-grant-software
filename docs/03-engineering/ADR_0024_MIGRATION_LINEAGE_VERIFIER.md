@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-MIGRATION-LINEAGE-VERIFIER-001 |
-| Status | Implemented; PR #45 operational evidence and Production attestation activation remain pending |
+| Status | Implemented; attestation retired pending Production post-migration evidence and approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-26 |
 
 ## Purpose And Boundary
 
@@ -17,16 +17,16 @@ identity, migration-ledger state, supported catalog state, named assertions and
 attestation lifecycle. It never edits `_prisma_migrations`, schema or
 application data.
 
-The checked-in attestation is `pending`. Unknown related-record IDs, the exact
-failed-log digest, independently generated Production schema fingerprints and
-human approvals are deliberately not invented. Active validation rejects those
-missing values. The implementation therefore does not yet establish the status
-`Production lineage accepted under ADR-0024 attestation`.
+The checked-in attestation is `retired`. R19's historical evidence remains
+preserved, but closed reconciliation R4 proved that the former Production
+post-migration expectation came from disposable PostgreSQL. The exact observed
+Production post-migration fingerprint was not emitted and is not invented.
 
 Production remains on `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`.
-`20260724180000_password_reset_foundation` remains pending. Merging this
-implementation must not apply it, move the Production alias or start
-password-reset request-flow work.
+Prisma reported `20260724180000_password_reset_foundation` successfully applied
+during closed R4, but postflight did not verify the resulting Production state.
+The migration must not be invoked again. Merging this implementation must not
+move the Production alias or start password-reset request-flow work.
 
 ## Repository Artifacts
 

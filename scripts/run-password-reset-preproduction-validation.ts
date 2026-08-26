@@ -14,6 +14,7 @@ type ValidationStage = {
   timeoutMs: number;
   env?: NodeJS.ProcessEnv;
   prohibitedOutput?: RegExp;
+  expectedExitCodes?: number[];
 };
 
 const focusedTests = [
@@ -94,9 +95,10 @@ async function main() {
       timeoutMs: 90_000
     },
     {
-      name: 'active-attestation-validation',
+      name: 'retired-attestation-validation',
       arguments: ['--import', 'tsx', join(repositoryRoot, 'scripts', 'verify-migration-lineage.ts'), 'attestation-verify'],
-      timeoutMs: 90_000
+      timeoutMs: 90_000,
+      expectedExitCodes: [21]
     },
     {
       name: 'markdown-baseline-validation',
@@ -115,7 +117,7 @@ async function main() {
       env: cleanEnvironment
     }
   ];
-  const timings: Array<{ stage: string; durationMs: number }> = [];
+  const timings: Array<{ stage: string; durationMs: number; exitCode: number }> = [];
   for (const stage of stages) {
     const result = await runBoundedProcess({
       stage: stage.name,
@@ -124,7 +126,8 @@ async function main() {
       timeoutMs: stage.timeoutMs,
       cwd: repositoryRoot,
       env: stage.env ?? cleanEnvironment,
-      mirrorOutput: true
+      mirrorOutput: true,
+      expectedExitCodes: stage.expectedExitCodes
     });
     if (
       stage.prohibitedOutput?.test(
@@ -135,9 +138,9 @@ async function main() {
         `PREPRODUCTION_VALIDATION_FAILED: stage=${stage.name}; prohibited diagnostic emitted.`
       );
     }
-    timings.push({ stage: stage.name, durationMs: result.durationMs });
+    timings.push({ stage: stage.name, durationMs: result.durationMs, exitCode: result.status! });
     console.log(
-      `PREPRODUCTION_GATE_STAGE: stage=${stage.name}; durationMs=${result.durationMs}; exitCode=0`
+      `PREPRODUCTION_GATE_STAGE: stage=${stage.name}; durationMs=${result.durationMs}; exitCode=${result.status}`
     );
   }
   const report = {

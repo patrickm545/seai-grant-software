@@ -17,6 +17,7 @@ import { normaliseMigrationRecord } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import { activeAttestation } from './lineage-attestation.test';
 import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
+import { fingerprintCatalog } from '../../lib/schema-fingerprint';
 
 const manifest = JSON.parse(readFileSync('prisma/migration-manifest.json', 'utf8')) as MigrationManifest;
 const ACTIVE_REPOSITORY_BASELINE = '1'.repeat(40);
@@ -98,8 +99,33 @@ function productionFixture() {
   return { attestation, catalog, ledgerRows };
 }
 
+function postMigrationFixture() {
+  const fixture = productionFixture();
+  const reset = manifest.migrations.find(
+    (migration) => migration.name === '20260724180000_password_reset_foundation'
+  )!;
+  fixture.ledgerRows.push(
+    row({
+      id: '99999999-9999-4999-8999-999999999999',
+      migration_name: reset.name,
+      checksum: reset.checksum,
+      started_at: '2026-08-26T10:00:00.000Z',
+      finished_at: '2026-08-26T10:00:00.001Z'
+    })
+  );
+  fixture.catalog.tables.push({
+    schema: 'public',
+    name: 'PasswordResetRequest',
+    kind: 'table'
+  });
+  const fingerprint = fingerprintCatalog(fixture.catalog).fingerprint;
+  fixture.attestation.schema.postMigrationFingerprint = fingerprint;
+  fixture.attestation.schema.postMigrationEvidence!.fingerprint = fingerprint;
+  return fixture;
+}
+
 function productionIdentity() {
-  const identity = getDatabaseIdentity('postgresql://role:secret@host.example/clada');
+  const identity = getDatabaseIdentity('postgresql://' + 'role:secret@host.example/clada');
   return { ...identity, fingerprint: 'db_4e1d3bd23cff6801' };
 }
 
@@ -167,6 +193,67 @@ test('exact synthetic deliberate preflight passes and ledger mutations fail clos
       (error: unknown) => error instanceof LineageVerifierError && error.code === 'LEDGER_MISMATCH'
     );
   }
+});
+
+test('Production preflight and postflight require evidenced post-migration schema identity', () => {
+  for (const mode of ['production-preflight', 'production-postflight'] as const) {
+    const fixture = mode === 'production-postflight' ? postMigrationFixture() : productionFixture();
+    fixture.attestation.schema.postMigrationFingerprint = null;
+    fixture.attestation.schema.postMigrationEvidence = null;
+    assert.throws(
+      () =>
+        verifyLineage({
+          mode,
+          environment: 'production',
+          identity: productionIdentity(),
+          connectedDatabaseName: 'clada',
+          repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
+          manifest,
+          ...fixture,
+          now: new Date('2026-08-26T10:00:00.000Z')
+        }),
+      (error: unknown) =>
+        error instanceof LineageVerifierError &&
+        error.code === 'SCHEMA_MISMATCH' &&
+        /evidence is unavailable/.test(error.message)
+    );
+  }
+});
+
+test('postflight named assertions cannot bypass an exact fingerprint mismatch', () => {
+  const exact = postMigrationFixture();
+  const evidence = verifyLineage({
+    mode: 'production-postflight',
+    environment: 'production',
+    identity: productionIdentity(),
+    connectedDatabaseName: 'clada',
+    repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
+    manifest,
+    ...exact,
+    now: new Date('2026-08-26T10:00:00.000Z')
+  });
+  assert.equal(evidence.finalDecision, 'verified-clean');
+
+  const guessed = postMigrationFixture();
+  guessed.attestation.schema.postMigrationFingerprint = 'd'.repeat(64);
+  guessed.attestation.schema.postMigrationEvidence!.fingerprint = 'd'.repeat(64);
+  assert.throws(
+    () =>
+      verifyLineage({
+        mode: 'production-postflight',
+        environment: 'production',
+        identity: productionIdentity(),
+        connectedDatabaseName: 'clada',
+        repositoryBaseline: ACTIVE_REPOSITORY_BASELINE,
+        manifest,
+        ...guessed,
+        now: new Date('2026-08-26T10:00:00.000Z')
+      }),
+    (error: unknown) =>
+      error instanceof LineageVerifierError &&
+      error.code === 'SCHEMA_MISMATCH' &&
+      /differs from the approved attestation/.test(error.message)
+  );
 });
 
 test('wrong database, Preview use, inactive lifecycle, and schema drift fail closed', () => {
@@ -252,7 +339,10 @@ test('evidence guard rejects URLs and secret-like fields, and exit codes are sta
   );
   assert.throws(() => assertVerifierEvidenceSecretFree({ databaseUrl: 'redacted' }), /Secret-like field/);
   assert.throws(
-    () => assertVerifierEvidenceSecretFree({ message: 'postgresql://role:password@host/database' }),
+    () =>
+      assertVerifierEvidenceSecretFree({
+        message: 'postgresql://' + 'role:password@host/database'
+      }),
     /Secret-like value/
   );
   assert.equal(

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; Production attestation active; pending migration execution remains separately approved |
+| Status | Accepted; Production attestation retired after password-reset postflight verification stop |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-17 |
+| Last reviewed | 2026-08-26 |
 
 ## Context
 
@@ -20,8 +20,9 @@ reproduce the intended schema through
 of historical SQL identity.
 
 The post-merge PR #41 Production deployment was correctly blocked. Production
-remains on the previous Ready deployment and
-`20260724180000_password_reset_foundation` remains pending.
+remains on the previous Ready deployment. Closed reconciliation R4 later
+invoked `20260724180000_password_reset_foundation` once; Prisma reported
+success, but strict schema postflight did not verify the resulting state.
 
 Prisma 5.22.0 is the repository version. Prisma documents the migrations folder
 as the source of truth and advises against editing or deleting applied
@@ -670,3 +671,24 @@ is untouched. R19 authorises no password-reset migration, application
 deployment or alias movement. The attestation expires on
 `2026-10-25T17:26:47.280Z` and still requires later qualified-human review at
 the fixed pilot-stage trigger.
+
+## Post-R4 Production Fingerprint Provenance Correction
+
+Closed password-reset reconciliation R4 reported the canonical target migration
+successfully applied, then stopped with exit `26` at exact Production schema
+fingerprint comparison. Repository history proves the expected `685ee5...`
+value was derived from disposable PostgreSQL and was not Production-specific.
+The R19 captures do not retain the full catalog rows needed to reconstruct an
+exact post-migration Production fingerprint.
+
+Attestation v6 therefore leaves `postMigrationFingerprint` and its evidence
+null, retains the disposable value only as `freshHeadFingerprint`, and requires
+an exact indexed `production-read-only-capture` provenance tuple before a
+Production post fingerprint may be active. Both Production preflight and
+postflight fail closed while this evidence is absent. The attestation is
+retired under its existing material-change/supporting-evidence conditions.
+
+No guessed fingerprint, generic acceptance, catalog-assertion substitute or
+hash normalization is permitted. A separately authorised read-only Production
+post-migration verification must precede any new human-governed attestation
+amendment. The password-reset migration must not be invoked again.

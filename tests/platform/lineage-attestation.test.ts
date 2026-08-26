@@ -56,6 +56,23 @@ function populateActiveHistoricalResolvedMigration(
   return { catalog, fingerprint, assertions };
 }
 
+function populatePostMigrationSchemaEvidence(value: LineageAttestation, fingerprint = 'c'.repeat(64)) {
+  const artifactReference = 'ADR0024/CHANGE-POST-SCHEMA-001/capture.json';
+  value.schema.postMigrationFingerprint = fingerprint;
+  value.schema.postMigrationEvidence = {
+    provenance: 'production-read-only-capture',
+    environment: 'production',
+    databaseFingerprint: 'db_4e1d3bd23cff6801',
+    fingerprint,
+    artifactReference,
+    artifactSha256: 'b'.repeat(64),
+    repositoryRevision: '1'.repeat(40),
+    changeId: 'CHG-ADR0024-POST-SCHEMA-001',
+    capturedAt: '2026-07-28T00:30:00.000Z'
+  };
+  value.evidenceReferences.push(artifactReference);
+}
+
 export function activeAttestation(): LineageAttestation {
   const value = structuredClone(pending);
   value.governanceMode = 'standard-independent-human';
@@ -67,7 +84,7 @@ export function activeAttestation(): LineageAttestation {
   value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
   value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
   populateActiveHistoricalResolvedMigration(value);
-  value.schema.postMigrationFingerprint = 'c'.repeat(64);
+  populatePostMigrationSchemaEvidence(value);
   value.schema.freshHeadFingerprint = 'c'.repeat(64);
   const reviewers = [
     'Patrick McKenna',
@@ -100,7 +117,7 @@ function activePilotStageAttestation(): LineageAttestation {
   value.relatedMigration.failedRecord.logsDigest = 'a'.repeat(64);
   value.relatedMigration.completedZeroStepRecord.id = '22222222-2222-4222-8222-222222222222';
   const historical = populateActiveHistoricalResolvedMigration(value);
-  value.schema.postMigrationFingerprint = 'c'.repeat(64);
+  populatePostMigrationSchemaEvidence(value);
   value.schema.freshHeadFingerprint = 'c'.repeat(64);
   const evidenceReference = 'docs/approvals/ADR0024-pilot-production-owner.md';
   value.evidenceReferences.push(evidenceReference);
@@ -135,15 +152,19 @@ function activePilotStageAttestation(): LineageAttestation {
   return value;
 }
 
-test('checked-in R19 attestation is active with exact retained evidence', () => {
-  assert.equal(
-    validateLineageAttestation(checkedIn, { requireActive: true }).status,
-    'active'
+test('checked-in R19 attestation is retired with exact retained historical evidence', () => {
+  assert.equal(validateLineageAttestation(checkedIn).status, 'retired');
+  assert.throws(
+    () => validateLineageAttestation(checkedIn, { requireActive: true }),
+    (error: unknown) =>
+      error instanceof AttestationValidationError && error.code === 'ATTESTATION_INACTIVE'
   );
-  assert.equal(checkedIn.version, 'clada-adr-0024-lineage-attestation/v5');
+  assert.equal(checkedIn.version, 'clada-adr-0024-lineage-attestation/v6');
   assert.equal(checkedIn.reviewedAt, '2026-08-17T17:26:47.280Z');
   assert.equal(checkedIn.expiresAt, '2026-10-25T17:26:47.280Z');
   assert.equal(checkedIn.governanceMode, 'pilot-stage-compensating-control');
+  assert.equal(checkedIn.schema.postMigrationFingerprint, null);
+  assert.equal(checkedIn.schema.postMigrationEvidence, null);
   assert.equal(
     checkedIn.pilotStageCompensatingControl?.accountabilityAcknowledgement,
     PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
@@ -198,6 +219,35 @@ test('checked-in R19 attestation is active with exact retained evidence', () => 
     checkedIn.relatedMigration.completedZeroStepRecord.finishedAt,
     '2026-04-29T06:01:38.54346Z'
   );
+});
+
+test('Production post-migration fingerprint provenance is exact and unavailable evidence cannot activate', () => {
+  const unavailable = activeAttestation();
+  unavailable.status = 'retired';
+  unavailable.schema.postMigrationFingerprint = null;
+  unavailable.schema.postMigrationEvidence = null;
+  assert.equal(validateLineageAttestation(unavailable).status, 'retired');
+  unavailable.status = 'active';
+  assert.throws(() => validateLineageAttestation(unavailable, { requireActive: true }), /approved SHA-256/);
+
+  const missingEvidence = activeAttestation();
+  missingEvidence.schema.postMigrationEvidence = null;
+  assert.throws(() => validateLineageAttestation(missingEvidence), /must be present together/);
+
+  const guessedFingerprint = activeAttestation();
+  guessedFingerprint.schema.postMigrationFingerprint = 'd'.repeat(64);
+  assert.throws(() => validateLineageAttestation(guessedFingerprint), /evidence identity/);
+
+  const wrongDatabase = activeAttestation();
+  (wrongDatabase.schema.postMigrationEvidence as { databaseFingerprint: string }).databaseFingerprint =
+    'db_31449de1074844bb';
+  assert.throws(() => validateLineageAttestation(wrongDatabase), /evidence identity/);
+
+  const unindexed = activeAttestation();
+  unindexed.evidenceReferences = unindexed.evidenceReferences.filter(
+    (reference) => reference !== unindexed.schema.postMigrationEvidence!.artifactReference
+  );
+  assert.throws(() => validateLineageAttestation(unindexed), /not indexed/);
 });
 
 test('synthetic pending fixture preserves pre-activation fail-closed coverage', () => {

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
-| Status | Contained under active ADR-0024 attestation; password-reset execution pending |
+| Status | Open; password-reset application reported, post-migration schema verification incomplete, attestation retired |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-17 |
+| Last reviewed | 2026-08-26 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -24,10 +24,12 @@ because Production contains the applied migration
 not contain that migration directory. The gate behaved correctly: it did not
 accept a pending repository migration while migration history was divergent.
 
-Production remains healthy on the previous Ready deployment. The new release
-is not live. The password-reset foundation migration
-`20260724180000_password_reset_foundation` remains pending and was not partially
-applied. No data loss is known.
+Production remains on the previous Ready deployment and the new release is not
+live. Closed reconciliation R4 later invoked the password-reset foundation
+migration exactly once, and Prisma reported successful application and commit.
+Strict postflight stopped at schema fingerprint verification, so the resulting
+Production schema and ledger state remain unverified. No retry is permitted and
+no data loss is known.
 
 ## Detection And Containment
 
@@ -488,6 +490,23 @@ The incident remains contained rather than closed: the original historical SQL
 is still unavailable, raw ledger history remains divergent, and the pending
 password-reset migration requires a separate authorised execution and
 postflight verification.
+
+### Password-Reset R4 Postflight Stop
+
+The separately authorised and permanently closed reconciliation R4 reported
+successful canonical password-reset migration application, then stopped with
+exit `26`, `SCHEMA_MISMATCH`. The expected `685ee5...` fingerprint was proven
+repository-only to originate from disposable PostgreSQL rather than a
+Production-specific post-migration catalog. R19 did not retain enough complete
+catalog metadata to reconstruct the missing Production post fingerprint.
+
+Attestation v6 therefore records no Production post fingerprint, requires
+exact Production read-only capture provenance for any future value, and is
+retired. The seven historical ordinary tuples, pilot-auth state, R19 captures
+and R19 pre-migration fingerprint are unchanged. The migration must not be run
+again. A separately authorised read-only post-migration verification is the
+next database prerequisite. See the
+[R4 fingerprint investigation](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md).
 
 ## Related Documents
 

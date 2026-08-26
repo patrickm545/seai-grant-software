@@ -13,7 +13,11 @@ export function pendingLineageAttestationFixture() {
   value.reviewedAt = null;
   value.expiresAt = null;
   value.evidenceReferences = value.evidenceReferences.filter(
-    (reference) => reference !== 'docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md'
+    (reference) =>
+      ![
+        'docs/03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md',
+        'docs/03-engineering/PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md'
+      ].includes(reference)
   );
 
   const historical = value.historicalResolvedMigrations[0];
@@ -34,6 +38,7 @@ export function pendingLineageAttestationFixture() {
   value.relatedMigration.completedZeroStepRecord.id = null;
   value.schema.preMigrationFingerprint = null;
   value.schema.postMigrationFingerprint = null;
+  value.schema.postMigrationEvidence = null;
   value.schema.freshHeadFingerprint = null;
 
   const pilot = value.pilotStageCompensatingControl!;

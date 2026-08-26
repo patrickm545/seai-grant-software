@@ -508,6 +508,27 @@ again. A separately authorised read-only post-migration verification is the
 next database prerequisite. See the
 [R4 fingerprint investigation](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md).
 
+## Post-Migration Verification Capability Repair
+
+Closed read-only verification R1 stopped before child launch because the
+repository had only the historical pending-migration evidence path. Its five
+fail-closed incompatibilities were the old change-ID family, pending-only
+attestation lifecycle, 15/1 ledger contract, pre-password-reset catalog
+contract and absent fixed credential-file command.
+
+The repository-only repair adds a distinct retired-attestation, 16-applied,
+zero-pending post-migration evidence version. It validates the exact final
+migration lifecycle, all retained historical lineage rules, the canonical
+post-password-reset catalog and the complete fingerprint-v2 descriptors in two
+read-only deterministic captures. Disposable PostgreSQL 18 validation passed
+with all 16 migrations and zero pending.
+
+No Production credential, connection, query, transaction, capture or write was
+used for the repair. The actual Production post-migration fingerprint and
+schema remain unverified, the attestation remains retired and the incident
+remains open. The next database action, if separately authorised, is one new
+read-only post-migration verification; it is not a migration retry.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -536,3 +557,4 @@ next database prerequisite. See the
 - [R19 Production Evidence Operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R19.md)
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)
+- [Post-Migration Production Evidence Path Repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md)

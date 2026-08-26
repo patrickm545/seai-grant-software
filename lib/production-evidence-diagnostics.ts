@@ -17,7 +17,26 @@ export type ProductionEvidenceStage =
   | 'second-evidence-generation'
   | 'deterministic-comparison'
   | 'secret-free-validation'
-  | 'evidence-serialization';
+  | 'evidence-serialization'
+  | 'post-migration-guarded-identity-configuration'
+  | 'post-migration-manifest-verification'
+  | 'post-migration-retired-attestation-verification'
+  | 'post-migration-operational-controls'
+  | 'post-migration-first-transaction'
+  | 'post-migration-first-read-only-setup'
+  | 'post-migration-first-connected-identity'
+  | 'post-migration-first-migration-ledger'
+  | 'post-migration-first-catalog'
+  | 'post-migration-first-evidence-generation'
+  | 'post-migration-second-transaction'
+  | 'post-migration-second-read-only-setup'
+  | 'post-migration-second-connected-identity'
+  | 'post-migration-second-migration-ledger'
+  | 'post-migration-second-catalog'
+  | 'post-migration-second-evidence-generation'
+  | 'post-migration-deterministic-comparison'
+  | 'post-migration-secret-free-validation'
+  | 'post-migration-evidence-serialization';
 
 export class ProductionEvidenceStageError extends Error {
   constructor(

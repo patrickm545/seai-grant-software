@@ -12,16 +12,15 @@ import {
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import {
-  launchFixedProductionEvidenceCaptureRaw,
-  type RawPackageManagerLaunchOptions
-} from './fixed-package-script-launcher';
+import { launchFixedProductionEvidenceCaptureRaw } from './fixed-package-script-launcher';
+import { launchFixedPostMigrationProductionEvidenceCaptureRaw } from './fixed-database-command-launcher';
+import { POST_MIGRATION_PRODUCTION_CHANGE_ID_PATTERN } from './post-migration-production-evidence';
 
 export const PRODUCTION_EVIDENCE_OPERATION_RETENTION_VERSION =
   'adr-0024-operation-retention/v1' as const;
 export const OPERATION_REPORTING_FAILURE_EXIT = 91 as const;
 
-const changeIdPattern =
+const historicalChangeIdPattern =
   /^CHG-\d{4}-\d{2}-\d{2}-ADR0024-PROD-EVIDENCE(?:-R\d+)?$/;
 const repositoryShaPattern = /^[a-f0-9]{40}$/;
 const typedRepositoryExits = new Set([20, 21, 23, 24, 25, 26, 27, 70]);
@@ -59,11 +58,40 @@ export type ProductionEvidenceRetentionDependencies = {
   environment?: NodeJS.ProcessEnv;
   now?: () => Date;
   repositoryRevision?: () => string;
-  launch?: (options: RawPackageManagerLaunchOptions) => RawChildResult;
+  launch?: (options: { cwd?: string; env?: NodeJS.ProcessEnv }) => RawChildResult;
   hashBytes?: (bytes: Buffer) => string;
   enrichBoundary?: (boundary: Record<string, unknown>) => Record<string, unknown>;
   serializeFinalBoundary?: (boundary: Record<string, unknown>) => Buffer;
   afterChildRetention?: () => void;
+};
+
+type RetentionProfile = {
+  operationFamily: 'historical-production-evidence' | 'post-migration-production-verification';
+  changeIdEnvironmentVariable:
+    | 'PRODUCTION_EVIDENCE_CHANGE_ID'
+    | 'POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID';
+  changeIdPattern: RegExp;
+  fixedCommand: string;
+  launch: (options: { cwd?: string; env?: NodeJS.ProcessEnv }) => RawChildResult;
+  retainSuccessfulCaptures: boolean;
+};
+
+const historicalRetentionProfile: RetentionProfile = {
+  operationFamily: 'historical-production-evidence',
+  changeIdEnvironmentVariable: 'PRODUCTION_EVIDENCE_CHANGE_ID',
+  changeIdPattern: historicalChangeIdPattern,
+  fixedCommand: 'node --import tsx scripts/launch-production-evidence-capture.ts',
+  launch: launchFixedProductionEvidenceCaptureRaw,
+  retainSuccessfulCaptures: false
+};
+
+const postMigrationRetentionProfile: RetentionProfile = {
+  operationFamily: 'post-migration-production-verification',
+  changeIdEnvironmentVariable: 'POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID',
+  changeIdPattern: POST_MIGRATION_PRODUCTION_CHANGE_ID_PATTERN,
+  fixedCommand: 'node --import tsx scripts/capture-post-migration-production-evidence.ts',
+  launch: launchFixedPostMigrationProductionEvidenceCaptureRaw,
+  retainSuccessfulCaptures: true
 };
 
 export type ProductionEvidenceOperationRetentionResult = {
@@ -225,14 +253,15 @@ function safeReportingFailure(error: unknown) {
   } as const;
 }
 
-export function runFixedProductionEvidenceOperationWithRetention(
-  dependencies: ProductionEvidenceRetentionDependencies = {}
+function runFixedEvidenceOperationWithRetention(
+  profile: RetentionProfile,
+  dependencies: ProductionEvidenceRetentionDependencies
 ): ProductionEvidenceOperationRetentionResult {
   const environment = dependencies.environment ?? process.env;
   const cwd = dependencies.cwd ?? process.cwd();
-  const changeId = environment.PRODUCTION_EVIDENCE_CHANGE_ID?.trim() ?? '';
-  if (!changeIdPattern.test(changeId)) {
-    throw new Error('OPERATION_RETENTION_UNSAFE: Production evidence change ID is invalid.');
+  const changeId = environment[profile.changeIdEnvironmentVariable]?.trim() ?? '';
+  if (!profile.changeIdPattern.test(changeId)) {
+    throw new Error('OPERATION_RETENTION_UNSAFE: fixed operation change ID is invalid.');
   }
   const revision = (dependencies.repositoryRevision ?? (() => defaultRepositoryRevision(cwd)))();
   if (!repositoryShaPattern.test(revision)) {
@@ -259,6 +288,7 @@ export function runFixedProductionEvidenceOperationWithRetention(
     jsonBytes({
       version: PRODUCTION_EVIDENCE_OPERATION_RETENTION_VERSION,
       phase: 'operation-started',
+      operationFamily: profile.operationFamily,
       changeId,
       repositorySha: revision,
       operationStartedAt,
@@ -272,15 +302,16 @@ export function runFixedProductionEvidenceOperationWithRetention(
     jsonBytes({
       version: PRODUCTION_EVIDENCE_OPERATION_RETENTION_VERSION,
       phase: 'child-started',
+      operationFamily: profile.operationFamily,
       changeId,
       repositorySha: revision,
       operationStartedAt,
       childStartedAt,
-      fixedCommand: 'node --import tsx scripts/launch-production-evidence-capture.ts'
+      fixedCommand: profile.fixedCommand
     })
   );
 
-  const child = (dependencies.launch ?? launchFixedProductionEvidenceCaptureRaw)({
+  const child = (dependencies.launch ?? profile.launch)({
     cwd,
     env: environment
   });
@@ -298,6 +329,7 @@ export function runFixedProductionEvidenceOperationWithRetention(
   const childCompleteBoundary = {
     version: PRODUCTION_EVIDENCE_OPERATION_RETENTION_VERSION,
     phase: 'child-complete',
+    operationFamily: profile.operationFamily,
     changeId,
     repositorySha: revision,
     operationStartedAt,
@@ -329,6 +361,45 @@ export function runFixedProductionEvidenceOperationWithRetention(
     const hashBytes = dependencies.hashBytes ?? sha256;
     const stdoutSha256 = hashBytes(retainedStdout.bytes);
     const stderrSha256 = hashBytes(retainedStderr.bytes);
+    let captureArtifacts:
+      | Array<{ reference: string; bytes: number; sha256: string }>
+      | null = null;
+    if (profile.retainSuccessfulCaptures && repositoryExit === 0) {
+      stage = 'successful-capture-parsing';
+      if (!retainedStdout.exact) {
+        throw new Error('Secret-like successful output cannot be promoted to capture artifacts.');
+      }
+      const parsed = JSON.parse(retainedStdout.bytes.toString('utf8')) as {
+        version?: unknown;
+        captures?: unknown;
+      };
+      if (
+        parsed.version !== 'adr-0024-production-post-migration-dual-capture/v1' ||
+        !Array.isArray(parsed.captures) ||
+        parsed.captures.length !== 2
+      ) {
+        throw new Error('Successful post-migration output is not the fixed dual-capture envelope.');
+      }
+      captureArtifacts = [];
+      for (const [index, capture] of parsed.captures.entries()) {
+        if (!capture || typeof capture !== 'object') {
+          throw new Error('Successful post-migration capture is malformed.');
+        }
+        const reference = `capture-${index + 1}.json`;
+        const logicalReference = (capture as { logicalArtifactReference?: unknown })
+          .logicalArtifactReference;
+        if (logicalReference !== `ADR0024/${changeId}/${reference}`) {
+          throw new Error('Successful post-migration capture reference is outside the operation boundary.');
+        }
+        const bytes = jsonBytes(capture);
+        writeDurableAtomic(join(operationDirectory, reference), bytes);
+        captureArtifacts.push({
+          reference,
+          bytes: bytes.length,
+          sha256: hashBytes(bytes)
+        });
+      }
+    }
     stage = 'diagnostic-parsing';
     const diagnostic = retainedStderr.exact
       ? parseRetainedProductionDiagnostic(retainedStderr.bytes)
@@ -364,6 +435,7 @@ export function runFixedProductionEvidenceOperationWithRetention(
         sha256: stderrSha256
       },
       diagnosticReference: diagnostic ? 'diagnostic.json' : null,
+      captureArtifacts,
       reportingCompletedAt,
       reportingStatus: 'complete',
       wrapperExit
@@ -391,6 +463,7 @@ export function runFixedProductionEvidenceOperationWithRetention(
     const reportingFailure = {
       version: PRODUCTION_EVIDENCE_OPERATION_RETENTION_VERSION,
       phase: 'reporting-failed',
+      operationFamily: profile.operationFamily,
       changeId,
       repositorySha: revision,
       repositoryExit,
@@ -427,4 +500,16 @@ export function runFixedProductionEvidenceOperationWithRetention(
           : OPERATION_REPORTING_FAILURE_EXIT
     };
   }
+}
+
+export function runFixedProductionEvidenceOperationWithRetention(
+  dependencies: ProductionEvidenceRetentionDependencies = {}
+) {
+  return runFixedEvidenceOperationWithRetention(historicalRetentionProfile, dependencies);
+}
+
+export function runFixedPostMigrationProductionEvidenceOperationWithRetention(
+  dependencies: ProductionEvidenceRetentionDependencies = {}
+) {
+  return runFixedEvidenceOperationWithRetention(postMigrationRetentionProfile, dependencies);
 }

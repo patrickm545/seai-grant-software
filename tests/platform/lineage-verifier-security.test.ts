@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const command = readFileSync('scripts/verify-migration-lineage.ts', 'utf8');
+const evidenceReferences = readFileSync('lib/lineage-evidence-references.ts', 'utf8');
 const catalog = readFileSync('lib/postgres-catalog.ts', 'utf8');
 const databaseCommand = readFileSync('scripts/run-database-command.ts', 'utf8');
 const commandPolicy = readFileSync('lib/verifier-command-policy.ts', 'utf8');
@@ -15,7 +16,8 @@ test('lineage verifier uses repository-fixed attestation and manifest paths', ()
   assert.doesNotMatch(command, /process\.argv\[[^\]]+\].*(?:attestation|manifest).*Path/i);
   assert.match(command, /new Set<VerifierMode>/);
   assert.match(command, /verifyRepositoryEvidenceReferences/);
-  assert.match(command, /existsSync/);
+  assert.match(evidenceReferences, /existsSync/);
+  assert.match(evidenceReferences, /createHash\('sha256'\)/);
 });
 
 test('gitless manifest verification is restricted to an identified Vercel checkout', () => {

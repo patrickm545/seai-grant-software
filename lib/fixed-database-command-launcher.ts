@@ -43,7 +43,8 @@ export type FixedDatabaseLaunchOptions = FixedDatabaseLauncherDependencies & {
 export type FixedGuardedDatabaseCommand =
   | 'status'
   | 'migrate-test'
-  | 'migrate-production';
+  | 'migrate-production'
+  | 'post-migration-production-evidence';
 
 export type FixedCredentialDatabaseLaunchOptions = FixedDatabaseLaunchOptions & {
   loadCredentialEnvironment?: (
@@ -70,7 +71,8 @@ const prismaArguments: Record<FixedPrismaCommand, readonly string[]> = {
 const guardedDatabaseCommands = new Set<FixedGuardedDatabaseCommand>([
   'status',
   'migrate-test',
-  'migrate-production'
+  'migrate-production',
+  'post-migration-production-evidence'
 ]);
 
 function safeLaunchError(error: Error) {
@@ -214,6 +216,22 @@ export function launchFixedDatabaseLauncherSmoke(
   );
 }
 
+export function launchFixedPostMigrationProductionEvidenceCaptureRaw(
+  options: FixedDatabaseLaunchOptions = {}
+) {
+  const repositoryRoot = options.repositoryRoot ?? resolve(__dirname, '..');
+  const script = resolveRepositoryFile(
+    repositoryRoot,
+    'scripts/capture-post-migration-production-evidence.ts',
+    options
+  );
+  return launchFixedNodeArguments(['--import', 'tsx', script], {
+    ...options,
+    repositoryRoot,
+    captureOutput: true
+  });
+}
+
 export function launchFixedGuardedDatabaseCommandFromEnvFile(
   command: FixedGuardedDatabaseCommand,
   credentialFile: string,
@@ -223,17 +241,25 @@ export function launchFixedGuardedDatabaseCommandFromEnvFile(
     throw new Error('FIXED_DATABASE_LAUNCHER_UNSAFE: unexpected guarded database command.');
   }
   const repositoryRoot = options.repositoryRoot ?? resolve(__dirname, '..');
+  const postMigrationEvidence = command === 'post-migration-production-evidence';
   const script = resolveRepositoryFile(
     repositoryRoot,
-    'scripts/run-database-command.ts',
+    postMigrationEvidence
+      ? 'scripts/launch-post-migration-production-evidence.ts'
+      : 'scripts/run-database-command.ts',
     options
   );
   const loadEnvironment =
     options.loadCredentialEnvironment ?? environmentWithDatabaseCredential;
   const environment = loadEnvironment(options.env ?? process.env, credentialFile);
-  return launchFixedNodeArguments(['--import', 'tsx', script, command], {
+  return launchFixedNodeArguments(
+    postMigrationEvidence
+      ? ['--import', 'tsx', script]
+      : ['--import', 'tsx', script, command],
+    {
     ...options,
     repositoryRoot,
     env: environment
-  });
+    }
+  );
 }

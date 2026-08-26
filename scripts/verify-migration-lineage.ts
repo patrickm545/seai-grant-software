@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -22,6 +21,7 @@ import {
   validateLineageAttestation,
   type LineageAttestation
 } from '../lib/lineage-attestation';
+import { verifyRepositoryEvidenceReferences } from '../lib/lineage-evidence-references';
 import {
   generateMigrationManifest,
   verifyImmutableMigrationHistory,
@@ -70,58 +70,6 @@ const modes = new Set<VerifierMode>([
 
 function readFixedJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
-}
-
-function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
-  for (const reference of attestation.evidenceReferences) {
-    if (!reference.startsWith('docs/')) continue;
-    const evidencePath = resolve(repositoryRoot, reference);
-    if (!existsSync(evidencePath)) {
-      throw new AttestationValidationError(
-        'ATTESTATION_INVALID',
-        `Repository evidence reference does not exist: ${reference}`
-      );
-    }
-  }
-  for (const checksumEvidence of attestation.repositoryMigrationChecksumDivergences) {
-    const checksumEvidencePath = resolve(repositoryRoot, checksumEvidence.checksumEvidenceReference);
-    const checksumEvidenceSha256 = createHash('sha256')
-      .update(readFileSync(checksumEvidencePath))
-      .digest('hex');
-    if (checksumEvidenceSha256 !== checksumEvidence.checksumEvidenceSha256) {
-      throw new AttestationValidationError(
-        'ATTESTATION_INVALID',
-        'Production repository checksum divergence evidence digest differs.'
-      );
-    }
-  }
-  for (const historical of attestation.historicalResolvedMigrations) {
-    for (const evidence of [
-      {
-        reference: historical.checksumEvidenceReference,
-        sha256: historical.checksumEvidenceSha256
-      },
-      {
-        reference: historical.lifecycleEvidenceReference,
-        sha256: historical.lifecycleEvidenceSha256
-      },
-      {
-        reference: historical.expectedSchemaInventoryReference,
-        sha256: historical.expectedSchemaInventorySha256
-      }
-    ]) {
-      const evidencePath = resolve(repositoryRoot, evidence.reference);
-      const evidenceSha256 = createHash('sha256')
-        .update(readFileSync(evidencePath))
-        .digest('hex');
-      if (evidenceSha256 !== evidence.sha256) {
-        throw new AttestationValidationError(
-          'ATTESTATION_INVALID',
-          'Historical resolved migration repository evidence digest differs.'
-        );
-      }
-    }
-  }
 }
 
 function safeMessage(error: unknown) {
@@ -244,7 +192,7 @@ async function main() {
   if (command === 'attestation-verify') {
     const attestation = readFixedJson<LineageAttestation>(attestationPath);
     validateLineageAttestation(attestation);
-    verifyRepositoryEvidenceReferences(attestation);
+    verifyRepositoryEvidenceReferences(repositoryRoot, attestation);
     console.log(`ADR-0024 attestation is structurally valid and status=${attestation.status}.`);
     return attestation.status === 'active' ? 0 : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
   }
@@ -279,7 +227,7 @@ async function main() {
       'fixed pending attestation and repository evidence references are structurally valid',
       () => {
         const pending = readFixedJson<LineageAttestation>(attestationPath);
-        verifyRepositoryEvidenceReferences(pending);
+        verifyRepositoryEvidenceReferences(repositoryRoot, pending);
         return pending;
       }
     );
@@ -424,7 +372,7 @@ async function main() {
     : undefined;
   if (attestation) {
     validateLineageAttestation(attestation, { requireActive: true });
-    verifyRepositoryEvidenceReferences(attestation);
+    verifyRepositoryEvidenceReferences(repositoryRoot, attestation);
     if (mode === 'production-preflight') {
       assertDeliberateProductionControls({
         attestationId: process.env.ADR0024_ATTESTATION_ID,

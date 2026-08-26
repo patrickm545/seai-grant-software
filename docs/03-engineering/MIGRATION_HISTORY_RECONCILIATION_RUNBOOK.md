@@ -647,3 +647,39 @@ See the
 for the root cause, timing evidence and timeout policy. Passing this local gate
 is a prerequisite only. A Production operation still requires a new change ID,
 exact repository head, fresh operational gates and explicit authorisation.
+
+## Fixed Post-Migration Production Evidence Path
+
+Closed verification R1 proved that the historical pre-migration capture could
+not represent the post-password-reset state and stopped before child launch.
+R1 is permanently closed. The repository now provides the exact fixed command
+`post-migration-production-evidence` through the credential-file boundary.
+This runbook does not authorise its execution.
+
+A future separately authorised operation must provide the exact post-migration
+governance variables and a new change ID matching
+`CHG-YYYY-MM-DD-ADR0024-POST-MIGRATION-PROD-VERIFY-R#`. The ignored credential
+file is parsed by Node `util.parseEnv`; the outer environment must not contain
+`DATABASE_URL`. The fixed selector resolves only the repository post-migration
+launcher with fixed Node, exact argv and `shell:false`.
+
+The operation must stop unless all of these are exact:
+
+- Production `neondb` on `br-cool-wave-abysq3lu` with fingerprint
+  `db_4e1d3bd23cff6801`;
+- retired ADR-0024 v6 governance with null post-migration fields;
+- 16 immutable repository migrations applied and zero pending;
+- one canonical, successful one-step password-reset ledger record;
+- all seven ordinary divergence tuples and the pilot-auth historical state;
+- canonical `PasswordResetRequest` and current `Lead` catalog assertions;
+- the complete fingerprint-v2 canonical descriptors and matching digest.
+
+One invocation performs two independent RepeatableRead captures with
+`SET TRANSACTION READ ONLY`, compares their stable canonical payloads and
+retains raw output before optional reporting. Any stop consumes the future
+change ID; do not retry or fall back to a generic database command. Successful
+capture still does not activate governance. A later amendment needs reviewed
+evidence and a new qualified-human approval.
+
+See the
+[post-migration evidence path repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).

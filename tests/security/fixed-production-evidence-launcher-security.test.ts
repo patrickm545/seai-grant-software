@@ -84,7 +84,7 @@ test('launcher boundary has no ProcessStartInfo, ArgumentList, or shell fallback
 
 test('retention is write-first and uses Node raw-byte hashing after child completion', () => {
   const launchIndex = retentionSource.indexOf(
-    '(dependencies.launch ?? launchFixedProductionEvidenceCaptureRaw)'
+    '(dependencies.launch ?? profile.launch)'
   );
   const stderrWriteIndex = retentionSource.indexOf(
     "writeDurableAtomic(join(operationDirectory, stderrReference)"

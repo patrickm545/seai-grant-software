@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-17 |
-| Operational state | R1-R18 closed; R18 typed manual-lead checksum stop retained completely; exact seventh tuple added repository-only; no new operation authorised |
+| Last reviewed | 2026-08-26 |
+| Operational state | R19 historical evidence retained; password-reset R4 and post-migration verification R1 closed; attestation v6 retired; fixed post-migration read-only path repository-ready; no new operation authorised |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -20,14 +20,22 @@
 | R17 investigation | [Sixth exact checksum tuple](PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | R18 operation | [Fully retained manual-lead checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md) |
 | R18 investigation | [Seventh exact checksum tuple](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
+| Post-migration path | [Repository-only R1 blocker repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md) |
 
 ## Purpose And Authority
 
-R18 is permanently closed after its sole read-only invocation returned and
-retained typed exit `25` for the exact manual-lead checksum. The later
-repository-only amendment proves reversible byte equivalence and adds one
-seventh exact ordinary tuple. The attestation remains pending with zero
-captures and approvals, and no R19 operation is authorised by this checklist.
+R18 and R19 remain permanently closed historical operations. R19 supplied the
+two pre-migration captures and one human approval retained in attestation v6.
+Closed password-reset reconciliation R4 reported the migration committed and
+then stopped at invalid expected fingerprint provenance. Closed verification
+R1 stopped before child launch because the repository lacked a post-migration
+capture contract. The attestation is now retired with null post-migration
+fields. The repository-only R1 repair authorises no new operation.
+
+The original evidence-capture, activation and guarded-status sections below
+are retained only as the closed R19 checklist. They must not be replayed or
+used as the procedure for post-migration verification. The current additional
+requirements are in Final Safety Confirmation.
 
 Use this single checklist to resume PR #45 only after genuine operational
 inputs become available. Blank cells are intentional and must be completed by
@@ -68,9 +76,9 @@ Production access.
 
 | Required field | Exact value |
 | --- | --- |
-| Change ID |  |
-| Operation date |  |
-| Repository SHA |  |
+| Change ID | |
+| Operation date | |
+| Repository SHA | |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Current Production deployment | `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E` |
 | Expected Production fingerprint | `db_4e1d3bd23cff6801` |
@@ -105,12 +113,12 @@ standard independent-human path remains unchanged.
 
 | Required role | Human name | Status | Exact UTC timestamp | Evidence reference |
 | --- | --- | --- | --- | --- |
-| Chief Executive Officer | Patrick McKenna | Allocated; operation pending |  | Governance record |
-| Production Operator | Patrick McKenna | Allocated; operation pending |  | Governance record |
-| Recovery Owner | Patrick McKenna | Allocated; operation pending |  | Governance record |
-| Final Accountable Approver / Production Owner | Patrick McKenna | Approval pending evidence |  |  |
-| Independent Human Technical Reviewer | Unavailable during pilot stage | Exception documented |  | Governance record |
-| Technical review method | AI-assisted CTO review | Method only; not a human approval |  | Deterministic evidence and repository controls |
+| Chief Executive Officer | Patrick McKenna | Allocated; operation pending | | Governance record |
+| Production Operator | Patrick McKenna | Allocated; operation pending | | Governance record |
+| Recovery Owner | Patrick McKenna | Allocated; operation pending | | Governance record |
+| Final Accountable Approver / Production Owner | Patrick McKenna | Approval pending evidence | | |
+| Independent Human Technical Reviewer | Unavailable during pilot stage | Exception documented | | Governance record |
+| Technical review method | AI-assisted CTO review | Method only; not a human approval | | Deterministic evidence and repository controls |
 
 Mode rules:
 
@@ -149,13 +157,13 @@ and the Production alias must remain unchanged.
 
 | Required field | Exact value |
 | --- | --- |
-| Restore point |  |
-| Backup verification result |  |
-| Restore-point UTC timestamp |  |
-| Retention window |  |
-| Evidence reference |  |
-| Recovery owner |  |
-| Escalation contact |  |
+| Restore point | |
+| Backup verification result | |
+| Restore-point UTC timestamp | |
+| Retention window | |
+| Evidence reference | |
+| Recovery owner | |
+| Escalation contact | |
 
 - [ ] Restore point belongs to the exact Production database.
 - [ ] Restore point is inside the verified provider retention window.
@@ -176,10 +184,10 @@ and the Production alias must remain unchanged.
 | Vercel project | `seai-grant-software` |
 | Vercel project ID | `prj_ZfAMVKj3uSTotQsPenzxXupJxQAX` |
 | Expected database fingerprint | `db_4e1d3bd23cff6801` |
-| Connected database name |  |
-| Safe host identity |  |
-| Effective port |  |
-| Optional database branch ID |  |
+| Connected database name | |
+| Safe host identity | |
+| Effective port | |
+| Optional database branch ID | |
 
 Verification steps:
 
@@ -253,12 +261,12 @@ Do not run manual SQL, ad hoc `psql`, a database console, Prisma deploy,
 
 | Field | Value |
 | --- | --- |
-| External artifact reference |  |
-| Artifact SHA-256 |  |
-| First internal capture timestamp |  |
-| Second internal capture timestamp |  |
-| Deterministic evidence digest |  |
-| Operator result |  |
+| External artifact reference | |
+| Artifact SHA-256 | |
+| First internal capture timestamp | |
+| Second internal capture timestamp | |
+| Deterministic evidence digest | |
+| Operator result | |
 
 - [ ] Command runs from the exact approved repository SHA.
 - [ ] Guarded identity passes before a database connection is accepted.
@@ -276,12 +284,12 @@ reference, connection and verifier version.
 
 | Field | Value |
 | --- | --- |
-| External artifact reference |  |
-| Artifact SHA-256 |  |
-| First internal capture timestamp |  |
-| Second internal capture timestamp |  |
-| Deterministic evidence digest |  |
-| Operator result |  |
+| External artifact reference | |
+| Artifact SHA-256 | |
+| First internal capture timestamp | |
+| Second internal capture timestamp | |
+| Deterministic evidence digest | |
+| Operator result | |
 
 - [ ] The second command invocation completes without any intervening
       Production, repository, restore-point or deployment-state change.
@@ -397,12 +405,12 @@ the technical evidence.
 | Required field | Value |
 | --- | --- |
 | Final accountable reviewer | Patrick McKenna |
-| Review UTC timestamp |  |
-| Capture 1 reference |  |
-| Capture 2 reference |  |
-| Comparison result |  |
-| Review evidence reference |  |
-| Comments or conditions |  |
+| Review UTC timestamp | |
+| Capture 1 reference | |
+| Capture 2 reference | |
+| Comparison result | |
+| Review evidence reference | |
+| Comments or conditions | |
 
 ## Attestation Activation
 
@@ -560,11 +568,32 @@ execution as a remedy.
 
 ## Final Safety Confirmation
 
-- [ ] Attestation activation used only exact reviewed evidence.
-- [ ] Production schema is unchanged by PR #45.
-- [ ] Production data is unchanged by PR #45.
-- [ ] `_prisma_migrations` is unchanged by PR #45.
-- [ ] Password-reset migration remains pending.
+The earlier activation and guarded-status sections are retained as the
+historical R19 checklist. They are not the current post-migration procedure.
+Before any new separately authorised read-only verification, additionally
+require:
+
+- [ ] New exact `POST-MIGRATION-PROD-VERIFY-R#` change ID; R1 is not reused.
+- [ ] Fixed `post-migration-production-evidence` command through the ignored
+      credential-file boundary; no generic or migration selector.
+- [ ] Attestation is exactly retired v6 with null post-migration fields, two
+      retained R19 captures and one retained R19 approval.
+- [ ] Exact 16-applied/zero-pending ledger and one canonical successful
+      password-reset row.
+- [ ] All seven ordinary tuples and pilot-auth historical state verify
+      independently.
+- [ ] Complete post-password-reset and Lead assertions, canonical fingerprint
+      descriptors and descriptor digest verify.
+- [ ] Two independent RepeatableRead, transaction-read-only captures compare
+      deterministically and are retained write-first.
+- [ ] A later attestation amendment is treated as a separate governance action
+      requiring new qualified-human approval.
+
+- [ ] R4's reported one-time password-reset application is preserved as
+      historical evidence and the migration is not invoked again.
+- [ ] The new operation performs no Production schema, data or ledger write.
+- [ ] The attestation remains retired until a later evidence-backed governance
+      amendment with a new qualified-human approval.
 - [ ] Current live deployment remains
       `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`.
 - [ ] Production alias remains unchanged.
@@ -574,5 +603,5 @@ execution as a remedy.
 - [ ] Incident remains open.
 - [ ] No raw log, credential, token or connection URL entered Git, terminal
       evidence or PR text.
-- [ ] The next migration-execution change remains separately approved and
-      controlled.
+- [ ] Any later attestation amendment, application deployment or alias change
+      remains separately approved and controlled.

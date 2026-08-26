@@ -6,6 +6,7 @@ import {
   launchFixedDatabaseLauncherSmoke,
   launchFixedGuardedDatabaseCommandFromEnvFile,
   launchFixedLineageVerifier,
+  launchFixedPostMigrationProductionEvidenceCaptureRaw,
   launchFixedPrismaCommand,
   launchFixedSeed,
   resolveFixedPrismaEntrypoint,
@@ -46,6 +47,8 @@ function windowsDependencies(
     `${repositoryRoot}\\scripts\\verify-migration-lineage.ts`,
     `${repositoryRoot}\\scripts\\fixed-database-launcher-smoke-target.ts`,
     `${repositoryRoot}\\scripts\\run-database-command.ts`,
+    `${repositoryRoot}\\scripts\\launch-post-migration-production-evidence.ts`,
+    `${repositoryRoot}\\scripts\\capture-post-migration-production-evidence.ts`,
     `${repositoryRoot}\\prisma\\seed.ts`,
     `${repositoryRoot}\\node_modules\\prisma\\build\\index.js`,
     `${repositoryRoot}\\node_modules\\prisma\\package.json`
@@ -211,6 +214,72 @@ test('quoted credential boundary hands exact unquoted value to fixed guarded arg
   ]);
   assert.equal(observed?.options.shell, false);
   assert.equal(observed?.options.env?.DATABASE_URL, databaseUrl);
+});
+
+test('post-migration Production evidence uses the fixed credential-bound retained launcher only', () => {
+  let observed: ObservedSpawn | undefined;
+  const databaseUrl =
+    'postgresql://synthetic@127.0.0.1:5432/neondb?value=one=two&shell=whoami|echo';
+  const result = launchFixedGuardedDatabaseCommandFromEnvFile(
+    'post-migration-production-evidence',
+    'C:\\Credential Path\\quoted-crlf.env',
+    {
+      ...windowsDependencies((spawn) => {
+        observed = spawn;
+        return spawnResult({ status: 26 });
+      }),
+      env: {
+        NODE_ENV: 'test',
+        SHELL: 'powershell.exe',
+        ComSpec: 'C:\\Windows\\System32\\cmd.exe',
+        WT_SESSION: 'windows-terminal',
+        TERM_PROGRAM: 'vscode',
+        POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID:
+          'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R99'
+      },
+      loadCredentialEnvironment: (baseEnvironment) => ({
+        ...baseEnvironment,
+        DATABASE_URL: databaseUrl
+      })
+    }
+  );
+  assert.equal(result.status, 26);
+  assert.equal(observed?.program, 'C:\\Program Files\\nodejs\\node.exe');
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\launch-post-migration-production-evidence.ts'
+  ]);
+  assert.equal(observed?.options.shell, false);
+  assert.equal(observed?.options.env?.DATABASE_URL, databaseUrl);
+  assert.equal(
+    observed?.options.env?.POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID,
+    'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R99'
+  );
+});
+
+test('post-migration retention child uses fixed Node, fixed script, empty caller argv, and shell false', () => {
+  let observed: ObservedSpawn | undefined;
+  const result = launchFixedPostMigrationProductionEvidenceCaptureRaw({
+    ...windowsDependencies((spawn) => {
+      observed = spawn;
+      return spawnResult({ status: 25 });
+    }),
+    env: {
+      NODE_ENV: 'test',
+      DATABASE_URL: 'synthetic-value-that-must-remain-environment-only'
+    }
+  });
+  assert.equal(result.status, 25);
+  assert.equal(observed?.program, 'C:\\Program Files\\nodejs\\node.exe');
+  assert.deepEqual(observed?.arguments, [
+    '--import',
+    'tsx',
+    'C:\\Repository With Spaces\\seai\\scripts\\capture-post-migration-production-evidence.ts'
+  ]);
+  assert.equal(observed?.options.shell, false);
+  assert.equal(observed?.options.env?.DATABASE_URL, 'synthetic-value-that-must-remain-environment-only');
+  assert.doesNotMatch(JSON.stringify(observed?.arguments), /synthetic-value/);
 });
 
 test('credential boundary rejects unexpected commands before loading or spawning', () => {

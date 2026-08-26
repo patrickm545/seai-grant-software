@@ -15,6 +15,7 @@
 | `pnpm db:fingerprint` | Any configured URL | Parses only; does not connect. Prints safe identity. |
 | `pnpm db:status` | Matching environment | Read-only independent lineage status. Production pending status preserves exit `20`. |
 | `pnpm db:lineage:capture-production-evidence` | Production only | Fixed two-pass, repeatable-read evidence capture; requires an approved read-only change, explicit governance mode and its exact role controls. |
+| Fixed `post-migration-production-evidence` selector | Production only | Distinct retired-attestation, 16-applied/zero-pending dual read-only capture. Available only through the fixed credential-file boundary and a separately authorised change. |
 | `pnpm db:migrate:development` | Development | Prisma `migrate dev`; never Preview or Production. |
 | `pnpm db:migrate:preview` | Preview | Runs guarded status, deploy, then clean status. |
 | `pnpm db:migrate:test` | test | Runs guarded status, deploy, then clean status. |
@@ -41,6 +42,14 @@ printing paths or values. The decoded URL still must pass all existing
 environment, protocol, identity, fingerprint, lineage and operation controls.
 See the
 [R3 dotenv credential-boundary repair](PR_45_ADR_0024_R3_DOTENV_CREDENTIAL_BOUNDARY_REPAIR_2026_08_19.md).
+
+The post-migration selector resolves only the fixed Node launcher and capture
+entry point. It accepts no caller executable, script or argv, uses
+`shell:false`, performs two RepeatableRead transactions beginning with
+`SET TRANSACTION READ ONLY`, and retains raw output before parsing. It must not
+be substituted with the historical capture selector, status or a generic
+migration command. See the
+[post-migration evidence path repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).
 
 Environment-specific command names are enforced, not descriptive aliases: Preview, test, Development, and Production migration/seed wrappers refuse to run when `APP_ENV` identifies a different environment, even if that other environment's database metadata is internally consistent.
 

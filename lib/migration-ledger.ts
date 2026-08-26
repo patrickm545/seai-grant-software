@@ -362,11 +362,16 @@ function isExactAttestedProductionChecksumDivergence(input: {
   migration: Pick<MigrationManifest['migrations'][number], 'name' | 'checksum'>;
   attestation: LineageAttestation;
   expected: AttestedRepositoryChecksumDivergence;
+  historicalResolvedMigrationMode: HistoricalResolvedMigrationMode;
 }) {
   const [record] = input.records;
   const expected = input.expected;
+  const lifecycleMatches =
+    input.historicalResolvedMigrationMode === 'retired-post-migration-evidence-capture'
+      ? input.attestation.status === 'retired'
+      : input.attestation.status === 'pending' || input.attestation.status === 'active';
   return (
-    (input.attestation.status === 'pending' || input.attestation.status === 'active') &&
+    lifecycleMatches &&
     canonicalJson(input.attestation.repositoryMigrationChecksumDivergences) ===
       canonicalJson(PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES) &&
     input.attestation.approvedDatabaseFingerprint === expected.productionDatabaseFingerprint &&
@@ -388,7 +393,8 @@ function isExactAttestedProductionChecksumDivergence(input: {
 export type HistoricalResolvedMigrationMode =
   | 'ordinary-only'
   | 'pending-evidence-capture'
-  | 'active-attestation';
+  | 'active-attestation'
+  | 'retired-post-migration-evidence-capture';
 
 function assertExactHistoricalResolvedMigration(input: {
   records: NormalisedMigrationRecord[];
@@ -422,6 +428,12 @@ function assertExactHistoricalResolvedMigration(input: {
         exactLedgerTimestamps.startedAt === null ||
         exactLedgerTimestamps.finishedAt === null ||
         observedCurrentSchema.fingerprint === null ||
+        r14Evidence.changeId === null)) ||
+    (input.mode === 'retired-post-migration-evidence-capture' &&
+      (input.attestation.status !== 'retired' ||
+        exactLedgerTimestamps.startedAt === null ||
+        exactLedgerTimestamps.finishedAt === null ||
+        observedCurrentSchema.fingerprint === null ||
         r14Evidence.changeId === null))
   ) {
     throw new Error('Historical resolved migration attestation lifecycle is incomplete.');
@@ -435,11 +447,11 @@ function assertExactHistoricalResolvedMigration(input: {
     migrationName: input.historical.migrationName,
     checksum: input.historical.observedProductionChecksum,
     startedAt:
-      input.mode === 'active-attestation'
+      input.mode !== 'pending-evidence-capture'
         ? exactLedgerTimestamps.startedAt!
         : record.startedAt,
     finishedAt:
-      input.mode === 'active-attestation'
+      input.mode !== 'pending-evidence-capture'
         ? exactLedgerTimestamps.finishedAt!
         : record.finishedAt,
     appliedStepsCount: input.historical.expectedAppliedStepsCount,
@@ -633,13 +645,15 @@ export function verifyAttestedLedger(input: {
     const checksumDivergence = PRODUCTION_REPOSITORY_CHECKSUM_DIVERGENCES.find(
       (candidate) => candidate.migrationName === migration.name
     );
+    const historicalMode = input.historicalResolvedMigrationMode ?? 'ordinary-only';
     if (checksumDivergence) {
       if (
         !isExactAttestedProductionChecksumDivergence({
           records,
           migration,
           attestation: input.attestation,
-          expected: checksumDivergence
+          expected: checksumDivergence,
+          historicalResolvedMigrationMode: historicalMode
         })
       ) {
         const report = repositoryMigrationExactSuccessReport(records, migration);
@@ -654,7 +668,6 @@ export function verifyAttestedLedger(input: {
     const historicalResolved = input.attestation.historicalResolvedMigrations.find(
       (candidate) => candidate.migrationName === migration.name
     );
-    const historicalMode = input.historicalResolvedMigrationMode ?? 'ordinary-only';
     if (historicalResolved && historicalMode !== 'ordinary-only') {
       const record = assertExactHistoricalResolvedMigration({
         records,

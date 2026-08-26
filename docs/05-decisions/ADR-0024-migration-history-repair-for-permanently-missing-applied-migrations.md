@@ -692,3 +692,28 @@ No guessed fingerprint, generic acceptance, catalog-assertion substitute or
 hash normalization is permitted. A separately authorised read-only Production
 post-migration verification must precede any new human-governed attestation
 amendment. The password-reset migration must not be invoked again.
+
+## Post-R1 Repository Capture-Path Repair
+
+Closed post-migration verification R1 exposed five repository incompatibilities
+before child launch: the retention change-ID family, pending-only historical
+capture lifecycle, 15-applied/one-pending ledger contract, pre-password-reset
+catalog assertions and missing fixed credential-bound command. The repository
+now resolves each incompatibility through a separate, versioned
+`post-migration-production-verification` path without changing the historical
+R19 capture meaning.
+
+The new path requires the retired v6 attestation, exact Production identity,
+16 applied repository migrations, zero pending migrations, the canonical
+successful one-step password-reset ledger record, all seven ordinary tuples,
+the pilot-auth historical-resolved state, exact post-password-reset catalog
+assertions and the complete existing fingerprint-v2 canonical descriptor
+payload. It performs two internal RepeatableRead transactions whose first
+statement is `SET TRANSACTION READ ONLY`, compares every stable canonical
+field and retains the outputs through the write-first Node path.
+
+The repair does not populate either post-migration attestation field, add an
+approval or change `retired` to `active`. A later attestation amendment requires
+new exact Production evidence and a new qualified-human approval. The closed
+R1 and R4 records and the R19 historical captures remain unchanged. See the
+[post-migration evidence path repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).

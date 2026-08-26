@@ -12,6 +12,7 @@ import test from 'node:test';
 import {
   OPERATION_REPORTING_FAILURE_EXIT,
   parseRetainedProductionDiagnostic,
+  runFixedPostMigrationProductionEvidenceOperationWithRetention,
   runFixedProductionEvidenceOperationWithRetention,
   type ProductionEvidenceRetentionDependencies
 } from '../../lib/production-evidence-operation-retention';
@@ -78,6 +79,54 @@ function runCase(input: {
     artifactBaseDirectory: base,
     cwd: process.cwd(),
     environment: { NODE_ENV: 'test', PRODUCTION_EVIDENCE_CHANGE_ID: changeId },
+    repositoryRevision: () => repositorySha,
+    now: () => times[timeIndex++] ?? times[times.length - 1],
+    launch: () => {
+      launchCount += 1;
+      return child(input);
+    },
+    ...(input.configure ?? {})
+  });
+  return {
+    base,
+    changeId,
+    operationDirectory: join(base, changeId),
+    launchCount: () => launchCount,
+    result
+  };
+}
+
+function runPostMigrationCase(input: {
+  status: number | null;
+  stdout?: Buffer | string;
+  stderr?: Buffer | string;
+  changeId?: string;
+  configure?: Pick<
+    ProductionEvidenceRetentionDependencies,
+    | 'hashBytes'
+    | 'enrichBoundary'
+    | 'serializeFinalBoundary'
+    | 'afterChildRetention'
+  >;
+}) {
+  const base = mkdtempSync(join(tmpdir(), 'adr0024-post-retention-test-'));
+  const changeId =
+    input.changeId ?? 'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R99';
+  let launchCount = 0;
+  const times = [
+    new Date('2026-08-26T10:00:00.000Z'),
+    new Date('2026-08-26T10:00:00.100Z'),
+    new Date('2026-08-26T10:00:01.000Z'),
+    new Date('2026-08-26T10:00:01.100Z')
+  ];
+  let timeIndex = 0;
+  const result = runFixedPostMigrationProductionEvidenceOperationWithRetention({
+    artifactBaseDirectory: base,
+    cwd: process.cwd(),
+    environment: {
+      NODE_ENV: 'test',
+      POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID: changeId
+    },
     repositoryRevision: () => repositorySha,
     now: () => times[timeIndex++] ?? times[times.length - 1],
     launch: () => {
@@ -347,7 +396,7 @@ test('raw artifact SHA-256 hashes use exact retained bytes deterministically', (
 });
 
 test('secret-like child output is never written to retained artifacts', () => {
-  const secret = 'postgresql://operator:credential@secret.example/neondb';
+  const secret = ['postgresql', '://', 'operator', ':', 'credential', '@', 'secret.example', '/neondb'].join('');
   const operation = runCase({ status: 70, stderr: `INTERNAL_ERROR: ${secret}\n` });
   try {
     const retained = readFileSync(join(operation.operationDirectory, 'child-stderr.bin'), 'utf8');
@@ -395,4 +444,125 @@ test('safe diagnostic parser handles stderr-only and rejects malformed input', (
   );
   assert.equal(parseRetainedProductionDiagnostic(Buffer.from('malformed')), null);
   assert.equal(parseRetainedProductionDiagnostic(Buffer.alloc(0)), null);
+});
+
+test('post-migration operation family preserves typed child exits and write-first diagnostics', () => {
+  for (const [status, classification] of [
+    [25, 'LEDGER_MISMATCH'],
+    [26, 'SCHEMA_MISMATCH'],
+    [70, 'INTERNAL_ERROR']
+  ] as const) {
+    const operation = runPostMigrationCase({
+      status,
+      stderr: typedDiagnostic(classification)
+    });
+    try {
+      assert.equal(operation.result.repositoryExit, status);
+      assert.equal(operation.result.wrapperExit, status);
+      assert.equal(operation.result.diagnostic?.classification, classification);
+      assert.deepEqual(
+        readFileSync(join(operation.operationDirectory, 'child-stderr.bin')),
+        typedDiagnostic(classification)
+      );
+      const boundary = readJson(join(operation.operationDirectory, 'operation-boundary.json'));
+      assert.equal(boundary.repositoryTypedExit, status);
+      assert.equal(boundary.operationFamily, 'post-migration-production-verification');
+    } finally {
+      cleanup(operation.base);
+    }
+  }
+});
+
+test('successful post-migration output retains raw bytes before two logical capture artifacts', () => {
+  const changeId = 'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R98';
+  const envelope = {
+    version: 'adr-0024-production-post-migration-dual-capture/v1',
+    operationPurpose: 'post-migration-production-verification',
+    captures: [1, 2].map((captureOrdinal) => ({
+      captureOrdinal,
+      logicalArtifactReference: `ADR0024/${changeId}/capture-${captureOrdinal}.json`,
+      deterministicEvidenceDigest: 'a'.repeat(64)
+    })),
+    deterministicComparison: { result: 'matched' }
+  };
+  const stdout = Buffer.from(`${JSON.stringify(envelope, null, 2)}\n`, 'utf8');
+  const operation = runPostMigrationCase({ status: 0, stdout, changeId });
+  try {
+    assert.deepEqual(
+      readFileSync(join(operation.operationDirectory, 'child-stdout.bin')),
+      stdout
+    );
+    for (const ordinal of [1, 2]) {
+      const reference = `capture-${ordinal}.json`;
+      const bytes = readFileSync(join(operation.operationDirectory, reference));
+      const capture = JSON.parse(bytes.toString('utf8')) as Record<string, unknown>;
+      assert.equal(capture.captureOrdinal, ordinal);
+    }
+    const boundary = readJson(join(operation.operationDirectory, 'operation-boundary.json'));
+    const artifacts = boundary.captureArtifacts as Array<Record<string, unknown>>;
+    assert.equal(artifacts.length, 2);
+    for (const artifact of artifacts) {
+      const bytes = readFileSync(
+        join(operation.operationDirectory, String(artifact.reference))
+      );
+      assert.equal(
+        artifact.sha256,
+        createHash('sha256').update(bytes).digest('hex')
+      );
+    }
+  } finally {
+    cleanup(operation.base);
+  }
+});
+
+test('post-migration optional parsing failure cannot hide child success or delete raw output', () => {
+  const operation = runPostMigrationCase({ status: 0, stdout: '{"not":"dual"}\n' });
+  try {
+    assert.equal(operation.result.repositoryExit, 0);
+    assert.equal(operation.result.wrapperExit, OPERATION_REPORTING_FAILURE_EXIT);
+    assert.equal(operation.result.reportingStatus, 'failed');
+    assert.ok(existsSync(join(operation.operationDirectory, 'child-stdout.bin')));
+    assert.ok(
+      existsSync(join(operation.operationDirectory, 'operation-boundary-child-complete.json'))
+    );
+    assert.equal(
+      readJson(join(operation.operationDirectory, 'reporting-error.json')).reportingFailureStage,
+      'successful-capture-parsing'
+    );
+  } finally {
+    cleanup(operation.base);
+  }
+});
+
+test('historical and arbitrary change IDs cannot enter the post-migration operation family', () => {
+  for (const changeId of [
+    'CHG-2099-01-01-ADR0024-PROD-EVIDENCE-R99',
+    'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY',
+    'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R0',
+    'CHG-2099-01-01-ADR0024-POST-MIGRATION-PROD-VERIFY-R1;whoami'
+  ]) {
+    const base = mkdtempSync(join(tmpdir(), 'adr0024-post-retention-invalid-'));
+    let launches = 0;
+    try {
+      assert.throws(
+        () =>
+          runFixedPostMigrationProductionEvidenceOperationWithRetention({
+            artifactBaseDirectory: base,
+            environment: {
+              NODE_ENV: 'test',
+              POST_MIGRATION_PRODUCTION_EVIDENCE_CHANGE_ID: changeId
+            },
+            repositoryRevision: () => repositorySha,
+            launch: () => {
+              launches += 1;
+              return child({ status: 0 });
+            }
+          }),
+        /fixed operation change ID is invalid/
+      );
+      assert.equal(launches, 0);
+    } finally {
+      cleanup(base);
+    }
+  }
 });

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Active governance; attestation retired, read-only post-migration verification required |
+| Status | Active governance; post-migration evidence complete, attestation retired pending new qualified-human approval |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-26 |
+| Last reviewed | 2026-08-27 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -683,3 +683,26 @@ evidence and a new qualified-human approval.
 
 See the
 [post-migration evidence path repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).
+
+## Completed Read-Only Post-Migration Verification R2
+
+R2 is permanently closed after one fixed credential-file invocation. Both
+internal read-only RepeatableRead captures completed and matched deterministic
+evidence digest
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+The exact ledger result was 16 applied repository migrations and zero pending;
+the canonical password-reset record, seven ordinary tuples and pilot-auth
+historical-resolved state all verified.
+
+The actual Production fingerprint and complete catalog descriptor digest are
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+The two complete capture artifacts and operation boundary remain outside Git
+under the R2 logical artifact namespace. The
+[R2 verification record](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)
+contains their hashes and exact lifecycle evidence.
+
+Do not rerun R2 or the password-reset migration. The next permitted step is a
+separately authorised governance review using the retained evidence. It must
+obtain a new qualified-human approval before amending or reactivating the
+retired attestation. Production status remains inapplicable until that active
+governance state exists; do not bypass its active-attestation requirement.

@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-26 |
-| Operational state | R19 historical evidence retained; password-reset R4 and post-migration verification R1 closed; attestation v6 retired; fixed post-migration read-only path repository-ready; no new operation authorised |
+| Last reviewed | 2026-08-27 |
+| Operational state | Post-migration R2 evidence complete and retained; attestation v6 retired pending a new qualified-human approval |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -21,6 +21,7 @@
 | R18 operation | [Fully retained manual-lead checksum stop](PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md) |
 | R18 investigation | [Seventh exact checksum tuple](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Post-migration path | [Repository-only R1 blocker repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md) |
+| Post-migration R2 | [Complete dual read-only Production evidence](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md) |
 
 ## Purpose And Authority
 
@@ -605,3 +606,18 @@ require:
       evidence or PR text.
 - [ ] Any later attestation amendment, application deployment or alias change
       remains separately approved and controlled.
+
+## R2 Outcome
+
+R2 satisfied every read-only verification item above at approved revision
+`6eb3ab4bf1763883443793dc46a7be30e8a2e6c0`. Both retained captures
+matched deterministic digest
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`
+and actual Production fingerprint
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+R2 is permanently closed and may not be retried.
+
+The checklist now stops at a governance boundary: a new qualified-human
+approval is required before a separate attestation amendment or reactivation.
+The status command remains unavailable while the attestation is retired. No
+Production write, migration, deployment or alias movement occurred.

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; Production attestation retired after password-reset postflight verification stop |
+| Status | Accepted; post-migration Production evidence complete, attestation retired pending new qualified-human approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-26 |
+| Last reviewed | 2026-08-27 |
 
 ## Context
 
@@ -717,3 +717,28 @@ approval or change `retired` to `active`. A later attestation amendment requires
 new exact Production evidence and a new qualified-human approval. The closed
 R1 and R4 records and the R19 historical captures remain unchanged. See the
 [post-migration evidence path repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).
+
+## Post-Migration Production Evidence R2
+
+The separately authorised and permanently closed R2 operation used one fixed
+read-only invocation at approved revision
+`6eb3ab4bf1763883443793dc46a7be30e8a2e6c0`. Both independent
+RepeatableRead transactions completed after being set read only. The ledger
+contained all 16 repository migrations applied, zero pending, and the exact
+canonical successful password-reset record. All seven ordinary historical
+tuples and the separate pilot-auth historical-resolved state verified.
+
+Both complete fingerprint-v2 descriptor payloads matched. The actual
+Production post-migration fingerprint and catalog descriptor digest are
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+The deterministic evidence digest is
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+All post-password-reset, Lead and pilot-auth assertions passed with no
+unsupported relations.
+
+This evidence satisfies the read-only verification prerequisite but does not
+amend governance. Attestation v6 remains retired with null post-migration
+fields and its R19 evidence and approval unchanged. A new qualified-human
+approval is required before a separate attestation amendment or reactivation.
+No Production write, migration, deployment or alias movement occurred. See the
+[R2 verification record](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).

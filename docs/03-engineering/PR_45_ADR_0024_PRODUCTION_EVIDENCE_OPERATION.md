@@ -6,10 +6,10 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-26 |
-| Operational state | Password-reset R4 reported migration success, then postflight stopped at an invalid disposable-derived Production expectation; attestation v6 is retired pending read-only verification |
-| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17 |
-| Repository baseline | `2b76a33a5f01c746436132c195bdd7582d54817b` |
+| Last reviewed | 2026-08-27 |
+| Operational state | Post-migration R2 evidence complete; attestation v6 remains retired pending a new qualified-human approval |
+| Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17; post-migration R2 closed 2026-08-27 |
+| Repository baseline | `6eb3ab4bf1763883443793dc46a7be30e8a2e6c0` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
@@ -46,6 +46,7 @@
 | Pre-R9 timestamp audit | [All attestation timestamp paths and retained evidence](PR_45_ADR_0024_TIMESTAMP_AUDIT_BEFORE_R9.md) |
 | Final Windows launcher reliability | [R5 handoff investigation and repair](PR_45_ADR_0024_WINDOWS_LAUNCHER_RELIABILITY_2026_08_04.md) |
 | Password-reset R4 fingerprint investigation | [Classification A and fail-closed provenance repair](PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md) |
+| Post-migration R2 verification | [Complete dual read-only Production evidence and governance boundary](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md) |
 
 ## Decision
 
@@ -826,3 +827,29 @@ This repository-only repair did not load Production credentials, connect,
 query, run status, migrate, execute SQL, deploy or move an alias. The next
 possible database action is a separately authorised read-only post-migration
 verification, never another migration invocation.
+
+## Completed Post-Migration Production Verification R2
+
+`CHG-2026-08-27-ADR0024-POST-MIGRATION-PROD-VERIFY-R2` used the exact approved
+revision `6eb3ab4bf1763883443793dc46a7be30e8a2e6c0` and one fixed
+credential-file invocation. Both internal RepeatableRead transactions were set
+read only and completed. Production identity matched, all 16 repository
+migrations were applied with zero pending, the canonical password-reset row
+was a finished one-step lifecycle, all seven ordinary tuples verified, and the
+pilot-auth historical-resolved entry verified.
+
+The two complete fingerprint-v2 descriptor payloads matched. The actual
+Production post-migration fingerprint and descriptor digest are
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+All post-password-reset, Lead and pilot-auth assertions passed with no
+unsupported relations. The deterministic evidence digest is
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+
+R2 retained both complete captures and the write-first operation boundary
+outside Git, returned repository and wrapper exit `0`, and is permanently
+closed. It did not write Production or invoke a migration. Attestation v6
+remains retired with null post-migration fields, the two R19 captures and one
+R19 approval unchanged. Production status was not run because that path
+requires an active attestation. A separate governance amendment requires a new
+qualified-human approval. See the
+[R2 verification record](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).

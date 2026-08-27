@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
-| Status | Open; password-reset application reported, post-migration schema verification incomplete, attestation retired |
+| Status | Open; post-migration Production evidence complete, attestation retired pending new qualified-human approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-26 |
+| Last reviewed | 2026-08-27 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -529,6 +529,27 @@ schema remain unverified, the attestation remains retired and the incident
 remains open. The next database action, if separately authorised, is one new
 read-only post-migration verification; it is not a migration retry.
 
+## Completed Post-Migration Verification R2
+
+R2 is permanently closed after one separately authorised fixed read-only
+invocation. The safe identity matched, both independent read-only
+RepeatableRead captures completed, all 16 repository migrations were applied
+with zero pending, and the exact password-reset lifecycle, seven ordinary
+tuples and pilot-auth historical state verified.
+
+The two complete Production descriptor payloads matched at actual fingerprint
+and descriptor digest
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+The deterministic evidence digest is
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+All required catalog assertions passed and no unsupported relation was found.
+
+The incident remains open at the governance boundary. Attestation v6 remains
+retired, its post-migration fields remain null, and a new qualified-human
+approval is required before a separate amendment or reactivation. No
+Production write, migration, deployment or alias movement occurred. See the
+[R2 verification record](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -558,3 +579,4 @@ read-only post-migration verification; it is not a migration retry.
 - [PR #45 Operational Readiness Checklist](PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)
 - [Post-Migration Production Evidence Path Repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md)
+- [Post-Migration Production Verification R2](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)

@@ -595,3 +595,9 @@ required before any human approval is solicited or recorded.
 - [Post-Migration Production Evidence Path Repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md)
 - [Post-Migration Production Verification R2](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)
 - [Post-Migration Governance Review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md)
+- [Post-Migration Governance Model Repair](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md)
+
+The repository now contains a fail-closed v7 pending-approval governance model
+for the completed R2 evidence. Retired v6 remains the immutable R19 record. No
+new human approval or activation exists, so the incident remains open at the
+qualified-human boundary and Production status remains separately controlled.

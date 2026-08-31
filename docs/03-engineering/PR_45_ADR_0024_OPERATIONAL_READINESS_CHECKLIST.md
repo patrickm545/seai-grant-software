@@ -637,11 +637,15 @@ longer true.
 - [x] Unsafe old-approval reuse reproduced with a synthetic repository-only
       snapshot.
 - [x] Attestation left `retired`; both post-migration fields remain `null`.
-- [ ] Versioned post-migration governance transition implemented.
-- [ ] Both R2 captures and deterministic digest bound by the attestation.
-- [ ] Qualified-human declaration and evidence rules implemented.
-- [ ] Truthful post-migration acknowledgement and renewal expiry implemented.
+- [x] Versioned post-migration governance transition implemented as v7
+      `pending-approval` while preserving retired v6.
+- [x] Both R2 captures and deterministic digest atomically bound by v7.
+- [x] Independent qualified-human declaration and evidence rules implemented.
+- [x] Truthful versioned post-migration acknowledgement and explicit maximum
+      90-day activation expiry implemented.
 - [ ] New genuine qualified-human approval supplied and validated.
 
-No approval should be solicited until the first four unchecked repository
-controls are repaired and independently reviewed.
+The approval package is now structurally signable, but all genuine human fields
+remain empty. An independent qualified Database Reliability Reviewer must
+complete and evidence those fields before activation. No Production status is
+authorised by this repository repair.

@@ -216,3 +216,16 @@ This review made no Production access and no attestation change. Production
 status remains prohibited while the attestation is retired. Any later guarded
 status check requires separate authority after a valid active governance state
 exists.
+
+## Subsequent Repository Repair
+
+The separately authorised governance repair preserves this review and its raw
+evidence hash as the historical stop record. It adds an explicit v7
+`pending-approval` replacement, atomic R2 evidence binding, independent
+qualified-human approval model, truthful acknowledgement v1 and a signable
+empty-human-fields package. This review's `not-signable-until-governance-repair`
+package is superseded, not rewritten, by
+[`ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json`](evidence/ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json).
+
+V7 is not approved or active. The complete repair is documented in the
+[post-migration governance model repair](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md).

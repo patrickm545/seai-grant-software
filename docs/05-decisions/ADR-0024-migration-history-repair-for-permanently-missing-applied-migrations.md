@@ -768,3 +768,22 @@ binding, reviewer qualification evidence, new approval timing, truthful
 acknowledgements and renewed expiry semantics. Attestation v6 therefore remains
 retired with null post-migration fields and unchanged R19 evidence. See the
 [post-migration governance review](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md).
+
+## Post-Migration Governance Revision V7
+
+The repository now preserves retired v6 as the immutable R19 historical
+attestation and introduces a separate
+`clada-adr-0024-post-migration-attestation/v7`. V7 begins in
+`pending-approval`, atomically binds both R2 captures, the deterministic digest,
+operation boundary, actual Production fingerprint and 16-applied/zero-pending
+state, and cannot use the retained R19 captures or approval.
+
+Activation requires one new independent qualified-human Database Reliability
+Reviewer, repository-indexed qualification and approval evidence, exact R2 and
+governance-revision bindings, the versioned truthful post-migration
+acknowledgement, lifecycle timestamps and an explicit expiry no more than 90
+days after activation. Production Owner Patrick McKenna cannot self-review in
+that role. The old pilot exception is not extended into v7.
+
+No human approval was added and v7 remains pending. See the
+[governance model repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md).

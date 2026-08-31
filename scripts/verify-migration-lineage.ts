@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
@@ -22,6 +23,13 @@ import {
   type LineageAttestation
 } from '../lib/lineage-attestation';
 import { verifyRepositoryEvidenceReferences } from '../lib/lineage-evidence-references';
+import {
+  PostMigrationAttestationValidationError,
+  validatePostMigrationApprovalPackage,
+  validatePostMigrationAttestationTransition,
+  type PostMigrationApprovalPackage,
+  type PostMigrationLineageAttestation
+} from '../lib/post-migration-lineage-attestation';
 import {
   generateMigrationManifest,
   verifyImmutableMigrationHistory,
@@ -59,6 +67,19 @@ const attestationPath = resolve(
   'lineage-attestations',
   'adr-0024-production.json'
 );
+const postMigrationAttestationPath = resolve(
+  repositoryRoot,
+  'prisma',
+  'lineage-attestations',
+  'adr-0024-production-post-migration-v7.json'
+);
+const postMigrationApprovalPackagePath = resolve(
+  repositoryRoot,
+  'docs',
+  '03-engineering',
+  'evidence',
+  'ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json'
+);
 const modes = new Set<VerifierMode>([
   'strict-status',
   'strict-preflight',
@@ -73,7 +94,11 @@ function readFixedJson<T>(path: string): T {
 }
 
 function safeMessage(error: unknown) {
-  if (error instanceof LineageVerifierError || error instanceof AttestationValidationError) {
+  if (
+    error instanceof LineageVerifierError ||
+    error instanceof AttestationValidationError ||
+    error instanceof PostMigrationAttestationValidationError
+  ) {
     return error.message.replace(/postgres(?:ql)?:\/\/\S+/gi, '[redacted-database-url]');
   }
   return 'Migration lineage verification failed safely.';
@@ -193,8 +218,28 @@ async function main() {
     const attestation = readFixedJson<LineageAttestation>(attestationPath);
     validateLineageAttestation(attestation);
     verifyRepositoryEvidenceReferences(repositoryRoot, attestation);
-    console.log(`ADR-0024 attestation is structurally valid and status=${attestation.status}.`);
-    return attestation.status === 'active' ? 0 : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
+    const postMigrationAttestation = readFixedJson<PostMigrationLineageAttestation>(
+      postMigrationAttestationPath
+    );
+    const approvalPackage = readFixedJson<PostMigrationApprovalPackage>(
+      postMigrationApprovalPackagePath
+    );
+    const sourceArtifactSha256 = createHash('sha256')
+      .update(readFileSync(attestationPath))
+      .digest('hex');
+    validatePostMigrationAttestationTransition({
+      source: attestation,
+      sourceArtifactSha256,
+      candidate: postMigrationAttestation,
+      requireActive: postMigrationAttestation.status === 'active'
+    });
+    validatePostMigrationApprovalPackage(approvalPackage, postMigrationAttestation);
+    console.log(
+      `ADR-0024 historical attestation is structurally valid and status=${attestation.status}; post-migration v7 status=${postMigrationAttestation.status}.`
+    );
+    return postMigrationAttestation.status === 'active'
+      ? 0
+      : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
   }
   if (command === 'production-evidence-capture') {
     const environment = process.env.APP_ENV?.trim().toLowerCase() as ApplicationEnvironment;

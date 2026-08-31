@@ -7,7 +7,7 @@
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
 | Last reviewed | 2026-08-31 |
-| Operational state | R2 evidence verified; attestation v6 retired; governance repair required before qualified-human approval |
+| Operational state | R2 evidence verified; attestation v6 retired; v7 governance pending one new independent qualified-human approval |
 | Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17; post-migration R2 closed 2026-08-27 |
 | Repository baseline | `6eb3ab4bf1763883443793dc46a7be30e8a2e6c0` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
@@ -868,3 +868,17 @@ No approval, attestation amendment or activation occurred. The
 [governance review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md) records
 the exact defect and the non-signable R2 evidence package. A repository
 governance repair is required before approval can be requested.
+
+## Post-Migration Governance Repair
+
+The subsequent repository-only repair preserves retired v6 as historical R19
+evidence and adds a separate v7 `pending-approval` attestation. V7 atomically
+binds both retained R2 captures, their hashes, the deterministic digest,
+operation boundary, actual post-migration fingerprint and 16/16 applied state.
+It requires a new independent qualified-human Database Reliability Reviewer
+with repository qualification evidence and the exact versioned post-migration
+acknowledgement.
+
+No reviewer, approval or activation was added. Production evidence operations
+R19 and post-migration R2 remain closed, and this governance repair does not
+authorise another Production operation.

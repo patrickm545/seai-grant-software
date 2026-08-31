@@ -723,3 +723,28 @@ dual-evidence binding, qualification evidence, new approval timing, truthful
 acknowledgements and expiry semantics. The
 [governance review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md) is the
 authoritative repository-only stop record.
+
+## V7 Qualified-Human Approval Procedure
+
+The governance defect is repaired by a separate v7 pending-approval artifact;
+retired v6 must remain unchanged. A future approval change must:
+
+1. verify the raw v6 SHA-256 and the complete fixed R2 bundle;
+2. use an independent human `DATABASE_RELIABILITY_REVIEWER` who is not Patrick
+   McKenna;
+3. add repository Markdown qualification and approval evidence;
+4. record the required PostgreSQL migration and reliability declarations;
+5. bind the exact R2 change ID, fingerprint, two capture hashes, deterministic
+   digest, R2 repository revision, v7 version and exact governance revision;
+6. accept acknowledgement
+   `clada-adr-0024-post-migration-acknowledgement/v1` without alteration;
+7. set `approvedAt`, `reviewedAt` and `activatedAt` to the same genuine time
+   after R2 evidence completion;
+8. set an explicit expiry no more than 90 days later; and
+9. run `pnpm db:attestation:verify` and all repository validation before any
+   separately authorised Production status operation.
+
+Do not copy R19 approval fields, infer qualification from a title, use an AI
+reviewer, or activate the pending template without every field. The
+[signable package](evidence/ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json)
+keeps all genuine human fields empty until supplied by that reviewer.

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; post-migration Production evidence complete, attestation retired pending new qualified-human approval |
+| Status | Accepted; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-27 |
+| Last reviewed | 2026-08-31 |
 
 ## Context
 
@@ -742,3 +742,29 @@ fields and its R19 evidence and approval unchanged. A new qualified-human
 approval is required before a separate attestation amendment or reactivation.
 No Production write, migration, deployment or alias movement occurred. See the
 [R2 verification record](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).
+
+## Post-Migration Governance Review
+
+The repository-only governance review rehashed and parsed both R2 captures and
+used the committed evidence validator to recompute the fingerprint and
+deterministic digest. R2 remains exact: 16 repository migrations applied, zero
+pending, seven ordinary tuples verified, pilot-auth verified, schema
+fingerprint
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`
+and deterministic digest
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+
+The review also reproduced a fail-closed governance blocker. The current v6
+validator can accept a synthetic active post-migration snapshot while retaining
+the earlier R19 approval and R19 capture set and binding only one R2 artifact.
+The schema contains no post-migration technical-qualification declaration or
+second-capture/deterministic-digest binding. Its fixed approval
+acknowledgements also retain the now-false statement that no Production
+migration has been applied.
+
+No safe qualified-human approval or reactivation can proceed until a separate
+repository repair defines the versioned transition, exact dual-evidence
+binding, reviewer qualification evidence, new approval timing, truthful
+acknowledgements and renewed expiry semantics. Attestation v6 therefore remains
+retired with null post-migration fields and unchanged R19 evidence. See the
+[post-migration governance review](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md).

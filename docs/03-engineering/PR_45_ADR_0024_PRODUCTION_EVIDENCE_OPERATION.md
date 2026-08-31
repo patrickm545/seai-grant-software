@@ -6,8 +6,8 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-27 |
-| Operational state | Post-migration R2 evidence complete; attestation v6 remains retired pending a new qualified-human approval |
+| Last reviewed | 2026-08-31 |
+| Operational state | R2 evidence verified; attestation v6 retired; governance repair required before qualified-human approval |
 | Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17; post-migration R2 closed 2026-08-27 |
 | Repository baseline | `6eb3ab4bf1763883443793dc46a7be30e8a2e6c0` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
@@ -853,3 +853,18 @@ R19 approval unchanged. Production status was not run because that path
 requires an active attestation. A separate governance amendment requires a new
 qualified-human approval. See the
 [R2 verification record](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).
+
+## Repository-Only Post-Migration Governance Review
+
+The follow-up review verified the retained R2 hashes and complete evidence
+without Production access. It then proved that the current v6 validator can
+accept a synthetic active snapshot with the historical R19 approval and R19
+capture set after only one R2 artifact is supplied. The contract does not bind
+the second R2 capture or deterministic digest and has no qualified-human
+technical-evidence field. Its fixed acknowledgement that no Production
+migration was applied is no longer truthful.
+
+No approval, attestation amendment or activation occurred. The
+[governance review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md) records
+the exact defect and the non-signable R2 evidence package. A repository
+governance repair is required before approval can be requested.

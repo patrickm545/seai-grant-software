@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
-| Status | Open; post-migration Production evidence complete, attestation retired pending new qualified-human approval |
+| Status | Open; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-27 |
+| Last reviewed | 2026-08-31 |
 | Severity | High - Production releases blocked |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
@@ -550,6 +550,20 @@ approval is required before a separate amendment or reactivation. No
 Production write, migration, deployment or alias movement occurred. See the
 [R2 verification record](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).
 
+## Post-Migration Governance Review
+
+The repository-only governance review verified both R2 artifact hashes and
+their complete deterministic payloads, then reproduced an unsafe v6 lifecycle
+transition. The current validator accepts an active snapshot with the old R19
+approval and capture set after only one R2 artifact is added. It does not bind
+the second capture or deterministic digest, does not represent qualified-human
+evidence and retains an obsolete acknowledgement that no Production migration
+was applied.
+
+The attestation remains retired with null post-migration fields. No approval or
+activation occurred. A separately reviewed repository governance repair is now
+required before any human approval is solicited or recorded.
+
 ## Related Documents
 
 - [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md)
@@ -580,3 +594,4 @@ Production write, migration, deployment or alias movement occurred. See the
 - [PR #45 Pilot-Stage Production Governance](PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md)
 - [Post-Migration Production Evidence Path Repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md)
 - [Post-Migration Production Verification R2](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)
+- [Post-Migration Governance Review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md)

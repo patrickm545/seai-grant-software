@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Active governance; post-migration evidence complete, attestation retired pending new qualified-human approval |
+| Status | Active governance; post-migration evidence verified, attestation retired, governance repair required before approval |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-27 |
+| Last reviewed | 2026-08-31 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -706,3 +706,20 @@ separately authorised governance review using the retained evidence. It must
 obtain a new qualified-human approval before amending or reactivating the
 retired attestation. Production status remains inapplicable until that active
 governance state exists; do not bypass its active-attestation requirement.
+
+## Post-Migration Governance Defect Boundary
+
+The repository-only governance review verified the retained R2 artifacts and
+then reproduced an unsafe v6 transition: a synthetic active snapshot was
+accepted with the old R19 approval and R19 captures after only one R2 artifact
+was added. The current schema does not bind the second R2 capture or
+deterministic digest, does not represent reviewer qualification, and retains a
+mandatory acknowledgement that no Production migration was applied.
+
+Do not solicit or record a post-migration approval against that contract. Do
+not change the attestation status or post-migration fields. First complete a
+separately reviewed repository repair that defines the revision transition,
+dual-evidence binding, qualification evidence, new approval timing, truthful
+acknowledgements and expiry semantics. The
+[governance review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md) is the
+authoritative repository-only stop record.

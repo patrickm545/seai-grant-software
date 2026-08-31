@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-27 |
-| Operational state | Post-migration R2 evidence complete and retained; attestation v6 retired pending a new qualified-human approval |
+| Last reviewed | 2026-08-31 |
+| Operational state | R2 evidence verified; attestation v6 retired; governance repair required before qualified-human approval |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -22,6 +22,7 @@
 | R18 investigation | [Seventh exact checksum tuple](PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md) |
 | Post-migration path | [Repository-only R1 blocker repair](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md) |
 | Post-migration R2 | [Complete dual read-only Production evidence](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md) |
+| Governance review | [Unsupported v6 post-migration transition](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md) |
 
 ## Purpose And Authority
 
@@ -621,3 +622,26 @@ The checklist now stops at a governance boundary: a new qualified-human
 approval is required before a separate attestation amendment or reactivation.
 The status command remains unavailable while the attestation is retired. No
 Production write, migration, deployment or alias movement occurred.
+
+## Post-Migration Governance Review Stop
+
+The retained R2 evidence and hashes verify, but the current v6 contract does
+not safely support reactivation. It accepts the historical R19 approval and
+capture set with only one R2 post-migration artifact, does not bind the R2
+deterministic digest, and has no technical-qualification declaration. Its
+approval acknowledgements also contain a pre-migration statement that is no
+longer true.
+
+- [x] R2 artifacts rehashed and validated without Production access.
+- [x] Exact fingerprint, digest, ledger and catalog results verified.
+- [x] Unsafe old-approval reuse reproduced with a synthetic repository-only
+      snapshot.
+- [x] Attestation left `retired`; both post-migration fields remain `null`.
+- [ ] Versioned post-migration governance transition implemented.
+- [ ] Both R2 captures and deterministic digest bound by the attestation.
+- [ ] Qualified-human declaration and evidence rules implemented.
+- [ ] Truthful post-migration acknowledgement and renewal expiry implemented.
+- [ ] New genuine qualified-human approval supplied and validated.
+
+No approval should be solicited until the first four unchecked repository
+controls are repaired and independently reviewed.

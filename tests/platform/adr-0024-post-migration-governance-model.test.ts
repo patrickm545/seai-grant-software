@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -32,7 +33,10 @@ function checkedInPackage() {
 }
 
 function sourceSha256() {
-  return createHash('sha256').update(readFileSync(sourcePath)).digest('hex');
+  const repositoryBlob = execFileSync('git', ['show', `HEAD:${sourcePath}`], {
+    encoding: 'buffer'
+  });
+  return createHash('sha256').update(repositoryBlob).digest('hex');
 }
 
 function activeCandidate() {
@@ -97,7 +101,7 @@ test('checked-in v7 is a structurally signable pending package with zero approva
   assert.equal(candidate.activatedAt, null);
 });
 
-test('exact retired v6 source and raw SHA-256 validate the pending v7 transition', () => {
+test('exact retired v6 source and repository-blob SHA-256 validate the pending v7 transition', () => {
   assert.equal(sourceSha256(), POST_MIGRATION_SOURCE_ATTESTATION_SHA256);
   assert.equal(
     validatePostMigrationAttestationTransition({

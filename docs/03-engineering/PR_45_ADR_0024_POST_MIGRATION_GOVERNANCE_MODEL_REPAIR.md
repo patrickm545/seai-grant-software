@@ -20,7 +20,8 @@ approval, activation, Production access, migration, deployment or alias move.
 
 The historical v6 artifact remains byte-for-byte unchanged, `retired`, and
 authoritative for R19. Its raw SHA-256 is
-`e76c010263098c2d72eb463dfcd840830fab1a244775df7eff1ea2fefbbfc2cd`.
+`725cddb6ee9f263970ea5dff17da44a966904a97f071ee914872dab366189725`
+(the committed repository blob, independent of checkout line-ending materialisation).
 
 ## Reproduced V6 Defect
 

@@ -8,7 +8,7 @@
     "attestationId": "ADR-0024-PRODUCTION-2026-07-25",
     "status": "retired",
     "artifactReference": "prisma/lineage-attestations/adr-0024-production.json",
-    "artifactSha256": "e76c010263098c2d72eb463dfcd840830fab1a244775df7eff1ea2fefbbfc2cd",
+    "artifactSha256": "725cddb6ee9f263970ea5dff17da44a966904a97f071ee914872dab366189725",
     "historicalEvidenceChangeId": "CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R19",
     "retainedHistoricalCaptureCount": 2,
     "retainedHistoricalApprovalCount": 1

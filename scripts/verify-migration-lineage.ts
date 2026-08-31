@@ -80,6 +80,8 @@ const postMigrationApprovalPackagePath = resolve(
   'evidence',
   'ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json'
 );
+const sourceAttestationRepositoryPath =
+  'prisma/lineage-attestations/adr-0024-production.json';
 const modes = new Set<VerifierMode>([
   'strict-status',
   'strict-preflight',
@@ -91,6 +93,13 @@ const modes = new Set<VerifierMode>([
 
 function readFixedJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
+}
+
+function readRepositoryBlob(path: string) {
+  return execFileSync('git', ['show', `HEAD:${path}`], {
+    cwd: repositoryRoot,
+    encoding: 'buffer'
+  });
 }
 
 function safeMessage(error: unknown) {
@@ -225,7 +234,7 @@ async function main() {
       postMigrationApprovalPackagePath
     );
     const sourceArtifactSha256 = createHash('sha256')
-      .update(readFileSync(attestationPath))
+      .update(readRepositoryBlob(sourceAttestationRepositoryPath))
       .digest('hex');
     validatePostMigrationAttestationTransition({
       source: attestation,

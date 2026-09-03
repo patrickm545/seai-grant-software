@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-08-10 |
 
 ## Sprint
 
@@ -30,6 +30,26 @@ deterministic disposable fresh/post fingerprints. It performs no Production
 query or live capture. A separate operational PR must capture evidence and
 activate the attestation; a later execution PR must apply and verify the
 migration. The attestation and release blocker remain unchanged.
+
+Draft PR #45 now records the temporary pilot-stage operating model: Patrick
+McKenna is CEO, Production Owner, Production Operator, Recovery Owner and final
+accountable approver; no independent human technical reviewer is currently
+available; and AI-assisted CTO review is a method rather than a human approval.
+The narrow compensating-control mode applies only to two read-only Production
+captures, attestation activation and exact blocked status verification. The
+approved change ID, restore evidence, controlled connection metadata, capture
+artifacts and activation evidence remain pending. No Production capture or
+status command ran and the release blocker remains unchanged. Preview lineage
+is repaired and strict. This does not authorise migration execution,
+application deployment or alias movement.
+
+R13 is permanently closed. Its repository-only follow-up defines one pending
+`attestedHistoricalResolvedMigration` for the exact pilot-auth repair/resolve
+history without changing ordinary one-step migration acceptance. Current
+ledger timestamps, evolved catalog evidence, two matching captures and
+approvals remain absent, so the attestation has zero captures and approvals and
+the release blocker is unchanged. R14 stopped before complete evidence and is
+closed; any later operation requires separate authority.
 
 ## Objective
 

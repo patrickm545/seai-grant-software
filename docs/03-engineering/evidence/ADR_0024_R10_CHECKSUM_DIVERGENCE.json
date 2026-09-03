@@ -1,0 +1,141 @@
+{
+  "version": "adr-0024-checksum-divergence-evidence/v1",
+  "governingOperation": "CHG-2026-08-05-ADR0024-PROD-EVIDENCE-R10",
+  "repositoryBaseline": "1949ebe495801b26f6f59d2785a6b86b2864b153",
+  "migrationPath": "prisma/migrations/20260710120000_identity_organisation_foundation/migration.sql",
+  "migrationName": "20260710120000_identity_organisation_foundation",
+  "productionRecordId": "112c6124-f0c2-4b6b-8d02-f6ce835746e3",
+  "canonicalRepositoryChecksum": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3",
+  "observedProductionChecksum": "c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714",
+  "normalizationVersion": "adr-0024-migration-record-normalization/v1",
+  "source": {
+    "kind": "exact-committed-git-blob",
+    "commit": "1949ebe495801b26f6f59d2785a6b86b2864b153",
+    "byteLength": 6162,
+    "encoding": "UTF-8 without BOM",
+    "lineEndings": "LF",
+    "finalNewline": true
+  },
+  "candidates": [
+    {
+      "transformation": "exact-committed-git-blob",
+      "byteLength": 6162,
+      "sha256": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-normalized-lf",
+      "byteLength": 6162,
+      "sha256": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-normalized-crlf",
+      "byteLength": 6296,
+      "sha256": "c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": true
+    },
+    {
+      "transformation": "utf8-bom-normalized-lf",
+      "byteLength": 6165,
+      "sha256": "00d6f43b720fea0b0b57ec1439bde16320e59411177d1577e35b293b9f5920bc",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-normalized-crlf",
+      "byteLength": 6299,
+      "sha256": "3c8cfc9848783e0494eb22f92919bccd36fb3ad59962cb6a54bc87d87b8a4163",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-without-final-newline",
+      "byteLength": 6161,
+      "sha256": "37a78b1e1dbc98365c8c39f7fc5c5b3d155e126b9fc281588bf51f0eadb484e0",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-lf-with-final-newline",
+      "byteLength": 6162,
+      "sha256": "fc396b2cac59d7dee67ad7f0b91fb379dba9f021f26be9c0e93ae29d74752cb3",
+      "matchesCanonicalRepositoryChecksum": true,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-without-final-newline",
+      "byteLength": 6294,
+      "sha256": "d2c9e654ec668230d37db4e1cf7e8147a802cee14c76f0eef97cdf649b3e35fc",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-no-bom-crlf-with-final-newline",
+      "byteLength": 6296,
+      "sha256": "c1d5440e4efe0426fea04a4aa480a285bd74aa47dd82a57d673305c3200ac714",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": true
+    },
+    {
+      "transformation": "utf8-bom-lf-without-final-newline",
+      "byteLength": 6164,
+      "sha256": "203a9f18761d02d4a0ee663565eeb8bb5db7473ff435d2937eb6330083fe6cbb",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf8-bom-crlf-without-final-newline",
+      "byteLength": 6297,
+      "sha256": "0b12b9d8e34ebb1dc4575c01cfcf214f330f9582e6b2107368c0b52058e2c3c7",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "windows-powershell-utf16le-bom-lf",
+      "byteLength": 12326,
+      "sha256": "034048a811ae8b3ff3364e3588aae95db6d2760c1946fd4a6632c3b0a5fe0db3",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "windows-powershell-utf16le-bom-crlf",
+      "byteLength": 12594,
+      "sha256": "f06f76393b8904649fb45e50decbfa0452eb9b782036221a403f303b92807a55",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    },
+    {
+      "transformation": "utf16be-bom-lf",
+      "byteLength": 12326,
+      "sha256": "44da6923a74da6effde6fbfa270e761f763aacb73ec1907f0264031d761a5a5a",
+      "matchesCanonicalRepositoryChecksum": false,
+      "matchesObservedProductionChecksum": false
+    }
+  ],
+  "exactMatch": {
+    "transformation": "UTF-8 without BOM; convert each LF to CRLF; retain final newline",
+    "byteLength": 6296,
+    "lineEndingInsertions": 134,
+    "normalizesByteForByteToCommittedBlob": true,
+    "sqlTokensChanged": false
+  },
+  "previewPrecedent": {
+    "reference": "docs/03-engineering/PR_45_PREVIEW_MIGRATION_LINEAGE_REPAIR_2026_07_29.md",
+    "observedChecksumMatchesProductionExactly": true,
+    "sameMechanicallyReproducedCrlfRepresentation": true,
+    "previewReceivedNoException": true
+  },
+  "historySearch": {
+    "reachableCommitsBranchesTagsAndPullRequestRefsInspected": true,
+    "reflogsAndStashesInspected": true,
+    "unreachableGitObjectsInspected": true,
+    "archivedWorktreesAndLocalEvidenceInspected": true,
+    "matchingHistoricalGitBlobRecovered": false
+  },
+  "classification": "A-exact-alternate-byte-representation-proven",
+  "confidence": "high"
+}

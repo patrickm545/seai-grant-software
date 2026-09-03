@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -21,6 +22,14 @@ import {
   validateLineageAttestation,
   type LineageAttestation
 } from '../lib/lineage-attestation';
+import { verifyRepositoryEvidenceReferences } from '../lib/lineage-evidence-references';
+import {
+  PostMigrationAttestationValidationError,
+  validatePostMigrationApprovalPackage,
+  validatePostMigrationAttestationTransition,
+  type PostMigrationApprovalPackage,
+  type PostMigrationLineageAttestation
+} from '../lib/post-migration-lineage-attestation';
 import {
   generateMigrationManifest,
   verifyImmutableMigrationHistory,
@@ -37,6 +46,17 @@ import {
   assertProductionEvidenceControls,
   captureProductionLineageEvidence
 } from '../lib/production-lineage-evidence';
+import {
+  ProductionEvidenceStageError,
+  runProductionEvidenceStage,
+  safeProductionEvidenceStageDiagnostic
+} from '../lib/production-evidence-diagnostics';
+import {
+  runStrictVerifierStage,
+  safeStrictVerifierStageDiagnostic,
+  StrictVerifierStageError,
+  type StrictVerifierStage
+} from '../lib/strict-verifier-diagnostics';
 import { assertNamedCatalog, fingerprintCatalog, type SchemaProfile } from '../lib/schema-fingerprint';
 
 const repositoryRoot = resolve(__dirname, '..');
@@ -47,6 +67,21 @@ const attestationPath = resolve(
   'lineage-attestations',
   'adr-0024-production.json'
 );
+const postMigrationAttestationPath = resolve(
+  repositoryRoot,
+  'prisma',
+  'lineage-attestations',
+  'adr-0024-production-post-migration-v7.json'
+);
+const postMigrationApprovalPackagePath = resolve(
+  repositoryRoot,
+  'docs',
+  '03-engineering',
+  'evidence',
+  'ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json'
+);
+const sourceAttestationRepositoryPath =
+  'prisma/lineage-attestations/adr-0024-production.json';
 const modes = new Set<VerifierMode>([
   'strict-status',
   'strict-preflight',
@@ -60,21 +95,19 @@ function readFixedJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
 
-function verifyRepositoryEvidenceReferences(attestation: LineageAttestation) {
-  for (const reference of attestation.evidenceReferences) {
-    if (!reference.startsWith('docs/')) continue;
-    const evidencePath = resolve(repositoryRoot, reference);
-    if (!existsSync(evidencePath)) {
-      throw new AttestationValidationError(
-        'ATTESTATION_INVALID',
-        `Repository evidence reference does not exist: ${reference}`
-      );
-    }
-  }
+function readRepositoryBlob(path: string) {
+  return execFileSync('git', ['show', `HEAD:${path}`], {
+    cwd: repositoryRoot,
+    encoding: 'buffer'
+  });
 }
 
 function safeMessage(error: unknown) {
-  if (error instanceof LineageVerifierError || error instanceof AttestationValidationError) {
+  if (
+    error instanceof LineageVerifierError ||
+    error instanceof AttestationValidationError ||
+    error instanceof PostMigrationAttestationValidationError
+  ) {
     return error.message.replace(/postgres(?:ql)?:\/\/\S+/gi, '[redacted-database-url]');
   }
   return 'Migration lineage verification failed safely.';
@@ -105,19 +138,66 @@ function verifyApprovedManifest(manifest: MigrationManifest) {
   }
 }
 
-async function readDatabaseState() {
+type DatabaseReadStages<TStage extends string> = {
+  runStage: <T>(
+    stage: TStage,
+    invariant: string,
+    operation: () => T | Promise<T>
+  ) => Promise<T>;
+  transaction: TStage;
+  readOnlySetup: TStage;
+  connectedIdentity: TStage;
+  migrationLedger: TStage;
+  catalog: TStage;
+};
+
+async function readDatabaseState<TStage extends string>(stages?: DatabaseReadStages<TStage>) {
   const prisma = new PrismaClient();
   try {
-    return await prisma.$transaction(
+    const transaction = () => prisma.$transaction(
       async (transaction) => {
-        await transaction.$executeRawUnsafe('SET TRANSACTION READ ONLY');
-        const identity = await readConnectedDatabaseIdentity(transaction);
-        const ledgerRows = await readMigrationLedger(transaction);
-        const catalog = await readCatalogSnapshot(transaction);
+        const identity = stages
+          ? await stages.runStage(
+              stages.connectedIdentity,
+              'connected database identity query returns exactly one guarded database',
+              async () => {
+                await stages.runStage(
+                  stages.readOnlySetup,
+                  'repeatable-read transaction is set read only before evidence queries',
+                  () => transaction.$executeRawUnsafe('SET TRANSACTION READ ONLY')
+                );
+                return readConnectedDatabaseIdentity(transaction);
+              }
+            )
+          : await (async () => {
+              await transaction.$executeRawUnsafe('SET TRANSACTION READ ONLY');
+              return readConnectedDatabaseIdentity(transaction);
+            })();
+        const ledgerRows = stages
+          ? await stages.runStage(
+              stages.migrationLedger,
+              'fixed migration-ledger query returns canonical rows',
+              () => readMigrationLedger(transaction)
+            )
+          : await readMigrationLedger(transaction);
+        const catalog = stages
+          ? await stages.runStage(
+              stages.catalog,
+              'fixed public catalog query set returns canonical metadata',
+              () => readCatalogSnapshot(transaction)
+            )
+          : await readCatalogSnapshot(transaction);
         return { identity, ledgerRows, catalog };
       },
       { isolationLevel: 'RepeatableRead', timeout: 30_000 }
     );
+    return stages
+      ? await stages.runStage(
+          stages.transaction,
+          'repeatable-read transaction completes without mutation',
+          transaction
+        )
+      : await transaction();
   } finally {
     await prisma.$disconnect();
   }
@@ -146,63 +226,147 @@ async function main() {
   if (command === 'attestation-verify') {
     const attestation = readFixedJson<LineageAttestation>(attestationPath);
     validateLineageAttestation(attestation);
-    verifyRepositoryEvidenceReferences(attestation);
-    console.log(`ADR-0024 attestation is structurally valid and status=${attestation.status}.`);
-    return attestation.status === 'active' ? 0 : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
+    verifyRepositoryEvidenceReferences(repositoryRoot, attestation);
+    const postMigrationAttestation = readFixedJson<PostMigrationLineageAttestation>(
+      postMigrationAttestationPath
+    );
+    const approvalPackage = readFixedJson<PostMigrationApprovalPackage>(
+      postMigrationApprovalPackagePath
+    );
+    const sourceArtifactSha256 = createHash('sha256')
+      .update(readRepositoryBlob(sourceAttestationRepositoryPath))
+      .digest('hex');
+    validatePostMigrationAttestationTransition({
+      source: attestation,
+      sourceArtifactSha256,
+      candidate: postMigrationAttestation,
+      requireActive: postMigrationAttestation.status === 'active'
+    });
+    validatePostMigrationApprovalPackage(approvalPackage, postMigrationAttestation);
+    console.log(
+      `ADR-0024 historical attestation is structurally valid and status=${attestation.status}; post-migration v7 status=${postMigrationAttestation.status}.`
+    );
+    return postMigrationAttestation.status === 'active'
+      ? 0
+      : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
   }
   if (command === 'production-evidence-capture') {
     const environment = process.env.APP_ENV?.trim().toLowerCase() as ApplicationEnvironment;
-    const guarded = assertDatabaseOperationAllowed({
-      operation: 'read-only-diagnostic',
-      requiredApplicationEnvironment: 'production',
-      appEnvironment: environment,
-      databaseEnvironment: process.env.DATABASE_ENVIRONMENT,
-      databaseUrl: process.env.DATABASE_URL,
-      expectedFingerprint: process.env.DATABASE_FINGERPRINT,
-      productionFingerprint: process.env.PRODUCTION_DATABASE_FINGERPRINT,
-      branchId: process.env.DATABASE_BRANCH_ID
+    const guarded = await runProductionEvidenceStage(
+      'guarded-identity-configuration',
+      'environment and URL-derived fingerprint match the approved Production identity',
+      () =>
+        assertDatabaseOperationAllowed({
+          operation: 'read-only-diagnostic',
+          requiredApplicationEnvironment: 'production',
+          appEnvironment: environment,
+          databaseEnvironment: process.env.DATABASE_ENVIRONMENT,
+          databaseUrl: process.env.DATABASE_URL,
+          expectedFingerprint: process.env.DATABASE_FINGERPRINT,
+          productionFingerprint: process.env.PRODUCTION_DATABASE_FINGERPRINT,
+          branchId: process.env.DATABASE_BRANCH_ID
+        })
+    );
+    const manifest = await runProductionEvidenceStage(
+      'manifest-verification',
+      'repository migration inventory matches the approved immutable manifest',
+      () => {
+        const approved = readFixedJson<MigrationManifest>(manifestPath);
+        verifyApprovedManifest(approved);
+        return approved;
+      }
+    );
+    const attestation = await runProductionEvidenceStage(
+      'pending-attestation-verification',
+      'fixed pending attestation and repository evidence references are structurally valid',
+      () => {
+        const pending = readFixedJson<LineageAttestation>(attestationPath);
+        verifyRepositoryEvidenceReferences(repositoryRoot, pending);
+        return pending;
+      }
+    );
+    const controls = await runProductionEvidenceStage(
+      'operational-controls',
+      'approved change, operator, governance and restore controls are exact',
+      () =>
+        assertProductionEvidenceControls({
+          governanceMode: process.env.PRODUCTION_EVIDENCE_GOVERNANCE_MODE as
+            | 'standard-independent-human'
+            | 'pilot-stage-compensating-control'
+            | undefined,
+          changeId: process.env.PRODUCTION_EVIDENCE_CHANGE_ID,
+          operator: process.env.PRODUCTION_EVIDENCE_OPERATOR,
+          independentReviewer: process.env.PRODUCTION_EVIDENCE_REVIEWER,
+          restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE,
+          pilotStageAccountabilityAcknowledgement:
+            process.env.PRODUCTION_EVIDENCE_PILOT_ACCOUNTABILITY_ACKNOWLEDGEMENT
+        })
+    );
+    const firstState = await readDatabaseState({
+      runStage: runProductionEvidenceStage,
+      transaction: 'first-transaction',
+      readOnlySetup: 'first-read-only-setup',
+      connectedIdentity: 'first-connected-identity',
+      migrationLedger: 'first-migration-ledger',
+      catalog: 'first-catalog'
     });
-    const manifest = readFixedJson<MigrationManifest>(manifestPath);
-    verifyApprovedManifest(manifest);
-    const attestation = readFixedJson<LineageAttestation>(attestationPath);
-    verifyRepositoryEvidenceReferences(attestation);
-    const controls = assertProductionEvidenceControls({
-      changeId: process.env.PRODUCTION_EVIDENCE_CHANGE_ID,
-      operator: process.env.PRODUCTION_EVIDENCE_OPERATOR,
-      independentReviewer: process.env.PRODUCTION_EVIDENCE_REVIEWER,
-      restorePointReference: process.env.PRODUCTION_RESTORE_POINT_REFERENCE
+    const firstEvidence = await runProductionEvidenceStage(
+      'first-evidence-generation',
+      'first ledger, schema and identity evidence satisfies ADR-0024',
+      () =>
+        captureProductionLineageEvidence({
+          environment: guarded.appEnvironment,
+          identity: guarded.identity,
+          connectedDatabaseName: firstState.identity.database_name,
+          repositoryRevision: repositoryRevision(),
+          manifest,
+          attestation,
+          ledgerRows: firstState.ledgerRows,
+          catalog: firstState.catalog,
+          controls
+        })
+    );
+    const secondState = await readDatabaseState({
+      runStage: runProductionEvidenceStage,
+      transaction: 'second-transaction',
+      readOnlySetup: 'second-read-only-setup',
+      connectedIdentity: 'second-connected-identity',
+      migrationLedger: 'second-migration-ledger',
+      catalog: 'second-catalog'
     });
-    const firstState = await readDatabaseState();
-    const firstEvidence = captureProductionLineageEvidence({
-      environment: guarded.appEnvironment,
-      identity: guarded.identity,
-      connectedDatabaseName: firstState.identity.database_name,
-      repositoryRevision: repositoryRevision(),
-      manifest,
-      attestation,
-      ledgerRows: firstState.ledgerRows,
-      catalog: firstState.catalog,
-      controls
-    });
-    const secondState = await readDatabaseState();
-    const secondEvidence = captureProductionLineageEvidence({
-      environment: guarded.appEnvironment,
-      identity: guarded.identity,
-      connectedDatabaseName: secondState.identity.database_name,
-      repositoryRevision: firstEvidence.repositoryRevision,
-      manifest,
-      attestation,
-      ledgerRows: secondState.ledgerRows,
-      catalog: secondState.catalog,
-      controls
-    });
-    const repeatCapture = assertRepeatedProductionLineageEvidence(
-      firstEvidence,
-      secondEvidence
+    const secondEvidence = await runProductionEvidenceStage(
+      'second-evidence-generation',
+      'second ledger, schema and identity evidence satisfies ADR-0024',
+      () =>
+        captureProductionLineageEvidence({
+          environment: guarded.appEnvironment,
+          identity: guarded.identity,
+          connectedDatabaseName: secondState.identity.database_name,
+          repositoryRevision: firstEvidence.repositoryRevision,
+          manifest,
+          attestation,
+          ledgerRows: secondState.ledgerRows,
+          catalog: secondState.catalog,
+          controls
+        })
+    );
+    const repeatCapture = await runProductionEvidenceStage(
+      'deterministic-comparison',
+      'both complete deterministic captures match exactly',
+      () => assertRepeatedProductionLineageEvidence(firstEvidence, secondEvidence)
     );
     const evidence = { ...firstEvidence, repeatCapture };
-    assertVerifierEvidenceSecretFree(evidence);
-    process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
+    await runProductionEvidenceStage(
+      'secret-free-validation',
+      'complete evidence contains no credential, URL, token or secret-like field',
+      () => assertVerifierEvidenceSecretFree(evidence)
+    );
+    const serialized = await runProductionEvidenceStage(
+      'evidence-serialization',
+      'complete evidence serializes as JSON',
+      () => JSON.stringify(evidence, null, 2)
+    );
+    process.stdout.write(`${serialized}\n`);
     return 0;
   }
   if (command === 'schema-fingerprint') {
@@ -262,7 +426,7 @@ async function main() {
     : undefined;
   if (attestation) {
     validateLineageAttestation(attestation, { requireActive: true });
-    verifyRepositoryEvidenceReferences(attestation);
+    verifyRepositoryEvidenceReferences(repositoryRoot, attestation);
     if (mode === 'production-preflight') {
       assertDeliberateProductionControls({
         attestationId: process.env.ADR0024_ATTESTATION_ID,
@@ -272,8 +436,18 @@ async function main() {
       });
     }
   }
-  const state = await readDatabaseState();
-  const evidence = verifyLineage({
+  const strictReadStages = {
+    runStage: runStrictVerifierStage,
+    transaction: 'strict-transaction',
+    readOnlySetup: 'strict-read-only-setup',
+    connectedIdentity: 'strict-connected-identity',
+    migrationLedger: 'strict-migration-ledger',
+    catalog: 'strict-catalog'
+  } satisfies DatabaseReadStages<StrictVerifierStage>;
+  const state = productionMode
+    ? await readDatabaseState()
+    : await readDatabaseState(strictReadStages);
+  const verify = () => verifyLineage({
     mode,
     environment: guarded.appEnvironment,
     identity: guarded.identity,
@@ -285,8 +459,30 @@ async function main() {
     catalog: state.catalog,
     changeId: process.env.PRODUCTION_MIGRATION_CHANGE_ID
   });
-  assertVerifierEvidenceSecretFree(evidence);
-  process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
+  const evidence = productionMode
+    ? verify()
+    : await runStrictVerifierStage(
+        'strict-lineage-verification',
+        'connected identity, canonical migration ledger, schema fingerprint and catalog assertions verify exactly',
+        verify
+      );
+  if (productionMode) {
+    assertVerifierEvidenceSecretFree(evidence);
+  } else {
+    await runStrictVerifierStage(
+      'strict-secret-free-validation',
+      'verifier evidence contains no credential, URL, token or secret-like field',
+      () => assertVerifierEvidenceSecretFree(evidence)
+    );
+  }
+  const serialized = productionMode
+    ? JSON.stringify(evidence, null, 2)
+    : await runStrictVerifierStage(
+        'strict-evidence-serialization',
+        'complete verifier evidence serializes as JSON',
+        () => JSON.stringify(evidence, null, 2)
+      );
+  process.stdout.write(`${serialized}\n`);
   console.log(
     evidence.finalDecision === 'verified-clean'
       ? 'Migration lineage verifier: verified clean.'
@@ -302,6 +498,55 @@ main()
     process.exitCode = code;
   })
   .catch((error) => {
+    if (error instanceof StrictVerifierStageError) {
+      const cause = error.cause;
+      const stage = safeStrictVerifierStageDiagnostic(error);
+      if (cause instanceof LineageVerifierError) {
+        console.error(`${cause.code}: ${stage}; ${safeMessage(cause)}`);
+        process.exitCode = exitCodeFor(cause);
+        return;
+      }
+      const formatted = formatDatabaseSafetyError(cause);
+      if (!formatted.startsWith('DB_OPERATION_NOT_ALLOWED: Database operation failed safely.')) {
+        console.error(
+          `${formatted.split(':', 1)[0]}: ${stage}; database safety guard rejected the operation.`
+        );
+        process.exitCode = VERIFIER_EXIT_CODES.UNSAFE_CONFIGURATION;
+        return;
+      }
+      console.error(`INTERNAL_ERROR: ${stage}; ${safeMessage(cause)}`);
+      process.exitCode = VERIFIER_EXIT_CODES.INTERNAL_ERROR;
+      return;
+    }
+    if (error instanceof ProductionEvidenceStageError) {
+      const cause = error.cause;
+      const stage = safeProductionEvidenceStageDiagnostic(error);
+      if (cause instanceof AttestationValidationError) {
+        const code =
+          cause.code === 'ATTESTATION_INACTIVE'
+            ? VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE
+            : cause.code === 'ATTESTATION_EXPIRED'
+              ? VERIFIER_EXIT_CODES.ATTESTATION_EXPIRED
+              : VERIFIER_EXIT_CODES.UNSAFE_CONFIGURATION;
+        console.error(`${cause.code}: ${stage}; ${safeMessage(cause)}`);
+        process.exitCode = code;
+        return;
+      }
+      if (cause instanceof LineageVerifierError) {
+        console.error(`${cause.code}: ${stage}; ${safeMessage(cause)}`);
+        process.exitCode = exitCodeFor(cause);
+        return;
+      }
+      const formatted = formatDatabaseSafetyError(cause);
+      if (!formatted.startsWith('DB_OPERATION_NOT_ALLOWED: Database operation failed safely.')) {
+        console.error(`${formatted.split(':', 1)[0]}: ${stage}; database safety guard rejected the operation.`);
+        process.exitCode = VERIFIER_EXIT_CODES.UNSAFE_CONFIGURATION;
+        return;
+      }
+      console.error(`INTERNAL_ERROR: ${stage}; ${safeMessage(cause)}`);
+      process.exitCode = VERIFIER_EXIT_CODES.INTERNAL_ERROR;
+      return;
+    }
     if (error instanceof AttestationValidationError) {
       const code =
         error.code === 'ATTESTATION_INACTIVE'

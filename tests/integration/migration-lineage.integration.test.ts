@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { PrismaClient } from '@prisma/client';
+import { canonicalJson } from '../../lib/canonical-json';
 import { verifyStrictLedger } from '../../lib/lineage-verifier';
+import {
+  PASSWORD_RESET_MIGRATION_CHECKSUM,
+  PASSWORD_RESET_MIGRATION_NAME
+} from '../../lib/post-migration-production-evidence';
+import { assertPostPasswordResetCatalog } from '../../lib/post-password-reset-catalog';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import {
   readCatalogSnapshot,
@@ -20,6 +27,9 @@ async function readOnce() {
       await transaction.$executeRawUnsafe('SET TRANSACTION READ ONLY');
       return {
         identity: await readConnectedDatabaseIdentity(transaction),
+        transactionReadOnly: await transaction.$queryRawUnsafe<Array<{ transaction_read_only: string }>>(
+          `SELECT current_setting('transaction_read_only') AS transaction_read_only`
+        ),
         ledger: await readMigrationLedger(transaction),
         catalog: await readCatalogSnapshot(transaction)
       };
@@ -36,6 +46,37 @@ test('disposable fresh database passes stable read-only inventory and catalog ve
   assert.deepEqual(verifyStrictLedger(second.ledger, manifest).pending, []);
   assert.equal(fingerprintCatalog(first.catalog).fingerprint, fingerprintCatalog(second.catalog).fingerprint);
   assert.equal(assertNamedCatalog(first.catalog, 'fresh-head').results.length, 5);
+});
+
+test('disposable 16-migration state rehearses the post-password-reset read-only catalog contract', async () => {
+  const first = await readOnce();
+  const second = await readOnce();
+  const firstLedger = verifyStrictLedger(first.ledger, manifest);
+  const resetRecords = first.ledger.filter(
+    (record) => record.migration_name === PASSWORD_RESET_MIGRATION_NAME
+  );
+  const firstFingerprint = fingerprintCatalog(first.catalog);
+  const secondFingerprint = fingerprintCatalog(second.catalog);
+
+  assert.equal(manifest.migrations.length, 16);
+  assert.equal(firstLedger.appliedRepositoryCount, 16);
+  assert.deepEqual(firstLedger.pending, []);
+  assert.equal(resetRecords.length, 1);
+  assert.equal(resetRecords[0].checksum, PASSWORD_RESET_MIGRATION_CHECKSUM);
+  assert.equal(Number(resetRecords[0].applied_steps_count), 1);
+  assert.notEqual(resetRecords[0].started_at, null);
+  assert.notEqual(resetRecords[0].finished_at, null);
+  assert.equal(resetRecords[0].rolled_back_at, null);
+  assert.equal(resetRecords[0].logs, null);
+  assert.equal(first.transactionReadOnly[0]?.transaction_read_only, 'on');
+  assert.equal(second.transactionReadOnly[0]?.transaction_read_only, 'on');
+  assert.equal(firstFingerprint.fingerprint, secondFingerprint.fingerprint);
+  assert.equal(
+    firstFingerprint.fingerprint,
+    createHash('sha256').update(canonicalJson(firstFingerprint.canonical)).digest('hex')
+  );
+  assert.equal(assertPostPasswordResetCatalog(first.catalog).profile, 'post-password-reset');
+  assert.equal(firstFingerprint.canonical.unsupportedObjects.length, 0);
 });
 
 async function findIndex(name: string) {

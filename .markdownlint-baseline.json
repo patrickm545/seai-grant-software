@@ -1,0 +1,722 @@
+{
+  "version": "clada-markdownlint-baseline/v1",
+  "tool": "markdownlint-cli2@0.20.0/markdownlint@0.40.0",
+  "approvedBaseline": "d8a8dc1b8fbd6beebb89344f458366fc43b4a7ba",
+  "rules": {
+    "MD013": false
+  },
+  "violationCount": 79,
+  "violations": [
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 71,
+      "column": 13,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 71,
+      "column": 16,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 72,
+      "column": 18,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 72,
+      "column": 21,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 73,
+      "column": 18,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 73,
+      "column": 21,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 108,
+      "column": 76,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 108,
+      "column": 79,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 109,
+      "column": 72,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 109,
+      "column": 75,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 110,
+      "column": 67,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 110,
+      "column": 70,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 111,
+      "column": 95,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 111,
+      "column": 98,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 111,
+      "column": 98,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 111,
+      "column": 101,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 112,
+      "column": 96,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 112,
+      "column": 99,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 113,
+      "column": 88,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 113,
+      "column": 91,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 152,
+      "column": 17,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 152,
+      "column": 20,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 153,
+      "column": 30,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 153,
+      "column": 33,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 154,
+      "column": 31,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 154,
+      "column": 34,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 155,
+      "column": 20,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 155,
+      "column": 23,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 156,
+      "column": 22,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 156,
+      "column": 25,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 157,
+      "column": 18,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 157,
+      "column": 21,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 158,
+      "column": 22,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 158,
+      "column": 25,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 179,
+      "column": 27,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 179,
+      "column": 30,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 180,
+      "column": 22,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 180,
+      "column": 25,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 181,
+      "column": 18,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 181,
+      "column": 21,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 182,
+      "column": 31,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 182,
+      "column": 34,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 256,
+      "column": 31,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 256,
+      "column": 34,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 257,
+      "column": 20,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 257,
+      "column": 23,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 258,
+      "column": 36,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 258,
+      "column": 39,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 259,
+      "column": 37,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 259,
+      "column": 40,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 260,
+      "column": 33,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 260,
+      "column": 36,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 261,
+      "column": 19,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 261,
+      "column": 22,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 279,
+      "column": 31,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 279,
+      "column": 34,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 280,
+      "column": 20,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 280,
+      "column": 23,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 281,
+      "column": 36,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 281,
+      "column": 39,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 282,
+      "column": 37,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 282,
+      "column": 40,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 283,
+      "column": 33,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 283,
+      "column": 36,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 284,
+      "column": 19,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 284,
+      "column": 22,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 400,
+      "column": 24,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 400,
+      "column": 27,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 401,
+      "column": 23,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 401,
+      "column": 26,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 402,
+      "column": 23,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 402,
+      "column": 26,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 403,
+      "column": 21,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 403,
+      "column": 24,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 404,
+      "column": 29,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 404,
+      "column": 32,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 405,
+      "column": 26,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the right for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md",
+      "line": 405,
+      "column": 29,
+      "rule": "MD060",
+      "alias": "table-column-style",
+      "detail": "Table pipe has extra space to the left for style \"compact\"",
+      "context": null
+    },
+    {
+      "file": "docs/product/audits/SOLARGRANT_PRO_PILOT_READINESS_AUDIT_V1.md",
+      "line": 14,
+      "column": null,
+      "rule": "MD036",
+      "alias": "no-emphasis-as-heading",
+      "detail": "Emphasis used instead of a heading",
+      "context": "NOT PILOT READY"
+    }
+  ]
+}

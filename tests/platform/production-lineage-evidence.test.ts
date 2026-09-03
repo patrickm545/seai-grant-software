@@ -2,8 +2,14 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import type { LineageAttestation } from '../../lib/lineage-attestation';
-import { assertVerifierEvidenceSecretFree } from '../../lib/lineage-verifier';
+import {
+  PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
+} from '../../lib/lineage-attestation';
+import {
+  assertVerifierEvidenceSecretFree,
+  exitCodeFor,
+  LineageVerifierError
+} from '../../lib/lineage-verifier';
 import type { MigrationLedgerRow } from '../../lib/migration-ledger';
 import type { MigrationManifest } from '../../lib/migration-manifest';
 import {
@@ -11,21 +17,21 @@ import {
   assertProductionEvidenceControls,
   captureProductionLineageEvidence
 } from '../../lib/production-lineage-evidence';
-import { preMigrationCatalog } from './schema-fingerprint.test';
+import { preMigrationCatalogWithPilotAuth } from './historical-resolved-migration-fixture';
+import { pendingLineageAttestationFixture } from './lineage-attestation-fixture';
 
 const manifest = JSON.parse(
   readFileSync('prisma/migration-manifest.json', 'utf8')
 ) as MigrationManifest;
-const pending = JSON.parse(
-  readFileSync('prisma/lineage-attestations/adr-0024-production.json', 'utf8')
-) as LineageAttestation;
+const pending = pendingLineageAttestationFixture();
 
 function controls() {
   return assertProductionEvidenceControls({
+    governanceMode: 'pilot-stage-compensating-control',
     changeId: 'CLADA-CHG-2026-07-28-044',
-    operator: 'Patrick',
-    independentReviewer: 'Independent Reviewer',
-    restorePointReference: 'NEON-PITR-2026-07-28T09:00:00Z'
+    operator: 'Patrick McKenna',
+    restorePointReference: 'NEON-PITR-2026-07-28T09:00:00Z',
+    pilotStageAccountabilityAcknowledgement: PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
   });
 }
 
@@ -44,6 +50,7 @@ function row(
 }
 
 function ledgerFixture() {
+  const historical = pending.historicalResolvedMigrations[0];
   const rows = manifest.migrations
     .filter(
       (migration) =>
@@ -52,11 +59,24 @@ function ledgerFixture() {
     )
     .map((migration, index) =>
       row({
-        id: `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
+        id: migration.name === historical.migrationName
+          ? historical.recordId
+          : pending.repositoryMigrationChecksumDivergences.find(
+            (divergence) => divergence.migrationName === migration.name
+          )?.recordId ?? `${String(index + 1).padStart(8, '0')}-0000-4000-8000-000000000000`,
         migration_name: migration.name,
-        checksum: migration.checksum,
-        started_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
-        finished_at: `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`
+        checksum: migration.name === historical.migrationName
+          ? historical.observedProductionChecksum
+          : pending.repositoryMigrationChecksumDivergences.find(
+            (divergence) => divergence.migrationName === migration.name
+          )?.observedProductionChecksum ?? migration.checksum,
+        started_at: migration.name === historical.migrationName
+          ? '2026-07-17T13:00:00.123456Z'
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+        finished_at: migration.name === historical.migrationName
+          ? '2026-07-17T13:00:00.123456Z'
+          : `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.001Z`,
+        applied_steps_count: migration.name === historical.migrationName ? 0 : 1
       })
     );
   rows.push(
@@ -107,7 +127,7 @@ test('pending attestation can capture exact secret-free Production evidence dete
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   const first = captureProductionLineageEvidence({
@@ -124,6 +144,16 @@ test('pending attestation can capture exact secret-free Production evidence dete
   assert.deepEqual(first.ledger.pendingMigrations, [
     '20260724180000_password_reset_foundation'
   ]);
+  assert.equal(first.ledger.repositoryChecksumDivergenceResult, 'verified');
+  assert.equal(first.ledger.historicalResolvedMigrationResults.length, 1);
+  assert.equal(
+    first.ledger.historicalResolvedMigrationResults[0].migrationName,
+    pending.historicalResolvedMigrations[0].migrationName
+  );
+  assert.equal(
+    first.ledger.historicalResolvedMigrationResults[0].result,
+    'captured-for-pending-attestation'
+  );
   const failed = first.ledger.records.find(
     (record) => record.rolledBackAt === pending.relatedMigration.failedRecord.rolledBackAt
   )!;
@@ -145,7 +175,7 @@ test('repeated capture terminates when any deterministic evidence differs', () =
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   const first = captureProductionLineageEvidence(input);
@@ -168,7 +198,7 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
     manifest,
     attestation: pending,
     ledgerRows: ledgerFixture(),
-    catalog: preMigrationCatalog(),
+    catalog: preMigrationCatalogWithPilotAuth(),
     controls: controls()
   };
   assert.throws(
@@ -177,22 +207,101 @@ test('capture rejects wrong identity, changed ledger, and non-pending attestatio
         ...base,
         identity: { ...identity(), fingerprint: 'db_31449de1074844bb' }
       }),
-    /target identity/
+    (error: unknown) =>
+      error instanceof LineageVerifierError &&
+      error.code === 'IDENTITY_MISMATCH' &&
+      exitCodeFor(error) === 23
   );
   const changedRows = ledgerFixture();
   changedRows[0].checksum = 'f'.repeat(64);
+  let completeEvidence: ReturnType<typeof captureProductionLineageEvidence> | undefined;
   assert.throws(
-    () => captureProductionLineageEvidence({ ...base, ledgerRows: changedRows }),
-    /not an exact successful application/
+    () => {
+      completeEvidence = captureProductionLineageEvidence({ ...base, ledgerRows: changedRows });
+    },
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'LEDGER_MISMATCH');
+      assert.equal(exitCodeFor(error), 25);
+      assert.match(error.message, /not an exact successful application/);
+      assert.match(error.message, /exactSuccessReport=/);
+      assert.match(error.message, /checksum-mismatch/);
+      assert.ok(error.cause instanceof Error);
+      return true;
+    }
   );
+  assert.equal(completeEvidence, undefined);
   assert.throws(
     () =>
       captureProductionLineageEvidence({
         ...base,
         attestation: { ...pending, status: 'active' }
       }),
-    /restricted to the pending attestation/
+    (error: unknown) =>
+      error instanceof LineageVerifierError &&
+      error.code === 'UNSAFE_CONFIGURATION' &&
+      exitCodeFor(error) === 27
   );
+});
+
+test('catalog mismatch is classified instead of collapsing to exit 70', () => {
+  const catalog = structuredClone(preMigrationCatalogWithPilotAuth());
+  catalog.columns[0].nullable = !catalog.columns[0].nullable;
+
+  assert.throws(
+    () =>
+      captureProductionLineageEvidence({
+        environment: 'production',
+        identity: identity(),
+        connectedDatabaseName: 'clada',
+        repositoryRevision: 'e4bde0c21f1e8135a82761ad4ea08d1c89a658eb',
+        manifest,
+        attestation: pending,
+        ledgerRows: ledgerFixture(),
+        catalog,
+        controls: controls()
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'SCHEMA_MISMATCH');
+      assert.equal(exitCodeFor(error), 26);
+      assert.ok(error.cause instanceof Error);
+      return true;
+    }
+  );
+});
+
+test('database-only metadata mismatch remains exit 25 and emits no complete evidence', () => {
+  const rows = ledgerFixture();
+  const missing = rows.find(
+    (record) => record.migration_name === pending.missingMigration.migrationName
+  )!;
+  missing.checksum = 'f'.repeat(64);
+  let completeEvidence: ReturnType<typeof captureProductionLineageEvidence> | undefined;
+
+  assert.throws(
+    () => {
+      completeEvidence = captureProductionLineageEvidence({
+        environment: 'production',
+        identity: identity(),
+        connectedDatabaseName: 'clada',
+        repositoryRevision: 'e4bde0c21f1e8135a82761ad4ea08d1c89a658eb',
+        manifest,
+        attestation: pending,
+        ledgerRows: rows,
+        catalog: preMigrationCatalogWithPilotAuth(),
+        controls: controls()
+      });
+    },
+    (error: unknown) => {
+      assert.ok(error instanceof LineageVerifierError);
+      assert.equal(error.code, 'LEDGER_MISMATCH');
+      assert.equal(exitCodeFor(error), 25);
+      assert.match(error.message, /mismatchReport=/);
+      return true;
+    }
+  );
+  assert.equal(completeEvidence, undefined);
 });
 
 test('capture controls require exact distinct human operators and evidence references', () => {
@@ -215,5 +324,27 @@ test('capture controls require exact distinct human operators and evidence refer
         restorePointReference: 'restore'
       }),
     /different people/
+  );
+  assert.throws(
+    () =>
+      assertProductionEvidenceControls({
+        governanceMode: 'pilot-stage-compensating-control',
+        changeId: 'CLADA-CHG-044',
+        operator: 'Patrick McKenna',
+        independentReviewer: 'Invented Reviewer',
+        restorePointReference: 'restore',
+        pilotStageAccountabilityAcknowledgement: PILOT_STAGE_ACCOUNTABILITY_ACKNOWLEDGEMENT
+      }),
+    /must not identify an independent reviewer/
+  );
+  assert.throws(
+    () =>
+      assertProductionEvidenceControls({
+        governanceMode: 'pilot-stage-compensating-control',
+        changeId: 'CLADA-CHG-044',
+        operator: 'Patrick McKenna',
+        restorePointReference: 'restore'
+      }),
+    /accountability acknowledgement/
   );
 });

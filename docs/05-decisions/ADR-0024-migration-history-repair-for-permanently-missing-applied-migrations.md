@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; implementation and Production execution require separate approval |
+| Status | Accepted; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-08-31 |
 
 ## Context
 
@@ -20,8 +20,9 @@ reproduce the intended schema through
 of historical SQL identity.
 
 The post-merge PR #41 Production deployment was correctly blocked. Production
-remains on the previous Ready deployment and
-`20260724180000_password_reset_foundation` remains pending.
+remains on the previous Ready deployment. Closed reconciliation R4 later
+invoked `20260724180000_password_reset_foundation` once; Prisma reported
+success, but strict schema postflight did not verify the resulting state.
 
 Prisma 5.22.0 is the repository version. Prisma documents the migrations folder
 as the source of truth and advises against editing or deleting applied
@@ -76,8 +77,8 @@ SQL and is not a migration.
 
 ### Required lineage attestation
 
-A future implementation PR must define a machine-readable, review-owned
-attestation containing at least:
+The merged verifier implementation defines a fixed-path, machine-readable,
+review-owned attestation containing at least:
 
 - exact approved database fingerprint and environment;
 - migration name, Production record ID and checksum;
@@ -86,7 +87,8 @@ attestation containing at least:
 - repository baseline SHA and repository migration inventory hash;
 - versioned schema fingerprint and catalog assertions;
 - incident, ADR, approval and change-record references;
-- date, named operator, independent reviewer and expiry/review policy; and
+- date, named operator, governance mode, accountable approver and expiry/review
+  policy;
 - an explicit statement that the historical SQL is unknown.
 
 The attestation must contain no credential, connection URL, customer data or
@@ -104,27 +106,94 @@ partially matched or wildcard field is invalid.
 | Missing migration | `20260423093000_application_pack_admin_fields` |
 | Migration ID | `2305f52e-af2f-4717-bc37-a6a88bc1ec33` |
 | Checksum | `affbde51faf1b8ccc731f575326d8dfdf2c21ec625565f516d5350ec5779f589` |
-| Started | `2026-04-23T07:04:10.395Z` |
-| Finished | `2026-04-23T07:04:10.527Z` |
+| Started | `2026-04-23T07:04:10.39554Z` |
+| Finished | `2026-04-23T07:04:10.527739Z` |
 | Applied steps | `1` |
 | Rollback/error state | `rolled_back_at IS NULL`; no error log |
 | Related repository migration | `20260428120000_manual_submission_prep` |
 | Related migration checksum | `42d778c6f26d6bfaed4569b1b9da5208fa9a25a0f0558439c7d9669818bf6ed3` |
-| Related failed attempt | Started `2026-04-29T06:01:05.497Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423Z`; duplicate `Lead.internalNotes` error |
-| Related completed record | Started and finished `2026-04-29T06:01:38.543Z`; zero applied steps; not rolled back; no error log |
+| Related failed attempt | Started `2026-04-29T06:01:05.497406Z`; zero applied steps; finished unset; rolled back `2026-04-29T06:01:38.423504Z`; duplicate `Lead.internalNotes` error |
+| Related completed record | Started and finished `2026-04-29T06:01:38.54346Z`; zero applied steps; not rolled back; no error log |
 | Repository baseline | `a4bd4e2c184c745520a1484fcfbe94595ef58b3f`, or an explicitly reviewed successor commit containing the approved inventory |
 | Repository inventory | Exact names and checksums of all 16 migrations at the baseline, represented by an approved deterministic manifest hash |
 | Production schema | Exact approved versioned schema fingerprint plus named catalog assertions |
 
 The deterministic repository manifest hash and Production schema fingerprint
-must be generated, independently reviewed and inserted as exact values in the
-future attestation implementation. ADR-0024 supplies no placeholder acceptance:
-missing or unapproved values fail closed.
+must be generated, reviewed under the selected explicit governance mode and
+inserted as exact values before the fixed attestation is activated. ADR-0024
+supplies no placeholder acceptance: missing or unapproved values fail closed.
+
+The database-only migration timestamps above were established by the closed
+R4 read-only evidence record. The related failed-record timestamps were
+established by the closed R7 read-only evidence record under
+`adr-0024-migration-record-normalization/v1`. Earlier records used
+millisecond-truncated timestamps. These evidence-accuracy amendments do not
+change Production or authorise another capture.
+
+The related completed zero-step timestamps were established by the closed R8
+read-only evidence record under the same normalization version. Earlier
+governing metadata recorded `2026-04-29T06:01:38.543Z`; R8 established
+`2026-04-29T06:01:38.54346Z` for both `startedAt` and `finishedAt`. This
+repository-only correction does not accept lineage or activate the
+attestation. That pending state remained true through R18 and was superseded
+only by the complete R19 evidence and activation described below.
+
+#### Exact Production repository-checksum divergences
+
+The closed R10, R11, R12, R14, R15, R17 and R18 operations established
+checksum-only exact-success mismatches for seven specific ordinary Production
+records. Later
+repository-only investigations proved classification A for each: its observed checksum is the
+exact committed UTF-8/no-BOM SQL mechanically materialised with CRLF rather
+than LF while retaining the final newline. Reverse normalization is
+byte-for-byte exact and changes no SQL token.
+
+The manifest and all seven migrations remain canonical and unchanged.
+Attestation v5 may record only the exact seven historical Production tuples,
+and each entry
+must also require the exact Production fingerprint, record ID, successful
+lifecycle, approved manifest, approved repository-lineage baseline and
+retained evidence digest. The active verifier must prove canonical repository
+integrity and all seven exact observed Production rows independently.
+
+This is not a global alternate checksum or line-ending rule. No tuple can
+satisfy another; a missing, duplicated, cross-matched or changed entry fails
+closed. Preview, test, development, fresh databases, other migrations, other
+records and other fingerprints remain strict. The treatment expires and
+retires with ADR-0024. It became active only after R19 supplied both retained
+captures and the exact pilot-stage Production-owner approval.
+
+### Pilot-stage governance exception
+
+The standard `standard-independent-human` mode remains the preferred path and
+retains all four human approval roles and independence rules below. While Clada
+Systems is operating at pilot stage without another qualified human technical
+reviewer, this single attestation may instead use the explicit
+`pilot-stage-compensating-control` mode defined in
+[PR #45 Pilot-Stage Production Governance](../03-engineering/PR_45_PILOT_STAGE_PRODUCTION_GOVERNANCE.md).
+
+In that mode Patrick McKenna is the CEO, Production Owner, Production
+Operator, Recovery Owner and final accountable human approver. Technical review
+is AI-assisted CTO review based on retained deterministic evidence and
+repository controls; AI is not a human approver. The exception is restricted to
+two fixed read-only evidence captures, attestation activation and exact
+`verified-pending-blocked` status verification. It authorises no migration,
+deployment or alias movement and cannot apply automatically to another change.
+
+Activation requires two complete secret-free external artifacts whose
+repository SHA, change ID, Production identity, connected database name,
+operator, restore evidence, deterministic evidence digest, schema fingerprint
+and assertions match exactly. Both artifact digests and references must be
+recorded. Any mismatch or unknown value stops. Qualified human review becomes
+mandatory before onboarding the first 10 pilot installers or when another
+engineer or qualified external database reviewer joins, whichever occurs
+first, and the attestation remains subject to its maximum 90-day expiry.
 
 ### Attestation-aware gate
 
-A separately approved code PR must replace reliance on raw Prisma status output
-with an independent inventory verifier for this path. The verifier must:
+The separately approved verifier implementation replaces reliance on raw
+Prisma status output with an independent inventory verifier for this path. The
+verifier must:
 
 1. establish the exact database identity before connecting;
 2. read migration metadata and catalog state without mutation;
@@ -172,7 +241,9 @@ table may be accepted.
 
 ### Evidence threshold
 
-Before the attestation can be used, two reviewers must approve evidence that:
+Before the attestation can be used, either the standard independent-human
+reviewers or the explicit pilot-stage compensating-control path must approve
+evidence that:
 
 - the target is the intended Production database;
 - the migration metadata exactly matches the incident record;
@@ -223,7 +294,7 @@ The attestation must record:
 | Lifecycle field | Requirement |
 | --- | --- |
 | Owner | Clada Systems Engineering |
-| Approvers | CTO, database reliability reviewer, security reviewer and Production owner |
+| Approvers | Standard mode: CTO, database reliability reviewer, security reviewer and Production owner. Pilot-stage mode: Patrick McKenna as sole human Production owner and final accountable approver under the mandatory compensating controls. |
 | Creation date | Exact date of the separately approved implementation |
 | Review date | Before every Production database release and at least quarterly |
 | Expiry | No later than 90 days after creation or renewal |
@@ -235,8 +306,10 @@ The attestation must record:
 | Reason | Historical artifact unavailable; operational lineage acceptance only |
 | Evidence references | Investigation, approval, implementation PR and pre/post verification records |
 
-An expired attestation blocks Production migration and deployment until the same
-approvers review and renew it. It must be retired immediately on:
+An expired attestation blocks Production migration and deployment until the
+applicable governance mode is reviewed and renewed. Pilot-stage renewal does
+not defer its first-10-installers/new-reviewer trigger. It must be retired
+immediately on:
 
 - replacement of the Production database;
 - a formal future re-baselining;
@@ -301,7 +374,8 @@ drift detection and exact exception handling that Prisma deploy omits.
 
 - Production's `_prisma_migrations` record and current schema remain unchanged
   by the attestation itself.
-- Future gate code is more complex and security-sensitive.
+- The attestation-aware gate is more complex and security-sensitive than raw
+  Prisma status.
 - Raw `prisma migrate status` will continue reporting divergence and cannot be
   the sole operational success criterion for this Production database.
 - Every future migration must be validated against both a fresh database and
@@ -312,7 +386,8 @@ drift detection and exact exception handling that Prisma deploy omits.
   new Prisma migration record and may change schema as approved, but those are
   release effects, not restoration of historical equivalence.
 - Password-reset request-flow work and pilot rollout remain blocked until the
-  attestation implementation and PR #41 Production verification complete.
+  attestation is activated from reviewed evidence and PR #41 Production
+  execution and verification complete.
 
 ## Alternatives Considered
 
@@ -321,7 +396,7 @@ drift detection and exact exception handling that Prisma deploy omits.
 | A - Continue recovery | None unless an exact artifact is recovered and separately reviewed | None | None | Open-ended delay with low probability of recovery | Continue in parallel |
 | B - Fabricated historical migration | Add inferred SQL under the missing name | None initially | Misrepresents repository history; checksum still differs | False provenance and unsafe gate pressure | Reject |
 | C - Modify/delete Production record | None or misleading documentation | Direct `_prisma_migrations` mutation | Destroys audit evidence | Prisma inconsistency and concealed incident | Reject |
-| D - Controlled reconciliation | Add exact attestation, verifier and tests in a future PR | Read-only reconciliation; later normal approved migration deploy | Preserves legacy rows; later deploy adds only its ordinary record | Verifier defect or under-scoped schema proof | Accept |
+| D - Controlled reconciliation | Add exact attestation, verifier and tests | Read-only reconciliation; later normal approved migration deploy | Preserves legacy rows; later deploy adds only its ordinary record | Verifier defect or under-scoped schema proof | Accept |
 | E - New baseline | Replace/consolidate executable history and archive old inventory | Mark/reconcile existing environments under a new baseline | Creates an intentional history discontinuity | High tooling, audit and environment complexity | Reject for this incident |
 | F - Gate exception alone | Add special-case gate logic | None | Leaves history divergent | Exception expands or hides new drift | Reject except as an expiring transition inside D |
 
@@ -394,16 +469,24 @@ attestation are evidenced.
 
 Before implementation:
 
+Under standard governance:
+
 1. CTO accepts this ADR.
 2. Database reliability reviewer approves the verifier design and tests.
 3. Security reviewer approves identity binding, fail-closed behavior and
    secret-free evidence.
 4. Production owner approves the future change record and recovery point.
 
+Under the temporary pilot-stage mode, Patrick McKenna records the exact
+accountability acknowledgement and sole human Production-owner approval only
+after all deterministic compensating-control evidence exists. No AI system,
+vendor or invented identity is recorded as a human approver.
+
 Before execution:
 
 1. the remediation implementation PR is merged and its exact commit approved;
-2. the runbook preconditions and two-person evidence review pass; and
+2. the runbook preconditions and the selected explicit governance mode pass;
+   and
 3. the pending PR #41 migration receives separate Production execution
    approval.
 
@@ -419,3 +502,288 @@ Before execution:
 5. Add the migration-governance controls tracked in TD-019.
 6. Resume password-reset planning only after Production migration and
    deployment verification are complete.
+
+## Accepted Historical-Resolved-Migration Amendment
+
+ADR-0024 defines `attestedHistoricalResolvedMigration` as a distinct,
+fail-closed historical state. It is not ordinary migration success and is not
+a general acceptance of `migrate resolve`. Exactly one pending entry exists
+for `20260716183000_pilot_installer_auth`.
+
+The ordinary invariant is unchanged:
+
+> ordinary repository migration = canonical checksum, one unambiguous
+> finished and not-rolled-back record, `applied_steps_count = 1`, and no logs.
+
+The separate historical invariant requires every field below to be exact:
+
+- Production environment and fingerprint `db_4e1d3bd23cff6801`;
+- migration `20260716183000_pilot_installer_auth` and record
+  `69505647-7711-408c-853e-32579345d1b0`;
+- canonical checksum `d35cb01bfaeea27b02a4a1361a4f05688e730592e3cd1731ed23911871ca81fb`
+  and observed CRLF checksum
+  `fee0749e78b3ecc7aea1f6823b338a16c0ed5fb8e4613e079042bb52192913a9`;
+- classification A checksum evidence and classification L1 lifecycle and
+  resolve-operation evidence, each bound to its exact SHA-256;
+- one finished, not-rolled-back record with `applied_steps_count = 0`, no logs,
+  and exact current ledger timestamps;
+- manifest hash, repository baseline, deterministic evolved-schema inventory,
+  full current schema fingerprint and exact named catalog assertions;
+- two matching captures from one newly authorised operation, current recovery
+  evidence, active attestation lifecycle, and the required governance and
+  accountability approvals.
+
+Missing, additional or different evidence fails closed. The state cannot be
+used by Preview, Development, test or fresh-database verification; cannot be
+reused by another migration, database fingerprint or record; and cannot be
+satisfied through the ordinary checksum-divergence structure. The three R10-R12
+ordinary one-step tuples are unchanged; R14, R15, R17 and R18 repository-only
+investigations add independently pinned fourth through seventh ordinary tuples
+for tenant provisioning, tenant first-login activation, tenant operator
+recovery and manual lead creation without changing the pilot-auth structure.
+
+The deterministic expected schema inventory is
+[`ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json`](../03-engineering/evidence/ADR_0024_PILOT_AUTH_EXPECTED_SCHEMA_INVENTORY.json).
+It distinguishes objects introduced by the pilot-auth repair from the later,
+committed `AuthSession.sessionType` evolution. Current Production must match
+that evolved end-state and the complete catalog fingerprint; the July 16 state
+is not treated as permanently frozen.
+
+## Post-R18 Activation Gate
+
+The separately authorised R18 operation stopped before producing a complete
+capture and is permanently closed. It did not activate the attestation. A
+future, separately authorised read-only operation must prove all of the
+following before activation can be considered:
+
+1. all exact R10-R12, R14, R15, R17 and R18 ordinary records still pass independently;
+2. the pilot-auth name, record ID, observed checksum, zero-step count, exact
+   canonical `started_at` and `finished_at`, null rollback, and no-log state;
+3. the full current Production schema fingerprint and every named pilot-auth
+   catalog assertion, including the declared `sessionType` evolution and no
+   conflicting protected object;
+4. the pending migration set is exactly
+   `20260724180000_password_reset_foundation`;
+5. two read-only repeatable-read captures match in every deterministic field;
+6. current recovery evidence and the exact authorised repository revision are bound
+   to both retained artifact references and SHA-256 digests; and
+7. active attestation validation, governance approval and accountability
+   requirements all pass.
+
+Until those values are captured and reviewed, the entry retains null ledger
+timestamps, null current-schema evidence, empty schema-named R14 capture
+references, and a pending attestation. This amendment authorises no Production
+access, status command, migration, resolution, deployment, alias movement or
+new operation.
+
+## Post-R15 Exact Tuple And Candidate Boundary
+
+The permanently closed R15 operation stopped with typed exit `25` on the exact
+tenant first-login checksum and no lifecycle failure. Repository-only evidence
+proved classification A: converting the canonical 575-byte LF Git blob to a
+591-byte CRLF representation produces the exact observed checksum, and the
+reverse transformation is byte-for-byte exact. The fifth ordinary tuple is
+therefore restricted to the exact Production fingerprint, migration, record,
+checksums, one-step lifecycle, manifest, repository baseline and retained R15
+evidence digest.
+
+The three later committed migrations have a deterministic repository-only
+CRLF candidate matrix. Those candidate checksums are not Production evidence,
+are not verifier inputs and are not attestation entries. In particular,
+`20260724180000_password_reset_foundation` remains expected pending. A later
+Production mismatch requires its own observation, authority and exact tuple
+decision; pattern or family acceptance is prohibited.
+
+## Post-R17 Exact Tenant-Operator Tuple
+
+The permanently closed R17 operation used the hardened write-first launcher
+and retained repository and wrapper exit `25`, classification
+`LEDGER_MISMATCH`, stage `first-evidence-generation`, the exact record identity
+and the sole `checksum-mismatch` failure. It emitted no complete capture,
+second transaction, deterministic digest, schema result or live pending set.
+
+The observed tenant-operator checksum exactly matches the precomputed CRLF
+candidate. Independent repository-only proof converts the canonical 804-byte
+UTF-8/no-BOM LF blob's 24 line feeds to an 828-byte CRLF representation and
+reproduces the exact observed checksum. Removing only those carriage returns
+restores the canonical blob byte-for-byte; tokens, statement order, comments
+apart from line endings and semantic content remain unchanged.
+
+The sixth ordinary tuple is restricted to the exact Production fingerprint,
+migration, record ID, canonical and observed checksums, completed one-step
+lifecycle, manifest, R17 repository baseline, classification, dedicated
+evidence reference and evidence digest. The five prior tuples and separate
+pilot-auth historical state are unchanged and cannot cross-satisfy it.
+
+The manual-lead and password-reset matrix entries remain unaccepted repository
+candidates. Password reset remains expected pending. The matrix is not a
+runtime allowlist, and no generic CRLF, prefix, date or Windows-checkout rule
+exists. This amendment authorises no Production access or R18 operation.
+
+## Post-R18 Exact Manual-Lead Tuple
+
+The permanently closed R18 operation retained repository and wrapper exit
+`25`, classification `LEDGER_MISMATCH`, stage `first-evidence-generation`, the
+exact record identity and the sole `checksum-mismatch` failure. It emitted no
+complete capture, second transaction, deterministic digest, schema result or
+live pending set.
+
+The observed manual-lead checksum exactly matches the precomputed CRLF
+candidate. Independent repository-only proof converts the canonical
+4,491-byte UTF-8/no-BOM LF blob's 112 line feeds to a 4,603-byte CRLF
+representation and reproduces the exact observed checksum. Removing only
+those carriage returns restores the canonical blob byte-for-byte; tokens,
+statement order, comments apart from line endings and semantic content remain
+unchanged.
+
+The seventh ordinary tuple is restricted to the exact Production fingerprint,
+migration, record ID, canonical and observed checksums, completed one-step
+lifecycle, manifest, R18 repository baseline, classification, dedicated
+evidence reference and evidence digest. The six prior tuples and separate
+pilot-auth historical state are unchanged and cannot cross-satisfy it.
+
+Only the password-reset matrix entry remains an unaccepted repository
+candidate. Password reset remains expected pending. The matrix is not a
+runtime allowlist, and no generic CRLF, prefix, date or Windows-checkout rule
+exists. This amendment authorises no Production access or R19 operation.
+
+## Post-R19 Evidence Activation
+
+The permanently closed R19 operation used the exact approved revision
+`2b76a33a5f01c746436132c195bdd7582d54817b` and one fixed read-only launcher
+invocation. It completed both repeatable-read captures, verified all seven
+ordinary checksum-divergence tuples and the separate pilot-auth historical
+state, and matched every deterministic field at digest
+`19027bc451ba6fd25b17ccfd69f4106c5562df1cb396928b7b91aab74697fb98`.
+
+The live Production schema/catalog fingerprint was
+`1d1354ca5bf23142fee9cbe3302b7a88c670c1426594563d70a1c24d35151d81`.
+The exact pending set contained only
+`20260724180000_password_reset_foundation`. Attestation v5 was populated from
+the retained evidence, activated under the pilot-stage compensating control,
+and validated. Guarded Production status then returned
+`verified-pending-blocked`, exit `20`, with deployment disallowed and no
+migration applied.
+
+This activation accepts the single incident only under ADR-0024. Historical
+SQL remains unknown, raw history remains divergent, and the existing ledger
+is untouched. R19 authorises no password-reset migration, application
+deployment or alias movement. The attestation expires on
+`2026-10-25T17:26:47.280Z` and still requires later qualified-human review at
+the fixed pilot-stage trigger.
+
+## Post-R4 Production Fingerprint Provenance Correction
+
+Closed password-reset reconciliation R4 reported the canonical target migration
+successfully applied, then stopped with exit `26` at exact Production schema
+fingerprint comparison. Repository history proves the expected `685ee5...`
+value was derived from disposable PostgreSQL and was not Production-specific.
+The R19 captures do not retain the full catalog rows needed to reconstruct an
+exact post-migration Production fingerprint.
+
+Attestation v6 therefore leaves `postMigrationFingerprint` and its evidence
+null, retains the disposable value only as `freshHeadFingerprint`, and requires
+an exact indexed `production-read-only-capture` provenance tuple before a
+Production post fingerprint may be active. Both Production preflight and
+postflight fail closed while this evidence is absent. The attestation is
+retired under its existing material-change/supporting-evidence conditions.
+
+No guessed fingerprint, generic acceptance, catalog-assertion substitute or
+hash normalization is permitted. A separately authorised read-only Production
+post-migration verification must precede any new human-governed attestation
+amendment. The password-reset migration must not be invoked again.
+
+## Post-R1 Repository Capture-Path Repair
+
+Closed post-migration verification R1 exposed five repository incompatibilities
+before child launch: the retention change-ID family, pending-only historical
+capture lifecycle, 15-applied/one-pending ledger contract, pre-password-reset
+catalog assertions and missing fixed credential-bound command. The repository
+now resolves each incompatibility through a separate, versioned
+`post-migration-production-verification` path without changing the historical
+R19 capture meaning.
+
+The new path requires the retired v6 attestation, exact Production identity,
+16 applied repository migrations, zero pending migrations, the canonical
+successful one-step password-reset ledger record, all seven ordinary tuples,
+the pilot-auth historical-resolved state, exact post-password-reset catalog
+assertions and the complete existing fingerprint-v2 canonical descriptor
+payload. It performs two internal RepeatableRead transactions whose first
+statement is `SET TRANSACTION READ ONLY`, compares every stable canonical
+field and retains the outputs through the write-first Node path.
+
+The repair does not populate either post-migration attestation field, add an
+approval or change `retired` to `active`. A later attestation amendment requires
+new exact Production evidence and a new qualified-human approval. The closed
+R1 and R4 records and the R19 historical captures remain unchanged. See the
+[post-migration evidence path repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md).
+
+## Post-Migration Production Evidence R2
+
+The separately authorised and permanently closed R2 operation used one fixed
+read-only invocation at approved revision
+`6eb3ab4bf1763883443793dc46a7be30e8a2e6c0`. Both independent
+RepeatableRead transactions completed after being set read only. The ledger
+contained all 16 repository migrations applied, zero pending, and the exact
+canonical successful password-reset record. All seven ordinary historical
+tuples and the separate pilot-auth historical-resolved state verified.
+
+Both complete fingerprint-v2 descriptor payloads matched. The actual
+Production post-migration fingerprint and catalog descriptor digest are
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`.
+The deterministic evidence digest is
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+All post-password-reset, Lead and pilot-auth assertions passed with no
+unsupported relations.
+
+This evidence satisfies the read-only verification prerequisite but does not
+amend governance. Attestation v6 remains retired with null post-migration
+fields and its R19 evidence and approval unchanged. A new qualified-human
+approval is required before a separate attestation amendment or reactivation.
+No Production write, migration, deployment or alias movement occurred. See the
+[R2 verification record](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md).
+
+## Post-Migration Governance Review
+
+The repository-only governance review rehashed and parsed both R2 captures and
+used the committed evidence validator to recompute the fingerprint and
+deterministic digest. R2 remains exact: 16 repository migrations applied, zero
+pending, seven ordinary tuples verified, pilot-auth verified, schema
+fingerprint
+`22bb1c7cfb799bbb8c8c7530702e543593ec5ff2294988237d34ad03df35c989`
+and deterministic digest
+`89e0ef66a07f3390b83c378e323eca699cc71012b66ea601889eb5dc1a100a8b`.
+
+The review also reproduced a fail-closed governance blocker. The current v6
+validator can accept a synthetic active post-migration snapshot while retaining
+the earlier R19 approval and R19 capture set and binding only one R2 artifact.
+The schema contains no post-migration technical-qualification declaration or
+second-capture/deterministic-digest binding. Its fixed approval
+acknowledgements also retain the now-false statement that no Production
+migration has been applied.
+
+No safe qualified-human approval or reactivation can proceed until a separate
+repository repair defines the versioned transition, exact dual-evidence
+binding, reviewer qualification evidence, new approval timing, truthful
+acknowledgements and renewed expiry semantics. Attestation v6 therefore remains
+retired with null post-migration fields and unchanged R19 evidence. See the
+[post-migration governance review](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md).
+
+## Post-Migration Governance Revision V7
+
+The repository now preserves retired v6 as the immutable R19 historical
+attestation and introduces a separate
+`clada-adr-0024-post-migration-attestation/v7`. V7 begins in
+`pending-approval`, atomically binds both R2 captures, the deterministic digest,
+operation boundary, actual Production fingerprint and 16-applied/zero-pending
+state, and cannot use the retained R19 captures or approval.
+
+Activation requires one new independent qualified-human Database Reliability
+Reviewer, repository-indexed qualification and approval evidence, exact R2 and
+governance-revision bindings, the versioned truthful post-migration
+acknowledgement, lifecycle timestamps and an explicit expiry no more than 90
+days after activation. Production Owner Patrick McKenna cannot self-review in
+that role. The old pilot exception is not extended into v7.
+
+No human approval was added and v7 remains pending. See the
+[governance model repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md).

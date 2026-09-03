@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-08-26 |
 
 ## Purpose
 
@@ -34,7 +34,7 @@ These items are intentionally scheduled platform capabilities. They are not impl
 | PCG-001 | Full roles and permissions foundation | Platform Release 1.2 | Implemented in Platform Release 1.2 as a platform role enum, code-defined permission catalogue, role-to-permission mapping, and proving-slice authorisation. | No longer a planned gap after the release merges; future custom roles and user administration remain out of scope rather than debt. |
 | PCG-002 | Actor-aware audit foundation | Platform Release 1.2 | Implemented in Platform Release 1.2 as typed audit fields, a typed audit writer, compatibility wrapper, backfill migration, and proving-slice audit event. | No longer a planned gap after the release merges; remaining string-field compatibility is tracked as technical debt. |
 | PCG-003 | Workflow foundation | Platform Release 1.3 | Implemented in Platform Release 1.3 as workflow definitions, stages, transitions, instances, history, execution service, migration backfill, and SolarGRANT Pro lead pipeline proving slice. | No longer a planned gap after the release merges; projection drift and future stricter transition modelling are tracked as technical debt or future platform work. |
-| PCG-004 | Self-service password reset | Required before first external installer pilot | Architecture approved; PR #41 foundation merged but Production promotion is blocked, its migration is pending, provider/infrastructure prerequisites remain outstanding, and request-flow work is paused. | This is a planned security capability, not optional debt. Migration-history reconciliation now precedes the remaining implementation, approved email delivery, Preview security acceptance and Production verification. |
+| PCG-004 | Self-service password reset | Required before first external installer pilot | Architecture approved; PR #41 foundation merged and closed reconciliation R4 reported the Production migration committed, but exact post-migration Production schema evidence is not yet captured. Provider/infrastructure prerequisites remain outstanding and request-flow work is paused. | This is a planned security capability, not optional debt. Migration-history reconciliation and a separately authorised read-only post-migration verification precede the remaining implementation, approved email delivery, Preview security acceptance and release promotion. |
 
 ## Current Technical Debt
 
@@ -58,15 +58,35 @@ These items are intentionally scheduled platform capabilities. They are not impl
 | TD-016 | Medium | Privacy and communications | The SolarGRANT Pro intake flow currently supports SMS notifications containing or relating to customer lead information. SMS may place customer information on installer-owned or employee-owned mobile phones outside centrally managed company systems. | Customer information may be distributed across personal or unmanaged devices, making access control, retention, deletion, offboarding, audit, and GDPR compliance harder to manage. | Remove SMS notifications from the intake flow and retire the current SMS integration, configuration, environment variables, tests, and documentation. Use centrally managed email as the supported external notification channel. Preserve a product-neutral notification service boundary for future managed channels such as in-app notifications, Microsoft Teams, Slack, or WhatsApp Business if later approved. | No. Schedule as a focused product maintenance PR before wider installer onboarding or commercial-scale use. |
 | TD-017 | Low | Product navigation | **Resolved:** the non-pilot Sales Playbook page, route, navigation entry, middleware reference, and page-only code have been removed. | The pilot navigation now stays focused on daily installer workflows. | Reassess the full authenticated navigation during a future pilot UX cleanup only if user evidence supports it. | No. |
 | TD-018 | Low | Login usability and accessibility | **Resolved:** the password field now includes a keyboard-accessible show/hide control with state-aware screen-reader labels. | Users can verify their password entry without changing validation, password-manager, or authentication behaviour. | Retain the accessible toggle and cover it in login UI regression checks. | No. |
-| TD-019 | Critical | Migration provenance | Production contains completed migration `20260423093000_application_pack_admin_fields`, but its repository artifact and checksum-identical SQL are unavailable. Root cause remains G - Unknown. PR #43 implements the deterministic manifest, exact ledger verifier, schema fingerprint and inactive attestation boundary without changing Production. PR #44 prepares fixed read-only evidence-capture tooling and deterministic disposable fresh/post evidence only. | The implementation can fail closed independently, but the checked-in attestation remains pending because no live Production evidence, exact related-record IDs, failed-log digest, pre-migration fingerprint or genuine human approvals have been retained. Raw Prisma history remains divergent and release promotion remains blocked. | Use a separate operational PR to capture and review Production evidence and activate only after genuine approvals. Then use a different explicitly approved execution PR for the password-reset migration. Retain immutable inventory and deletion/rename controls. | Yes. Blocks every Production release, password-reset request-flow work and pilot rollout until activation, reconciliation and Production verification complete. |
+| TD-019 | Critical | Migration provenance | Production contains completed migration `20260423093000_application_pack_admin_fields`, but its repository artifact and checksum-identical SQL are unavailable. Root cause remains G - Unknown. PRs #43-#45 implement the deterministic manifest, exact ledger verifier, seven independently pinned ordinary checksum-divergence tuples, the separate pilot-auth historical-resolved state and pilot-stage compensating control. R19 completed historical evidence and activation. Closed password-reset R4 reported the final migration committed. Closed R2 then verified the actual post-migration Production fingerprint, 16 applied migrations, zero pending and both deterministic captures. Attestation v6 remains retired. A separate v7 now binds the exact R2 bundle and is `pending-approval`. | Raw Prisma history remains divergent. The prior v6 cross-evidence governance defect is isolated by v7, but no independent qualified human has supplied the required identity, qualification evidence, acknowledgement and R2-specific approval. Release promotion, password-reset request-flow work and pilot rollout remain blocked. | Obtain one genuine independent qualified-human Database Reliability Reviewer approval using the signable v7 package. Validate exact R2/governance bindings, truthful acknowledgement and maximum 90-day lifecycle before activation. Never rerun the password-reset migration or reuse R19 approval. | Yes. Blocks Production release, password-reset request-flow work and pilot rollout until a new qualified-human approval is validated and v7 is separately activated. |
 
 ## Critical Debt
 
-TD-019 is the sole current critical item. Repository-side verification is now
-implemented by PR #43, but it remains open and blocks every Production release
-until the attestation is independently evidenced, genuinely approved,
-activated and used successfully under the runbook. The earlier Architecture
-Checkpoint 1 assessment predated this incident.
+TD-019 is the sole current critical item. Repository-side historical
+verification is implemented and R19 supplied deterministic evidence, genuine
+pilot-stage approval, activation and the required pre-migration status proof.
+Closed R4 reported the password-reset migration committed. Closed R2 later
+verified the exact post-migration Production fingerprint, complete descriptors,
+16 applied migrations and zero pending through two matching read-only captures.
+The attestation remains retired because the repository-only governance review
+reproduced unsafe R19-approval reuse and found no implemented qualified-human
+declaration or truthful post-migration approval contract. The earlier
+Architecture Checkpoint 1 assessment predated this incident.
+
+The closed R13 investigation established the narrow repository model:
+`attestedHistoricalResolvedMigration` records the exact pilot-auth
+classification A/L1 history separately from ordinary migration success. The
+ordinary path remains one step. R10-R12, R14, R15, R17 and R18 each have
+separate, independently pinned exact Production checksum-divergence tuples.
+R18 is closed; its retained mismatch exactly reproduced the previously computed
+manual-lead CRLF bytes, so tuple 7 was added without accepting the remaining
+password-reset candidate. The attestation remained pending at the close of R18.
+R19 superseded that state with two matching captures and an active attestation;
+R4 later caused the governed retirement described above. R2 has now verified
+the post-migration state. The repository governance defect is now repaired by
+the separate v7 pending-approval model. TD-019 remains critical until a
+genuinely new independent qualified-human approval is validated and v7 is
+separately activated.
 
 ## Review Rules
 

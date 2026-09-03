@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const command = readFileSync('scripts/verify-migration-lineage.ts', 'utf8');
+const evidenceReferences = readFileSync('lib/lineage-evidence-references.ts', 'utf8');
 const catalog = readFileSync('lib/postgres-catalog.ts', 'utf8');
 const databaseCommand = readFileSync('scripts/run-database-command.ts', 'utf8');
 const commandPolicy = readFileSync('lib/verifier-command-policy.ts', 'utf8');
@@ -15,7 +16,8 @@ test('lineage verifier uses repository-fixed attestation and manifest paths', ()
   assert.doesNotMatch(command, /process\.argv\[[^\]]+\].*(?:attestation|manifest).*Path/i);
   assert.match(command, /new Set<VerifierMode>/);
   assert.match(command, /verifyRepositoryEvidenceReferences/);
-  assert.match(command, /existsSync/);
+  assert.match(evidenceReferences, /existsSync/);
+  assert.match(evidenceReferences, /createHash\('sha256'\)/);
 });
 
 test('gitless manifest verification is restricted to an identified Vercel checkout', () => {
@@ -54,12 +56,16 @@ test('Production evidence command cannot invoke deploy, resolve, DDL, DML, or ca
     /\b(?:ALTER|CREATE|DELETE|DROP|GRANT|INSERT|MERGE|REVOKE|TRUNCATE|UPDATE)\b/i
   );
   assert.doesNotMatch(captureBoundary, /\$executeRaw|\$queryRaw|process\.argv\[[3-9]\]/);
-  assert.equal((captureBoundary.match(/readDatabaseState\(\)/g) ?? []).length, 2);
+  assert.equal((captureBoundary.match(/readDatabaseState\(\{/g) ?? []).length, 2);
+  assert.match(captureBoundary, /first-migration-ledger/);
+  assert.match(captureBoundary, /first-catalog/);
+  assert.match(captureBoundary, /second-migration-ledger/);
+  assert.match(captureBoundary, /second-catalog/);
 });
 
 test('guarded deploy cannot reach Prisma before verifier preflight or omit postflight', () => {
   const preflight = databaseCommand.indexOf("runVerifier('preflight')");
-  const deploy = databaseCommand.indexOf("if (definition.prismaArgs) run('prisma'");
+  const deploy = databaseCommand.indexOf('run(launchFixedPrismaCommand');
   const postflight = databaseCommand.indexOf("runVerifier('postflight')");
   assert.ok(preflight > 0 && deploy > preflight && postflight > deploy);
   assert.match(databaseCommand, /productionMigrationAcknowledgement/);
@@ -70,7 +76,7 @@ test('guarded deploy cannot reach Prisma before verifier preflight or omit postf
 test('Production pending status exits before Prisma or Vercel build can continue', () => {
   const decision = databaseCommand.indexOf("decision.kind === 'verified-pending-blocked'");
   const blockedExit = databaseCommand.indexOf('process.exit(decision.exitCode)', decision);
-  const prisma = databaseCommand.indexOf("if (definition.prismaArgs) run('prisma'");
+  const prisma = databaseCommand.indexOf('run(launchFixedPrismaCommand');
   assert.ok(decision > 0 && blockedExit > decision && prisma > blockedExit);
   assert.match(commandPolicy, /'production-status':\s*\[\s*VERIFIER_EXIT_CODES\.VERIFIED_CLEAN,\s*VERIFIER_EXIT_CODES\.VERIFIED_PENDING_BLOCKED/s);
   assert.match(commandPolicy, /'production-preflight': \[VERIFIER_EXIT_CODES\.VERIFIED_CLEAN\]/);
@@ -88,4 +94,6 @@ test('verifier output has no URL, arbitrary SQL, or raw migration log output pat
   assert.doesNotMatch(command, /console\.(?:log|error)\([^)]*catalog/);
   assert.match(command, /assertVerifierEvidenceSecretFree/);
   assert.doesNotMatch(command, /failedRecord\.logs/);
+  assert.match(command, /safeProductionEvidenceStageDiagnostic/);
+  assert.match(command, /Migration lineage verification failed safely/);
 });

@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-MIGRATION-HISTORY-RECONCILIATION-RUNBOOK-001 |
-| Status | Active governance; post-migration evidence verified, attestation retired, governance repair required before approval |
+| Status | Active historical control; ADR-0024 incident closed by explicit executive risk acceptance |
 | Owner | Clada Systems Engineering; pilot-stage Production and Recovery Owner Patrick McKenna |
 | Review cycle | Before each authorised attestation use and after migration tooling changes |
-| Last reviewed | 2026-08-31 |
+| Last reviewed | 2026-09-18 |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 
 ## Purpose And Authority
@@ -748,3 +748,23 @@ Do not copy R19 approval fields, infer qualification from a title, use an AI
 reviewer, or activate the pending template without every field. The
 [signable package](evidence/ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json)
 keeps all genuine human fields empty until supplied by that reviewer.
+
+## Incident-Specific Executive Supersession
+
+The v7 approval procedure above remains the truthful original activation
+contract and was not completed. V7 remains `pending-approval` with zero
+qualifying approvals. On 2026-09-18 Patrick McKenna, acting as CEO and
+Production Owner, explicitly accepted the residual governance risk and
+superseded that activation requirement for ADR-0024, PR #45, the exact R2
+evidence and the password-reset Production migration incident only.
+
+The fixed executive decision validator requires the exact pending v7 Git blob,
+R2 change ID, Production identity, fingerprint, capture hashes, deterministic
+digest, operation-boundary hash and successful password-reset record. It has no
+runtime flag, pattern or reusable incident selector. The decision closes the
+incident without activating v7 and without changing the historical evidence.
+
+This supersession is not a new reconciliation procedure. It authorises no
+Production access, migration, manual SQL, `prisma migrate resolve`,
+`prisma db push`, deployment or alias movement. A future incident requires its
+own investigation and explicit decision.

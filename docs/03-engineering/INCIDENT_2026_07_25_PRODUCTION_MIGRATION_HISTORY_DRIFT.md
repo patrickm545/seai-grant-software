@@ -3,11 +3,11 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-INCIDENT-2026-07-25-PRODUCTION-MIGRATION-DRIFT |
-| Status | Open; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval |
+| Status | Closed by explicit CEO / Production Owner risk acceptance |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every ADR-0024 evidence, activation or execution change |
-| Last reviewed | 2026-08-31 |
-| Severity | High - Production releases blocked |
+| Last reviewed | 2026-09-18 |
+| Severity | Closed; residual governance risk explicitly accepted |
 | Incident owner | Clada Systems Engineering; Production execution owner Patrick |
 | Incident date | 2026-07-25 |
 | Discovery date | 2026-07-25 |
@@ -596,8 +596,18 @@ required before any human approval is solicited or recorded.
 - [Post-Migration Production Verification R2](PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)
 - [Post-Migration Governance Review](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md)
 - [Post-Migration Governance Model Repair](PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md)
+- [Executive Risk Acceptance And Closure](ADR_0024_PRODUCTION_MIGRATION_INCIDENT_EXECUTIVE_RISK_ACCEPTANCE_AND_CLOSURE.md)
 
 The repository now contains a fail-closed v7 pending-approval governance model
 for the completed R2 evidence. Retired v6 remains the immutable R19 record. No
-new human approval or activation exists, so the incident remains open at the
-qualified-human boundary and Production status remains separately controlled.
+new human approval or activation exists.
+
+On 2026-09-18 Patrick McKenna, acting as CEO and Production Owner, explicitly
+accepted the residual governance risk and superseded the pending v7 activation
+requirement for this incident only. The closure record pins the exact v7 Git
+artifact, R2 evidence, Production identity, PR #45 and password-reset migration.
+Peter Archer is not counted as a v7 approval, and v7 remains historically
+`pending-approval`. The technical Production state is verified by R2, the
+independent-review requirement remains unfulfilled, executive risk acceptance
+is recorded, and this incident is closed without altering Production evidence
+or migration history.

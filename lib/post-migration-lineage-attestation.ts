@@ -29,6 +29,16 @@ export const POST_MIGRATION_SOURCE_ATTESTATION_SHA256 =
 export const POST_MIGRATION_SOURCE_ATTESTATION_CANONICAL_SHA256 =
   '87f8652b0b63f06a5751e579c120bfa42389a227978ded5b60d27be435b72357' as const;
 export const POST_MIGRATION_EVIDENCE_COMPLETED_AT = '2026-08-27T09:40:39.660Z' as const;
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_VERSION =
+  'clada-adr-0024-executive-risk-acceptance/v1' as const;
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_ID =
+  'ADR-0024-EXECUTIVE-RISK-ACCEPTANCE-2026-09-18' as const;
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_RECORDED_AT =
+  '2026-09-18T10:34:34.572Z' as const;
+export const POST_MIGRATION_V7_ARTIFACT_SHA256 =
+  '9767c7c434976de0291bb77eafefa0cedd78ab0b24f99b57240c4da9e6faf0ee' as const;
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_STARTING_REVISION =
+  'd9a19612ecf373b68325c344ef2c72d34b1e0260' as const;
 
 export const POST_MIGRATION_SOURCE_ATTESTATION = {
   version: ATTESTATION_VERSION,
@@ -124,6 +134,101 @@ export const POST_MIGRATION_REQUIRED_EVIDENCE_REFERENCES = [
   'docs/03-engineering/evidence/ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.json',
   'docs/03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md',
   'docs/03-engineering/evidence/ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json'
+] as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_BINDING = {
+  adrId: 'ADR-0024',
+  pullRequest: 45,
+  incidentId: 'INCIDENT-2026-07-25-PRODUCTION-MIGRATION-HISTORY-DRIFT',
+  authorisedStartingRevision: POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_STARTING_REVISION,
+  postMigrationAttestation: {
+    version: POST_MIGRATION_ATTESTATION_VERSION,
+    attestationId: POST_MIGRATION_ATTESTATION_ID,
+    artifactReference:
+      'prisma/lineage-attestations/adr-0024-production-post-migration-v7.json',
+    artifactSha256: POST_MIGRATION_V7_ARTIFACT_SHA256,
+    status: 'pending-approval',
+    qualifyingApprovalCount: 0
+  },
+  productionIdentity: {
+    environment: 'production',
+    database: 'neondb',
+    branch: 'br-cool-wave-abysq3lu',
+    databaseFingerprint: POST_MIGRATION_EVIDENCE_BUNDLE.databaseFingerprint
+  },
+  r2Evidence: {
+    changeId: POST_MIGRATION_EVIDENCE_BUNDLE.changeId,
+    evidenceVersion: POST_MIGRATION_EVIDENCE_BUNDLE.evidenceVersion,
+    repositoryMigrations: POST_MIGRATION_EVIDENCE_BUNDLE.migrationState.repositoryMigrations,
+    appliedRepositoryMigrations:
+      POST_MIGRATION_EVIDENCE_BUNDLE.migrationState.appliedRepositoryMigrations,
+    pendingRepositoryMigrations:
+      POST_MIGRATION_EVIDENCE_BUNDLE.migrationState.pendingRepositoryMigrations,
+    postMigrationFingerprint: POST_MIGRATION_EVIDENCE_BUNDLE.postMigrationFingerprint,
+    capture1Sha256: POST_MIGRATION_EVIDENCE_BUNDLE.captures[0].artifactSha256,
+    capture2Sha256: POST_MIGRATION_EVIDENCE_BUNDLE.captures[1].artifactSha256,
+    deterministicEvidenceDigest: POST_MIGRATION_EVIDENCE_BUNDLE.deterministicEvidenceDigest,
+    operationBoundarySha256: POST_MIGRATION_EVIDENCE_BUNDLE.operationBoundary.artifactSha256,
+    passwordResetMigration: {
+      migrationName: POST_MIGRATION_EVIDENCE_BUNDLE.passwordResetMigration.migrationName,
+      recordId: POST_MIGRATION_EVIDENCE_BUNDLE.passwordResetMigration.recordId,
+      checksum: POST_MIGRATION_EVIDENCE_BUNDLE.passwordResetMigration.checksum,
+      recordCount: 1,
+      lifecycle: 'exact-canonical-one-step-success'
+    },
+    catalogAssertionsVerified: POST_MIGRATION_EVIDENCE_BUNDLE.catalog.assertionsVerified,
+    historicalLineageVerified:
+      POST_MIGRATION_EVIDENCE_BUNDLE.historicalLineage.ordinaryChecksumTuplesVerified &&
+      POST_MIGRATION_EVIDENCE_BUNDLE.historicalLineage
+        .pilotAuthHistoricalResolvedMigrationVerified
+  }
+} as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_REVIEW_STATE = {
+  requiredByOriginalV7Contract: true,
+  satisfied: false,
+  qualifyingApprovalCount: 0,
+  peterArcherCountedAsApproval: false,
+  peterArcherStatementClassification: 'human-review-not-reliable-for-governance-purposes'
+} as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_DECISION = {
+  residualGovernanceRiskAccepted: true,
+  v7ActivationRequirementSupersededForThisIncidentOnly: true,
+  technicalClosureAuthorised: true,
+  normalDevelopmentAuthorisedAfterValidation: true,
+  reusableForAnotherIncident: false
+} as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_ACKNOWLEDGEMENTS = [
+  'V7 did not obtain the independent qualified-human DATABASE_RELIABILITY_REVIEWER approval required by its original activation contract.',
+  "Peter Archer's limited review does not satisfy the v7 qualified-human approval contract and is not counted as an approval.",
+  'R2 verified the intended Production identity, 16 of 16 repository migrations applied and zero pending migrations.',
+  'R2 verified one canonical successful Production record for 20260724180000_password_reset_foundation.',
+  'R2 produced two deterministic read-only Production captures and the actual Production post-migration schema fingerprint.',
+  'R2 verified the required post-migration catalog assertions and preserved historical lineage assertions.',
+  'Patrick McKenna, acting as CEO and Production Owner, accepts the residual governance risk of closing ADR-0024 without activating v7 through its original independent-review path.',
+  'The pending v7 activation requirement is superseded only for this ADR-0024 incident, PR #45, the exact R2 evidence and the password-reset Production migration incident.',
+  'This decision does not alter the R2 evidence, migration history, schema fingerprint, checksums or historical attestations.'
+] as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_PROHIBITIONS = [
+  'production-migration',
+  'manual-sql',
+  'prisma-migrate-resolve',
+  'prisma-db-push',
+  'production-write',
+  'deployment',
+  'alias-movement',
+  'future-incident-reuse'
+] as const;
+
+export const POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_EVIDENCE_REFERENCES = [
+  'prisma/lineage-attestations/adr-0024-production-post-migration-v7.json',
+  'docs/03-engineering/PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md',
+  'docs/03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md',
+  'docs/03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md',
+  'docs/03-engineering/ADR_0024_PRODUCTION_MIGRATION_INCIDENT_EXECUTIVE_RISK_ACCEPTANCE_AND_CLOSURE.md'
 ] as const;
 
 export type PostMigrationTechnicalQualification = {
@@ -274,6 +379,75 @@ export type PostMigrationApprovalPackage = {
   evidence: PostMigrationEvidenceBundle;
   reviewerTemplate: PostMigrationApproval;
   nextAction: string;
+};
+
+export type PostMigrationExecutiveRiskAcceptance = {
+  version: string;
+  decisionId: string;
+  status: 'accepted-and-closed';
+  recordedAt: string;
+  decisionMaker: {
+    name: string;
+    roles: string[];
+  };
+  binding: {
+    adrId: string;
+    pullRequest: number;
+    incidentId: string;
+    authorisedStartingRevision: string;
+    postMigrationAttestation: {
+      version: string;
+      attestationId: string;
+      artifactReference: string;
+      artifactSha256: string;
+      status: string;
+      qualifyingApprovalCount: number;
+    };
+    productionIdentity: {
+      environment: string;
+      database: string;
+      branch: string;
+      databaseFingerprint: string;
+    };
+    r2Evidence: {
+      changeId: string;
+      evidenceVersion: string;
+      repositoryMigrations: number;
+      appliedRepositoryMigrations: number;
+      pendingRepositoryMigrations: number;
+      postMigrationFingerprint: string;
+      capture1Sha256: string;
+      capture2Sha256: string;
+      deterministicEvidenceDigest: string;
+      operationBoundarySha256: string;
+      passwordResetMigration: {
+        migrationName: string;
+        recordId: string;
+        checksum: string;
+        recordCount: number;
+        lifecycle: string;
+      };
+      catalogAssertionsVerified: boolean;
+      historicalLineageVerified: boolean;
+    };
+  };
+  independentReview: {
+    requiredByOriginalV7Contract: boolean;
+    satisfied: boolean;
+    qualifyingApprovalCount: number;
+    peterArcherCountedAsApproval: boolean;
+    peterArcherStatementClassification: string;
+  };
+  decision: {
+    residualGovernanceRiskAccepted: boolean;
+    v7ActivationRequirementSupersededForThisIncidentOnly: boolean;
+    technicalClosureAuthorised: boolean;
+    normalDevelopmentAuthorisedAfterValidation: boolean;
+    reusableForAnotherIncident: boolean;
+  };
+  acknowledgements: string[];
+  prohibitions: string[];
+  evidenceReferences: string[];
 };
 
 export class PostMigrationAttestationValidationError extends Error {
@@ -577,5 +751,66 @@ export function validatePostMigrationApprovalPackage(
   }
   exactString(value.nextAction, 'approvalPackage.nextAction');
   if (candidate.status === 'pending-approval') validatePendingApproval(value.reviewerTemplate);
+  return value;
+}
+
+export function validatePostMigrationExecutiveRiskAcceptance(input: {
+  value: PostMigrationExecutiveRiskAcceptance;
+  postMigrationAttestation: PostMigrationLineageAttestation;
+  postMigrationAttestationArtifactSha256: string;
+}) {
+  const { value, postMigrationAttestation } = input;
+  validatePostMigrationLineageAttestation(postMigrationAttestation);
+  if (
+    postMigrationAttestation.status !== 'pending-approval' ||
+    postMigrationAttestation.approval.status !== 'pending' ||
+    postMigrationAttestation.approval.reviewerName !== null ||
+    postMigrationAttestation.approval.approvedAt !== null ||
+    postMigrationAttestation.approval.acknowledgement.accepted !== null
+  ) {
+    invalid('Executive closure requires truthful pending v7 history with zero approval.');
+  }
+  if (input.postMigrationAttestationArtifactSha256 !== POST_MIGRATION_V7_ARTIFACT_SHA256) {
+    invalid('Executive closure must bind the exact immutable pending v7 artifact.');
+  }
+  if (
+    value.version !== POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_VERSION ||
+    value.decisionId !== POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_ID ||
+    value.status !== 'accepted-and-closed' ||
+    value.recordedAt !== POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_RECORDED_AT
+  ) {
+    invalid('Unsupported executive risk-acceptance identity, status or timestamp.');
+  }
+  timestamp(value.recordedAt, 'executiveRiskAcceptance.recordedAt');
+  if (
+    canonicalJson(value.decisionMaker) !==
+    canonicalJson({ name: PILOT_STAGE_ACCOUNTABLE_PERSON, roles: ['CEO', 'PRODUCTION_OWNER'] })
+  ) {
+    invalid('Executive risk acceptance must identify the exact CEO and Production Owner.');
+  }
+  if (
+    canonicalJson(value.binding) !==
+    canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_BINDING)
+  ) {
+    invalid('Executive risk acceptance is not bound to the exact ADR-0024 R2 incident evidence.');
+  }
+  if (
+    canonicalJson(value.independentReview) !==
+    canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_REVIEW_STATE)
+  ) {
+    invalid('Executive risk acceptance must preserve the unfulfilled independent-review state.');
+  }
+  if (
+    canonicalJson(value.decision) !==
+      canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_DECISION) ||
+    canonicalJson(value.acknowledgements) !==
+      canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_ACKNOWLEDGEMENTS) ||
+    canonicalJson(value.prohibitions) !==
+      canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_PROHIBITIONS) ||
+    canonicalJson(value.evidenceReferences) !==
+      canonicalJson(POST_MIGRATION_EXECUTIVE_RISK_ACCEPTANCE_EVIDENCE_REFERENCES)
+  ) {
+    invalid('Executive closure decision, acknowledgements, prohibitions and evidence must be exact.');
+  }
   return value;
 }

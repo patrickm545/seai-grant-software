@@ -6,8 +6,8 @@
 | Status | Draft |
 | Owner | Patrick McKenna |
 | Review cycle | After every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-31 |
-| Operational state | R2 evidence verified; attestation v6 retired; v7 governance pending one new independent qualified-human approval |
+| Last reviewed | 2026-09-18 |
+| Operational state | R2 evidence verified; v7 remains pending; incident closed by explicit CEO / Production Owner risk acceptance |
 | Operation date | R1-R2 stopped 2026-07-29; R3-R5 closed 2026-08-04; R6-R10 closed 2026-08-05; R11-R12 closed 2026-08-06; R13-R14 closed 2026-08-10; R15-R16 closed 2026-08-13; R17-R19 closed 2026-08-17; post-migration R2 closed 2026-08-27 |
 | Repository baseline | `6eb3ab4bf1763883443793dc46a7be30e8a2e6c0` |
 | Branch | `ops/adr-0024-production-evidence-activation` |
@@ -882,3 +882,23 @@ acknowledgement.
 No reviewer, approval or activation was added. Production evidence operations
 R19 and post-migration R2 remain closed, and this governance repair does not
 authorise another Production operation.
+
+## Executive Risk Acceptance And Closure
+
+On 2026-09-18 Patrick McKenna, acting as CEO and Production Owner, accepted the
+residual governance risk of closing ADR-0024 without satisfying or activating
+the v7 independent-review path. The separate closure record pins the exact
+pending v7 Git blob and complete R2 evidence identity. V7 remains
+`pending-approval`, its qualifying approval count remains zero and Peter
+Archer's statement is not represented as approval.
+
+The Production migration technical state remains the exact R2-verified state:
+16 repository migrations applied, zero pending, two deterministic captures,
+the actual Production fingerprint and the canonical successful password-reset
+record. The executive decision changes none of that evidence. ADR-0024 is
+closed for this incident only and the repository may return to normal product
+development after validation. No Production operation, migration, SQL,
+deployment or alias movement is authorised by this closure.
+
+See the
+[executive risk-acceptance and closure record](ADR_0024_PRODUCTION_MIGRATION_INCIDENT_EXECUTIVE_RISK_ACCEPTANCE_AND_CLOSURE.md).

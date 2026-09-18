@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ENG-ADR-0024-MIGRATION-LINEAGE-VERIFIER-001 |
-| Status | Implemented; attestation retired pending Production post-migration evidence and approval |
+| Status | Implemented; incident-specific executive closure validation active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every Production database release and after migration or Prisma tooling changes |
-| Last reviewed | 2026-08-26 |
+| Last reviewed | 2026-09-18 |
 
 ## Purpose And Boundary
 
@@ -17,16 +17,17 @@ identity, migration-ledger state, supported catalog state, named assertions and
 attestation lifecycle. It never edits `_prisma_migrations`, schema or
 application data.
 
-The checked-in attestation is `retired`. R19's historical evidence remains
-preserved, but closed reconciliation R4 proved that the former Production
-post-migration expectation came from disposable PostgreSQL. The exact observed
-Production post-migration fingerprint was not emitted and is not invented.
+The v6 attestation is `retired`; v7 remains `pending-approval` with zero
+qualifying approvals. Closed R2 subsequently verified the actual Production
+post-migration fingerprint, 16 applied migrations, zero pending and two
+matching read-only captures. The password-reset migration must not be invoked
+again.
 
-Production remains on `dpl_3MW7Q6FtkxJroPXHc5RF8FqAD59E`.
-Prisma reported `20260724180000_password_reset_foundation` successfully applied
-during closed R4, but postflight did not verify the resulting Production state.
-The migration must not be invoked again. Merging this implementation must not
-move the Production alias or start password-reset request-flow work.
+The separate executive closure record preserves the pending v7 history and
+binds the exact R2 evidence. It closes this incident through explicit CEO /
+Production Owner risk acceptance rather than by representing v7 as satisfied.
+The record is fixed-path, incident-specific and cannot authorise Production
+access, deployment, alias movement or a future exception.
 
 ## Repository Artifacts
 
@@ -34,6 +35,8 @@ move the Production alias or start password-reset request-flow work.
 | --- | --- |
 | `prisma/migration-manifest.json` | Approved ordered inventory of all 16 committed migrations. |
 | `prisma/lineage-attestations/adr-0024-production.json` | Fixed-path versioned single-incident attestation. |
+| `prisma/lineage-attestations/adr-0024-production-post-migration-v7.json` | Exact pending post-migration approval history and R2 evidence binding. |
+| `prisma/lineage-attestations/adr-0024-production-post-migration-executive-risk-acceptance-v1.json` | Fixed incident-specific executive risk acceptance and closure. |
 | `lib/migration-manifest.ts` | Deterministic inventory and manifest hash. |
 | `lib/lineage-attestation.ts` | Exact lifecycle, identity and approval validation. |
 | `lib/migration-ledger.ts` | Exact ledger normalization and comparison. |
@@ -66,8 +69,10 @@ committed or staged, review of the complete JSON diff, and a separate
 against the staged raw Git blob and rejects deletion, rename or byte change.
 CI fetches full history and runs both inventory checks before linting.
 
-`db:attestation:verify` returns exit `21` for the checked-in pending
-attestation. That is the expected implementation-stage result.
+`db:attestation:verify` validates retired v6, pending v7, the unchanged
+zero-approval state, the approval package and the incident-specific executive
+risk-acceptance record. It returns `0` only when those distinct states and the
+exact R2 binding all validate.
 
 Schema evidence is generated with a fixed profile:
 

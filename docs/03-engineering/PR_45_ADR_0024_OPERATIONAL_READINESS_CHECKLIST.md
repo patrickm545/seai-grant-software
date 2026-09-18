@@ -6,8 +6,8 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before every separately authorised ADR-0024 operation |
-| Last reviewed | 2026-08-31 |
-| Operational state | R2 evidence verified; attestation v6 retired; governance repair required before qualified-human approval |
+| Last reviewed | 2026-09-18 |
+| Operational state | Incident closed by explicit CEO / Production Owner risk acceptance; v7 remains pending with zero qualifying approvals |
 | Governing decision | [ADR-0024](../05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) |
 | Incident | [2026-07-25 Production migration-history drift](INCIDENT_2026_07_25_PRODUCTION_MIGRATION_HISTORY_DRIFT.md) |
 | Authoritative stop record | [PR #45 Production evidence operation](PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md) |
@@ -649,3 +649,22 @@ The approval package is now structurally signable, but all genuine human fields
 remain empty. An independent qualified Database Reliability Reviewer must
 complete and evidence those fields before activation. No Production status is
 authorised by this repository repair.
+
+## Executive Risk-Acceptance Supersession
+
+The unchecked qualified-human approval item above remains a truthful historical
+record and was not completed. On 2026-09-18 Patrick McKenna, acting as CEO and
+Production Owner, explicitly accepted the residual governance risk and
+superseded the v7 activation requirement for this incident only.
+
+- [x] Exact pending v7 Git artifact retained with zero qualifying approvals.
+- [x] Exact R2 identity, capture hashes, digest, schema fingerprint and
+      password-reset migration record bound to the decision.
+- [x] Peter Archer not counted as a v7 approval.
+- [x] No generic, environment-controlled or future-incident bypass added.
+- [x] ADR-0024 incident closed by the separate immutable
+      [executive decision](ADR_0024_PRODUCTION_MIGRATION_INCIDENT_EXECUTIVE_RISK_ACCEPTANCE_AND_CLOSURE.md).
+
+The supersession permits ordinary repository development after validation. It
+does not authorise Production access, migration, SQL, deployment or alias
+movement and does not alter the controls for future incidents.

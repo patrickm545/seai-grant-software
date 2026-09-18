@@ -27,6 +27,8 @@ import {
   PostMigrationAttestationValidationError,
   validatePostMigrationApprovalPackage,
   validatePostMigrationAttestationTransition,
+  validatePostMigrationExecutiveRiskAcceptance,
+  type PostMigrationExecutiveRiskAcceptance,
   type PostMigrationApprovalPackage,
   type PostMigrationLineageAttestation
 } from '../lib/post-migration-lineage-attestation';
@@ -80,8 +82,16 @@ const postMigrationApprovalPackagePath = resolve(
   'evidence',
   'ADR_0024_POST_MIGRATION_APPROVAL_PACKAGE_V7.json'
 );
+const postMigrationExecutiveRiskAcceptancePath = resolve(
+  repositoryRoot,
+  'prisma',
+  'lineage-attestations',
+  'adr-0024-production-post-migration-executive-risk-acceptance-v1.json'
+);
 const sourceAttestationRepositoryPath =
   'prisma/lineage-attestations/adr-0024-production.json';
+const postMigrationAttestationRepositoryPath =
+  'prisma/lineage-attestations/adr-0024-production-post-migration-v7.json';
 const modes = new Set<VerifierMode>([
   'strict-status',
   'strict-preflight',
@@ -233,6 +243,9 @@ async function main() {
     const approvalPackage = readFixedJson<PostMigrationApprovalPackage>(
       postMigrationApprovalPackagePath
     );
+    const executiveRiskAcceptance = readFixedJson<PostMigrationExecutiveRiskAcceptance>(
+      postMigrationExecutiveRiskAcceptancePath
+    );
     const sourceArtifactSha256 = createHash('sha256')
       .update(readRepositoryBlob(sourceAttestationRepositoryPath))
       .digest('hex');
@@ -243,12 +256,18 @@ async function main() {
       requireActive: postMigrationAttestation.status === 'active'
     });
     validatePostMigrationApprovalPackage(approvalPackage, postMigrationAttestation);
+    const postMigrationAttestationArtifactSha256 = createHash('sha256')
+      .update(readRepositoryBlob(postMigrationAttestationRepositoryPath))
+      .digest('hex');
+    validatePostMigrationExecutiveRiskAcceptance({
+      value: executiveRiskAcceptance,
+      postMigrationAttestation,
+      postMigrationAttestationArtifactSha256
+    });
     console.log(
-      `ADR-0024 historical attestation is structurally valid and status=${attestation.status}; post-migration v7 status=${postMigrationAttestation.status}.`
+      `ADR-0024 historical attestation status=${attestation.status}; post-migration v7 status=${postMigrationAttestation.status} with zero qualifying approvals; executive risk acceptance=${executiveRiskAcceptance.status}; incident=closed.`
     );
-    return postMigrationAttestation.status === 'active'
-      ? 0
-      : VERIFIER_EXIT_CODES.ATTESTATION_INACTIVE;
+    return 0;
   }
   if (command === 'production-evidence-capture') {
     const environment = process.env.APP_ENV?.trim().toLowerCase() as ApplicationEnvironment;

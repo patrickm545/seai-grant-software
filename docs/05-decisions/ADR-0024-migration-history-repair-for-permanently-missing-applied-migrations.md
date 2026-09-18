@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document ID | ADR-0024 |
-| Status | Accepted; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval |
+| Status | Accepted; incident closed by explicit Production Owner executive risk acceptance |
 | Owner | Clada Systems Engineering |
 | Review cycle | Before each attestation use and after any Prisma migration-tooling change |
-| Last reviewed | 2026-08-31 |
+| Last reviewed | 2026-09-18 |
 
 ## Context
 
@@ -787,3 +787,29 @@ that role. The old pilot exception is not extended into v7.
 
 No human approval was added and v7 remains pending. See the
 [governance model repair](../03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md).
+
+## Executive Risk Acceptance And Final Closure
+
+On 2026-09-18 Patrick McKenna, acting as CEO and Production Owner, explicitly
+accepted the residual governance risk of closing this incident without
+satisfying or activating the original v7 independent qualified-human approval
+path. V7 remains `pending-approval`, has zero qualifying approvals and retains
+null review, activation and expiry timestamps. Its validator and historical
+approval contract remain intact.
+
+The closure is independently and immutably bound to ADR-0024, PR #45, the
+exact pending v7 Git artifact, R2 change
+`CHG-2026-08-27-ADR0024-POST-MIGRATION-PROD-VERIFY-R2`, the actual Production
+fingerprint, both R2 capture hashes, their deterministic digest, the operation
+boundary and the canonical successful password-reset migration record. It is
+not reusable for another incident and introduces no runtime or environment
+bypass.
+
+Peter Archer's limited statement remains non-qualifying and is not counted as
+a v7 approval. The executive decision stands independently of it. The
+technical state is the R2-verified 16-applied/zero-pending Production state;
+the v7 independent-review requirement is unfulfilled; the residual risk is
+explicitly accepted; and the ADR-0024 incident is closed.
+
+See the
+[executive risk-acceptance and closure record](../03-engineering/ADR_0024_PRODUCTION_MIGRATION_INCIDENT_EXECUTIVE_RISK_ACCEPTANCE_AND_CLOSURE.md).

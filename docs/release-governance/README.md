@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Leadership |
 | Review cycle | Every platform release |
-| Last reviewed | 2026-07-12 |
+| Last reviewed | 2026-07-28 |
 
 This section defines how Clada Systems specifies, reviews, implements, validates, approves, merges, and tags Clada OS platform releases.
 
@@ -123,8 +123,17 @@ Codex must:
    attestation-aware status/preflight/postflight verifier. Pending, inactive,
    expired, identity, inventory, ledger, schema or configuration outcomes block
    release; raw Prisma output cannot override them.
-10. Verifier implementation, attestation activation, Production migration
-    execution and application deployment are separately approved changes.
+10. Repository verifier/capture preparation, read-only operational evidence
+    and attestation activation, Production migration execution, and application
+    deployment are separately approved changes. Evidence or activation never
+    grants execution authority.
+11. The temporary PR #45 `pilot-stage-compensating-control` mode is limited to
+    read-only ADR-0024 evidence, activation and blocked status verification.
+    It records Patrick McKenna as the sole human final accountable approver,
+    treats AI-assisted CTO review only as a method, authorises no migration,
+    deployment or alias movement, and requires later qualified human review at
+    the first-10-pilot-installers/new-reviewer trigger. Normal
+    independent-human governance remains the standard path.
 
 ## Documents
 

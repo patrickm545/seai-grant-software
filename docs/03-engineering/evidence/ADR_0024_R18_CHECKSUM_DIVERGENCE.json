@@ -1,0 +1,169 @@
+{
+  "version": "adr-0024-checksum-divergence-evidence/v1",
+  "governingOperation": "CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R18",
+  "repositoryBaseline": "1fae81c39e4ad70f5083f8562323f7b0c42b754c",
+  "migrationPath": "prisma/migrations/20260722190000_manual_lead_creation/migration.sql",
+  "migrationName": "20260722190000_manual_lead_creation",
+  "productionRecordId": "5920b218-8952-4f39-9862-3a26465e5cbf",
+  "productionRecordCount": 1,
+  "canonicalRepositoryChecksum": "443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160",
+  "observedProductionChecksum": "8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e",
+  "comparisonRule": "Exact immutable-manifest SHA-256 checksum",
+  "normalizationVersion": "adr-0024-migration-record-normalization/v1",
+  "reportVersion": "adr-0024-repository-migration-exact-success/v1",
+  "safeProductionIdentity": {
+    "environment": "production",
+    "databaseName": "neondb",
+    "branchId": "br-cool-wave-abysq3lu",
+    "databaseFingerprint": "db_4e1d3bd23cff6801"
+  },
+  "canonical": {
+    "source": "exact committed Git blob at repositoryBaseline",
+    "encoding": "UTF-8 without BOM",
+    "bom": "none",
+    "lineEndings": "LF",
+    "finalNewline": true,
+    "byteLength": 4491,
+    "lineFeedCount": 112,
+    "carriageReturnCount": 0,
+    "topLevelStatementCount": 14,
+    "lineCommentCount": 10,
+    "nonEmpty": true,
+    "sha256": "443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160"
+  },
+  "alternate": {
+    "transformation": "UTF-8 without BOM; insert one carriage return immediately before each LF; retain final newline",
+    "encoding": "UTF-8 without BOM",
+    "bom": "none",
+    "lineEndings": "CRLF",
+    "finalNewline": true,
+    "byteLength": 4603,
+    "insertedCarriageReturnCount": 112,
+    "sha256": "8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e",
+    "matchesObservedProductionChecksum": true
+  },
+  "reversibleEquivalence": {
+    "reverseTransformation": "remove only the inserted carriage return from each CRLF pair",
+    "removedCarriageReturnCount": 112,
+    "reverseNormalizedByteLength": 4491,
+    "reverseNormalizedSha256": "443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160",
+    "reverseNormalizationEqualsCanonicalBytes": true,
+    "sqlTokensChanged": false,
+    "statementOrderChanged": false,
+    "commentsChangedExceptLineEndings": false,
+    "encodingContentChanged": false,
+    "semanticContentChanged": false
+  },
+  "highLevelSchemaOperations": [
+    "create LeadCreationOrigin and add explicit origin, creator, assignment, idempotency and normalized duplicate-signal fields",
+    "backfill normalized duplicate-signal values from existing source facts",
+    "backfill lead origin only from authoritative creation evidence and preserve ambiguity as LEGACY_UNKNOWN",
+    "make creation origin required while relaxing legacy lead facts to support progressive unknowns",
+    "create tenant-scoped membership, idempotency, duplicate-signal, assignment and creator indexes",
+    "create tenant-consistent creator and assignee foreign keys"
+  ],
+  "lifecycleReview": {
+    "r18ReportedFailureReasons": [
+      "checksum-mismatch"
+    ],
+    "structuredReportEvaluatesAllOrdinaryLifecycleFields": true,
+    "separateLifecycleFailureReported": false,
+    "ordinaryNonEmptyMigration": true,
+    "expectedLifecycle": {
+      "startedAt": "present-valid-canonical-utc-timestamp",
+      "finishedAt": "present-valid-canonical-utc-timestamp",
+      "appliedStepsCount": 1,
+      "rolledBackAt": null,
+      "logsState": "none",
+      "logsDigest": null,
+      "state": "finished-not-rolled-back"
+    }
+  },
+  "r18Diagnostic": {
+    "retentionVersion": "adr-0024-operation-retention/v1",
+    "externalArtifactRoot": "ADR0024/CHG-2026-08-17-ADR0024-PROD-EVIDENCE-R18",
+    "repositoryExit": 25,
+    "wrapperExit": 25,
+    "reportingStatus": "complete",
+    "classification": "LEDGER_MISMATCH",
+    "stage": "first-evidence-generation",
+    "invariant": "first ledger, schema and identity evidence satisfies ADR-0024",
+    "operationStartedAtUtc": "2026-08-17T12:49:17.339Z",
+    "childStartedAtUtc": "2026-08-17T12:49:17.369Z",
+    "childCompletedAtUtc": "2026-08-17T12:49:22.991Z",
+    "reportingCompletedAtUtc": "2026-08-17T12:49:23.012Z",
+    "artifacts": [
+      {
+        "reference": "operation-boundary-start.json",
+        "sha256": "7d41bfb2179ae65ba5798221941891b1eba83d5882638632c50b530cd167f4f5"
+      },
+      {
+        "reference": "operation-boundary-child-start.json",
+        "sha256": "434897020da813302cf4abe0bae5214c10fd08bd14abca822d7f954f09a775fc"
+      },
+      {
+        "reference": "child-stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteLength": 0,
+        "exactChildBytes": true
+      },
+      {
+        "reference": "child-stderr.bin",
+        "sha256": "68ca594584a5f8e8977deeb8be402ca383dfca2a1d05712bdca251929eac500c",
+        "byteLength": 856,
+        "exactChildBytes": true
+      },
+      {
+        "reference": "operation-boundary-child-complete.json",
+        "sha256": "6ea30e3b1b524c8642e05dc48d545b60b101bf595875dc573e7ad7c51c1da262"
+      },
+      {
+        "reference": "diagnostic.json",
+        "sha256": "f147dbcff88a1e6f66965c1cff35232db80a4bf9838033029d9cbfd0f9bffbe7"
+      },
+      {
+        "reference": "operation-boundary.json",
+        "sha256": "57904501a73219d4f1abc2f264788a5531876dc3bbfab25a62d9463e7ad5b231"
+      }
+    ]
+  },
+  "candidateMatrix": {
+    "reference": "docs/03-engineering/evidence/ADR_0024_REMAINING_MIGRATION_BYTE_CANDIDATES_AFTER_R15.json",
+    "sha256": "af41af8aa3ff53d85afbff1b421a6a599cd7dcab4f7644fde1205b878ae7515f",
+    "manualLeadCandidateMatchesR18Observation": true,
+    "runtimeAllowlist": false,
+    "automaticPromotion": false,
+    "remainingUnacceptedCandidates": [
+      "20260724180000_password_reset_foundation"
+    ]
+  },
+  "historicalArtifactSearch": {
+    "allGitObjectDatabaseMatchingBlobCount": 0,
+    "authoritativeApplyingHistoricalBlobRecovered": false,
+    "authoritativeApplyingCheckoutRecovered": false,
+    "authoritativeApplyingCommandRecovered": false,
+    "matchingRetainedWindowsMaterializations": [
+      "primary-worktree-at-investigation-time",
+      "drift-investigation-worktree",
+      "pr41-worktree"
+    ],
+    "result": "Mechanically matching retained Windows materializations exist, but no authoritative applying historical blob, checkout or command was recovered."
+  },
+  "classification": "A-exact-alternate-byte-representation-proven",
+  "confidence": "high",
+  "repositoryOnlyInvestigation": {
+    "productionAccessed": false,
+    "productionCommandRun": false,
+    "productionSqlExecuted": false,
+    "productionModified": false,
+    "productionDeploymentOrAliasMovement": false
+  },
+  "limitations": [
+    "R18 observed and retained the exact checksum mismatch but did not itself establish the historical checkout or line-ending transformation that produced the applied bytes.",
+    "R18 emitted only checksum-mismatch for this record and did not emit its exact lifecycle timestamps because evidence generation stopped.",
+    "No authoritative checksum-identical committed Git blob, applying checkout or historical applying command was recovered; Classification A rests on exact reversible byte equivalence plus the exact retained R18 Production observation.",
+    "Matching retained Windows worktrees prove mechanical reproducibility but are not treated as proof of the applying historical checkout.",
+    "The candidate matrix remains repository-only diagnostic evidence and is not read as a runtime allowlist.",
+    "R18 emitted no complete capture, deterministic digest, schema fingerprint, catalog assertions or live pending-migration set."
+  ]
+}

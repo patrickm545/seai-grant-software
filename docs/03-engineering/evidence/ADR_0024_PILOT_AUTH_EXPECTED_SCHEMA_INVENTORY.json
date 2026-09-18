@@ -1,0 +1,294 @@
+{
+  "version": "adr-0024-pilot-auth-evolved-schema-inventory/v1",
+  "stateName": "attestedHistoricalResolvedMigration",
+  "migrationName": "20260716183000_pilot_installer_auth",
+  "scope": "Exact public-schema objects established by the reviewed pilot authentication repair and their one explicitly compatible later evolution",
+  "directlyIntroduced": {
+    "sourceMigration": "20260716183000_pilot_installer_auth",
+    "tables": [
+      {
+        "schema": "public",
+        "name": "AuthSession",
+        "kind": "table"
+      }
+    ],
+    "columns": [
+      {
+        "schema": "public",
+        "table": "Organisation",
+        "name": "slug",
+        "dataType": "text",
+        "databaseType": "text",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "Organisation",
+        "name": "verified",
+        "dataType": "boolean",
+        "databaseType": "bool",
+        "nullable": false,
+        "defaultExpression": "false",
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "User",
+        "name": "passwordHash",
+        "dataType": "text",
+        "databaseType": "text",
+        "nullable": true,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "User",
+        "name": "lastLoginAt",
+        "dataType": "timestamp without time zone",
+        "databaseType": "timestamp",
+        "nullable": true,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "id",
+        "dataType": "text",
+        "databaseType": "text",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "userId",
+        "dataType": "text",
+        "databaseType": "text",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "tokenHash",
+        "dataType": "text",
+        "databaseType": "text",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "expiresAt",
+        "dataType": "timestamp without time zone",
+        "databaseType": "timestamp",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "createdAt",
+        "dataType": "timestamp without time zone",
+        "databaseType": "timestamp",
+        "nullable": false,
+        "defaultExpression": "CURRENT_TIMESTAMP",
+        "identity": null,
+        "generated": null
+      }
+    ],
+    "constraints": [
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_pkey",
+        "type": "p",
+        "columns": [
+          "id"
+        ],
+        "referencedSchema": null,
+        "referencedTable": null,
+        "definitionRequirements": [
+          "PRIMARY KEY"
+        ]
+      },
+      {
+        "schema": "public",
+        "table": "User",
+        "name": "User_email_normalised_check",
+        "type": "c",
+        "columns": [
+          "email"
+        ],
+        "referencedSchema": null,
+        "referencedTable": null,
+        "definitionRequirements": [
+          "CHECK",
+          "email",
+          "lower",
+          "TRIM"
+        ]
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_userId_fkey",
+        "type": "f",
+        "columns": [
+          "userId"
+        ],
+        "referencedSchema": "public",
+        "referencedTable": "User",
+        "definitionRequirements": [
+          "FOREIGN KEY",
+          "ON UPDATE CASCADE",
+          "ON DELETE CASCADE"
+        ]
+      }
+    ],
+    "indexes": [
+      {
+        "schema": "public",
+        "table": "Organisation",
+        "name": "Organisation_slug_key",
+        "unique": true,
+        "primary": false,
+        "keyColumns": [
+          "slug"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      },
+      {
+        "schema": "public",
+        "table": "OrganisationMembership",
+        "name": "OrganisationMembership_userId_key",
+        "unique": true,
+        "primary": false,
+        "keyColumns": [
+          "userId"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_tokenHash_key",
+        "unique": true,
+        "primary": false,
+        "keyColumns": [
+          "tokenHash"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_userId_expiresAt_idx",
+        "unique": false,
+        "primary": false,
+        "keyColumns": [
+          "userId",
+          "expiresAt"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      },
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_expiresAt_idx",
+        "unique": false,
+        "primary": false,
+        "keyColumns": [
+          "expiresAt"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      }
+    ],
+    "enums": []
+  },
+  "compatibleEvolution": {
+    "sourceMigration": "20260718150000_tenant_first_login_activation",
+    "tables": [],
+    "columns": [
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "sessionType",
+        "dataType": "USER-DEFINED",
+        "databaseType": "AuthSessionType",
+        "nullable": false,
+        "defaultExpression": null,
+        "identity": null,
+        "generated": null
+      }
+    ],
+    "constraints": [],
+    "indexes": [
+      {
+        "schema": "public",
+        "table": "AuthSession",
+        "name": "AuthSession_userId_sessionType_expiresAt_idx",
+        "unique": false,
+        "primary": false,
+        "keyColumns": [
+          "userId",
+          "sessionType",
+          "expiresAt"
+        ],
+        "includedColumns": [],
+        "hasExpressions": false,
+        "partial": false,
+        "constraintBacked": false
+      }
+    ],
+    "enums": [
+      {
+        "schema": "public",
+        "name": "AuthSessionType",
+        "values": [
+          "NORMAL",
+          "RESTRICTED_FIRST_LOGIN"
+        ]
+      }
+    ]
+  },
+  "comparisonPolicy": {
+    "requireEveryNamedObjectExactlyOnce": true,
+    "requireExactStructuralFields": true,
+    "requireConstraintDefinitionTerms": true,
+    "allowOnlyDeclaredCompatibleEvolution": true,
+    "requireFullCurrentCatalogFingerprintForActivation": true,
+    "rejectUnsupportedOrConflictingNamedObjects": true
+  }
+}

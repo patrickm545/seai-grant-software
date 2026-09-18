@@ -6,30 +6,29 @@
 | Status | Active |
 | Owner | Clada Systems Product and Engineering |
 | Review cycle | Every sprint |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-09-18 |
 
 ## Sprint
 
 Platform Release 1.5 - PR 2 Manual Lead Creation implementation.
 
-## Production Release Blocker
+## ADR-0024 Closure
 
-Repository work does not authorise Production promotion. The Production
-migration-history incident and ADR-0024 remediation block every Production
-release. PR #41 is merged but its password-reset migration is pending and its
-foundation is not live. Password-reset request-flow work and external pilot
-rollout remain paused.
+R2 verified the actual Production post-migration state through two matching
+read-only captures: 16 repository migrations applied, zero pending, the
+canonical password-reset migration record, exact historical lineage and the
+Production-specific schema fingerprint. V7 remains `pending-approval` with
+zero qualifying independent approvals.
 
-PR #43 implements the ADR-0024 verifier on a separate focused branch. Its
-attestation is pending and Production acceptance remains disabled until a
-separately reviewed evidence/approval activation. The implementation does not
-change this sprint's product scope and does not authorise Production execution.
+On 2026-09-18 Patrick McKenna, acting as CEO and Production Owner, explicitly
+accepted the residual governance risk and superseded the v7 activation
+requirement for ADR-0024 and PR #45 only. The migration-history incident is
+closed without representing v7 as satisfied or altering R2 evidence. ADR-0024
+no longer blocks ordinary SolarGRANT Pro development.
 
-PR #44 prepares the fixed read-only evidence-capture tooling and records
-deterministic disposable fresh/post fingerprints. It performs no Production
-query or live capture. A separate operational PR must capture evidence and
-activate the attestation; a later execution PR must apply and verify the
-migration. The attestation and release blocker remain unchanged.
+This closure is not deployment authority. Any Production deployment, alias
+movement, database change or future governance exception still requires its
+ordinary separate controls and approval.
 
 ## Objective
 

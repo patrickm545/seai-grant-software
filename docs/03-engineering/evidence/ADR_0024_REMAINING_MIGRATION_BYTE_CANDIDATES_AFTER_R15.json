@@ -1,0 +1,111 @@
+{
+  "version": "adr-0024-migration-byte-candidate-matrix/v1",
+  "repositoryBaseline": "da3db4dd71050c902ee2f6266d42fd456e2654cb",
+  "scope": {
+    "afterMigrationExclusive": "20260718150000_tenant_first_login_activation",
+    "throughMigrationInclusive": "20260724180000_password_reset_foundation",
+    "migrationCount": 3
+  },
+  "notice": "Candidate byte representations are repository-only evidence and are not accepted Production lineage values unless separately observed and authorised.",
+  "method": {
+    "canonicalSource": "exact committed Git blob at repositoryBaseline",
+    "candidateTransformation": "decode valid UTF-8 without BOM, preserve all content and final newline, replace each LF with CRLF",
+    "reverseProof": "remove only the inserted carriage-return byte from every CRLF pair and require byte-for-byte equality with the committed Git blob",
+    "runtimeAcceptanceChanged": false,
+    "productionObservationClaimed": false
+  },
+  "migrations": [
+    {
+      "migrationName": "20260720100000_tenant_operator_recovery",
+      "migrationPath": "prisma/migrations/20260720100000_tenant_operator_recovery/migration.sql",
+      "canonical": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "LF",
+        "finalNewline": true,
+        "byteLength": 804,
+        "lineFeedCount": 24,
+        "sha256": "e32cb837f4bd9055554080ae4261e2040f13974b2fed72de1008f881a95f3215"
+      },
+      "candidate": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "CRLF",
+        "finalNewline": true,
+        "byteLength": 828,
+        "insertedCarriageReturnCount": 24,
+        "sha256": "11f3b33fd9189ffa549fac4c0a66a9705c6a26e6420bc0d42cdf572aa7ed8f96",
+        "reverseNormalizationEqualsCanonical": true,
+        "matchingRetainedWindowsMaterializations": [
+          "primary-worktree-at-investigation-time",
+          "drift-investigation-worktree",
+          "pr41-worktree"
+        ],
+        "authoritativeHistoricalMatchingArtifactRecovered": false,
+        "acceptedProductionLineageValue": false
+      }
+    },
+    {
+      "migrationName": "20260722190000_manual_lead_creation",
+      "migrationPath": "prisma/migrations/20260722190000_manual_lead_creation/migration.sql",
+      "canonical": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "LF",
+        "finalNewline": true,
+        "byteLength": 4491,
+        "lineFeedCount": 112,
+        "sha256": "443ebd35fee716599eb70c0df329a68a486f240b7ce179cef0abfec240c75160"
+      },
+      "candidate": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "CRLF",
+        "finalNewline": true,
+        "byteLength": 4603,
+        "insertedCarriageReturnCount": 112,
+        "sha256": "8f3cbfd0e3137fa858884ff5e096af9ee74124250aacba2690c1a127d9fe2c1e",
+        "reverseNormalizationEqualsCanonical": true,
+        "matchingRetainedWindowsMaterializations": [
+          "primary-worktree-at-investigation-time",
+          "drift-investigation-worktree",
+          "pr41-worktree"
+        ],
+        "authoritativeHistoricalMatchingArtifactRecovered": false,
+        "acceptedProductionLineageValue": false
+      }
+    },
+    {
+      "migrationName": "20260724180000_password_reset_foundation",
+      "migrationPath": "prisma/migrations/20260724180000_password_reset_foundation/migration.sql",
+      "canonical": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "LF",
+        "finalNewline": true,
+        "byteLength": 1858,
+        "lineFeedCount": 48,
+        "sha256": "cd79313c15a7343aa101a8509552e7cc76b101c7f602799857b0951d8eb02cd7"
+      },
+      "candidate": {
+        "encoding": "UTF-8 without BOM",
+        "lineEndings": "CRLF",
+        "finalNewline": true,
+        "byteLength": 1906,
+        "insertedCarriageReturnCount": 48,
+        "sha256": "81450e157375eb262d46339e78e912161383a0d27cfdf03952978cc65a174a71",
+        "reverseNormalizationEqualsCanonical": true,
+        "matchingRetainedWindowsMaterializations": [
+          "drift-investigation-worktree"
+        ],
+        "authoritativeHistoricalMatchingArtifactRecovered": false,
+        "acceptedProductionLineageValue": false
+      },
+      "productionExpectation": "pending",
+      "mustNotBeMarkedApplied": true,
+      "runtimeTupleAdded": false
+    }
+  ],
+  "conclusions": {
+    "allCandidatesMechanicallyReversible": true,
+    "candidateChecksumsAddedToRuntimeVerifier": false,
+    "candidateChecksumsAddedToAttestation": false,
+    "futureProductionStateInferred": false,
+    "passwordResetPendingExpectationChanged": false
+  }
+}

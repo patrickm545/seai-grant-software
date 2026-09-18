@@ -6,7 +6,7 @@
 | Status | Active |
 | Owner | Clada Systems Engineering |
 | Review cycle | Monthly during Foundation Release 1.0, then quarterly |
-| Last reviewed | 2026-07-26 |
+| Last reviewed | 2026-08-17 |
 
 This summary is the navigation layer for the Clada Operating Manual. It shows the intended reading order and the ownership boundaries between company, product, design, engineering, delivery, and research.
 
@@ -89,6 +89,22 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md](03-engineering/MIGRATION_HISTORY_RECONCILIATION_RUNBOOK.md)
 - [03-engineering/ADR_0024_MIGRATION_LINEAGE_VERIFIER.md](03-engineering/ADR_0024_MIGRATION_LINEAGE_VERIFIER.md)
 - [03-engineering/PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md](03-engineering/PR_44_ADR_0024_EVIDENCE_CAPTURE_PREPARATION.md)
+- [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_OPERATION.md)
+- [03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md](03-engineering/PR_45_ADR_0024_OPERATIONAL_READINESS_CHECKLIST.md)
+- [03-engineering/PR_45_ADR_0024_PREVIEW_EXIT_70_INVESTIGATION_2026_08_10.md](03-engineering/PR_45_ADR_0024_PREVIEW_EXIT_70_INVESTIGATION_2026_08_10.md)
+- [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R13.md)
+- [03-engineering/PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R13_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [03-engineering/PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R13_PILOT_AUTH_LINEAGE_INVESTIGATION.md)
+- [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R17.md)
+- [03-engineering/PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R17_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md](03-engineering/PR_45_ADR_0024_PRODUCTION_EVIDENCE_R18.md)
+- [03-engineering/PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R18_CHECKSUM_DIVERGENCE_INVESTIGATION.md)
+- [03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md](03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_EVIDENCE_PATH_REPAIR_2026_08_26.md)
+- [03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md](03-engineering/PR_45_ADR_0024_POST_MIGRATION_PRODUCTION_VERIFICATION_R2.md)
+- [03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md](03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_REVIEW.md)
+- [03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md](03-engineering/PR_45_ADR_0024_POST_MIGRATION_GOVERNANCE_MODEL_REPAIR.md)
+- [03-engineering/ADR_0024_POST_MIGRATION_QUALIFIED_HUMAN_REVIEWER_PACK.md](03-engineering/ADR_0024_POST_MIGRATION_QUALIFIED_HUMAN_REVIEWER_PACK.md)
+- [03-engineering/PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md](03-engineering/PR_45_ADR_0024_R4_POST_MIGRATION_SCHEMA_FINGERPRINT_INVESTIGATION.md)
 - [03-engineering/ENGINEERING_STANDARDS.md](03-engineering/ENGINEERING_STANDARDS.md)
 - [03-engineering/AI_ENGINEERING_RULES.md](03-engineering/AI_ENGINEERING_RULES.md)
 - [03-engineering/POSTGRES_INTEGRATION_TESTS.md](03-engineering/POSTGRES_INTEGRATION_TESTS.md)
@@ -157,7 +173,7 @@ This summary is the navigation layer for the Clada Operating Manual. It shows th
 - [05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md](05-decisions/ADR-0021-lead-creation-origin-and-progressive-completeness.md) - Accepted
 - [05-decisions/ADR-0022-production-legacy-credential-reissue.md](05-decisions/ADR-0022-production-legacy-credential-reissue.md) - Accepted
 - [05-decisions/ADR-0023-self-service-password-reset-security-boundary.md](05-decisions/ADR-0023-self-service-password-reset-security-boundary.md) - Accepted; implementation prerequisites outstanding
-- [05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) - Accepted; Production remediation implementation and execution pending
+- [05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md](05-decisions/ADR-0024-migration-history-repair-for-permanently-missing-applied-migrations.md) - Accepted; post-migration evidence verified, attestation retired, governance repair required before qualified-human approval
 
 ## Sprints
 

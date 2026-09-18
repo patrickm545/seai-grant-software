@@ -6,9 +6,41 @@
 | Status | Active |
 | Owner | Clada Systems Leadership |
 | Review cycle | Every governance change |
-| Last reviewed | 2026-07-28 |
+| Last reviewed | 2026-07-29 |
 
 This changelog records durable changes to release governance.
+
+## PR #45 Pilot-Stage ADR-0024 Governance
+
+Date: 2026-07-29
+
+Status: Draft; governance implemented, operational evidence and activation
+pending
+
+### Governance Controls Introduced
+
+- The normal `standard-independent-human` attestation path and its four human
+  approval and independence requirements remain unchanged.
+- A separate explicit `pilot-stage-compensating-control` mode records Patrick
+  McKenna as CEO, Production Owner, Production Operator, Recovery Owner and
+  final accountable approver.
+- No independent human technical reviewer is currently available. AI-assisted
+  CTO review is a method based on deterministic evidence and repository
+  controls, never a human identity or approval.
+- Pilot-stage activation requires two complete externally retained artifacts,
+  exact matching deterministic fields, both artifact digests, exact Production
+  identity/schema evidence and `verified-pending-blocked` exit `20` proof.
+- The exception authorises no migration, deployment or alias movement and does
+  not apply automatically to another change.
+- Qualified human review is mandatory before the first 10 pilot installers or
+  when another engineer or qualified external database reviewer joins,
+  whichever occurs first.
+
+### Current Effect
+
+The checked-in attestation remains pending with no capture, approval,
+activation or expiry evidence populated. Production was not accessed or
+changed. Preview lineage was repaired independently and remains strict.
 
 ## ADR-0024 Evidence-Capture Tooling Preparation
 
@@ -21,7 +53,9 @@ Status: Draft PR #44; tooling preparation only
 - A later pending-attestation Production operation uses one fixed read-only
   command prepared by PR #44.
 - The command requires an approved change ID, named operator, distinct named
-  reviewer and restore-point evidence reference.
+  reviewer and restore-point evidence reference under the standard governance
+  mode; PR #45 later added the explicit pilot-stage mode without weakening the
+  deterministic capture.
 - Exact ledger IDs and failed-log digests are retained without raw logs.
 - Each invocation compares two read-only captures; the later operation also
   compares two command artifacts through a deterministic evidence digest.
@@ -29,8 +63,9 @@ Status: Draft PR #44; tooling preparation only
 ### Governance Effect
 
 PR #44 performs no Production query, captures no live evidence, activates
-nothing and never authorizes migration execution. Exact live evidence and all
-four genuine approvals belong to a separate operational PR. Migration
+nothing and never authorizes migration execution. Exact live evidence and the
+approval set required by the later selected governance mode belong to a
+separate operational PR. Migration
 execution requires a later, separately approved PR; Preview and password-reset
 request-flow scope remain unchanged.
 

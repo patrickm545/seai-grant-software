@@ -127,3 +127,24 @@ test('all structural index fields participate in the schema fingerprint', () => 
   changed.indexes[0].includedColumns = ['assignedAdmin'];
   assert.notEqual(fingerprintCatalog(base).fingerprint, fingerprintCatalog(changed).fingerprint);
 });
+
+test('the same additive reset table cannot collapse distinct approved pre-migration catalogs', () => {
+  const disposable = preMigrationCatalog();
+  const productionHistorical = structuredClone(disposable);
+  productionHistorical.tables.push({ schema: 'public', name: 'ApprovedLegacyObject', kind: 'table' });
+
+  assert.notEqual(
+    fingerprintCatalog(disposable).fingerprint,
+    fingerprintCatalog(productionHistorical).fingerprint
+  );
+
+  for (const catalog of [disposable, productionHistorical]) {
+    catalog.tables.push({ schema: 'public', name: 'PasswordResetRequest', kind: 'table' });
+    assert.equal(assertNamedCatalog(catalog, 'post-password-reset').results.length, 5);
+  }
+
+  assert.notEqual(
+    fingerprintCatalog(disposable).fingerprint,
+    fingerprintCatalog(productionHistorical).fingerprint
+  );
+});

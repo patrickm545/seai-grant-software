@@ -1,0 +1,146 @@
+{
+  "version": "adr-0024-zero-step-lifecycle-investigation/v1",
+  "governingOperation": "CHG-2026-08-10-ADR0024-PROD-EVIDENCE-R13",
+  "repositoryBaseline": "cd6cd164ad99f8f7c3f76a00c9fc5d7eb6b4743e",
+  "migrationName": "20260716183000_pilot_installer_auth",
+  "productionRecordId": "69505647-7711-408c-853e-32579345d1b0",
+  "r13Observation": {
+    "recordCount": 1,
+    "finishedAt": "present-valid-canonical-utc-timestamp",
+    "rolledBackAt": null,
+    "appliedStepsCount": 0,
+    "logsState": "none",
+    "logsDigest": null,
+    "exactStartedAt": "not-emitted-by-r13",
+    "exactFinishedAt": "not-emitted-by-r13"
+  },
+  "expectedOrdinaryPrismaLifecycle": {
+    "migrationIsNonEmpty": true,
+    "topLevelSqlStatementCount": 18,
+    "successfulDeployAppliedStepsCount": 1,
+    "ordinaryExactSuccessInvariantUnchanged": true
+  },
+  "authoritativeHistoricalSource": {
+    "kind": "retained-local-codex-session",
+    "logicalReference": "local-codex-session/2026-07-17/rollout-2026-07-17T12-49-52-019f6fe9-4a16-7812-b729-cad26dcbaddd.jsonl",
+    "sha256": "779cdd18bfca9a6a60c0dd764551c2f56b693913b5275b544a5d15e3a13422de",
+    "byteLength": 7163012,
+    "committedToRepository": false,
+    "retentionReason": "The raw source may contain secret-bearing operational context and remains outside Git.",
+    "eventLineDigests": {
+      "productionRepairAuthorization": "16a591ccf81196e0f245a7282708a7fd6fa07e3094a4bf778bf7f4886222c259",
+      "reviewedSqlPrepared": "6b8a28a45f2027b1405fd02f54d980055efd93a6eb63a98275e505c09516d442",
+      "disposableRehearsalCommand": "fed268d8dc2de6cda466755fbbdb02d14791164a9ded7000df25b6518fcdfeaf",
+      "disposableRehearsalResult": "2d13bedc7d5a45a438bea74918ef6dbe30a341bbcbdd410c28418dc8a3284b40",
+      "disposableSchemaVerificationCommand": "55dcf8e42ebf4edc6836843e8a995ec79eceb148d065ee4e54a8bd456308c5bd",
+      "disposableSchemaVerificationResult": "ee63eeda5f704aded55ca7a02bc5324b4627da9ac438d9fcf6fc64aa8d8a8449",
+      "productionPreflightCommand": "bcf87bc3df54f76ad4d7de9fb8be8bb381153e41d4dc2d0fb9593b9171a98c91",
+      "productionPreflightResult": "f7cd3c71456c7a4a80a40ed5cfc6cdd6db2f0e3829aa5668828d9532174bc3bf",
+      "productionRepairCommand": "a7b9ceb421c3b42e71ccbeaf664cd5c14bbeaebf6cf14f7066b1589294782320",
+      "productionRepairResult": "1db5281e4bdb435003d0948b857b49a0d5bb674c29bd8a07993398929e607831",
+      "productionSchemaVerificationCommand": "9c0410ecb532f04e8d1292f67712fb4c398257a77979957998e3c6d2741fbbdc",
+      "productionSchemaVerificationResult": "140eafb4d001d2b5aa3899b94b1a05100696a747bf68717fd5614d6e3a25f4e5",
+      "migrateResolveCommand": "e973ddbe4eeaf2eac57cbae84d549f1c3755032b17437c92b6319d9bac8e8556",
+      "migrateResolveResult": "35f78e3e03ba84836fb4e6c0cd8a95a4d87cdf4b5004bc53836bc2a7520a1038",
+      "ledgerVerificationCommand": "a03b4a170756943bcd1118061779fcabf5bb6dece080f4682d5009b6cf2d88a4",
+      "ledgerVerificationResult": "c3191c21e7f6a563ad2ba12cc3b391d7eba992e3f6d441450884a932125e735a"
+    }
+  },
+  "historicalSequence": [
+    {
+      "order": 1,
+      "event": "A separately authorized reviewed repair was rehearsed transactionally on a disposable Neon branch.",
+      "result": "23 statements completed; schema assertions passed; lead count remained 32."
+    },
+    {
+      "order": 2,
+      "event": "Production preflight found the pilot authentication schema and migration record absent.",
+      "result": "The retained operation proceeded under its explicit repair authorization."
+    },
+    {
+      "order": 3,
+      "event": "The reviewed repair transaction established the intended schema and exact authorized membership repair.",
+      "result": "23 statements completed; lead count remained 32; no failure was reported."
+    },
+    {
+      "order": 4,
+      "event": "A read-only post-repair verification checked the named schema and tenancy invariants.",
+      "result": "All named schema assertions passed; duplicate memberships and auth-session rows were zero."
+    },
+    {
+      "order": 5,
+      "event": "The exact command npx prisma migrate resolve --applied 20260716183000_pilot_installer_auth --schema prisma/schema.prisma was run from the Windows checkout.",
+      "result": "Prisma 5.22.0 reported the migration marked as applied."
+    },
+    {
+      "order": 6,
+      "event": "The retained ledger verification observed the resulting record.",
+      "result": "finished=true, rolledBack=false, appliedStepsCount=0, checksumLength=64."
+    }
+  ],
+  "mechanicalExplanation": {
+    "sqlExecution": "The reviewed repair SQL was executed before the ledger resolution; the original migration file was not executed by migrate resolve.",
+    "zeroStepCause": "Prisma mark-migration-applied inserts a finished migration-history record but does not record a successfully executed migration step.",
+    "checksumCause": "The resolve command read the migration from a Windows CRLF materialization whose SHA-256 exactly matches the R13 observed checksum.",
+    "duplicateOrSupersededLifecycle": false,
+    "priorFailedPilotMigrationRecordRecovered": false,
+    "emptyOrNoOpMigration": false
+  },
+  "prismaSemanticsSources": [
+    "https://docs.prisma.io/docs/cli/migrate/resolve",
+    "https://docs.prisma.io/docs/orm/prisma-migrate/workflows/patching-and-hotfixing",
+    "https://prisma.github.io/prisma-engines/doc/src/sql_schema_connector/sql_migration_persistence.rs.html"
+  ],
+  "schemaInventory": {
+    "version": "adr-0024-pilot-auth-expected-schema-inventory/v1",
+    "tables": [
+      "AuthSession"
+    ],
+    "columns": [
+      "Organisation.slug text not null",
+      "Organisation.verified boolean not null default false",
+      "User.passwordHash text nullable",
+      "User.lastLoginAt timestamp(3) nullable",
+      "AuthSession.id text not null",
+      "AuthSession.userId text not null",
+      "AuthSession.tokenHash text not null",
+      "AuthSession.expiresAt timestamp(3) not null",
+      "AuthSession.createdAt timestamp(3) not null default CURRENT_TIMESTAMP"
+    ],
+    "constraints": [
+      "AuthSession_pkey primary key (id)",
+      "User_email_normalised_check check (email = lower(trim(email)))",
+      "AuthSession_userId_fkey foreign key (userId) references User(id) on delete cascade on update cascade"
+    ],
+    "indexes": [
+      "Organisation_slug_key unique (slug)",
+      "OrganisationMembership_userId_key unique (userId)",
+      "AuthSession_tokenHash_key unique (tokenHash)",
+      "AuthSession_userId_expiresAt_idx (userId, expiresAt)",
+      "AuthSession_expiresAt_idx (expiresAt)"
+    ],
+    "enumsIntroducedByMigration": [],
+    "laterSchemaEvolutionToAccountFor": [
+      "AuthSession.sessionType and its index were introduced by a later migration and must coexist with the base objects."
+    ]
+  },
+  "classification": "L1-zero-step-completed-state-authoritatively-explained-and-safe-historical-operation",
+  "acceptanceDecision": {
+    "currentEvidenceSufficientForFourthRuntimeTuple": false,
+    "newAdrDecisionRequired": true,
+    "verifierAcceptanceChanged": false,
+    "attestationSchemaChanged": false,
+    "reason": [
+      "R13 did not emit the exact started_at and finished_at values needed for an exact historical tuple.",
+      "No current authorized Production catalog capture proves the complete expected object inventory.",
+      "ADR-0024 does not yet define a separately named zero-step historical lifecycle state."
+    ]
+  },
+  "futureAuthorizedProductionEvidence": {
+    "requiresExactLedgerTimestamps": true,
+    "requiresExactRecordAndLifecycle": true,
+    "requiresReadOnlyCatalogProof": true,
+    "requiresUnexpectedObjectCheck": true,
+    "requiresSeparateGovernanceApprovalBeforeImplementation": true
+  }
+}

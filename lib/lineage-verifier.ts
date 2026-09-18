@@ -2,7 +2,11 @@ import type { SafeDatabaseIdentity } from './database-safety';
 import type { LineageAttestation } from './lineage-attestation';
 import { AttestationValidationError, validateLineageAttestation } from './lineage-attestation';
 import type { MigrationLedgerRow } from './migration-ledger';
-import { normaliseMigrationRecord, verifyAttestedLedger } from './migration-ledger';
+import {
+  MigrationRecordNormalizationError,
+  normaliseMigrationRecord,
+  verifyAttestedLedger
+} from './migration-ledger';
 import type { MigrationManifest } from './migration-manifest';
 import type { CatalogSnapshot, SchemaProfile } from './schema-fingerprint';
 import {
@@ -10,8 +14,9 @@ import {
   fingerprintCatalog,
   SCHEMA_FINGERPRINT_VERSION
 } from './schema-fingerprint';
+import { assertPilotAuthHistoricalResolvedCatalog } from './historical-resolved-migration';
 
-export const VERIFIER_VERSION = 'adr-0024-lineage-verifier/v1' as const;
+export const VERIFIER_VERSION = 'adr-0024-lineage-verifier/v2' as const;
 export const VERIFIER_EXIT_CODES = {
   VERIFIED_CLEAN: 0,
   VERIFIED_PENDING_BLOCKED: 20,
@@ -35,8 +40,12 @@ export type VerifierMode =
   | 'production-postflight';
 
 export class LineageVerifierError extends Error {
-  constructor(public readonly code: VerifierFailureCode, message: string) {
-    super(message);
+  constructor(
+    public readonly code: VerifierFailureCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
     this.name = 'LineageVerifierError';
   }
 }
@@ -49,7 +58,15 @@ export function verifyStrictLedger(rows: MigrationLedgerRow[], manifest: Migrati
   const expected = new Map(manifest.migrations.map((migration) => [migration.name, migration]));
   const grouped = new Map<string, ReturnType<typeof normaliseMigrationRecord>[]>();
   for (const source of rows) {
-    const row = normaliseMigrationRecord(source);
+    let row: ReturnType<typeof normaliseMigrationRecord>;
+    try {
+      row = normaliseMigrationRecord(source);
+    } catch (error) {
+      if (error instanceof MigrationRecordNormalizationError) {
+        fail('LEDGER_MISMATCH', error.message);
+      }
+      throw error;
+    }
     if (!expected.has(row.migrationName)) fail('LEDGER_MISMATCH', `Unexpected migration: ${row.migrationName}`);
     const records = grouped.get(row.migrationName) ?? [];
     records.push(row);
@@ -111,11 +128,24 @@ export type VerifierEvidence = {
   appliedMigrationCount: number;
   pendingMigrations: string[];
   attestedDiscrepancy: 'not-applicable' | 'verified';
+  attestedRepositoryChecksumDivergence: 'not-applicable' | 'verified';
+  attestedRepositoryChecksumDivergences: Array<{
+    migrationName: string;
+    result: 'verified';
+  }>;
+  attestedHistoricalResolvedMigration: 'not-applicable' | 'verified';
+  attestedHistoricalResolvedMigrations: Array<{
+    migrationName: string;
+    result: 'verified';
+  }>;
   relatedDuplicateState: 'not-applicable' | 'verified';
   schemaFingerprintVersion: string;
   schemaFingerprint: string;
   schemaFingerprintResult: 'verified';
   namedCatalogAssertions: ReturnType<typeof assertNamedCatalog>;
+  historicalResolvedCatalogAssertions:
+    | ReturnType<typeof assertPilotAuthHistoricalResolvedCatalog>
+    | null;
   lifecycleResult: 'not-applicable' | 'active';
   finalDecision: 'verified-clean' | 'verified-pending-blocked';
   timestamp: string;
@@ -144,6 +174,14 @@ export function verifyLineage(input: {
   let pending: string[];
   let appliedRepositoryCount: number;
   let attestedDiscrepancy: VerifierEvidence['attestedDiscrepancy'] = 'not-applicable';
+  let attestedRepositoryChecksumDivergence: VerifierEvidence['attestedRepositoryChecksumDivergence'] =
+    'not-applicable';
+  let attestedRepositoryChecksumDivergences: VerifierEvidence['attestedRepositoryChecksumDivergences'] =
+    [];
+  let attestedHistoricalResolvedMigration: VerifierEvidence['attestedHistoricalResolvedMigration'] =
+    'not-applicable';
+  let attestedHistoricalResolvedMigrations: VerifierEvidence['attestedHistoricalResolvedMigrations'] =
+    [];
   let relatedDuplicateState: VerifierEvidence['relatedDuplicateState'] = 'not-applicable';
   let lifecycleResult: VerifierEvidence['lifecycleResult'] = 'not-applicable';
   let profile: SchemaProfile = 'fresh-head';
@@ -156,6 +194,16 @@ export function verifyLineage(input: {
       !input.attestation
     ) {
       fail('IDENTITY_MISMATCH', 'ADR-0024 is restricted to the approved Production database.');
+    }
+    if (
+      (input.mode === 'production-preflight' || input.mode === 'production-postflight') &&
+      (!input.attestation.schema.postMigrationFingerprint ||
+        !input.attestation.schema.postMigrationEvidence)
+    ) {
+      fail(
+        'SCHEMA_MISMATCH',
+        'Approved Production post-migration schema fingerprint evidence is unavailable.'
+      );
     }
     try {
       validateLineageAttestation(input.attestation, { now: input.now, requireActive: true });
@@ -177,10 +225,17 @@ export function verifyLineage(input: {
         manifest: input.manifest,
         attestation: input.attestation,
         mode: input.mode as 'production-status' | 'production-preflight' | 'production-postflight',
-        approvedPendingMigrations: approvedPending
+        approvedPendingMigrations: approvedPending,
+        historicalResolvedMigrationMode: 'active-attestation'
       });
       pending = result.pending;
       appliedRepositoryCount = result.appliedRepositoryCount;
+      attestedRepositoryChecksumDivergence = result.repositoryChecksumDivergence;
+      attestedRepositoryChecksumDivergences = result.repositoryChecksumDivergences;
+      attestedHistoricalResolvedMigration = 'verified';
+      attestedHistoricalResolvedMigrations = result.historicalResolvedMigrations.map(
+        ({ migrationName }) => ({ migrationName, result: 'verified' as const })
+      );
     } catch (error) {
       fail('LEDGER_MISMATCH', error instanceof Error ? error.message : 'Ledger verification failed.');
     }
@@ -206,14 +261,35 @@ export function verifyLineage(input: {
 
   let namedCatalogAssertions: ReturnType<typeof assertNamedCatalog>;
   let schemaFingerprint: string;
+  let historicalResolvedCatalogAssertions: ReturnType<
+    typeof assertPilotAuthHistoricalResolvedCatalog
+  > | null = null;
   try {
     namedCatalogAssertions = assertNamedCatalog(input.catalog, profile);
     schemaFingerprint = fingerprintCatalog(input.catalog).fingerprint;
+    if (productionMode) {
+      historicalResolvedCatalogAssertions = assertPilotAuthHistoricalResolvedCatalog(
+        input.catalog
+      );
+    }
   } catch (error) {
     fail('SCHEMA_MISMATCH', error instanceof Error ? error.message : 'Schema verification failed.');
   }
   if (expectedSchemaFingerprint && schemaFingerprint !== expectedSchemaFingerprint) {
     fail('SCHEMA_MISMATCH', 'Schema fingerprint differs from the approved attestation.');
+  }
+  if (productionMode && input.mode !== 'production-postflight') {
+    const historical = input.attestation!.historicalResolvedMigrations[0];
+    if (
+      historical.observedCurrentSchema.fingerprint !== schemaFingerprint ||
+      historical.observedCurrentSchema.catalogAssertionsDigest !==
+        historicalResolvedCatalogAssertions?.assertionsDigest
+    ) {
+      fail(
+        'SCHEMA_MISMATCH',
+        'Historical resolved migration current schema evidence differs from the attestation.'
+      );
+    }
   }
 
   const pendingBlocked = input.mode.endsWith('status') && pending.length > 0;
@@ -229,11 +305,16 @@ export function verifyLineage(input: {
     appliedMigrationCount: appliedRepositoryCount,
     pendingMigrations: pending,
     attestedDiscrepancy,
+    attestedRepositoryChecksumDivergence,
+    attestedRepositoryChecksumDivergences,
+    attestedHistoricalResolvedMigration,
+    attestedHistoricalResolvedMigrations,
     relatedDuplicateState,
     schemaFingerprintVersion: SCHEMA_FINGERPRINT_VERSION,
     schemaFingerprint,
     schemaFingerprintResult: 'verified',
     namedCatalogAssertions,
+    historicalResolvedCatalogAssertions,
     lifecycleResult,
     finalDecision: pendingBlocked ? 'verified-pending-blocked' : 'verified-clean',
     timestamp: (input.now ?? new Date()).toISOString(),

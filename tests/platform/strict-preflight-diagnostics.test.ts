@@ -17,6 +17,7 @@ import {
   classifyStrictVerifierFailure,
   runStrictVerifierStage,
   safeStrictVerifierStageDiagnostic,
+  strictTransactionFailureBoundary,
   StrictVerifierStageError
 } from '../../lib/strict-verifier-diagnostics';
 import { acceptedVerifierExitCodes, classifyVerifierExit } from '../../lib/verifier-command-policy';
@@ -28,6 +29,10 @@ const manifest = JSON.parse(
 ) as MigrationManifest;
 const commandSource = readFileSync('scripts/verify-migration-lineage.ts', 'utf8');
 const databaseCommandSource = readFileSync('scripts/run-database-command.ts', 'utf8');
+
+function syntheticDatabaseUrl(user: string, password: string, host: string, database: string) {
+  return ['postgresql', '://', user, ':', password, '@', host, '/', database].join('');
+}
 
 function canonicalPreviewRows(): MigrationLedgerRow[] {
   return manifest.migrations
@@ -48,7 +53,9 @@ function strictInput(overrides: Partial<Parameters<typeof verifyLineage>[0]> = {
   return {
     mode: 'strict-preflight' as const,
     environment: 'preview',
-    identity: getDatabaseIdentity('postgresql://role:secret@preview.example/preview'),
+    identity: getDatabaseIdentity(
+      syntheticDatabaseUrl('role', 'placeholder', 'preview.example', 'preview')
+    ),
     connectedDatabaseName: 'preview',
     repositoryBaseline: 'ad8ce2c263c8e8533fd0b71af0d8f82513936a26',
     manifest,
@@ -176,7 +183,7 @@ test('genuine internal failure retains its cause and exit 70', async () => {
 
 test('safe stage diagnostic classifies Prisma connectivity without exposing secrets', async () => {
   const original = Object.assign(
-    new Error('postgresql://operator:credential@secret.example/preview'),
+    new Error(syntheticDatabaseUrl('operator', 'credential', 'secret.example', 'preview')),
     { code: 'P1001' }
   );
   await assert.rejects(
@@ -206,6 +213,28 @@ test('safe stage diagnostic classifies Prisma connectivity without exposing secr
   );
 });
 
+test('transaction envelope failures retain safe start and completion boundaries', () => {
+  assert.deepEqual(strictTransactionFailureBoundary('callback-not-entered'), {
+    stage: 'strict-transaction-start',
+    invariant: 'repeatable-read transaction begins and invokes its read-only callback'
+  });
+  assert.deepEqual(strictTransactionFailureBoundary('callback-entered'), {
+    stage: 'strict-transaction',
+    invariant: 'repeatable-read transaction completes without mutation'
+  });
+  assert.deepEqual(strictTransactionFailureBoundary('callback-completed'), {
+    stage: 'strict-transaction-completion',
+    invariant: 'repeatable-read transaction completes after all fixed read-only queries'
+  });
+});
+
+test('transaction boundary diagnostics do not add retries or expose exception text', () => {
+  assert.match(commandSource, /strictTransactionProgress = 'callback-entered'/);
+  assert.match(commandSource, /strictTransactionProgress = 'callback-completed'/);
+  assert.match(commandSource, /strictTransactionFailureBoundary\(strictTransactionProgress\)/);
+  assert.doesNotMatch(commandSource, /retryStrictTransaction|STRICT_TRANSACTION_RETRY/);
+});
+
 test('unknown secret-bearing exception remains generic and secret-free', async () => {
   await assert.rejects(
     () =>
@@ -213,7 +242,9 @@ test('unknown secret-bearing exception remains generic and secret-free', async (
         'strict-catalog',
         'fixed catalog query set returns canonical metadata',
         () => {
-          throw new Error('token=secret-value at postgresql://role:password@host/database');
+          throw new Error(
+            `token=secret-value at ${syntheticDatabaseUrl('role', 'password', 'host', 'database')}`
+          );
         }
       ),
     (error: unknown) => {

@@ -2,6 +2,8 @@ import { LineageVerifierError } from './lineage-verifier';
 
 export type StrictVerifierStage =
   | 'strict-transaction'
+  | 'strict-transaction-start'
+  | 'strict-transaction-completion'
   | 'strict-read-only-setup'
   | 'strict-connected-identity'
   | 'strict-migration-ledger'
@@ -26,6 +28,33 @@ export type StrictVerifierFailureCategory =
   | 'response-parsing-failed'
   | 'unexpected-internal-error'
   | 'unexpected-non-error';
+
+export type StrictTransactionProgress =
+  | 'callback-not-entered'
+  | 'callback-entered'
+  | 'callback-completed';
+
+export function strictTransactionFailureBoundary(progress: StrictTransactionProgress): {
+  stage: StrictVerifierStage;
+  invariant: string;
+} {
+  if (progress === 'callback-not-entered') {
+    return {
+      stage: 'strict-transaction-start',
+      invariant: 'repeatable-read transaction begins and invokes its read-only callback'
+    };
+  }
+  if (progress === 'callback-completed') {
+    return {
+      stage: 'strict-transaction-completion',
+      invariant: 'repeatable-read transaction completes after all fixed read-only queries'
+    };
+  }
+  return {
+    stage: 'strict-transaction',
+    invariant: 'repeatable-read transaction completes without mutation'
+  };
+}
 
 type SafeFailureClassification = {
   category: StrictVerifierFailureCategory;

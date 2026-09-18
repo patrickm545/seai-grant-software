@@ -56,7 +56,9 @@ import {
 import {
   runStrictVerifierStage,
   safeStrictVerifierStageDiagnostic,
+  strictTransactionFailureBoundary,
   StrictVerifierStageError,
+  type StrictTransactionProgress,
   type StrictVerifierStage
 } from '../lib/strict-verifier-diagnostics';
 import { assertNamedCatalog, fingerprintCatalog, type SchemaProfile } from '../lib/schema-fingerprint';
@@ -163,9 +165,11 @@ type DatabaseReadStages<TStage extends string> = {
 
 async function readDatabaseState<TStage extends string>(stages?: DatabaseReadStages<TStage>) {
   const prisma = new PrismaClient();
+  let strictTransactionProgress: StrictTransactionProgress = 'callback-not-entered';
   try {
     const transaction = () => prisma.$transaction(
       async (transaction) => {
+        strictTransactionProgress = 'callback-entered';
         const identity = stages
           ? await stages.runStage(
               stages.connectedIdentity,
@@ -197,17 +201,26 @@ async function readDatabaseState<TStage extends string>(stages?: DatabaseReadSta
               () => readCatalogSnapshot(transaction)
             )
           : await readCatalogSnapshot(transaction);
-        return { identity, ledgerRows, catalog };
+        const state = { identity, ledgerRows, catalog };
+        strictTransactionProgress = 'callback-completed';
+        return state;
       },
       { isolationLevel: 'RepeatableRead', timeout: 30_000 }
     );
-    return stages
-      ? await stages.runStage(
-          stages.transaction,
-          'repeatable-read transaction completes without mutation',
-          transaction
-        )
-      : await transaction();
+    if (!stages) return await transaction();
+    try {
+      return await stages.runStage(
+        stages.transaction,
+        'repeatable-read transaction completes without mutation',
+        transaction
+      );
+    } catch (error) {
+      if (error instanceof StrictVerifierStageError && error.stage === stages.transaction) {
+        const boundary = strictTransactionFailureBoundary(strictTransactionProgress);
+        throw new StrictVerifierStageError(boundary.stage, boundary.invariant, error.cause);
+      }
+      throw error;
+    }
   } finally {
     await prisma.$disconnect();
   }
